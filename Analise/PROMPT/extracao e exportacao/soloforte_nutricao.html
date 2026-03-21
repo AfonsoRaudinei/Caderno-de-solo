@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SoloForte · Lab · Nutrição</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --blue:       #007AFF;
+    --blue-dark:  #0051D5;
+    --blue-bg:    #F0F6FF;
+    --bg:         #F2F2F7;
+    --surface:    #FFFFFF;
+    --surface2:   #F5F5F7;
+    --text1:      #1D1D1F;
+    --text2:      #86868B;
+    --text3:      #C7C7CC;
+    --border:     #D1D1D6;
+    --green:      #34C759;
+    --orange:     #FF9500;
+    --red:        #FF3B30;
+    --purple:     #AF52DE;
+    --radius:     12px;
+    --nav-h:      83px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    max-width: 390px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 0;
+    height: 44px;
+  }
+  .status-time { font-size: 15px; font-weight: 600; color: var(--text1); }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { fill: var(--text1); }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 8px 20px 0;
+    text-align: center;
+  }
+  .header-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text1);
+    letter-spacing: -0.2px;
+  }
+
+  /* ── SEGMENTED TAB BAR (Lab interno) ── */
+  .tab-bar-wrap {
+    padding: 12px 20px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-bar {
+    display: flex;
+    gap: 0;
+  }
+  .tab-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px 11px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .tab-item.active {
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .tab-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--blue);
+    border-radius: 2px 2px 0 0;
+    transition: left 0.25s cubic-bezier(.4,0,.2,1), width 0.25s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── SCROLL CONTENT ── */
+  .content {
+    padding: 16px 16px calc(var(--nav-h) + 16px);
+    overflow-y: auto;
+    min-height: calc(100vh - 44px - 53px - 44px);
+  }
+
+  /* ── PANEL SECTIONS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── FILTER ROW ── */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .filter-pill {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .filter-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-left: 2px;
+  }
+  .filter-select {
+    width: 100%;
+    padding: 9px 28px 9px 11px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text1);
+    font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    cursor: pointer;
+  }
+  .filter-select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+
+  /* ── YIELD ROW ── */
+  .yield-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: flex-end;
+  }
+  .yield-field { flex: 1; }
+  .yield-input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text1);
+    font-family: inherit;
+    background: var(--surface);
+    text-align: center;
+  }
+  .yield-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+  .yield-unit {
+    font-size: 12px;
+    color: var(--text2);
+    text-align: center;
+    padding-bottom: 11px;
+    flex: 0 0 40px;
+  }
+
+  /* ── MACRO / MICRO TOGGLE ── */
+  .seg-control {
+    display: flex;
+    background: var(--surface2);
+    border-radius: 9px;
+    padding: 2px;
+    margin-bottom: 16px;
+  }
+  .seg-btn {
+    flex: 1;
+    padding: 7px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .seg-btn.active {
+    background: var(--surface);
+    color: var(--text1);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  /* ── NUTRIENT CARDS ── */
+  .nutrient-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .nutrient-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.04);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .nutrient-card:active { transform: scale(0.985); }
+  .nutrient-card.expanded { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+
+  .card-accent {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 8px;
+  }
+  .nutrient-symbol {
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 28px;
+    color: var(--text1);
+    letter-spacing: -0.5px;
+  }
+  .nutrient-name {
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 400;
+    flex: 1;
+  }
+
+  /* BAR PAIR */
+  .bar-section {
+    margin-top: 11px;
+    padding-left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: 62px;
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .bar-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text1);
+    width: 54px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* EXPANDED DETAIL */
+  .card-detail {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--surface2);
+    padding-left: 8px;
+  }
+  .nutrient-card.expanded .card-detail { display: block; }
+
+  .stage-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .stage-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .stage-col {
+    flex: 1;
+    text-align: center;
+  }
+  .stage-name {
+    font-size: 9px;
+    color: var(--text3);
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .stage-mini-bar {
+    height: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 2px;
+  }
+  .stage-bar-inner {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .stage-pct {
+    font-size: 8px;
+    color: var(--text2);
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  /* INDEX BADGE */
+  .index-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .index-badge {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .index-badge-label {
+    font-size: 9px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .index-badge-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text1);
+  }
+
+  /* CHEVRON */
+  .chevron {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text3);
+    transition: transform 0.2s;
+  }
+  .nutrient-card.expanded .chevron { transform: rotate(180deg); }
+
+  /* ── SUMMARY HERO ── */
+  .summary-hero {
+    background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    color: white;
+    box-shadow: 0 4px 16px rgba(0,122,255,.35);
+  }
+  .hero-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+  .hero-source {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.2px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 0;
+  }
+  .hero-stat {
+    flex: 1;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.2);
+  }
+  .hero-stat:last-child { border-right: none; }
+  .hero-stat-val {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .hero-stat-lbl {
+    font-size: 10px;
+    opacity: 0.65;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 390px;
+    height: var(--nav-h);
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 8px;
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 0;
+    position: relative;
+  }
+  .nav-icon-wrap {
+    width: 44px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    transition: background 0.15s;
+  }
+  .nav-item.active .nav-icon-wrap {
+    background: rgba(0,122,255,0.12);
+  }
+  .nav-icon { width: 22px; height: 22px; }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text2);
+    letter-spacing: 0.1px;
+  }
+  .nav-item.active .nav-label { color: var(--blue); font-weight: 600; }
+  .nav-item.active .nav-icon { color: var(--blue); }
+  .nav-item:not(.active) .nav-icon { color: var(--text2); }
+
+  /* ── PLACEHOLDER screens ── */
+  .placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 320px;
+    gap: 12px;
+    color: var(--text3);
+  }
+  .placeholder svg { opacity: 0.35; }
+  .placeholder p { font-size: 15px; font-weight: 500; }
+
+  /* ── EMPTY STATE for Calibração/Rec ── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 380px;
+    gap: 12px;
+  }
+  .empty-icon {
+    width: 64px; height: 64px;
+    background: var(--surface2);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .empty-text { font-size: 15px; color: var(--text2); font-weight: 500; }
+
+  /* Scroll bar hidden */
+  .content::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span class="status-time">10:59</span>
+  <div class="status-icons">
+    <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1" opacity=".3"/><rect x="4.5" y="2" width="3" height="10" rx="1" opacity=".5"/><rect x="9" y="0" width="3" height="12" rx="1" opacity=".8"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+    <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.4C5.6 2.4 3.4 3.4 1.8 5L0 3.2C2.1 1.2 4.9 0 8 0s5.9 1.2 8 3.2L14.2 5C12.6 3.4 10.4 2.4 8 2.4z" opacity=".3"/><path d="M8 5.6C6.4 5.6 5 6.2 3.9 7.2L2.1 5.4C3.7 3.9 5.7 3 8 3s4.3.9 5.9 2.4l-1.8 1.8C11 6.2 9.6 5.6 8 5.6z" opacity=".6"/><path d="M8 8.8c-1 0-1.8.4-2.4 1L8 12l2.4-2.2C9.8 9.2 9 8.8 8 8.8z"/></svg>
+    <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="1" width="21" height="10" rx="2.5" stroke="#1D1D1F" stroke-width="1" fill="none" opacity=".35"/><rect x="22" y="3.5" width="2.5" height="5" rx="1" fill="#1D1D1F" opacity=".4"/><rect x="1.5" y="2.5" width="15" height="7" rx="1.5" fill="#1D1D1F"/></svg>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header" style="background:var(--surface); padding-bottom:0;">
+  <p class="header-title">Laboratório</p>
+</div>
+
+<!-- INTERNAL TAB BAR -->
+<div class="tab-bar-wrap" id="tabBarWrap" style="background:var(--surface);">
+  <div class="tab-bar" id="internalTabs">
+    <div class="tab-item" data-tab="calibracao" onclick="switchTab('calibracao')">Calibração</div>
+    <div class="tab-item" data-tab="recomendacao" onclick="switchTab('recomendacao')">Recomendação</div>
+    <div class="tab-item active" data-tab="nutricao" onclick="switchTab('nutricao')">Nutrição</div>
+    <div class="tab-indicator" id="tabIndicator"></div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content" id="mainContent">
+
+  <!-- CALIBRAÇÃO placeholder -->
+  <div class="panel" id="panel-calibracao">
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="1.5">
+          <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+        </svg>
+      </div>
+      <p class="empty-text">Calibração</p>
+    </div>
+  </div>
+
+  <!-- RECOMENDAÇÃO placeholder -->
+  <div class="panel" id="panel-recomendacao">
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#86868B" stroke-width="1.5">
+          <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+      </div>
+      <p class="empty-text">Recomendação</p>
+    </div>
+  </div>
+
+  <!-- NUTRIÇÃO ── NOVA TELA ── -->
+  <div class="panel active" id="panel-nutricao">
+
+    <!-- FILTROS -->
+    <div class="filter-row">
+      <div class="filter-pill">
+        <span class="filter-label">Fonte</span>
+        <select class="filter-select" id="sourceType" onchange="onSourceTypeChange()">
+          <option value="Autores">Autores</option>
+          <option value="Guidorizzi">Guidorizzi</option>
+          <option value="Cultivar">Cultivar</option>
+        </select>
+      </div>
+      <div class="filter-pill">
+        <span class="filter-label" id="sourceLabel">Autor</span>
+        <select class="filter-select" id="sourceName" onchange="renderCards()"></select>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-pill">
+        <span class="filter-label">Tipo</span>
+        <select class="filter-select" id="dataType" onchange="renderCards()">
+          <option value="Exportação">Exportação (grãos)</option>
+          <option value="Extração">Extração (planta toda)</option>
+        </select>
+      </div>
+      <div class="filter-pill">
+        <span class="filter-label">Produtividade</span>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input type="number" class="yield-input" id="yieldInput" value="4.2" min="0.1" max="9999999" step="0.1" maxlength="7" style="flex:1;" oninput="renderCards()">
+          <span style="font-size:12px;color:var(--text2);white-space:nowrap;">ton/ha</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACRO / MICRO TOGGLE -->
+    <div class="seg-control">
+      <div class="seg-btn active" id="seg-macro" onclick="switchSeg('macro')">Macronutrientes</div>
+      <div class="seg-btn" id="seg-micro" onclick="switchSeg('micro')">Micronutrientes</div>
+    </div>
+
+    <!-- HERO CARD -->
+    <div class="summary-hero" id="heroCard">
+      <div class="hero-label">Cultivar selecionado</div>
+      <div class="hero-source" id="heroSource">—</div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+
+    <!-- NUTRIENT CARDS -->
+    <div class="nutrient-grid" id="nutrientGrid"></div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item" onclick="switchNav('analise')">
+    <div class="nav-icon-wrap">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M10 2.4A8 8 0 1021.6 14H10V2.4z"/><path d="M14 2a8 8 0 016 6h-6V2z"/>
+      </svg>
+    </div>
+    <span class="nav-label">Análise</span>
+  </div>
+  <div class="nav-item active" onclick="switchNav('lab')">
+    <div class="nav-icon-wrap">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M9 3v11l-4 5h14l-4-5V3"/><path d="M6 3h12"/>
+      </svg>
+    </div>
+    <span class="nav-label">Lab</span>
+  </div>
+  <div class="nav-item" onclick="switchNav('historico')">
+    <div class="nav-icon-wrap">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+      </svg>
+    </div>
+    <span class="nav-label">Histórico</span>
+  </div>
+  <div class="nav-item" onclick="switchNav('config')">
+    <div class="nav-icon-wrap">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+    </div>
+    <span class="nav-label">Config</span>
+  </div>
+</nav>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const ABSORPTION_PCT = {
+  N:  {V1_V3:10,   V4:25,   V5:40,   R1:55,  R3:75,   R5:90,   R6:97.5},
+  P:  {V1_V3:7.5,  V4:17.5, V5:30,   R1:45,  R3:70,   R5:90,   R6:97.5},
+  K:  {V1_V3:12.5, V4:30,   V5:52.5, R1:70,  R3:87.5, R5:97.5, R6:97.5},
+  Ca: {V1_V3:7.5,  V4:25,   V5:45,   R1:65,  R3:85,   R5:97.5, R6:97.5},
+  Mg: {V1_V3:12.5, V4:35,   V5:55,   R1:75,  R3:92.5, R5:97.5, R6:97.5},
+  S:  {V1_V3:15,   V4:35,   V5:55,   R1:75,  R3:92.5, R5:97.5, R6:97.5},
+  B:  {V1_V3:7.5,  V4:25,   V5:45,   R1:65,  R3:87.5, R5:97.5, R6:97.5},
+  Cu: {V1_V3:7.5,  V4:25,   V5:45,   R1:65,  R3:87.5, R5:97.5, R6:97.5},
+  Fe: {V1_V3:7.5,  V4:25,   V5:45,   R1:65,  R3:87.5, R5:97.5, R6:97.5},
+  Mn: {V1_V3:7.5,  V4:25,   V5:45,   R1:65,  R3:87.5, R5:97.5, R6:97.5},
+  Zn: {V1_V3:7.5,  V4:25,   V5:45,   R1:65,  R3:87.5, R5:97.5, R6:97.5},
+};
+
+const MACRO_NUTRIENTS = ['N','P','K','Ca','Mg','S'];
+const MICRO_NUTRIENTS = ['B','Cu','Fe','Mn','Zn'];
+
+const NUTRIENT_META = {
+  N:  {name:'Nitrogênio',    unit:'kg/ton', color:'#007AFF', sub:'N'},
+  P:  {name:'Fósforo',       unit:'kg/ton', color:'#34C759', sub:'P₂O₅'},
+  K:  {name:'Potássio',      unit:'kg/ton', color:'#FF9500', sub:'K₂O'},
+  Ca: {name:'Cálcio',        unit:'kg/ton', color:'#FF6B35', sub:'Ca'},
+  Mg: {name:'Magnésio',      unit:'kg/ton', color:'#AF52DE', sub:'Mg'},
+  S:  {name:'Enxofre',       unit:'kg/ton', color:'#FFD60A', sub:'S'},
+  B:  {name:'Boro',          unit:'g/ton',  color:'#32ADE6', sub:'B'},
+  Cu: {name:'Cobre',         unit:'g/ton',  color:'#FF7F50', sub:'Cu'},
+  Fe: {name:'Ferro',         unit:'g/ton',  color:'#AC8E68', sub:'Fe'},
+  Mn: {name:'Manganês',      unit:'g/ton',  color:'#636366', sub:'Mn'},
+  Zn: {name:'Zinco',         unit:'g/ton',  color:'#30B0C7', sub:'Zn'},
+};
+
+const SOURCES = {
+  Autores: {
+    'Araújo (2023)':              {Exportação:{N:41.36,P:3.40, K:9.93, Ca:0.60,Mg:0.86,S:1.28, B:12.38,Cu:4.32, Fe:8.93,  Mn:4.28, Zn:15.64}, Extração:{N:59.94,P:5.23, K:18.74,Ca:2.39,Mg:2.70,S:2.98, B:32.58,Cu:8.63, Fe:44.67, Mn:21.41,Zn:31.28}},
+    'Santos et al. (2008)':       {Exportação:{N:46.62,P:2.61, K:10.52,Ca:0.74,Mg:0.75,S:0.89, B:9.11, Cu:27.39,Fe:29.81, Mn:5.86, Zn:27.28}, Extração:{N:67.57,P:4.02, K:19.84,Ca:3.30,Mg:2.81,S:2.06, B:23.09,Cu:52.98,Fe:149.08,Mn:30.85,Zn:53.38}},
+    'EMBRAPA':                    {Exportação:{N:83.00,P:8.40, K:25.00,Ca:13.5,Mg:7.30,S:9.00, B:0,    Cu:0,    Fe:0,     Mn:0,    Zn:0},    Extração:{N:51.00,P:1.00, K:2.00, Ca:3.10,Mg:2.00,S:5.00, B:2,    Cu:1,    Fe:7,     Mn:3,    Zn:4}},
+    'Bataglia & Mascarenhas (1977)':{Exportação:{N:76.00,P:5.70,K:32.00,Ca:1.90,Mg:2.90,S:3.10, B:77.00,Cu:26.00,Fe:46.00, Mn:13.00,Zn:61.00}, Extração:{N:64.00,P:4.70, K:18.00,Ca:11.6,Mg:6.70,S:0,   B:24.00,Cu:14.00,Fe:115.00,Mn:43.00,Zn:43.00}},
+    'Tanaka et al. (1994)':       {Exportação:{N:82.00,P:7.50, K:24.00,Ca:12.0,Mg:7.20,S:15.00,B:0,    Cu:0,    Fe:0,     Mn:0,    Zn:0},    Extração:{N:51.00,P:5.00, K:17.00,Ca:2.80,Mg:2.00,S:5.00, B:2,    Cu:1,    Fe:218,   Mn:3,    Zn:4}},
+  },
+  Guidorizzi: {
+    'Enlist':        {Exportação:{N:53.9, P:9.3,  K:19.1, Ca:2.2, Mg:2.5, S:6.7,  B:37.3, Cu:10.9,Fe:122.3, Mn:14.1, Zn:46.5},  Extração:{N:142.9,P:31.9,K:120.8,Ca:35.8,Mg:13.6,S:17.9,B:163.9,Cu:37.5,Fe:726.3, Mn:195.4,Zn:159.7}},
+    'Xtend':         {Exportação:{N:55.1, P:10.9, K:19.6, Ca:2.3, Mg:2.5, S:8.6,  B:38.7, Cu:12.7,Fe:246.7, Mn:14.3, Zn:44.8},  Extração:{N:179.9,P:36.4,K:127.6,Ca:61.1,Mg:18.9,S:27.3,B:179.8,Cu:42.6,Fe:1106.9,Mn:309.9,Zn:178.5}},
+    'Roundup Ready': {Exportação:{N:55.6, P:9.3,  K:20.6, Ca:2.1, Mg:2.6, S:8.3,  B:34.6, Cu:11.0,Fe:123.1, Mn:15.7, Zn:43.8},  Extração:{N:145.8,P:29.4,K:106.9,Ca:43.5,Mg:14.7,S:22.2,B:160.1,Cu:32.8,Fe:673.9, Mn:198.4,Zn:140.1}},
+  },
+  Cultivar: {
+    '73i75RSF':         {Exportação:{N:57.2,P:5.5,K:19.0,Ca:2.2,Mg:2.9,S:2.9,B:3.9,  Cu:9.7, Fe:31.1,  Mn:2.5,  Zn:31.6}, Extração:{N:82.9, P:8.46,K:35.85,Ca:8.8, Mg:9.06,S:6.74,B:10.26,Cu:19.4,Fe:155.5, Mn:12.5,  Zn:63.2}},
+    'AS3595i2x':        {Exportação:{N:66.9,P:5.7,K:19.2,Ca:3.0,Mg:3.3,S:3.1,B:35.4, Cu:1.0, Fe:34.5,  Mn:22.7, Zn:35.1}, Extração:{N:96.96,P:8.77,K:36.23,Ca:12.0,Mg:10.3,S:7.21,B:93.16,Cu:2.0, Fe:172.5, Mn:113.5, Zn:70.2}},
+    'DM 74K75':         {Exportação:{N:63.2,P:4.7,K:19.2,Ca:2.2,Mg:2.4,S:3.0,B:35.3, Cu:7.6, Fe:36.7,  Mn:19.8, Zn:26.7}, Extração:{N:91.59,P:7.23,K:36.23,Ca:8.8, Mg:7.5, S:6.98,B:92.89,Cu:15.2,Fe:183.5, Mn:99.0,  Zn:53.4}},
+    'Olimpo 80182 RFS': {Exportação:{N:63.2,P:4.6,K:18.4,Ca:2.6,Mg:2.9,S:2.6,B:35.3, Cu:8.8, Fe:37.9,  Mn:19.9, Zn:26.3}, Extração:{N:91.59,P:7.08,K:34.72,Ca:10.4,Mg:9.06,S:6.05,B:92.89,Cu:17.6,Fe:189.5, Mn:99.5,  Zn:52.6}},
+    'NEOGEN 71E':       {Exportação:{N:59.2,P:5.4,K:17.8,Ca:2.2,Mg:2.8,S:3.0,B:28.6, Cu:9.0, Fe:143.1, Mn:19.0, Zn:29.0}, Extração:{N:85.8, P:8.31,K:33.58,Ca:8.8, Mg:8.75,S:6.98,B:75.26,Cu:18.0,Fe:715.5, Mn:95.0,  Zn:58.0}},
+    'M6110 i2x':        {Exportação:{N:57.3,P:5.6,K:18.5,Ca:2.2,Mg:2.5,S:2.9,B:31.4, Cu:9.6, Fe:56.6,  Mn:22.0, Zn:33.1}, Extração:{N:83.04,P:8.62,K:34.91,Ca:8.8, Mg:7.81,S:6.74,B:82.63,Cu:19.2,Fe:283.0, Mn:110.0, Zn:66.2}},
+  }
+};
+
+// ── STATE ──────────────────────────────────────────────────────
+let currentSeg = 'macro';
+let expandedCard = null;
+
+// ── TAB INDICATOR ─────────────────────────────────────────────
+function positionIndicator(tabEl) {
+  const indicator = document.getElementById('tabIndicator');
+  indicator.style.left = tabEl.offsetLeft + 'px';
+  indicator.style.width = tabEl.offsetWidth + 'px';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  const tabEl = document.querySelector(`[data-tab="${tab}"]`);
+  tabEl.classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  positionIndicator(tabEl);
+}
+
+// ── BOTTOM NAV ────────────────────────────────────────────────
+function switchNav(item) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// ── SOURCE SELECTS ────────────────────────────────────────────
+function onSourceTypeChange() {
+  const type = document.getElementById('sourceType').value;
+  const label = {Autores:'Autor', Guidorizzi:'Tecnologia', Cultivar:'Cultivar'};
+  document.getElementById('sourceLabel').textContent = label[type];
+  const sel = document.getElementById('sourceName');
+  sel.innerHTML = '';
+  Object.keys(SOURCES[type]).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+  renderCards();
+}
+
+// ── SEG CONTROL ───────────────────────────────────────────────
+function switchSeg(seg) {
+  currentSeg = seg;
+  document.getElementById('seg-macro').classList.toggle('active', seg === 'macro');
+  document.getElementById('seg-micro').classList.toggle('active', seg === 'micro');
+  expandedCard = null;
+  renderCards();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function calcTotal(baseVal, yieldTons, isMicro) {
+  const perTon = isMicro ? baseVal / 1000 : baseVal;
+  const totalKg = perTon * yieldTons;
+  if (totalKg < 1) return { val: (totalKg * 1000).toFixed(1), unit: 'g/ha' };
+  return { val: totalKg.toFixed(1), unit: 'kg/ha' };
+}
+
+function getMaxVal(nutrients, data, dataType, yieldTons) {
+  return Math.max(...nutrients.map(n => {
+    const base = data[dataType][n] || 0;
+    const micro = !MACRO_NUTRIENTS.includes(n);
+    return micro ? (base / 1000) * yieldTons : base * yieldTons;
+  }));
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderCards() {
+  const type    = document.getElementById('sourceType').value;
+  const name    = document.getElementById('sourceName').value;
+  const dtype   = document.getElementById('dataType').value;
+  const yld     = parseFloat(document.getElementById('yieldInput').value) || 4.2;
+  const data    = SOURCES[type]?.[name];
+  if (!data) return;
+
+  const nutrients = currentSeg === 'macro' ? MACRO_NUTRIENTS : MICRO_NUTRIENTS;
+
+  // HERO
+  document.getElementById('heroSource').textContent = name;
+  const heroNuts = currentSeg === 'macro'
+    ? ['N','P','K']
+    : ['B','Fe','Zn'];
+  const heroHTML = heroNuts.map(n => {
+    const base = data[dtype][n] || 0;
+    const micro = !MACRO_NUTRIENTS.includes(n);
+    const r = calcTotal(base, yld, micro);
+    return `<div class="hero-stat">
+      <div class="hero-stat-val">${r.val}</div>
+      <div class="hero-stat-lbl">${n} · ${r.unit}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('heroStats').innerHTML = heroHTML;
+
+  // CARDS
+  const maxExtVal = getMaxVal(nutrients, data, dtype, yld);
+
+  const grid = document.getElementById('nutrientGrid');
+  grid.innerHTML = '';
+
+  nutrients.forEach(n => {
+    const meta   = NUTRIENT_META[n];
+    const base   = data[dtype][n] || 0;
+    const micro  = !MACRO_NUTRIENTS.includes(n);
+    const totalKg = micro ? (base / 1000) * yld : base * yld;
+    const unit   = totalKg < 1 ? 'g/ha' : 'kg/ha';
+    const dispVal = totalKg < 1 ? (totalKg * 1000).toFixed(1) : totalKg.toFixed(1);
+    const barPct = maxExtVal > 0 ? (totalKg / maxExtVal) * 100 : 0;
+    const isExp = expandedCard === n;
+
+    // per-ton display
+    const perTonDisp = micro
+      ? (base > 0 ? base.toFixed(1) + ' g/ton' : '—')
+      : (base > 0 ? base.toFixed(2) + ' kg/ton' : '—');
+
+    // Stage mini bars
+    const stages = ['V1_V3','V4','V5','R1','R3','R5','R6'];
+    const stageLabels = ['V1','V4','V5','R1','R3','R5','R6'];
+    const stagePcts = stages.map((s,i) => {
+      const cum = ABSORPTION_PCT[n]?.[s] ?? 0;
+      const prev = i > 0 ? (ABSORPTION_PCT[n]?.[stages[i-1]] ?? 0) : 0;
+      return cum - prev;
+    });
+    const maxStagePct = Math.max(...stagePcts);
+
+    const stageBarsHTML = stages.map((s, i) => {
+      const pct = stagePcts[i];
+      const h = maxStagePct > 0 ? Math.round((pct / maxStagePct) * 28) : 2;
+      return `<div class="stage-col">
+        <div class="stage-name">${stageLabels[i]}</div>
+        <div class="stage-mini-bar">
+          <div class="stage-bar-inner" style="height:${h}px;background:${meta.color};opacity:0.75;"></div>
+        </div>
+        <div class="stage-pct">${pct.toFixed(0)}%</div>
+      </div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'nutrient-card' + (isExp ? ' expanded' : '');
+    card.innerHTML = `
+      <div class="card-accent" style="background:${meta.color};"></div>
+      <div class="card-header" onclick="toggleCard('${n}')">
+        <div class="nutrient-symbol">${meta.sub}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:var(--text1);letter-spacing:-0.2px;">${dispVal} <span style="font-size:11px;font-weight:500;color:var(--text2);">${unit}</span></div>
+          <div class="nutrient-name">${meta.name} · ${perTonDisp}</div>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </div>
+      <div class="bar-section">
+        <div class="bar-row">
+          <span class="bar-label">${dtype === 'Exportação' ? 'Exportação' : 'Extração'}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${barPct.toFixed(1)}%;background:${meta.color};"></div>
+          </div>
+          <span class="bar-value" style="color:${meta.color};">${base > 0 ? base.toFixed(2) : '—'}</span>
+        </div>
+      </div>
+      <div class="card-detail">
+        <div class="stage-title">Absorção por estádio fenológico</div>
+        <div class="stage-row">${stageBarsHTML}</div>
+        <div class="index-row">
+          <div class="index-badge">
+            <div class="index-badge-label">Por tonelada</div>
+            <div class="index-badge-value">${perTonDisp}</div>
+          </div>
+          <div class="index-badge">
+            <div class="index-badge-label">Total ${yld}t</div>
+            <div class="index-badge-value">${dispVal} ${unit}</div>
+          </div>
+          <div class="index-badge">
+            <div class="index-badge-label">Pico</div>
+            <div class="index-badge-value">${dtype === 'Exportação' ? 'R5–R6' : 'R3–R5'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function toggleCard(nutrient) {
+  expandedCard = expandedCard === nutrient ? null : nutrient;
+  renderCards();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Position tab indicator on active tab
+  const activeTab = document.querySelector('.tab-item.active');
+  if (activeTab) {
+    requestAnimationFrame(() => positionIndicator(activeTab));
+  }
+  onSourceTypeChange();
+});
+
+window.addEventListener('resize', () => {
+  const activeTab = document.querySelector('.tab-item.active');
+  if (activeTab) positionIndicator(activeTab);
+});
+</script>
+</body>
+</html>

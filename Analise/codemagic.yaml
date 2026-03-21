@@ -1,0 +1,38 @@
+workflows:
+  ios-testflight:
+    name: SoloForte iOS TestFlight Build
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials # Environment variables via Codemagic dashboard
+    scripts:
+      - name: Instalar dependências
+        script: flutter pub get
+      - name: Gerar arquivos de código (Freezed/Riverpod)
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Verificar integridade do código
+        script: flutter analyze
+      - name: Rodar suíte de testes
+        script: flutter test
+      - name: Build iOS Release
+        script: |
+          flutter build ios --release --no-codesign
+          xcodebuild archive -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/Runner.xcarchive \
+            -allowProvisioningUpdates \
+            -IDECustomDerivedDataLocation=build/ios/DerivedData \
+            COMPILER_INDEX_STORE_ENABLE=NO
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      app_store_connect:
+        auth:
+          integration: apple_developer_portal
+        submit_to_testflight: true

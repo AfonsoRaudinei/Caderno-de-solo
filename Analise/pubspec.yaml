@@ -1,0 +1,80 @@
+name: soloforte
+description: App profissional de análise e recomendação de fertilidade de solo.
+version: 1.0.1+15
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ─── NAVEGAÇÃO ─────────────────────────────────────────────
+  go_router: ^13.0.0
+
+  # ─── GERÊNCIA DE ESTADO ────────────────────────────────────
+  flutter_riverpod: ^2.5.0
+  riverpod_annotation: ^2.3.0
+
+  # ─── MODELOS IMUTÁVEIS ──────────────────────────────────────
+  freezed_annotation: ^2.4.0
+  json_annotation: ^4.9.0
+
+  # ─── REDE ───────────────────────────────────────────────────
+  dio: ^5.4.0
+
+  # ─── CACHE LOCAL ────────────────────────────────────────────
+  hive_flutter: ^1.1.0
+
+  # ─── AUTENTICAÇÃO SEGURA ────────────────────────────────────
+  flutter_secure_storage: ^9.0.0
+
+  # ─── UI / VISUAL iOS ────────────────────────────────────────
+  cupertino_icons: ^1.0.8
+  flutter_animate: ^4.5.0
+  flutter_markdown: ^0.7.3
+
+  # ─── FORMULÁRIOS ────────────────────────────────────────────
+  flutter_hooks: ^0.20.0
+
+  # ─── LOCALIZAÇÃO (GPS) ──────────────────────────────────────
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+
+  # ─── FIREBASE ───────────────────────────────────────────────
+  firebase_core: ^4.5.0
+  cloud_firestore: ^6.1.3
+  firebase_auth: ^6.2.0
+  firebase_storage: ^13.1.0
+  image_picker: ^1.1.2
+
+  # ─── UTILITÁRIOS ────────────────────────────────────────────
+  intl: ^0.20.2
+  uuid: ^4.3.0
+  equatable: ^2.0.5
+  hooks_riverpod: ^2.6.1
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # ─── GERAÇÃO DE CÓDIGO ──────────────────────────────────────
+  build_runner: ^2.4.0
+  freezed: ^2.5.0
+  json_serializable: ^6.7.0
+  riverpod_generator: ^2.3.0
+
+  # ─── QUALIDADE ──────────────────────────────────────────────
+  flutter_lints: ^4.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - "PROMPT/dados referencias/"

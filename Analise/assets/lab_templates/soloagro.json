@@ -1,0 +1,9 @@
+{
+  "lab": "Soloagro",
+  "mapeamento": {
+    "ph_agua":   { "pagina": 1, "regex": "pH em água\\s*([\\d.]+)" },
+    "ph_cacl2":  { "pagina": 1, "regex": "pH CaCl2\\s*([\\d.]+)" },
+    "fosforo_p": { "pagina": 1, "regex": "P\\s+([\\d.]+)\\s+mg" },
+    "potassio_k":{ "pagina": 1, "regex": "K\\s+([\\d.]+)\\s+cmolc" }
+  }
+}

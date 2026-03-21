@@ -1,0 +1,83 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'analise_solo.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$AnaliseSoloImpl _$$AnaliseSoloImplFromJson(Map<String, dynamic> json) =>
+    _$AnaliseSoloImpl(
+      id: json['id'] as String,
+      clienteNome: json['clienteNome'] as String? ?? '',
+      fazendaNome: json['fazendaNome'] as String? ?? '',
+      talhaoNome: json['talhaoNome'] as String? ?? '',
+      cultura: json['cultura'] as String? ?? '',
+      laboratorio: json['laboratorio'] as String? ?? '',
+      data: json['data'] as String?,
+      pH: (json['pH'] as num?)?.toDouble() ?? 0.0,
+      phAgua: (json['phAgua'] as num?)?.toDouble() ?? 0.0,
+      phSmp: (json['phSmp'] as num?)?.toDouble() ?? 0.0,
+      MO: (json['MO'] as num?)?.toDouble() ?? 0.0,
+      Ca: (json['Ca'] as num?)?.toDouble() ?? 0.0,
+      Mg: (json['Mg'] as num?)?.toDouble() ?? 0.0,
+      K: (json['K'] as num?)?.toDouble() ?? 0.0,
+      HAl: (json['HAl'] as num?)?.toDouble() ?? 0.0,
+      Al: (json['Al'] as num?)?.toDouble() ?? 0.0,
+      P: (json['P'] as num?)?.toDouble() ?? 0.0,
+      Prem: (json['Prem'] as num?)?.toDouble(),
+      extrator: json['extrator'] as String? ?? 'Resina',
+      argila: (json['argila'] as num?)?.toDouble() ?? 0.0,
+      S: (json['S'] as num?)?.toDouble() ?? 0.0,
+      B: (json['B'] as num?)?.toDouble() ?? 0.0,
+      Cu: (json['Cu'] as num?)?.toDouble() ?? 0.0,
+      Fe: (json['Fe'] as num?)?.toDouble() ?? 0.0,
+      Mn: (json['Mn'] as num?)?.toDouble() ?? 0.0,
+      Zn: (json['Zn'] as num?)?.toDouble() ?? 0.0,
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      endereco: json['endereco'] as String? ?? '',
+      SB: (json['SB'] as num?)?.toDouble() ?? 0.0,
+      CTC: (json['CTC'] as num?)?.toDouble() ?? 0.0,
+      Vat: (json['Vat'] as num?)?.toDouble() ?? 0.0,
+      mat: (json['mat'] as num?)?.toDouble() ?? 0.0,
+      Y: (json['Y'] as num?)?.toDouble() ?? 0.0,
+    );
+
+Map<String, dynamic> _$$AnaliseSoloImplToJson(_$AnaliseSoloImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'clienteNome': instance.clienteNome,
+      'fazendaNome': instance.fazendaNome,
+      'talhaoNome': instance.talhaoNome,
+      'cultura': instance.cultura,
+      'laboratorio': instance.laboratorio,
+      'data': instance.data,
+      'pH': instance.pH,
+      'phAgua': instance.phAgua,
+      'phSmp': instance.phSmp,
+      'MO': instance.MO,
+      'Ca': instance.Ca,
+      'Mg': instance.Mg,
+      'K': instance.K,
+      'HAl': instance.HAl,
+      'Al': instance.Al,
+      'P': instance.P,
+      'Prem': instance.Prem,
+      'extrator': instance.extrator,
+      'argila': instance.argila,
+      'S': instance.S,
+      'B': instance.B,
+      'Cu': instance.Cu,
+      'Fe': instance.Fe,
+      'Mn': instance.Mn,
+      'Zn': instance.Zn,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
+      'endereco': instance.endereco,
+      'SB': instance.SB,
+      'CTC': instance.CTC,
+      'Vat': instance.Vat,
+      'mat': instance.mat,
+      'Y': instance.Y,
+    };

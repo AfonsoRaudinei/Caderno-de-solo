@@ -1,0 +1,101 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:soloforte/domain/entities/analise_entity.dart';
+import 'package:soloforte/domain/entities/calibracao_entity.dart';
+
+final List<AnaliseEntity> _mockAnalises = [
+  const AnaliseEntity(
+    id: 'A001',
+    nome: 'Análise Talhão Norte',
+    consultor: 'Eng. Bom Silva',
+    fazenda: 'Fazenda São João',
+    talhao: 'Talhão Norte — 48 ha',
+    localizacao: 'Ribeirão Preto / SP',
+    cultura: 'Soja',
+    ph: 5.2,
+    mo: 24,
+    p: 16,
+    k: 2.4,
+    ca: 17,
+    mg: 7,
+    hAl: 34,
+    al: 1,
+    s: 6,
+    b: 0.23,
+    cu: 0.4,
+    fe: 25,
+    mn: 4.0,
+    zn: 1.4,
+    sb: 26.4,
+    ctc: 60.4,
+    vPercent: 47.3,
+    argila: 28,
+  ),
+  const AnaliseEntity(
+    id: 'A002',
+    nome: 'Análise Talhão Sul',
+    consultor: 'Eng. Bom Silva',
+    fazenda: 'Fazenda São João',
+    talhao: 'Talhão Sul — 32 ha',
+    localizacao: 'Ribeirão Preto / SP',
+    cultura: 'Soja',
+    ph: 5.8,
+    mo: 28,
+    p: 22,
+    k: 3.1,
+    ca: 22,
+    mg: 9,
+    hAl: 28,
+    al: 0,
+    s: 8,
+    b: 0.31,
+    cu: 0.6,
+    fe: 20,
+    mn: 5.2,
+    zn: 1.8,
+    sb: 34.1,
+    ctc: 62.1,
+    vPercent: 55.0,
+    argila: 32,
+  ),
+];
+
+final List<CalibracaoEntity> _mockCalibracoes = [
+  const CalibracaoEntity(
+    id: 'C001',
+    nomePerfil: 'Soja — Cerrado SP',
+    metodoCalagemSelecionado: 'Saturação de Bases (V%)',
+    referenciaCalagemSelecionada: '01 — Calagem: Motor de Cálculo',
+    estadoSelecionado: 'SP',
+    tipoSoloSelecionado: 'Latossolo Vermelho',
+    metodoGessagemSelecionado: 'Critério ESALQ (Vitti et al., 2004)',
+    referenciaGessagemSelecionada: 'ESALQ/USP',
+    metodoPosforoSelecionado: 'Resina (IAC)',
+    referenciaPosforoSelecionada: 'IAC/SP — Boletim 100',
+    metodoKaliumSelecionado: 'Saturação de K na CTC (K/CTC %)',
+    referenciaKaliumSelecionada: 'ESALQ/USP — Fancelli',
+    metodoMicroSelecionado: 'DTPA-TEA (Zn, Cu, Fe, Mn)',
+    referenciaMicroSelecionada: 'ESALQ/USP',
+  ),
+  const CalibracaoEntity(
+    id: 'C002',
+    nomePerfil: 'Milho — Alta Produtividade',
+    metodoCalagemSelecionado: 'Neutralização do Alumínio (Al³⁺)',
+    referenciaCalagemSelecionada: '01 — Calagem: Motor de Cálculo',
+    estadoSelecionado: 'MT',
+    tipoSoloSelecionado: 'Latossolo Vermelho-Amarelo',
+    metodoGessagemSelecionado: 'Critério EMBRAPA (Souza et al., 2004)',
+    referenciaGessagemSelecionada: 'EMBRAPA Soja',
+    metodoPosforoSelecionado: 'Mehlich-1 (Duplo Ácido)',
+    referenciaPosforoSelecionada: 'EMBRAPA Soja',
+    metodoKaliumSelecionado: 'Teor absoluto (mmolc/dm³)',
+    referenciaKaliumSelecionada: 'EMBRAPA Soja',
+    metodoMicroSelecionado: 'DTPA-TEA (Zn, Cu, Fe, Mn)',
+    referenciaMicroSelecionada: 'EMBRAPA Soja',
+  ),
+];
+
+final analisesProvider =
+    StateProvider<List<AnaliseEntity>>((ref) => _mockAnalises);
+
+final calibracoesProvider =
+    StateProvider<List<CalibracaoEntity>>((ref) => _mockCalibracoes);
