@@ -1,0 +1,58 @@
+workflows:
+  ios-testflight:
+    name: SoloForte iOS TestFlight Build
+    instance_type: mac_mini_m1
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials # Environment variables via Codemagic dashboard
+    scripts:
+      - name: Instalar dependências
+        script: cd Analise && flutter pub get
+      - name: Gerar arquivos de código (Freezed/Riverpod)
+        script: cd Analise && dart run build_runner build --delete-conflicting-outputs
+      - name: Verificar integridade do código
+        script: cd Analise && flutter analyze
+      - name: Rodar suíte de testes
+        script: cd Analise && flutter test
+      - name: Build iOS Release
+        script: |
+          cd Analise
+
+          # Garante build number/name conforme `pubspec.yaml`.
+          PUBSPEC_VERSION_LINE="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n 1)"
+          if [ -z "${PUBSPEC_VERSION_LINE}" ]; then
+            echo "Não foi possível ler 'version:' do pubspec.yaml"
+            exit 1
+          fi
+          BUILD_NAME="${PUBSPEC_VERSION_LINE%%+*}"
+          BUILD_NUMBER="${PUBSPEC_VERSION_LINE##*+}"
+          echo "pubspec version=${PUBSPEC_VERSION_LINE} (build_name=${BUILD_NAME}, build_number=${BUILD_NUMBER})"
+
+          flutter build ios --release --no-codesign --build-name="${BUILD_NAME}" --build-number="${BUILD_NUMBER}"
+
+          xcodebuild archive -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/Runner.xcarchive \
+            -allowProvisioningUpdates \
+            -IDECustomDerivedDataLocation=build/ios/DerivedData \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            FLUTTER_BUILD_NAME="${BUILD_NAME}" \
+            FLUTTER_BUILD_NUMBER="${BUILD_NUMBER}"
+
+          echo "Built CFBundleVersion in archive: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' build/ios/Runner.xcarchive/Products/Applications/Runner.app/Info.plist)"
+          echo "Built CFBundleShortVersionString in archive: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/ios/Runner.xcarchive/Products/Applications/Runner.app/Info.plist)"
+    artifacts:
+      - Analise/build/ios/ipa/*.ipa
+      - Analise/coverage/lcov.info
+      - Analise/test/failures/**
+      - /tmp/xcodebuild_logs/*.log
+      - Analise/flutter_drive.log
+    publishing:
+      app_store_connect:
+        auth:
+          integration: apple_developer_portal
+        submit_to_testflight: true
