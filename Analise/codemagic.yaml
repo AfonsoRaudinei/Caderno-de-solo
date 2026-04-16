@@ -19,14 +19,26 @@ workflows:
         script: flutter test
       - name: Build iOS Release
         script: |
-          flutter build ios --release --no-codesign
+          # Garante build number/name conforme `pubspec.yaml` (evita IPA sair com build antigo por override externo).
+          PUBSPEC_VERSION_LINE="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n 1)"
+          if [ -z "${PUBSPEC_VERSION_LINE}" ]; then
+            echo "Não foi possível ler 'version:' do pubspec.yaml"
+            exit 1
+          fi
+          BUILD_NAME="${PUBSPEC_VERSION_LINE%%+*}"
+          BUILD_NUMBER="${PUBSPEC_VERSION_LINE##*+}"
+          echo "pubspec version=${PUBSPEC_VERSION_LINE} (build_name=${BUILD_NAME}, build_number=${BUILD_NUMBER})"
+
+          flutter build ios --release --no-codesign --build-name="${BUILD_NAME}" --build-number="${BUILD_NUMBER}"
           xcodebuild archive -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -archivePath build/ios/Runner.xcarchive \
             -allowProvisioningUpdates \
             -IDECustomDerivedDataLocation=build/ios/DerivedData \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            FLUTTER_BUILD_NAME="${BUILD_NAME}" \
+            FLUTTER_BUILD_NUMBER="${BUILD_NUMBER}"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
