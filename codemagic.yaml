@@ -24,13 +24,14 @@ workflows:
           # Garante build number/name conforme `pubspec.yaml`.
           PUBSPEC_VERSION_LINE="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n 1)"
           if [ -z "${PUBSPEC_VERSION_LINE}" ]; then
-            echo "Não foi possível ler 'version:' do pubspec.yaml"
+            echo "Nao foi possivel ler 'version:' do pubspec.yaml"
             exit 1
           fi
           BUILD_NAME="${PUBSPEC_VERSION_LINE%%+*}"
           BUILD_NUMBER="${PUBSPEC_VERSION_LINE##*+}"
           echo "pubspec version=${PUBSPEC_VERSION_LINE} (build_name=${BUILD_NAME}, build_number=${BUILD_NUMBER})"
 
+          flutter clean
           flutter build ios --release --no-codesign --build-name="${BUILD_NAME}" --build-number="${BUILD_NUMBER}"
 
           xcodebuild archive -workspace ios/Runner.xcworkspace \
@@ -40,11 +41,19 @@ workflows:
             -allowProvisioningUpdates \
             -IDECustomDerivedDataLocation=build/ios/DerivedData \
             COMPILER_INDEX_STORE_ENABLE=NO \
+            CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
+            MARKETING_VERSION="${BUILD_NAME}" \
             FLUTTER_BUILD_NAME="${BUILD_NAME}" \
             FLUTTER_BUILD_NUMBER="${BUILD_NUMBER}"
 
-          echo "Built CFBundleVersion in archive: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' build/ios/Runner.xcarchive/Products/Applications/Runner.app/Info.plist)"
-          echo "Built CFBundleShortVersionString in archive: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/ios/Runner.xcarchive/Products/Applications/Runner.app/Info.plist)"
+          ACTUAL_BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' build/ios/Runner.xcarchive/Products/Applications/Runner.app/Info.plist)"
+          ACTUAL_BUILD_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/ios/Runner.xcarchive/Products/Applications/Runner.app/Info.plist)"
+          echo "Built CFBundleVersion in archive: ${ACTUAL_BUILD_NUMBER}"
+          echo "Built CFBundleShortVersionString in archive: ${ACTUAL_BUILD_NAME}"
+          if [ "${ACTUAL_BUILD_NUMBER}" != "${BUILD_NUMBER}" ]; then
+            echo "ERRO: CFBundleVersion final (${ACTUAL_BUILD_NUMBER}) difere do esperado (${BUILD_NUMBER})."
+            exit 1
+          fi
     artifacts:
       - Analise/build/ios/ipa/*.ipa
       - Analise/coverage/lcov.info
