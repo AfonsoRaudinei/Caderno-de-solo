@@ -11,6 +11,7 @@ class CalibracaoProfile {
     required this.parametrosCards,
     required this.createdAt,
     required this.updatedAt,
+    this.produtividadeEsperadaTha,
   });
 
   final String id;
@@ -25,6 +26,10 @@ class CalibracaoProfile {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Produtividade esperada em t/ha. Null = não configurado.
+  /// A UI pode exibir em sacas/ha (1 t = 16.667 sc) mas persiste sempre em t/ha.
+  final double? produtividadeEsperadaTha;
+
   CalibracaoProfile copyWith({
     String? id,
     String? nome,
@@ -37,6 +42,7 @@ class CalibracaoProfile {
     Map<String, dynamic>? parametrosCards,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? produtividadeEsperadaTha,
   }) {
     return CalibracaoProfile(
       id: id ?? this.id,
@@ -50,6 +56,8 @@ class CalibracaoProfile {
       parametrosCards: parametrosCards ?? this.parametrosCards,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      produtividadeEsperadaTha:
+          produtividadeEsperadaTha ?? this.produtividadeEsperadaTha,
     );
   }
 
@@ -66,6 +74,7 @@ class CalibracaoProfile {
       'parametrosCards': parametrosCards,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'produtividadeEsperadaTha': produtividadeEsperadaTha,
     };
   }
 
@@ -84,6 +93,8 @@ class CalibracaoProfile {
       ),
       createdAt: _parseDate(json['createdAt']),
       updatedAt: _parseDate(json['updatedAt']),
+      produtividadeEsperadaTha:
+          (json['produtividadeEsperadaTha'] as num?)?.toDouble(),
     );
   }
 

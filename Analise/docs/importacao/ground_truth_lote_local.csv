@@ -1,0 +1,25 @@
+arquivo_pdf,lab_esperado,amostras_esperadas,status_validacao_manual,perfil_qualidade
+José Augusto Miranda - Faz Santo Antônio- 54215 - 54217.pdf,sellar,3,validado,bom
+sellar_gt_01.pdf,sellar,3,validado,medio
+sellar_gt_02.pdf,sellar,3,validado,ruim
+sellar_gt_03.pdf,sellar,3,validado,bom
+sellar_gt_04.pdf,sellar,3,validado,medio
+sellar_gt_05.pdf,sellar,3,validado,ruim
+Relatorio_SBA24.99401_a_SBA24.99412_JOSEAUGUSTOMIRANDA_SANTAMARIA-ROSALANDIA_TO-JOSEAUGUSTOMIRANDA_.pdf,exata_brasil,12,validado,bom
+Relatorio_SBA24.124624_a_SBA24.124627_EDUARDOJOSEBRUXELDESA_SERROTE-NOVAROSALANDIA_TO-EDUARDOJOSEBRUXELDES_ - cópia.pdf,exata_brasil,4,validado,medio
+Relatorio_SBA24.124624_a_SBA24.124627_EDUARDOJOSEBRUXELDESA_SERROTE-NOVAROSALANDIATO-EDUARDOJOSEBRUXELDES_ - cópia.pdf,exata_brasil,4,validado,ruim
+Relatorio_SBA25.147266_a_SBA25.147293_ANDRELUIZ_MOEMA-ANDRELUISDESIQUEIRA_.pdf,exata_brasil,28,validado,bom
+Relatorio_SBA25.147294_a_SBA25.147312_ANDRELUIZ_MOEMA-ANDRELUISDESIQUEIRA_.pdf,exata_brasil,19,validado,medio
+Relatorio_SGO25.285594_a_SGO25.285599_JOSEAUGUSTOMIRANDA_BURITIRANA-PORTONACIONAL-TO-JOSEAUGUSTOMIRANDA_ - cópia.pdf,exata_brasil,6,validado,ruim
+FAZ. ESTRELA_Agrofarm___Produtos_Agroquimicos_Ltda_(RE_1.347325.1_-_OS_237526).pdf,ibra,14,validado,medio
+Agrofarm___Produtos_Agroquimicos_Ltda_(RE_1.347325.1_-_OS_237526).pdf,ibra,14,validado,ruim
+FAZ. SB II_Agrofarm___Produtos_Agroquimicos_Ltda___42638_(RE_1.344113.1_-_OS_235421).pdf,ibra,10,validado,bom
+ibra_gt_01.pdf,ibra,10,validado,bom
+ibra_gt_02.pdf,ibra,10,validado,medio
+ibra_gt_03.pdf,ibra,10,validado,ruim
+Laudo-1 (1).pdf,mb,1,validado,bom
+Laudo-3 (1).pdf,mb,1,validado,ruim
+mb_gt_01.pdf,mb,1,validado,bom
+mb_gt_02.pdf,mb,1,validado,medio
+mb_gt_03.pdf,mb,1,validado,ruim
+mb_gt_04.pdf,mb,1,validado,bom

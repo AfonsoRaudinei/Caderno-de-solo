@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"ios":{"default":{"projectId":"soloforte-106c8","appId":"1:398774255712:ios:e09f038303a816b72cc305","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"soloforte-106c8","configurations":{"ios":"1:398774255712:ios:e09f038303a816b72cc305"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "ios": {
+        "default": {
+          "projectId": "soloforte-106c8",
+          "appId": "1:398774255712:ios:e09f038303a816b72cc305",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "soloforte-106c8",
+          "configurations": {
+            "ios": "1:398774255712:ios:e09f038303a816b72cc305"
+          }
+        }
+      }
+    }
+  }
+}

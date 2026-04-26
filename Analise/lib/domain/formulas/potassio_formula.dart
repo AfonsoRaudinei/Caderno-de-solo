@@ -20,7 +20,8 @@ class PotassioFormula {
   static double kMgDm3ToCmolc(double kMgDm3) => kMgDm3 / 391.0;
 
   /// NC absoluto de K (mg/dm³) por textura.
-  static double nivelCriticoTeorAbsoluto(double argilaPercent) {
+  static double nivelCriticoTeorAbsoluto(double argilaPercent, {double? overrideValue}) {
+    if (overrideValue != null) return overrideValue;
     if (argilaPercent < 15) return 40.0;
     if (argilaPercent <= 35) return 60.0;
     if (argilaPercent <= 60) return 80.0;
@@ -28,7 +29,8 @@ class PotassioFormula {
   }
 
   /// FEK base por textura.
-  static double fekBase(double argilaPercent) {
+  static double fekBase(double argilaPercent, {double? overrideValue}) {
+    if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
       case 'arenoso':
@@ -46,10 +48,11 @@ class PotassioFormula {
   static double fekFinal({
     required double argilaPercent,
     required String cultura,
+    double? overrideValue,
   }) {
     final culturaNorm = cultura.trim().toLowerCase();
     if (culturaNorm == 'algodao' || culturaNorm == 'algodão') return 60.0;
-    return fekBase(argilaPercent);
+    return fekBase(argilaPercent, overrideValue: overrideValue);
   }
 
   /// Correção por teor absoluto (opcional).
@@ -57,13 +60,15 @@ class PotassioFormula {
     required double kAtualMgDm3,
     required double argilaPercent,
     double percentualCorrecao = 100.0,
+    double? ncOverride,
   }) {
-    final nc = nivelCriticoTeorAbsoluto(argilaPercent);
+    final nc = nivelCriticoTeorAbsoluto(argilaPercent, overrideValue: ncOverride);
     final deficitMgDm3 = (nc - kAtualMgDm3).clamp(0.0, double.infinity);
     if (deficitMgDm3 <= 0) return 0.0;
     final deficitCmolc = deficitMgDm3 / 391.0;
     return deficitCmolc * _fatorCmolcParaK2O * (percentualCorrecao / 100.0);
   }
+
 
   /// Calcula a recomendação de Potássio em kg/ha de K2O
   /// Para atingir a participação desejada na CTC
@@ -139,6 +144,9 @@ class PotassioFormula {
     required double ctc,
     required double mgAtual,
     required double caAtual,
+    double limiteKCtc = 7.0,
+    double limiteKMg = 1.0,
+    double limiteKCa = 0.4,
   }) {
     final pctKCTC = ctc > 0 ? (kTotal / ctc) * 100.0 : 0.0;
     final relKMg = mgAtual > 0 ? kTotal / mgAtual : 0.0;
@@ -147,9 +155,10 @@ class PotassioFormula {
       pctKCTC: pctKCTC,
       relKMg: relKMg,
       relKCa: relKCa,
-      avisoKCTC: pctKCTC > 7.0,
-      avisoKMg: relKMg > 1.0,
-      avisoKCa: relKCa > 0.4,
+      avisoKCTC: pctKCTC > limiteKCtc,
+      avisoKMg: relKMg > limiteKMg,
+      avisoKCa: relKCa > limiteKCa,
     );
   }
+
 }

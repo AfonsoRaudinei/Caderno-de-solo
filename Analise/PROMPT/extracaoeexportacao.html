@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absorção de Nutrientes em Soja</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #f0f2f0;
+            --surface: #ffffff;
+            --surface-secondary: #e8ece8;
+            --green-dark: #0d2818;
+            --green-mid: #1a4a2e;
+            --green-accent: #3dd68c;
+            --green-neon: #4ADE80;
+            --green-light: #e8f5ec;
+            --green-pale: #f0f7f2;
+            --text-primary: #0d2818;
+            --text-secondary: #4a6357;
+            --text-muted: #8fa89a;
+            --border: #dce8e0;
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --shadow: 0 1px 4px rgba(13,40,24,0.06), 0 4px 16px rgba(13,40,24,0.04);
+            --shadow-hover: 0 2px 8px rgba(13,40,24,0.08), 0 8px 24px rgba(13,40,24,0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            background-color: var(--bg);
+            padding: 2rem 1.5rem;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 1320px; margin: 0 auto; }
+
+        /* ── HEADER ────────────────────────────── */
+        .header {
+            background: var(--green-dark);
+            border-radius: var(--radius-xl);
+            padding: 2rem 2.5rem;
+            margin-bottom: 1.25rem;
+            display: grid;
+            grid-template-columns: 80px 1fr 80px;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-container, .qr-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+
+        .logo-container img,
+        .qr-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-placeholder {
+            font-size: 1.75rem;
+        }
+
+        .title-section { text-align: center; }
+
+        .author-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--green-accent);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 {
+            font-family: 'DM Serif Display', Georgia, serif;
+            font-size: clamp(1.4rem, 3vw, 2rem);
+            color: #ffffff;
+            font-weight: 400;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.4rem;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.45);
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        /* ── CARDS ─────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1.25rem;
+        }
+
+        h2 {
+            font-family: 'DM Serif Display', Georgia, serif;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            font-weight: 400;
+            margin-bottom: 1.25rem;
+            letter-spacing: -0.01em;
+        }
+
+        /* ── FILTERS ───────────────────────────── */
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .filter-group { }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.4rem;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            background: var(--green-pale);
+            border: 1.5px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238fa89a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            padding-right: 2.25rem;
+        }
+
+        select:hover, input[type="number"]:hover {
+            border-color: var(--green-accent);
+            background-color: var(--green-light);
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--green-neon);
+            background-color: var(--green-light);
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15);
+        }
+
+        option { background: #ffffff; color: var(--text-primary); }
+        optgroup { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; }
+
+        /* ── STATS GRID ────────────────────────── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem 1.5rem;
+            transition: box-shadow 0.18s ease, transform 0.18s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+        }
+
+        .stat-value {
+            font-family: 'DM Serif Display', Georgia, serif;
+            font-size: 1.9rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 0.35rem;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── LEGEND ────────────────────────────── */
+        .legend {
+            display: flex;
+            gap: 1.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 1.5rem;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* ── CHART ─────────────────────────────── */
+        .chart-container {
+            position: relative;
+            height: 360px;
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── INFO BOX ──────────────────────────── */
+        .info-box {
+            margin-top: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: start;
+            gap: 0.75rem;
+        }
+
+        .info-icon { font-size: 1rem; margin-top: 1px; }
+
+        .info-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .info-text {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ── TABLE ─────────────────────────────── */
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+        thead tr { border-bottom: 1.5px solid var(--border); }
+
+        th {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        th.right { text-align: right; }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: var(--green-pale); }
+
+        td { padding: 0.8rem 1rem; color: var(--text-primary); font-weight: 400; }
+        td.right { text-align: right; }
+
+        /* ── INDICES GRID ──────────────────────── */
+        .indices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+
+        .index-card {
+            padding: 0.75rem 1rem;
+            background: var(--green-pale);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .index-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.2rem;
+        }
+
+        .index-value {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--green-mid);
+        }
+
+        /* ── FOOTER ────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 400;
+        }
+
+        /* ── RESPONSIVE ────────────────────────── */
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .header {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 1rem;
+                padding: 1.5rem;
+            }
+            .logo-container, .qr-container { display: none; }
+            h1 { font-size: 1.3rem; }
+            .filters-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        }
+
+        @media (max-width: 500px) {
+            .filters-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo-container">
+            <img src="logo.png" alt="Logo" onerror="this.parentElement.innerHTML='<span class=\'logo-placeholder\'>🌱</span>'">
+        </div>
+        <div class="title-section">
+            <div class="author-name">Raudinei Afonso</div>
+            <h1>Absorção de Nutrientes em Soja</h1>
+            <p class="subtitle">Análise por Estádio Fenológico · Extração vs Exportação</p>
+        </div>
+        <div class="qr-container">
+            <img src="qrcode.png" alt="QR Code" onerror="this.parentElement.style.display='none'">
+        </div>
+    </header>
+
+    <!-- FILTROS -->
+    <div class="card">
+        <div class="section-label">Filtros de Análise</div>
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="sourceType">Tipo de Fonte</label>
+                <select id="sourceType" onchange="handleSourceTypeChange()">
+                    <option value="Autores">Autores</option>
+                    <option value="Guidorizzi">Guidorizzi</option>
+                    <option value="Cultivar">Cultivar</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="selectedSource" id="sourceLabel">Autor</label>
+                <select id="selectedSource" onchange="updateChart()"></select>
+            </div>
+            <div class="filter-group">
+                <label for="selectedNutrient">Nutriente</label>
+                <select id="selectedNutrient" onchange="updateChart()">
+                    <optgroup label="Macronutrientes">
+                        <option value="N">Nitrogênio (N)</option>
+                        <option value="P">Fósforo (P₂O₅)</option>
+                        <option value="K">Potássio (K)</option>
+                        <option value="Ca">Cálcio (Ca)</option>
+                        <option value="Mg">Magnésio (Mg)</option>
+                        <option value="S">Enxofre (S)</option>
+                    </optgroup>
+                    <optgroup label="Micronutrientes">
+                        <option value="B">Boro (B)</option>
+                        <option value="Cu">Cobre (Cu)</option>
+                        <option value="Fe">Ferro (Fe)</option>
+                        <option value="Mn">Manganês (Mn)</option>
+                        <option value="Zn">Zinco (Zn)</option>
+                        <option value="Mo">Molibdênio (Mo)</option>
+                        <option value="Co">Cobalto (Co)</option>
+                        <option value="Ni">Níquel (Ni)</option>
+                        <option value="Se">Selênio (Se)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="dataType">Tipo de Dado</label>
+                <select id="dataType" onchange="updateChart()">
+                    <option value="Extração">Extração (Planta toda)</option>
+                    <option value="Exportação">Exportação (Grãos)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="expectedYield">Produtividade (ton)</label>
+                <input type="number" id="expectedYield" value="4.2" step="0.1" min="0.1" maxlength="7" onchange="updateChart()">
+            </div>
+            <div class="filter-group">
+                <label for="viewMode">Visualização</label>
+                <select id="viewMode" onchange="updateChart()">
+                    <option value="perStage" selected>Por Estádio</option>
+                    <option value="accumulated">Acumulado</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- LEGENDA -->
+    <div class="card legend">
+        <div class="legend-item">
+            <div class="legend-dot" style="background: var(--green-dark);"></div>
+            <span class="legend-text">Dados Originais (Literatura)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: var(--green-accent);"></div>
+            <span class="legend-text">Dados Calculados (Índices de Exportação)</span>
+        </div>
+    </div>
+
+    <!-- GRÁFICO -->
+    <div class="card">
+        <h2 id="chartTitle">Curva de Absorção</h2>
+        <div class="chart-container"><canvas id="mainChart"></canvas></div>
+        <div id="infoBoxes"></div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="card" id="tableCard" style="overflow-x: auto;"></div>
+
+    <!-- ÍNDICES -->
+    <div class="card">
+        <h2>Sobre os Dados Calculados</h2>
+        <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.65; margin-bottom: 0.5rem;">
+            Alguns valores foram calculados utilizando <strong style="color: var(--green-mid);">índices de exportação</strong>
+            quando dados originais não estavam disponíveis na literatura (Embrapa e literatura científica):
+        </p>
+        <div class="indices-grid">
+            <div class="index-card"><div class="index-label">Nitrogênio (N)</div><div class="index-value">50–70%</div></div>
+            <div class="index-card"><div class="index-label">Fósforo (P₂O₅)</div><div class="index-value">70–90%</div></div>
+            <div class="index-card"><div class="index-label">Potássio (K₂O)</div><div class="index-value">50–60%</div></div>
+            <div class="index-card"><div class="index-label">Cálcio (Ca)</div><div class="index-value">10–20%</div></div>
+            <div class="index-card"><div class="index-label">Magnésio (Mg)</div><div class="index-value">20–30%</div></div>
+            <div class="index-card"><div class="index-label">Enxofre (S)</div><div class="index-value">20–40%</div></div>
+            <div class="index-card"><div class="index-label">Boro (B)</div><div class="index-value">20–30%</div></div>
+            <div class="index-card"><div class="index-label">Cobre (Cu)</div><div class="index-value">25–35%</div></div>
+            <div class="index-card"><div class="index-label">Ferro (Fe)</div><div class="index-value">15–25%</div></div>
+            <div class="index-card"><div class="index-label">Manganês (Mn)</div><div class="index-value">5–10%</div></div>
+            <div class="index-card"><div class="index-label">Zinco (Zn)</div><div class="index-value">25–35%</div></div>
+            <div class="index-card"><div class="index-label">Molibdênio (Mo)</div><div class="index-value">20–40%</div></div>
+            <div class="index-card"><div class="index-label">Cobalto (Co)</div><div class="index-value">40–50%</div></div>
+            <div class="index-card"><div class="index-label">Níquel (Ni)</div><div class="index-value">20–30%</div></div>
+            <div class="index-card"><div class="index-label">Selênio (Se)</div><div class="index-value">60–85%</div></div>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 1.25rem; font-style: italic; line-height: 1.5;">
+            * Índices de exportação representam a porcentagem do nutriente extraído exportada nos grãos.
+            Valores calculados devem ser validados com análises locais.
+        </p>
+    </div>
+
+    <footer>
+        <p>Absorção de nutrientes em soja &nbsp;·&nbsp; <span id="footerInfo"></span></p>
+    </footer>
+
+</div>
+
+<script>
+    const absorptionPercentages = {
+        N:  { V1_V3: 10,  V4: 25,   V5: 40,   R1: 55, R3: 75,   R5: 90,   R6: 97.5 },
+        P:  { V1_V3: 7.5, V4: 17.5, V5: 30,   R1: 45, R3: 70,   R5: 90,   R6: 97.5 },
+        K:  { V1_V3: 12.5,V4: 30,   V5: 52.5, R1: 70, R3: 87.5, R5: 97.5, R6: 97.5 },
+        Ca: { V1_V3: 7.5, V4: 25,   V5: 45,   R1: 65, R3: 85,   R5: 97.5, R6: 97.5 },
+        Mg: { V1_V3: 12.5,V4: 35,   V5: 55,   R1: 75, R3: 92.5, R5: 97.5, R6: 97.5 },
+        S:  { V1_V3: 15,  V4: 35,   V5: 55,   R1: 75, R3: 92.5, R5: 97.5, R6: 97.5 },
+        B:  { V1_V3: 7.5, V4: 25,   V5: 45,   R1: 65, R3: 87.5, R5: 97.5, R6: 97.5 },
+        Cu: { V1_V3: 7.5, V4: 25,   V5: 45,   R1: 65, R3: 87.5, R5: 97.5, R6: 97.5 },
+        Fe: { V1_V3: 7.5, V4: 25,   V5: 45,   R1: 65, R3: 87.5, R5: 97.5, R6: 97.5 },
+        Mn: { V1_V3: 7.5, V4: 25,   V5: 45,   R1: 65, R3: 87.5, R5: 97.5, R6: 97.5 },
+        Zn: { V1_V3: 7.5, V4: 25,   V5: 45,   R1: 65, R3: 87.5, R5: 97.5, R6: 97.5 },
+        Mo: { V1_V3: 3.5, V4: 12.5, V5: 25,   R1: 40, R3: 77.5, R5: 92.5, R6: 97.5 },
+        Co: { V1_V3: 3.5, V4: 12.5, V5: 25,   R1: 40, R3: 77.5, R5: 92.5, R6: 97.5 },
+        Ni: { V1_V3: 3.5, V4: 12.5, V5: 25,   R1: 40, R3: 77.5, R5: 92.5, R6: 97.5 },
+        Se: { V1_V3: 3.5, V4: 12.5, V5: 25,   R1: 40, R3: 77.5, R5: 92.5, R6: 97.5 }
+    };
+
+    const nutrientData = {
+  "Autores": {
+    "Araújo (2023)": {
+      "Exportação": { N: 41.36, P: 3.40, K: 9.93, Ca: 0.60, Mg: 0.86, S: 1.28, Cu: 4.32, Fe: 8.93, Zn: 15.64, Mn: 4.28, B: 12.38, Se: 0, Co: 0, Mo: 0, Ni: 0 },
+      "Extração": { N: 59.94, P: 5.23, K: 18.74, Ca: 2.39, Mg: 2.70, S: 2.98, Cu: 8.63, Fe: 44.67, Zn: 31.28, Mn: 21.41, B: 32.58, Se: 0, Co: 0, Mo: 0, Ni: 0 }
+    },
+    "Kurihara et al. (2013)¹": {
+      "Exportação": { N: 42.33, P: 3.83, K: 7.29, Ca: 0.61, Mg: 0.54, S: 2.78, Cu: 13.48, Fe: 15.51, Zn: 31.66, Mn: 5.39, B: 10.07, Se: 0, Co: 0, Mo: 0, Ni: 0 },
+      "Extração": { N: 0, P: 0, K: 0, Ca: 0, Mg: 0, S: 0, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 0, Ni: 0 }
+    },
+    "Kurihara et al. (2013)138": {
+      "Exportação": { N: 0, P: 0, K: 0, Ca: 0, Mg: 0, S: 0, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 0, Ni: 0 },
+      "Extração": { N: 61.35, P: 5.89, K: 13.76, Ca: 2.13, Mg: 2.39, S: 5.96, Cu: 26.92, Fe: 78.00, Zn: 63.15, Mn: 27.10, B: 26.23, Se: 0, Co: 0, Mo: 0, Ni: 0 }
+    },
+    "Santos et al. (2008)": {
+      "Exportação": { N: 46.62, P: 2.61, K: 10.52, Ca: 0.74, Mg: 0.75, S: 0.89, Cu: 27.39, Fe: 29.81, Zn: 27.28, Mn: 5.86, B: 9.11, Se: 0, Co: 0, Mo: 0, Ni: 0 },
+      "Extração": { N: 67.57, P: 4.02, K: 19.84, Ca: 3.30, Mg: 2.81, S: 2.06, Cu: 52.98, Fe: 149.08, Zn: 53.38, Mn: 30.85, B: 23.09, Se: 0, Co: 0, Mo: 0, Ni: 0 }
+    },
+    "Bataglia & Mascarenhas (1977)": {
+      "Exportação": { N: 76.00, P: 5.70, K: 32.00, Ca: 1.90, Mg: 2.90, S: 3.10, Cu: 26.00, Fe: 46.00, Zn: 61.00, Mn: 13.00, B: 77.00, Se: 0, Co: 0, Mo: 6, Ni: 0 },
+      "Extração": { N: 64.00, P: 4.70, K: 18.00, Ca: 11.60, Mg: 6.70, S: 0, Cu: 14.00, Fe: 115.00, Zn: 43.00, Mn: 43.00, B: 24.00, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    },
+    "Borkert (1986)": {
+      "Exportação": { N: 82.00, P: 7.50, K: 24.50, Ca: 11.80, Mg: 7.40, S: 15.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 0, Ni: 0 },
+      "Extração": { N: 51.00, P: 7.60, K: 17.00, Ca: 3.30, Mg: 3.50, S: 5.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    },
+    "Cordeiro et al. (1977)": {
+      "Exportação": { N: 77.40, P: 6.00, K: 32.00, Ca: 13.40, Mg: 4.00, S: 8.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 0, Ni: 0 },
+      "Extração": { N: 64.40, P: 5.00, K: 16.50, Ca: 2.90, Mg: 2.40, S: 8.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    },
+    "Darwich (1993)": {
+      "Exportação": { N: 82.00, P: 1.00, K: 4.00, Ca: 7.00, Mg: 7.80, S: 7.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 7, Ni: 0 },
+      "Extração": { N: 58.80, P: 5.20, K: 18.70, Ca: 1.90, Mg: 2.10, S: 3.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    },
+    "EMBRAPA": {
+      "Exportação": { N: 83.00, P: 8.40, K: 25.00, Ca: 13.50, Mg: 7.30, S: 9.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 7, Ni: 0 },
+      "Extração": { N: 51.00, P: 1.00, K: 2.00, Ca: 3.10, Mg: 2.00, S: 5.00, Cu: 1, Fe: 7, Zn: 4, Mn: 3, B: 2, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    },
+    "Portafos": {
+      "Exportação": { N: 83.00, P: 15.40, K: 38.00, Ca: 12.20, Mg: 7.30, S: 15.00, Cu: 1, Fe: 0, Zn: 4, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 7, Ni: 0 },
+      "Extração": { N: 51.00, P: 1.00, K: 2.00, Ca: 3.10, Mg: 2.00, S: 5.00, Cu: 1, Fe: 7, Zn: 4, Mn: 3, B: 2, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    },
+    "Tanaka et al. (1994)": {
+      "Exportação": { N: 82.00, P: 7.50, K: 24.00, Ca: 12.00, Mg: 7.20, S: 15.00, Cu: 0, Fe: 0, Zn: 0, Mn: 0, B: 0, Se: 0, Co: 0, Mo: 7, Ni: 0 },
+      "Extração": { N: 51.00, P: 5.00, K: 17.00, Ca: 2.80, Mg: 2.00, S: 5.00, Cu: 1, Fe: 218, Zn: 4, Mn: 3, B: 2, Se: 0, Co: 0, Mo: 5, Ni: 0 }
+    }
+  },
+  "Guidorizzi": {
+    "Enlist": {
+      "Exportação": { N: 53.9, P: 9.3,  K: 19.1, Ca: 2.2, Mg: 2.5, S: 6.7,  Cu: 10.9, Fe: 122.3, Zn: 46.5, Mn: 14.1, B: 37.3, Se: 1.3, Co: 0.2, Mo: 3.2, Ni: 0.4 },
+      "Extração":  { N: 142.9,P: 31.9, K: 120.8,Ca: 35.8,Mg: 13.6,S: 17.9, Cu: 37.5, Fe: 726.3, Zn: 159.7,Mn: 195.4,B: 163.9,Se: 1.5, Co: 0.4, Mo: 12.4,Ni: 1.9 }
+    },
+    "Xtend": {
+      "Exportação": { N: 55.1, P: 10.9, K: 19.6, Ca: 2.3, Mg: 2.5, S: 8.6,  Cu: 12.7, Fe: 246.7, Zn: 44.8, Mn: 14.3, B: 38.7, Se: 1.1, Co: 0.2, Mo: 3.8, Ni: 0.5 },
+      "Extração":  { N: 179.9,P: 36.4, K: 127.6,Ca: 61.1,Mg: 18.9,S: 27.3, Cu: 42.6, Fe: 1106.9,Zn: 178.5,Mn: 309.9,B: 179.8,Se: 1.6, Co: 0.5, Mo: 9.2, Ni: 2.5 }
+    },
+    "Roundup Ready": {
+      "Exportação": { N: 55.6, P: 9.3,  K: 20.6, Ca: 2.1, Mg: 2.6, S: 8.3,  Cu: 11.0, Fe: 123.1, Zn: 43.8, Mn: 15.7, B: 34.6, Se: 1.7, Co: 0.2, Mo: 3.3, Ni: 0.6 },
+      "Extração":  { N: 145.8,P: 29.4, K: 106.9,Ca: 43.5,Mg: 14.7,S: 22.2, Cu: 32.8, Fe: 673.9, Zn: 140.1,Mn: 198.4,B: 160.1,Se: 2.2, Co: 0.5, Mo: 13.2,Ni: 2.2 }
+    }
+  },
+  "Cultivar": {
+    "73i75RSF": { "Exportação": { N: 57.2, P: 5.5, K: 19.0, Ca: 2.2, Mg: 2.9, S: 2.9, Cu: 9.7, Fe: 31.1, Zn: 31.6, Mn: 2.5, B: 3.9, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 82.9, P: 8.46, K: 35.85, Ca: 8.8, Mg: 9.06, S: 6.74, Cu: 19.4, Fe: 155.5, Zn: 63.2, Mn: 12.5, B: 10.26, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "75i74RSF": { "Exportação": { N: 56.4, P: 5.1, K: 17.1, Ca: 2.3, Mg: 2.8, S: 3.0, Cu: 1.1, Fe: 285.3, Zn: 3.7, Mn: 2.8, B: 36.6, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 81.74, P: 7.85, K: 32.26, Ca: 9.2, Mg: 8.75, S: 6.98, Cu: 2.2, Fe: 1426.5, Zn: 7.4, Mn: 14.0, B: 96.32, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "77EA40": { "Exportação": { N: 57.6, P: 5.1, K: 17.1, Ca: 2.3, Mg: 2.7, S: 2.7, Cu: 8.5, Fe: 51.3, Zn: 27.9, Mn: 18.6, B: 31.3, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 83.48, P: 7.85, K: 32.26, Ca: 9.2, Mg: 8.44, S: 6.28, Cu: 17.0, Fe: 256.5, Zn: 55.8, Mn: 93.0, B: 82.37, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "ADV4681 Ipro - SR1": { "Exportação": { N: 62.9, P: 5.5, K: 19.3, Ca: 2.5, Mg: 3.0, S: 3.0, Cu: 8.1, Fe: 29.2, Zn: 49.0, Mn: 24.4, B: 35.0, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 91.16, P: 8.46, K: 36.42, Ca: 10.0, Mg: 9.38, S: 6.98, Cu: 16.2, Fe: 146.0, Zn: 98.0, Mn: 122.0, B: 92.11, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "ADV4681 Ipro - SR2": { "Exportação": { N: 6.0, P: 5.5, K: 21.0, Ca: 2.3, Mg: 2.9, S: 3.2, Cu: 8.4, Fe: 26.0, Zn: 42.2, Mn: 23.1, B: 31.9, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 8.7, P: 8.46, K: 39.62, Ca: 9.2, Mg: 9.06, S: 7.44, Cu: 16.8, Fe: 130.0, Zn: 84.4, Mn: 115.5, B: 83.95, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "ADV4681 Ipro - SR3": { "Exportação": { N: 63.8, P: 5.4, K: 2.7, Ca: 2.4, Mg: 2.7, S: 3.1, Cu: 8.4, Fe: 17.2, Zn: 37.4, Mn: 43.9, B: 31.8, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 92.46, P: 8.31, K: 5.09, Ca: 9.6, Mg: 8.44, S: 7.21, Cu: 16.8, Fe: 86.0, Zn: 74.8, Mn: 219.5, B: 83.68, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "AS3595i2x": { "Exportação": { N: 66.9, P: 5.7, K: 19.2, Ca: 3.0, Mg: 3.3, S: 3.1, Cu: 1.0, Fe: 34.5, Zn: 35.1, Mn: 22.7, B: 35.4, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 96.96, P: 8.77, K: 36.23, Ca: 12.0, Mg: 10.31, S: 7.21, Cu: 2.0, Fe: 172.5, Zn: 70.2, Mn: 113.5, B: 93.16, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "AS3640i2x": { "Exportação": { N: 62.1, P: 5.6, K: 19.3, Ca: 1.7, Mg: 2.4, S: 3.2, Cu: 8.8, Fe: 76.0, Zn: 32.6, Mn: 18.8, B: 33.7, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 90.0, P: 8.62, K: 36.42, Ca: 6.8, Mg: 7.5, S: 7.44, Cu: 17.6, Fe: 380.0, Zn: 65.2, Mn: 94.0, B: 88.68, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "AS3700XTD": { "Exportação": { N: 59.4, P: 5.2, K: 18.6, Ca: 2.3, Mg: 2.3, S: 3.1, Cu: 8.1, Fe: 48.5, Zn: 27.8, Mn: 19.0, B: 29.8, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 86.09, P: 8.0, K: 35.09, Ca: 9.2, Mg: 7.19, S: 7.21, Cu: 16.2, Fe: 242.5, Zn: 55.6, Mn: 95.0, B: 78.42, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "AS3707I2X": { "Exportação": { N: 59.9, P: 5.5, K: 19.3, Ca: 2.1, Mg: 2.5, S: 3.1, Cu: 8.2, Fe: 29.8, Zn: 28.6, Mn: 2.5, B: 3.4, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 86.81, P: 8.46, K: 36.42, Ca: 8.4, Mg: 7.81, S: 7.21, Cu: 16.4, Fe: 149.0, Zn: 57.2, Mn: 12.5, B: 8.95, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "AS3790i2x": { "Exportação": { N: 61.5, P: 4.8, K: 18.0, Ca: 2.0, Mg: 2.5, S: 2.9, Cu: 8.4, Fe: 58.7, Zn: 25.3, Mn: 21.0, B: 28.7, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 89.13, P: 7.38, K: 33.96, Ca: 8.0, Mg: 7.81, S: 6.74, Cu: 16.8, Fe: 293.5, Zn: 50.6, Mn: 105.0, B: 75.53, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CREDENZ CZ37B39": { "Exportação": { N: 6.7, P: 5.4, K: 18.3, Ca: 2.5, Mg: 2.9, S: 3.0, Cu: 1.8, Fe: 35.9, Zn: 3.3, Mn: 2.0, B: 34.7, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 9.71, P: 8.31, K: 34.53, Ca: 10.0, Mg: 9.06, S: 6.98, Cu: 3.6, Fe: 179.5, Zn: 6.6, Mn: 10.0, B: 91.32, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CZ16B17 IPRO": { "Exportação": { N: 62.4, P: 5.5, K: 18.4, Ca: 2.5, Mg: 2.6, S: 2.9, Cu: 8.9, Fe: 52.0, Zn: 31.3, Mn: 19.8, B: 3.8, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 90.43, P: 8.46, K: 34.72, Ca: 10.0, Mg: 8.13, S: 6.74, Cu: 17.8, Fe: 260.0, Zn: 62.6, Mn: 99.0, B: 10.0, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CZ37B39 I2X": { "Exportação": { N: 63.6, P: 5.1, K: 18.1, Ca: 2.6, Mg: 2.9, S: 3.3, Cu: 9.0, Fe: 41.6, Zn: 29.4, Mn: 22.9, B: 35.5, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 92.17, P: 7.85, K: 34.15, Ca: 10.4, Mg: 9.06, S: 7.67, Cu: 18.0, Fe: 208.0, Zn: 58.8, Mn: 114.5, B: 93.42, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CZ37B43": { "Exportação": { N: 61.8, P: 5.3, K: 18.5, Ca: 2.8, Mg: 3.1, S: 3.2, Cu: 8.8, Fe: 3.5, Zn: 27.5, Mn: 24.8, B: 34.0, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 89.57, P: 8.15, K: 34.91, Ca: 11.2, Mg: 9.69, S: 7.44, Cu: 17.6, Fe: 17.5, Zn: 55.0, Mn: 124.0, B: 89.47, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CZ37B43Ipro - PM": { "Exportação": { N: 61.1, P: 5.5, K: 18.6, Ca: 2.2, Mg: 3.1, S: 2.9, Cu: 9.8, Fe: 41.1, Zn: 31.9, Mn: 19.4, B: 3.3, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 88.55, P: 8.46, K: 35.09, Ca: 8.8, Mg: 9.69, S: 6.74, Cu: 19.6, Fe: 205.5, Zn: 63.8, Mn: 97.0, B: 8.68, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CZ37B43Ipro - PO1": { "Exportação": { N: 53.0, P: 5.3, K: 17.9, Ca: 2.4, Mg: 2.9, S: 2.8, Cu: 7.8, Fe: 12.6, Zn: 28.7, Mn: 14.8, B: 3.1, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 76.81, P: 8.15, K: 33.77, Ca: 9.6, Mg: 9.06, S: 6.51, Cu: 15.6, Fe: 63.0, Zn: 57.4, Mn: 74.0, B: 8.16, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "CZ37B43Ipro - PO2": { "Exportação": { N: 57.9, P: 5.3, K: 18.3, Ca: 2.8, Mg: 2.7, S: 2.6, Cu: 7.5, Fe: 22.0, Zn: 29.4, Mn: 14.9, B: 32.8, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 83.91, P: 8.15, K: 34.53, Ca: 11.2, Mg: 8.44, S: 6.05, Cu: 15.0, Fe: 110.0, Zn: 58.8, Mn: 74.5, B: 86.32, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "Dagma 7621": { "Exportação": { N: 57.8, P: 5.0, K: 17.8, Ca: 2.2, Mg: 2.6, S: 3.0, Cu: 9.1, Fe: 44.2, Zn: 3.4, Mn: 21.5, B: 33.0, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 83.77, P: 7.69, K: 33.58, Ca: 8.8, Mg: 8.13, S: 6.98, Cu: 18.2, Fe: 221.0, Zn: 6.8, Mn: 107.5, B: 86.84, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "Dagma 7921": { "Exportação": { N: 6.0, P: 4.5, K: 18.2, Ca: 2.5, Mg: 2.9, S: 2.7, Cu: 7.8, Fe: 47.0, Zn: 27.8, Mn: 21.9, B: 28.0, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 8.7, P: 6.92, K: 34.34, Ca: 10.0, Mg: 9.06, S: 6.28, Cu: 15.6, Fe: 235.0, Zn: 55.6, Mn: 109.5, B: 73.68, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "Desafio - PER1": { "Exportação": { N: 6.8, P: 5.0, K: 19.2, Ca: 2.1, Mg: 2.6, S: 3.1, Cu: 1.4, Fe: 23.7, Zn: 37.6, Mn: 19.9, B: 33.0, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 9.86, P: 7.69, K: 36.23, Ca: 8.4, Mg: 8.13, S: 7.21, Cu: 2.8, Fe: 118.5, Zn: 75.2, Mn: 99.5, B: 86.84, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "DESAFIO (8473 RFS)": { "Exportação": { N: 61.7, P: 4.5, K: 18.1, Ca: 2.5, Mg: 2.6, S: 2.9, Cu: 7.8, Fe: 29.8, Zn: 25.9, Mn: 23.1, B: 31.8, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 89.42, P: 6.92, K: 34.15, Ca: 10.0, Mg: 8.13, S: 6.74, Cu: 15.6, Fe: 149.0, Zn: 51.8, Mn: 115.5, B: 83.68, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "Desafio RR - BM1": { "Exportação": { N: 57.8, P: 5.5, K: 22.3, Ca: 2.3, Mg: 3.0, S: 3.1, Cu: 7.3, Fe: 17.3, Zn: 48.0, Mn: 27.7, B: 31.9, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 83.77, P: 8.46, K: 42.08, Ca: 9.2, Mg: 9.38, S: 7.21, Cu: 14.6, Fe: 86.5, Zn: 96.0, Mn: 138.5, B: 83.95, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "Desafio RR - BM2": { "Exportação": { N: 61.5, P: 5.2, K: 19.5, Ca: 2.3, Mg: 2.8, S: 3.1, Cu: 6.0, Fe: 26.2, Zn: 28.2, Mn: 18.7, B: 3.3, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 }, "Extração": { N: 89.13, P: 8.0, K: 36.79, Ca: 9.2, Mg: 8.75, S: 7.21, Cu: 12.0, Fe: 131.0, Zn: 56.4, Mn: 93.5, B: 8.68, Se: 0.0, Co: 0.0, Mo: 0.0, Ni: 0.0 } },
+    "Desafio RR - PER2": { "Exportação": { N: 58.2, P: 5.7, K: 2.3, Ca: 2.0, Mg: 2.6, S: 3.4, Cu: 9.3, Fe: 16.7, Zn: 4.4, Mn: 19.1, B: 34.6, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 84.35, P: 8.77, K: 4.34, Ca: 8.0, Mg: 8.13, S: 7.91, Cu: 18.6, Fe: 83.5, Zn: 8.8, Mn: 95.5, B: 91.05, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Desafio RR - VM": { "Exportação": { N: 57.8, P: 5.2, K: 19.6, Ca: 2.7, Mg: 2.6, S: 3.1, Cu: 9.1, Fe: 22.7, Zn: 34.3, Mn: 22.5, B: 31.6, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 83.77, P: 8.0, K: 36.98, Ca: 10.8, Mg: 8.13, S: 7.21, Cu: 18.2, Fe: 113.5, Zn: 68.6, Mn: 112.5, B: 83.16, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "DM 69IX69": { "Exportação": { N: 59.9, P: 5.6, K: 18.2, Ca: 3.3, Mg: 2.8, S: 3.4, Cu: 7.2, Fe: 3.1, Zn: 25.8, Mn: 22.3, B: 32.0, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 86.81, P: 8.62, K: 34.34, Ca: 13.2, Mg: 8.75, S: 7.91, Cu: 14.4, Fe: 15.5, Zn: 51.6, Mn: 111.5, B: 84.21, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "DM 72IX74": { "Exportação": { N: 61.3, P: 5.1, K: 18.1, Ca: 2.2, Mg: 2.7, S: 2.9, Cu: 9.6, Fe: 31.6, Zn: 29.2, Mn: 18.6, B: 28.4, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 88.84, P: 7.85, K: 34.15, Ca: 8.8, Mg: 8.44, S: 6.74, Cu: 19.2, Fe: 158.0, Zn: 58.4, Mn: 93.0, B: 74.74, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "DM 74K75": { "Exportação": { N: 63.2, P: 4.7, K: 19.2, Ca: 2.2, Mg: 2.4, S: 3.0, Cu: 7.6, Fe: 36.7, Zn: 26.7, Mn: 19.8, B: 35.3, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 91.59, P: 7.23, K: 36.23, Ca: 8.8, Mg: 7.5, S: 6.98, Cu: 15.2, Fe: 183.5, Zn: 53.4, Mn: 99.0, B: 92.89, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "DM 76IX77": { "Exportação": { N: 59.3, P: 4.7, K: 16.1, Ca: 2.2, Mg: 2.2, S: 2.9, Cu: 8.0, Fe: 48.1, Zn: 26.9, Mn: 21.5, B: 34.8, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 85.94, P: 7.23, K: 30.38, Ca: 8.8, Mg: 6.88, S: 6.74, Cu: 16.0, Fe: 240.5, Zn: 53.8, Mn: 107.5, B: 91.58, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Exata i2x (OURO VERDE) (64 IX60RFS)": { "Exportação": { N: 6.0, P: 5.4, K: 17.9, Ca: 2.1, Mg: 2.8, S: 2.9, Cu: 7.7, Fe: 38.2, Zn: 26.5, Mn: 19.1, B: 34.0, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 8.7, P: 8.31, K: 33.77, Ca: 8.4, Mg: 8.75, S: 6.74, Cu: 15.4, Fe: 191.0, Zn: 53.0, Mn: 95.5, B: 89.47, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "FOCO (74177 RFS)": { "Exportação": { N: 56.2, P: 5.5, K: 18.8, Ca: 2.6, Mg: 2.7, S: 3.1, Cu: 8.4, Fe: 26.0, Zn: 31.5, Mn: 21.9, B: 36.5, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 81.45, P: 8.46, K: 35.47, Ca: 10.4, Mg: 8.44, S: 7.21, Cu: 16.8, Fe: 130.0, Zn: 63.0, Mn: 109.5, B: 96.05, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Guepardo IPRO (67168 RFS)": { "Exportação": { N: 63.2, P: 5.5, K: 17.6, Ca: 3.1, Mg: 2.6, S: 3.0, Cu: 8.5, Fe: 32.6, Zn: 3.5, Mn: 21.4, B: 29.1, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 91.59, P: 8.46, K: 33.21, Ca: 12.4, Mg: 8.13, S: 6.98, Cu: 17.0, Fe: 163.0, Zn: 7.0, Mn: 107.0, B: 76.58, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "HO PARAGUAÇU (64HO130 I2X)": { "Exportação": { N: 57.5, P: 5.1, K: 17.8, Ca: 1.8, Mg: 2.4, S: 3.0, Cu: 7.2, Fe: 38.1, Zn: 25.5, Mn: 18.9, B: 35.0, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 83.33, P: 7.85, K: 33.58, Ca: 7.2, Mg: 7.5, S: 6.98, Cu: 14.4, Fe: 190.5, Zn: 51.0, Mn: 94.5, B: 92.11, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "HO TAQUARI (80 H0 110)": { "Exportação": { N: 6.3, P: 4.9, K: 18.0, Ca: 2.3, Mg: 2.6, S: 2.9, Cu: 1.3, Fe: 69.7, Zn: 25.3, Mn: 2.8, B: 32.9, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 9.13, P: 7.54, K: 33.96, Ca: 9.2, Mg: 8.13, S: 6.74, Cu: 2.6, Fe: 348.5, Zn: 50.6, Mn: 14.0, B: 86.58, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Juruena Ipro - SR1": { "Exportação": { N: 54.3, P: 5.1, K: 21.8, Ca: 2.6, Mg: 2.5, S: 2.9, Cu: 6.1, Fe: 1.3, Zn: 34.3, Mn: 24.0, B: 32.9, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 78.7, P: 7.85, K: 41.13, Ca: 10.4, Mg: 7.81, S: 6.74, Cu: 12.2, Fe: 6.5, Zn: 68.6, Mn: 120.0, B: 86.58, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Juruena Ipro - SR2": { "Exportação": { N: 55.4, P: 5.3, K: 2.9, Ca: 2.8, Mg: 2.7, S: 2.8, Cu: 7.5, Fe: 17.1, Zn: 4.7, Mn: 22.4, B: 35.3, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 80.29, P: 8.15, K: 5.47, Ca: 11.2, Mg: 8.44, S: 6.51, Cu: 15.0, Fe: 85.5, Zn: 9.4, Mn: 112.0, B: 92.89, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Juruena Ipro - SR3": { "Exportação": { N: 58.0, P: 5.8, K: 21.8, Ca: 2.5, Mg: 2.6, S: 2.9, Cu: 7.4, Fe: 15.1, Zn: 44.9, Mn: 29.9, B: 39.6, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 84.06, P: 8.92, K: 41.13, Ca: 10.0, Mg: 8.13, S: 6.74, Cu: 14.8, Fe: 75.5, Zn: 89.8, Mn: 149.5, B: 104.21, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "K7922I2X": { "Exportação": { N: 61.4, P: 5.0, K: 19.4, Ca: 2.2, Mg: 2.8, S: 3.1, Cu: 1.0, Fe: 42.9, Zn: 31.9, Mn: 21.2, B: 32.3, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 88.99, P: 7.69, K: 36.6, Ca: 8.8, Mg: 8.75, S: 7.21, Cu: 2.0, Fe: 214.5, Zn: 63.8, Mn: 106.0, B: 85.0, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "LENDARIA (80K80 RFS)": { "Exportação": { N: 6.7, P: 4.9, K: 19.1, Ca: 2.4, Mg: 2.5, S: 2.7, Cu: 8.2, Fe: 78.6, Zn: 27.6, Mn: 19.1, B: 25.1, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 9.71, P: 7.54, K: 36.04, Ca: 9.6, Mg: 7.81, S: 6.28, Cu: 16.4, Fe: 393.0, Zn: 55.2, Mn: 95.5, B: 66.05, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "M 6430 XTD": { "Exportação": { N: 62.4, P: 4.8, K: 17.3, Ca: 3.0, Mg: 3.0, S: 3.1, Cu: 7.7, Fe: 73.4, Zn: 23.6, Mn: 22.4, B: 26.6, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 90.43, P: 7.38, K: 32.64, Ca: 12.0, Mg: 9.38, S: 7.21, Cu: 15.4, Fe: 367.0, Zn: 47.2, Mn: 112.0, B: 70.0, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "M6100 XTD": { "Exportação": { N: 6.7, P: 5.3, K: 19.0, Ca: 2.0, Mg: 2.5, S: 2.9, Cu: 8.9, Fe: 25.3, Zn: 26.7, Mn: 18.8, B: 32.0, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 9.71, P: 8.15, K: 35.85, Ca: 8.0, Mg: 7.81, S: 6.74, Cu: 17.8, Fe: 126.5, Zn: 53.4, Mn: 94.0, B: 84.21, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "M6110 i2x": { "Exportação": { N: 57.3, P: 5.6, K: 18.5, Ca: 2.2, Mg: 2.5, S: 2.9, Cu: 9.6, Fe: 56.6, Zn: 33.1, Mn: 22.0, B: 31.4, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 83.04, P: 8.62, K: 34.91, Ca: 8.8, Mg: 7.81, S: 6.74, Cu: 19.2, Fe: 283.0, Zn: 66.2, Mn: 110.0, B: 82.63, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "M6210 Ipro": { "Exportação": { N: 58.6, P: 5.2, K: 19.9, Ca: 2.2, Mg: 2.6, S: 3.0, Cu: 8.4, Fe: 28.8, Zn: 28.7, Mn: 2.6, B: 31.3, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 84.93, P: 8.0, K: 37.55, Ca: 8.8, Mg: 8.13, S: 6.98, Cu: 16.8, Fe: 144.0, Zn: 57.4, Mn: 13.0, B: 82.37, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "NEO750": { "Exportação": { N: 6.4, P: 4.9, K: 16.7, Ca: 2.5, Mg: 2.6, S: 2.9, Cu: 9.0, Fe: 86.5, Zn: 3.5, Mn: 2.7, B: 38.7, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 9.28, P: 7.54, K: 31.51, Ca: 10.0, Mg: 8.13, S: 6.74, Cu: 18.0, Fe: 432.5, Zn: 7.0, Mn: 13.5, B: 101.84, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "NEOGEN 680": { "Exportação": { N: 61.3, P: 5.9, K: 18.8, Ca: 2.4, Mg: 2.4, S: 3.2, Cu: 1.0, Fe: 4.6, Zn: 29.3, Mn: 18.7, B: 34.9, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 88.84, P: 9.08, K: 35.47, Ca: 9.6, Mg: 7.5, S: 7.44, Cu: 2.0, Fe: 23.0, Zn: 58.6, Mn: 93.5, B: 91.84, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "NEOGEN 71E": { "Exportação": { N: 59.2, P: 5.4, K: 17.8, Ca: 2.2, Mg: 2.8, S: 3.0, Cu: 9.0, Fe: 143.1, Zn: 29.0, Mn: 19.0, B: 28.6, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 85.8, P: 8.31, K: 33.58, Ca: 8.8, Mg: 8.75, S: 6.98, Cu: 18.0, Fe: 715.5, Zn: 58.0, Mn: 95.0, B: 75.26, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "NEOGEN 720": { "Exportação": { N: 57.3, P: 5.3, K: 18.8, Ca: 2.7, Mg: 2.9, S: 3.0, Cu: 9.6, Fe: 3.8, Zn: 29.4, Mn: 22.9, B: 34.4, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 83.04, P: 8.15, K: 35.47, Ca: 10.8, Mg: 9.06, S: 6.98, Cu: 19.2, Fe: 19.0, Zn: 58.8, Mn: 114.5, B: 90.53, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "NEOGEN 770": { "Exportação": { N: 59.3, P: 5.2, K: 16.3, Ca: 2.7, Mg: 2.7, S: 3.0, Cu: 9.4, Fe: 51.0, Zn: 32.2, Mn: 21.2, B: 38.0, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 85.94, P: 8.0, K: 30.75, Ca: 10.8, Mg: 8.44, S: 6.98, Cu: 18.8, Fe: 255.0, Zn: 64.4, Mn: 106.0, B: 100.0, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "Olimpo (80182 RFS)": { "Exportação": { N: 63.2, P: 4.6, K: 18.4, Ca: 2.6, Mg: 2.9, S: 2.6, Cu: 8.8, Fe: 37.9, Zn: 26.3, Mn: 19.9, B: 35.3, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 91.59, P: 7.08, K: 34.72, Ca: 10.4, Mg: 9.06, S: 6.05, Cu: 17.6, Fe: 189.5, Zn: 52.6, Mn: 99.5, B: 92.89, Se: 0, Co: 0, Mo: 0, Ni: 0 } },
+    "SUPERA i2x (BRASMAX)(73IX74)": { "Exportação": { N: 62.9, P: 5.4, K: 17.7, Ca: 2.2, Mg: 2.7, S: 2.8, Cu: 9.8, Fe: 37.9, Zn: 29.8, Mn: 2.4, B: 29.3, Se: 0, Co: 0, Mo: 0, Ni: 0 }, "Extração": { N: 91.16, P: 8.31, K: 33.4, Ca: 8.8, Mg: 8.44, S: 6.51, Cu: 19.6, Fe: 189.5, Zn: 59.6, Mn: 12.0, B: 77.11, Se: 0, Co: 0, Mo: 0, Ni: 0 } }
+  }
+};
+
+    const stages = ['V1-V3', 'V4', 'V5', 'R1', 'R3', 'R5', 'R6'];
+    const stageKeys = ['V1_V3', 'V4', 'V5', 'R1', 'R3', 'R5', 'R6'];
+    const nutrientNames = {
+        N: 'Nitrogênio (N)', P: 'Fósforo (P₂O₅)', K: 'Potássio (K)', Ca: 'Cálcio (Ca)',
+        Mg: 'Magnésio (Mg)', S: 'Enxofre (S)', B: 'Boro (B)', Cu: 'Cobre (Cu)',
+        Fe: 'Ferro (Fe)', Mn: 'Manganês (Mn)', Zn: 'Zinco (Zn)', Mo: 'Molibdênio (Mo)',
+        Co: 'Cobalto (Co)', Ni: 'Níquel (Ni)', Se: 'Selênio (Se)'
+    };
+
+    let chartInstance = null;
+
+    function handleSourceTypeChange() {
+        const sourceType = document.getElementById('sourceType').value;
+        const sourceSelect = document.getElementById('selectedSource');
+        const sourceLabel = document.getElementById('sourceLabel');
+        sourceLabel.textContent = sourceType === 'Autores' ? 'Autor' : sourceType === 'Guidorizzi' ? 'Tecnologia' : 'Cultivar';
+        sourceSelect.innerHTML = '';
+        const sources = Object.keys(nutrientData[sourceType] || {});
+        sources.forEach(source => {
+            const option = document.createElement('option');
+            option.value = source;
+            option.textContent = source;
+            sourceSelect.appendChild(option);
+        });
+        updateChart();
+    }
+
+    function getDataQuality(sourceType, selectedSource, nutrient, dataType) {
+        if (!selectedSource || !nutrientData[sourceType]?.[selectedSource]?.[dataType]) {
+            return { type: 'original', label: 'Dado Original (Literatura)', color: '#0d2818' };
+        }
+        const value = nutrientData[sourceType][selectedSource][dataType][nutrient];
+        if (value === 0) {
+            return { type: 'calculated', label: 'Dado Calculado (Índices)', color: '#3dd68c' };
+        }
+        return { type: 'original', label: 'Dado Original (Literatura)', color: '#0d2818' };
+    }
+
+    function updateChart() {
+        const sourceType = document.getElementById('sourceType').value;
+        const selectedSource = document.getElementById('selectedSource').value;
+        const selectedNutrient = document.getElementById('selectedNutrient').value;
+        const dataType = document.getElementById('dataType').value;
+        const expectedYield = parseFloat(document.getElementById('expectedYield').value) || 4.2;
+        const viewMode = document.getElementById('viewMode').value;
+
+        const modeText = viewMode === 'accumulated' ? 'Acumulada' : 'Por Estádio';
+        document.getElementById('chartTitle').textContent =
+            `Curva de Absorção ${modeText} — ${selectedNutrient} (${dataType})`;
+
+        const baseValue = nutrientData[sourceType]?.[selectedSource]?.[dataType]?.[selectedNutrient] || 0;
+        const percentages = absorptionPercentages[selectedNutrient];
+        const isMacro = ['N', 'P', 'K', 'Ca', 'Mg', 'S'].includes(selectedNutrient);
+        const valuePerTon = isMacro ? baseValue : baseValue / 1000;
+        const totalValueInKg = valuePerTon * expectedYield;
+
+        const unit = totalValueInKg < 1 ? 'g' : 'kg';
+        const multiplier = unit === 'g' ? 1000 : 1;
+
+        let chartData;
+        if (viewMode === 'accumulated') {
+            chartData = stageKeys.map(key => ({
+                percentage: percentages[key],
+                value: (percentages[key] / 100) * totalValueInKg * multiplier
+            }));
+        } else {
+            chartData = stageKeys.map((key, index) => {
+                const currentPercentage = percentages[key];
+                const previousPercentage = index > 0 ? percentages[stageKeys[index - 1]] : 0;
+                const stagePercentage = currentPercentage - previousPercentage;
+                const stageValue = (stagePercentage / 100) * totalValueInKg * multiplier;
+                return { percentage: stagePercentage, value: stageValue };
+            });
+        }
+
+        const dataQuality = getDataQuality(sourceType, selectedSource, selectedNutrient, dataType);
+        updateStats(totalValueInKg * multiplier, expectedYield, selectedNutrient, dataQuality, unit);
+
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (chartInstance) { chartInstance.destroy(); }
+
+        const maxValue = Math.max(...chartData.map(d => d.value));
+        const yMax = Math.ceil(maxValue * 1.1);
+
+        const gradMain = ctx.createLinearGradient(0, 0, 0, 360);
+        gradMain.addColorStop(0, 'rgba(13, 40, 24, 0.18)');
+        gradMain.addColorStop(1, 'rgba(13, 40, 24, 0.02)');
+
+        const gradPct = ctx.createLinearGradient(0, 0, 0, 360);
+        gradPct.addColorStop(0, 'rgba(61, 214, 140, 0.2)');
+        gradPct.addColorStop(1, 'rgba(61, 214, 140, 0.02)');
+
+        const labelPrefix = viewMode === 'accumulated' ? 'Acumulado' : 'Neste Estádio';
+        const percentLabel = viewMode === 'accumulated' ? '% Acumulada' : '% Neste Estádio';
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: stages,
+                datasets: [
+                    {
+                        label: `${labelPrefix} (${unit})`,
+                        data: chartData.map(d => d.value),
+                        borderColor: '#0d2818',
+                        backgroundColor: gradMain,
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#0d2818',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: percentLabel,
+                        data: chartData.map(d => d.percentage),
+                        borderColor: '#3dd68c',
+                        backgroundColor: gradPct,
+                        borderWidth: 2,
+                        borderDash: [4, 4],
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3dd68c',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#4a6357',
+                            font: { family: "'DM Sans', sans-serif", size: 12, weight: '500' },
+                            padding: 16,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#ffffff',
+                        titleColor: '#0d2818',
+                        bodyColor: '#4a6357',
+                        borderColor: '#dce8e0',
+                        borderWidth: 1,
+                        padding: 12,
+                        bodyFont: { family: "'DM Sans', sans-serif", size: 13 },
+                        titleFont: { family: "'DM Sans', sans-serif", size: 13, weight: '600' },
+                        cornerRadius: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const mode = document.getElementById('viewMode').value;
+                                const prefix = mode === 'accumulated' ? 'Acumulado' : 'Neste Estádio';
+                                const percentPrefix = mode === 'accumulated' ? '% Acumulada' : '% Neste Estádio';
+                                if (context.datasetIndex === 0) return `${prefix}: ${context.parsed.y.toFixed(2)} ${unit}`;
+                                else return `${percentPrefix}: ${context.parsed.y.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear', position: 'left', min: 0, max: yMax,
+                        ticks: { color: '#4a6357', font: { family: "'DM Sans', sans-serif", size: 11 } },
+                        grid: { color: 'rgba(220,232,224,0.6)', drawBorder: false },
+                        title: { display: true, text: labelPrefix + ` (${unit})`, color: '#0d2818', font: { family: "'DM Sans', sans-serif", size: 11, weight: '600' } }
+                    },
+                    y1: {
+                        type: 'linear', position: 'right', min: 0, max: 100,
+                        ticks: { color: '#3dd68c', font: { family: "'DM Sans', sans-serif", size: 11 } },
+                        grid: { drawOnChartArea: false, drawBorder: false },
+                        title: { display: true, text: percentLabel, color: '#3dd68c', font: { family: "'DM Sans', sans-serif", size: 11, weight: '600' } }
+                    },
+                    x: {
+                        ticks: { color: '#8fa89a', font: { family: "'DM Sans', sans-serif", size: 11 } },
+                        grid: { color: 'rgba(220,232,224,0.4)', drawBorder: false }
+                    }
+                }
+            }
+        });
+
+        updateInfoBoxes(dataQuality, unit);
+        updateTable(chartData, selectedNutrient, unit);
+        document.getElementById('footerInfo').textContent = `${sourceType} · ${selectedSource}`;
+    }
+
+    function updateStats(total, yield_, nutrient, dataQuality, unit) {
+        const statsGrid = document.getElementById('statsGrid');
+        const isOriginal = dataQuality.type === 'original';
+        statsGrid.innerHTML = `
+            <div class="stat-card" style="border-top: 3px solid #0d2818;">
+                <div class="stat-value" style="color:#0d2818;">${total.toFixed(2)}</div>
+                <div class="stat-label">Total ${unit}</div>
+            </div>
+            <div class="stat-card" style="border-top: 3px solid #3dd68c;">
+                <div class="stat-value" style="color:#1a4a2e;">${yield_.toFixed(1)}</div>
+                <div class="stat-label">Toneladas</div>
+            </div>
+            <div class="stat-card" style="border-top: 3px solid #8fa89a;">
+                <div class="stat-value" style="color:#0d2818; font-size:1.5rem;">${nutrient}</div>
+                <div class="stat-label">Nutriente</div>
+            </div>
+            <div class="stat-card" style="border-top: 3px solid ${dataQuality.color};">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.3rem;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:${dataQuality.color};"></div>
+                    <span style="font-size:0.75rem;font-weight:600;color:${dataQuality.color};text-transform:uppercase;letter-spacing:0.06em;">${isOriginal ? 'Original' : 'Calculado'}</span>
+                </div>
+                <div style="font-size:0.78rem;color:#4a6357;line-height:1.4;">${dataQuality.label}</div>
+            </div>
+        `;
+    }
+
+    function updateInfoBoxes(dataQuality, unit) {
+        const infoBoxes = document.getElementById('infoBoxes');
+        const viewMode = document.getElementById('viewMode').value;
+        let html = '';
+        if (dataQuality.type === 'calculated') {
+            html += `<div class="info-box" style="background:#f0f7f2;border:1px solid #dce8e0;">
+                <div class="info-icon" style="color:#3dd68c;">ℹ</div>
+                <div class="info-content">
+                    <div class="info-title" style="color:#1a4a2e;">Dado Calculado</div>
+                    <div class="info-text">Este valor foi calculado utilizando índices de exportação baseados em literatura científica.</div>
+                </div>
+            </div>`;
+        }
+        if (viewMode === 'accumulated') {
+            html += `<div class="info-box" style="background:#f0f7f2;border:1px solid #dce8e0;">
+                <div class="info-icon" style="color:#0d2818;">◈</div>
+                <div class="info-content">
+                    <div class="info-title" style="color:#0d2818;">Curva Acumulada</div>
+                    <div class="info-text">
+                        <strong style="color:#0d2818;">Eixo esq.:</strong> Total absorvido desde V1 até cada estádio em ${unit}<br>
+                        <strong style="color:#3dd68c;">Eixo dir.:</strong> Porcentagem total absorvida acumulada
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            html += `<div class="info-box" style="background:#f0f7f2;border:1px solid #dce8e0;">
+                <div class="info-icon" style="color:#0d2818;">◈</div>
+                <div class="info-content">
+                    <div class="info-title" style="color:#0d2818;">Absorção Por Estádio</div>
+                    <div class="info-text">
+                        <strong style="color:#0d2818;">Eixo esq.:</strong> Quantidade absorvida especificamente naquele estádio em ${unit}<br>
+                        <strong style="color:#3dd68c;">Eixo dir.:</strong> Porcentagem absorvida naquele estádio individual
+                    </div>
+                </div>
+            </div>`;
+        }
+        infoBoxes.innerHTML = html;
+    }
+
+    function updateTable(chartData, nutrient, unit) {
+        const tableCard = document.getElementById('tableCard');
+        const viewMode = document.getElementById('viewMode').value;
+        const headerPercent = viewMode === 'accumulated' ? '% Acumulada' : '% no Estádio';
+        const headerValue = viewMode === 'accumulated' ? 'Acumulado' : 'No Estádio';
+        tableCard.innerHTML = `
+            <h2>Dados por Estádio — ${nutrientNames[nutrient]}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estádio</th>
+                        <th class="right">${headerPercent}</th>
+                        <th class="right">${headerValue} (${unit})</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${chartData.map((row, idx) => `
+                        <tr>
+                            <td style="font-weight:500;">${stages[idx]}</td>
+                            <td class="right" style="color:#3dd68c;font-weight:500;">${row.percentage.toFixed(1)}%</td>
+                            <td class="right" style="color:#0d2818;font-weight:500;">${row.value.toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        handleSourceTypeChange();
+    });
+</script>
+</body>
+</html>

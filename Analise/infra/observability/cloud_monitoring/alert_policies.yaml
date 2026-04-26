@@ -1,0 +1,49 @@
+# Fase 5 P1 - Alertas operacionais
+# Referência: docs/observability/dashboard_minimo_spec.yaml
+
+policies:
+  - id: import_success_drop
+    displayName: "Analise - Import success < 95% (15m)"
+    metric: "custom.googleapis.com/analise/taxa_importacao_sucesso"
+    comparison: "COMPARISON_LT"
+    threshold: 0.95
+    alignmentPeriod: "900s"
+    duration: "900s"
+    notificationChannels:
+      - "slack-analise-operacao"
+      - "pagerduty-analise"
+
+  - id: lab_error_spike
+    displayName: "Analise - Erro por laboratorio > 10% (30m)"
+    metric: "custom.googleapis.com/analise/erro_por_laboratorio"
+    comparison: "COMPARISON_GT"
+    threshold: 0.10
+    alignmentPeriod: "1800s"
+    duration: "1800s"
+    groupByFields:
+      - "metric.label.labId"
+    notificationChannels:
+      - "slack-analise-operacao"
+      - "email-analise-oncall"
+
+  - id: save_latency_high
+    displayName: "Analise - Save p95 > 3s (30m)"
+    metric: "custom.googleapis.com/analise/save_duration_ms_p95"
+    comparison: "COMPARISON_GT"
+    threshold: 3000
+    alignmentPeriod: "1800s"
+    duration: "1800s"
+    notificationChannels:
+      - "slack-analise-operacao"
+      - "pagerduty-analise"
+
+  - id: save_compensation_high
+    displayName: "Analise - Save compensated > 1% (30m)"
+    metric: "custom.googleapis.com/analise/save_compensated_rate"
+    comparison: "COMPARISON_GT"
+    threshold: 0.01
+    alignmentPeriod: "1800s"
+    duration: "1800s"
+    notificationChannels:
+      - "slack-analise-operacao"
+      - "email-analise-oncall"

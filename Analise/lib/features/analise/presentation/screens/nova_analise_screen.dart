@@ -1,537 +1,583 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/widgets/app_dropdown.dart';
+import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/analise/domain/entities/produtor.dart';
-import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/widgets/localizacao_captura_widget.dart';
-import 'package:soloforte/features/analise/presentation/widgets/num_field_widget.dart';
-import 'package:soloforte/features/analise/presentation/widgets/upload_pdf_widget.dart';
-import 'package:uuid/uuid.dart';
+import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
+import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
+import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_table_widget.dart';
+import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 
-class NovaAnaliseScreen extends ConsumerStatefulWidget {
+const _brandGreen = Color(0xFF4ADE80);
+const _darkGreen = Color(0xFF1E3A2F);
+const _mint = Color(0xFFD1FAE5);
+const _ink = Color(0xFF1A1A1A);
+const _muted = Color(0xFF6B7280);
+const _line = Color(0xFFE5E7EB);
+const _surfaceAlt = Color(0xFFF3F4F6);
+
+class NovaAnaliseScreen extends ConsumerWidget {
   final AnaliseSolo? analiseParaEditar;
 
   const NovaAnaliseScreen({super.key, this.analiseParaEditar});
 
   @override
-  ConsumerState<NovaAnaliseScreen> createState() => _NovaAnaliseScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ctrlProvider = novaAnaliseControllerProvider(analiseParaEditar);
+    final state = ref.watch(ctrlProvider);
+    final ctrl = ref.read(ctrlProvider.notifier);
 
-class _NovaAnaliseScreenState extends ConsumerState<NovaAnaliseScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  // Controladores Identificação
-  late String _selectedProdutorId;
-  late TextEditingController _nomeAreaCtrl;
-  late Cultura _selectedCultura;
-  late String _selectedSafra;
-  late TextEditingController _laboratorioCtrl;
-
-  // Controladores Físico
-  late TexturaSolo _selectedTextura;
-  late String _selectedProfundidade;
-
-  // Controladores Localização
-  late double? _latitude;
-  late double? _longitude;
-
-  // Controladores Nutrientes
-  late TextEditingController _phAguaCtrl;
-  late TextEditingController _phSmpCtrl;
-  late TextEditingController _phCacl2Ctrl;
-  late TextEditingController _fosforoCtrl;
-  late TextEditingController _potassioCtrl;
-  late TextEditingController _calcioCtrl;
-  late TextEditingController _magnesioCtrl;
-  late TextEditingController _enxofreCtrl;
-  late TextEditingController _aluminioCtrl;
-  late TextEditingController _hMaisAlCtrl;
-
-  late TextEditingController _boroCtrl;
-  late TextEditingController _cobreCtrl;
-  late TextEditingController _ferroCtrl;
-  late TextEditingController _manganesCtrl;
-  late TextEditingController _zincoCtrl;
-
-  final List<String> safrasDisponiveis = [
-    '2024/25',
-    '2025/26',
-    'Safrinha 2025',
-    'Inverno 2025'
-  ];
-
-  final List<String> profundidadesDisponiveis = [
-    '0-20 cm',
-    '20-40 cm',
-    '40-60 cm',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    final a = widget.analiseParaEditar;
-
-    _selectedProdutorId = a?.produtorId ?? '1'; // Default produtor mock
-    _nomeAreaCtrl = TextEditingController(text: a?.nomeArea ?? '');
-    _selectedCultura = a?.cultura ?? Cultura.soja;
-    _selectedSafra = a?.safra ?? safrasDisponiveis.first;
-    _laboratorioCtrl = TextEditingController(text: a?.laboratorio ?? '');
-
-    _selectedTextura = a?.textura ?? TexturaSolo.medio;
-    _selectedProfundidade = a?.profundidade ?? profundidadesDisponiveis.first;
-
-    _latitude = a?.latitude;
-    _longitude = a?.longitude;
-
-    _phAguaCtrl = TextEditingController(text: a?.phAgua?.toString() ?? '');
-    _phSmpCtrl = TextEditingController(text: a?.phSmp?.toString() ?? '');
-    _phCacl2Ctrl = TextEditingController(text: a?.phCacl2?.toString() ?? '');
-
-    _fosforoCtrl = TextEditingController(text: a?.fosforo?.toString() ?? '');
-    _potassioCtrl = TextEditingController(text: a?.potassio?.toString() ?? '');
-    _calcioCtrl = TextEditingController(text: a?.calcio?.toString() ?? '');
-    _magnesioCtrl = TextEditingController(text: a?.magnesio?.toString() ?? '');
-    _enxofreCtrl = TextEditingController(text: a?.enxofre?.toString() ?? '');
-
-    _aluminioCtrl = TextEditingController(text: a?.aluminio?.toString() ?? '');
-    _hMaisAlCtrl = TextEditingController(text: a?.hMaisAl?.toString() ?? '');
-
-    _boroCtrl = TextEditingController(text: a?.boro?.toString() ?? '');
-    _cobreCtrl = TextEditingController(text: a?.cobre?.toString() ?? '');
-    _ferroCtrl = TextEditingController(text: a?.ferro?.toString() ?? '');
-    _manganesCtrl = TextEditingController(text: a?.manganes?.toString() ?? '');
-    _zincoCtrl = TextEditingController(text: a?.zinco?.toString() ?? '');
-
-    // Adiciona listener para recalcular CTC e V%
-    _calcioCtrl.addListener(_setStateOnCtrlChange);
-    _magnesioCtrl.addListener(_setStateOnCtrlChange);
-    _potassioCtrl.addListener(_setStateOnCtrlChange);
-    _hMaisAlCtrl.addListener(_setStateOnCtrlChange);
-  }
-
-  void _setStateOnCtrlChange() {
-    setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _nomeAreaCtrl.dispose();
-    _laboratorioCtrl.dispose();
-    _phAguaCtrl.dispose();
-    _phSmpCtrl.dispose();
-    _phCacl2Ctrl.dispose();
-    _fosforoCtrl.dispose();
-    _potassioCtrl.dispose();
-    _calcioCtrl.dispose();
-    _magnesioCtrl.dispose();
-    _enxofreCtrl.dispose();
-    _aluminioCtrl.dispose();
-    _hMaisAlCtrl.dispose();
-    _boroCtrl.dispose();
-    _cobreCtrl.dispose();
-    _ferroCtrl.dispose();
-    _manganesCtrl.dispose();
-    _zincoCtrl.dispose();
-    super.dispose();
-  }
-
-  double? _parseDouble(String text) {
-    if (text.isEmpty) return null;
-    return double.tryParse(text.replaceAll(',', '.'));
-  }
-
-  AnaliseSolo _buildDraftAnaliseParaCalculo() {
-    return AnaliseSolo(
-      id: '',
-      produtorId: '',
-      nomeArea: '',
-      cultura: Cultura.soja,
-      safra: '',
-      laboratorio: '',
-      dataCadastro: DateTime.now(),
-      textura: TexturaSolo.medio,
-      profundidade: '',
-      calcio: _parseDouble(_calcioCtrl.text),
-      magnesio: _parseDouble(_magnesioCtrl.text),
-      potassio: _parseDouble(_potassioCtrl.text),
-      hMaisAl: _parseDouble(_hMaisAlCtrl.text),
-    );
-  }
-
-  Future<void> _salvar() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final analise = AnaliseSolo(
-      id: widget.analiseParaEditar?.id ?? const Uuid().v4(),
-      produtorId: _selectedProdutorId,
-      nomeArea: _nomeAreaCtrl.text,
-      cultura: _selectedCultura,
-      safra: _selectedSafra,
-      laboratorio: _laboratorioCtrl.text,
-      dataCadastro: widget.analiseParaEditar?.dataCadastro ?? DateTime.now(),
-      textura: _selectedTextura,
-      profundidade: _selectedProfundidade,
-      latitude: _latitude,
-      longitude: _longitude,
-      phAgua: _parseDouble(_phAguaCtrl.text),
-      phSmp: _parseDouble(_phSmpCtrl.text),
-      phCacl2: _parseDouble(_phCacl2Ctrl.text),
-      fosforo: _parseDouble(_fosforoCtrl.text),
-      potassio: _parseDouble(_potassioCtrl.text),
-      calcio: _parseDouble(_calcioCtrl.text),
-      magnesio: _parseDouble(_magnesioCtrl.text),
-      enxofre: _parseDouble(_enxofreCtrl.text),
-      aluminio: _parseDouble(_aluminioCtrl.text),
-      hMaisAl: _parseDouble(_hMaisAlCtrl.text),
-      boro: _parseDouble(_boroCtrl.text),
-      cobre: _parseDouble(_cobreCtrl.text),
-      ferro: _parseDouble(_ferroCtrl.text),
-      manganes: _parseDouble(_manganesCtrl.text),
-      zinco: _parseDouble(_zincoCtrl.text),
-    );
-
-    await ref.read(analiseNotifierProvider.notifier).salvar(analise);
-
-    if (mounted) {
-      context.pop();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final produtores = ref.watch(analiseRepositoryProvider).getProdutores();
-    final draftCalculo = _buildDraftAnaliseParaCalculo();
+    final derivados = ctrl.todosDerivados;
+    final analisesForTable = state.analises
+        .map((draft) => draft.toFormMap())
+        .toList(growable: false);
 
     return Scaffold(
+      backgroundColor: _surfaceAlt,
       appBar: AppBar(
-        title: Text(widget.analiseParaEditar == null
-            ? 'Nova Análise'
-            : 'Editar Análise'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          analiseParaEditar == null ? 'Nova Análise' : 'Editar Análise',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: _ink,
+            letterSpacing: -0.2,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: _darkGreen),
+        actions: [
+          TextButton.icon(
+            onPressed:
+                state.isSaving ? null : () => _importarPdf(context, ctrl),
+            icon: const Icon(Icons.upload_file, size: 18),
+            label: const Text('Importar'),
+            style: TextButton.styleFrom(
+              foregroundColor: _darkGreen,
+              textStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(0.7),
+          child: SizedBox(height: 0.7, child: ColoredBox(color: _line)),
+        ),
       ),
-      body: FutureBuilder(
-          future: produtores,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final produtoresList = snapshot.data as List<Produtor>;
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    UploadPdfWidget(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text(
-                                  'Demonstração: PDF Parser será chamado aqui.')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('1. Identificação',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                          labelText: 'Produtor', border: OutlineInputBorder()),
-                      initialValue: _selectedProdutorId,
-                      items: produtoresList.map((p) {
-                        return DropdownMenuItem(
-                            value: p.id, child: Text(p.nome));
-                      }).toList()
-                        ..add(const DropdownMenuItem(
-                            value: 'new', child: Text('+ Novo Produtor'))),
-                      onChanged: (val) {
-                        if (val != null && val != 'new') {
-                          setState(() => _selectedProdutorId = val);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _nomeAreaCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Nome da Área (Talhão)',
-                          border: OutlineInputBorder()),
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Campo obrigatório'
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<Cultura>(
-                            decoration: const InputDecoration(
-                                labelText: 'Cultura',
-                                border: OutlineInputBorder()),
-                            initialValue: _selectedCultura,
-                            items: Cultura.values.map((c) {
-                              return DropdownMenuItem(
-                                  value: c,
-                                  child: Text('${c.emoji} ${c.label}'));
-                            }).toList(),
-                            onChanged: (val) =>
-                                setState(() => _selectedCultura = val!),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(top: 12, bottom: 80),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderGlobal(state, ctrl),
+                const SizedBox(height: 12),
+                _buildValidationOverview(context, state, ctrl),
+                const SizedBox(height: 12),
+                AnaliseTableWidget(
+                  analises: analisesForTable,
+                  derivados: derivados,
+                  onCampoChanged: ctrl.atualizarCampo,
+                  onGpsClicked: (index) async {
+                    final erro = await ctrl.capturarGps(index);
+                    if (!context.mounted) return;
+                    final snackBottomMargin =
+                        MediaQuery.of(context).viewPadding.bottom + 92;
+                    if (erro == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              const Text('Localização capturada com sucesso'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: _darkGreen,
+                          margin: EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            snackBottomMargin,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                                labelText: 'Safra',
-                                border: OutlineInputBorder()),
-                            initialValue: _selectedSafra,
-                            items: safrasDisponiveis.map((s) {
-                              return DropdownMenuItem(value: s, child: Text(s));
-                            }).toList(),
-                            onChanged: (val) =>
-                                setState(() => _selectedSafra = val!),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _laboratorioCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Laboratório',
-                          border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('2. Localização',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    LocalizacaoCaptura(
-                      onCapturada: (latitude, longitude) {
-                        setState(() {
-                          _latitude = latitude;
-                          _longitude = longitude;
-                        });
-                      },
-                    ),
-                    if (_latitude != null) ...[
-                      const SizedBox(height: 8),
-                      Text('Lat: $_latitude, Lng: $_longitude',
-                          style: const TextStyle(color: Colors.green)),
-                    ],
-                    const SizedBox(height: 24),
-                    const Text('3. Dados Físicos',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<TexturaSolo>(
-                            decoration: const InputDecoration(
-                                labelText: 'Textura',
-                                border: OutlineInputBorder()),
-                            initialValue: _selectedTextura,
-                            items: TexturaSolo.values.map((t) {
-                              return DropdownMenuItem(
-                                  value: t, child: Text(t.name.toUpperCase()));
-                            }).toList(),
-                            onChanged: (val) =>
-                                setState(() => _selectedTextura = val!),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                                labelText: 'Profundidade',
-                                border: OutlineInputBorder()),
-                            initialValue: _selectedProfundidade,
-                            items: profundidadesDisponiveis.map((p) {
-                              return DropdownMenuItem(value: p, child: Text(p));
-                            }).toList(),
-                            onChanged: (val) =>
-                                setState(() => _selectedProfundidade = val!),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('4. pH e Tampão',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: NumFieldWidget(
-                                label: 'pH Água', controller: _phAguaCtrl)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: NumFieldWidget(
-                                label: 'pH SMP', controller: _phSmpCtrl)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: NumFieldWidget(
-                                label: 'pH CaCl₂', controller: _phCacl2Ctrl)),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('5. Macronutrientes',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'Fósforo (P)',
-                          controller: _fosforoCtrl,
-                          suffixText: 'mg',
-                        )),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'Potássio (K)',
-                          controller: _potassioCtrl,
-                          suffixText: 'cmolc',
-                        )),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'Cálcio (Ca)',
-                          controller: _calcioCtrl,
-                          suffixText: 'cmolc',
-                        )),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'Magnésio (Mg)',
-                          controller: _magnesioCtrl,
-                          suffixText: 'cmolc',
-                        )),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'Enxofre (S)',
-                          controller: _enxofreCtrl,
-                          suffixText: 'mg',
-                        )),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('6. Acidez e CTC (Automáticos)',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'Alumínio (Al)',
-                          controller: _aluminioCtrl,
-                          suffixText: 'cmolc',
-                        )),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: NumFieldWidget(
-                          label: 'H+Al',
-                          controller: _hMaisAlCtrl,
-                          suffixText: 'cmolc',
-                        )),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: NumFieldWidget(
-                            label: 'CTC calculada',
-                            controller: TextEditingController(
-                                text: draftCalculo.ctc.toStringAsFixed(2)),
-                            readOnly: true,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: NumFieldWidget(
-                            label: 'V% calculada',
-                            controller: TextEditingController(
-                                text:
-                                    draftCalculo.vPorcento.toStringAsFixed(2)),
-                            readOnly: true,
-                            suffixText: '%',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    ExpansionTile(
-                      title: const Text('7. Micronutrientes (mg/dm³)',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      childrenPadding: const EdgeInsets.only(bottom: 16),
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                                child: NumFieldWidget(
-                                    label: 'Boro (B)', controller: _boroCtrl)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: NumFieldWidget(
-                                    label: 'Cobre (Cu)',
-                                    controller: _cobreCtrl)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                                child: NumFieldWidget(
-                                    label: 'Ferro (Fe)',
-                                    controller: _ferroCtrl)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: NumFieldWidget(
-                                    label: 'Manganês (Mn)',
-                                    controller: _manganesCtrl)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: NumFieldWidget(
-                                    label: 'Zinco (Zn)',
-                                    controller: _zincoCtrl)),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _salvar,
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Salvar Análise',
-                            style: TextStyle(fontSize: 18)),
+                      );
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(erro),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.error,
+                        margin:
+                            EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
                       ),
+                    );
+                  },
+                  onAddAnalise: ctrl.adicionarAnalise,
+                  onRemoveAnalise: ctrl.removerAnalise,
+                  laboratorio: state.laudoLaboratorio,
+                  validation: state.validation,
+                  highlightedCellKey: state.highlightedCellKey,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: 24 + MediaQuery.of(context).viewPadding.bottom,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x4D007AFF),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                  onTap:
+                      state.isSaving ? null : () => _salvar(context, ref, ctrl),
+                  child: Container(
+                    height: AppDimens.inputHeight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (state.isSaving)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.check_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          state.analises.length == 1
+                              ? 'Salvar Análise'
+                              : 'Salvar ${state.analises.length} Análises',
+                          style: AppTextStyles.label.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 40),
-                  ],
+                  ),
                 ),
               ),
-            );
-          }),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildHeaderGlobal(
+      NovaAnaliseState state, NovaAnaliseController ctrl) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'IDENTIFICAÇÃO DO LAUDO',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    color: _muted,
+                  ),
+                ),
+              ),
+              if (state.laudoLaboratorio.trim().isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _mint,
+                        borderRadius: BorderRadius.circular(99),
+                        border: Border.all(
+                          color: _brandGreen.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: Text(
+                        state.laudoLaboratorio,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: _darkGreen,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          AppInput(
+            label: 'Produtor',
+            initialValue: state.laudoProdutor,
+            onChanged: ctrl.atualizarLaudoProdutor,
+          ),
+          const SizedBox(height: 10),
+          AppInput(
+            label: 'Fazenda',
+            initialValue: state.laudoFazenda,
+            onChanged: ctrl.atualizarLaudoFazenda,
+          ),
+          const SizedBox(height: 10),
+          AppDropdown<String>(
+            label: 'Laboratório',
+            hint: 'Selecione o laboratório',
+            value:
+                state.laudoLaboratorio.isEmpty ? null : state.laudoLaboratorio,
+            items: const [
+              AppDropdownItem(value: 'Sellar', label: 'Sellar'),
+              AppDropdownItem(value: 'Exata Brasil', label: 'Exata Brasil'),
+              AppDropdownItem(value: 'IBRA', label: 'IBRA'),
+              AppDropdownItem(
+                  value: 'MB Agronegócios', label: 'MB Agronegócios'),
+            ],
+            onChanged: (val) => ctrl.atualizarLaudoLaboratorio(val ?? ''),
+          ),
+          const SizedBox(height: 10),
+          AppInput(
+            label: 'Safra',
+            initialValue: state.laudoSafra,
+            onChanged: ctrl.atualizarLaudoSafra,
+            hint: 'Ex: 2024/2025',
+            maxLength: 9,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildValidationOverview(
+    BuildContext context,
+    NovaAnaliseState state,
+    NovaAnaliseController ctrl,
+  ) {
+    final byColumn = state.validation.byColumn.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                state.validation.hasBlockingErrors
+                    ? Icons.error_outline
+                    : (state.validation.hasWarnings
+                        ? Icons.warning_amber_outlined
+                        : Icons.check_circle_outline),
+                size: 18,
+                color: state.validation.hasBlockingErrors
+                    ? AppColors.error
+                    : (state.validation.hasWarnings
+                        ? const Color(0xFFD97706)
+                        : _darkGreen),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  state.validation.hasIssues
+                      ? '${state.validation.totalErrors} erro(s) e ${state.validation.totalWarnings} aviso(s)'
+                      : 'Sem inconsistências na validação',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: state.validation.hasBlockingErrors
+                        ? AppColors.error
+                        : _ink,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: state.validation.hasIssues
+                    ? () {
+                        final issue = ctrl.destacarProximaCelulaInvalida();
+                        if (issue == null || !context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${issue.cellLabel}: ${issue.message}',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor:
+                                issue.severity == ValidationSeverity.error
+                                    ? AppColors.error
+                                    : const Color(0xFFD97706),
+                          ),
+                        );
+                      }
+                    : null,
+                icon: const Icon(Icons.skip_next_rounded, size: 16),
+                label: const Text('Próxima'),
+                style: TextButton.styleFrom(
+                  foregroundColor: _darkGreen,
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (byColumn.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: byColumn.map((entry) {
+                final summary = entry.value;
+                final text = summary.errorCount > 0
+                    ? '${summary.errorCount} erro(s) em A${entry.key + 1}'
+                    : '${summary.warningCount} aviso(s) em A${entry.key + 1}';
+                final hasError = summary.errorCount > 0;
+
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: hasError
+                        ? const Color(0xFFFEF2F2)
+                        : const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(
+                      color: hasError
+                          ? const Color(0xFFFCA5A5)
+                          : const Color(0xFFFDE68A),
+                    ),
+                  ),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: hasError
+                          ? const Color(0xFFB91C1C)
+                          : const Color(0xFF92400E),
+                    ),
+                  ),
+                );
+              }).toList(growable: false),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _salvar(
+    BuildContext context,
+    WidgetRef ref,
+    NovaAnaliseController ctrl,
+  ) async {
+    final snackBottomMargin = MediaQuery.of(context).viewPadding.bottom + 92;
+    final ok = await ctrl.salvar();
+    if (!context.mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Análise salva com sucesso'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: _darkGreen,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
+        ),
+      );
+      if (context.canPop()) {
+        context.pop();
+      }
+      return;
+    }
+
+    ctrl.destacarProximaCelulaInvalida();
+
+    final erro =
+        (ref.read(novaAnaliseControllerProvider(analiseParaEditar)).error ?? '')
+            .trim();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(erro.isEmpty ? 'Erro ao salvar — tente novamente' : erro),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.error,
+        margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
+      ),
+    );
+  }
+
+  Future<void> _importarPdf(
+      BuildContext context, NovaAnaliseController ctrl) async {
+    try {
+      final analises = await PdfImportService().importarDePdf(context);
+      if (analises == null) return;
+
+      ctrl.carregarDeAnaliseSolo(analises);
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        try {
+          user = await FirebaseAuth.instance.authStateChanges()
+              .firstWhere((u) => u != null)
+              .timeout(const Duration(seconds: 5));
+        } catch (_) {
+          user = null;
+        }
+      }
+
+      if (user == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sessão expirada. Faça login novamente.'),
+            backgroundColor: Color(0xFFFF3B30),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      final ok = await ctrl.salvar();
+      if (ok && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${analises.length} ${analises.length == 1 ? 'análise importada' : 'análises importadas'} com sucesso',
+            ),
+            backgroundColor: const Color(0xFF34C759),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        if (context.mounted) context.pop();
+      }
+    } on LabConfiancaBaixaException catch (e) {
+      if (!context.mounted) return;
+      final selectedLabId = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => ImportacaoConfiancaSheet(
+          ranking: e.ranking,
+          suggestedLabId: e.suggestedLabId,
+          confidence: e.confidence,
+          sampleHints: e.sampleHints,
+          onConfirm: (labId) => Navigator.of(context).pop(labId),
+        ),
+      );
+
+      if (selectedLabId == null || !context.mounted) return;
+
+      final analises = await PdfImportService().importarArquivoPdf(
+        fileBytes: e.fileBytes,
+        fileName: e.fileName,
+        forcedLabId: selectedLabId,
+        operationId: e.operationId,
+      );
+
+      ctrl.carregarDeAnaliseSolo(analises);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${analises.length} amostra${analises.length > 1 ? 's' : ''} importada${analises.length > 1 ? 's' : ''} após confirmação do laboratório',
+          ),
+          backgroundColor: _darkGreen,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } on LabNaoReconhecidoException {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.labNaoReconhecido,
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } on ExtracacaoIndisponivelException {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.extracacaoIndisponivel,
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao importar: $e')),
+      );
+    }
   }
 }

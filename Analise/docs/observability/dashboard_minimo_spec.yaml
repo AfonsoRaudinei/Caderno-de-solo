@@ -1,0 +1,59 @@
+version: 1
+name: analise-observability-p1
+refresh_interval: 5m
+panels:
+  - id: health_overview
+    title: Saude Geral
+    metrics:
+      - taxa_importacao_sucesso
+      - taxa_falha_importacao
+      - save_duration_ms_p95
+    windows:
+      - 24h
+      - 7d
+
+  - id: lab_diagnostics
+    title: Diagnostico por Laboratorio
+    dimensions:
+      - labId
+      - appVersion
+      - platform
+      - environment
+    metrics:
+      - import_failed_count
+      - import_started_count
+      - erro_por_laboratorio
+      - fallback_rate
+      - confidence_distribution
+    drilldown_keys:
+      - operationId
+      - errorCode
+
+  - id: persistence_status
+    title: Persistencia
+    metrics:
+      - save_committed_count
+      - save_failed_count
+      - save_compensated_count
+      - save_idempotent_replay_count
+      - save_duration_ms_p50
+      - save_duration_ms_p95
+      - save_duration_ms_p99
+    drilldown_keys:
+      - operationId
+      - batchId
+      - idempotencyKeyHash
+
+alerts:
+  - id: import_success_drop
+    when: taxa_importacao_sucesso < 0.95
+    window: 15m
+  - id: lab_error_spike
+    when: erro_por_laboratorio > 0.10
+    window: 30m
+  - id: save_latency_high
+    when: save_duration_ms_p95 > 3000
+    window: 30m
+  - id: save_compensation_high
+    when: save_compensated_rate > 0.01
+    window: 30m

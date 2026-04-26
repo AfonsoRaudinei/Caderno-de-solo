@@ -9,4 +9,8 @@ class GetAnalisesUsecase {
   Future<List<AnaliseSolo>> call() async {
     return await repository.getAnalises();
   }
+
+  Stream<List<AnaliseSolo>> stream() {
+    return repository.watchAnalises();
+  }
 }

@@ -28,6 +28,8 @@ class AppInput extends StatefulWidget {
     this.inputFormatters,
     this.autofocus = false,
     this.initialValue,
+    this.autofillHints,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   final String? label;
@@ -51,6 +53,8 @@ class AppInput extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final bool autofocus;
   final String? initialValue;
+  final Iterable<String>? autofillHints;
+  final TextCapitalization textCapitalization;
 
   @override
   State<AppInput> createState() => _AppInputState();
@@ -60,19 +64,53 @@ class _AppInputState extends State<AppInput> {
   bool _isFocused = false;
   bool _isObscured = false;
   late FocusNode _focusNode;
+  TextEditingController? _internalController;
 
   @override
   void initState() {
     super.initState();
     _isObscured = widget.obscureText;
     _focusNode = widget.focusNode ?? FocusNode();
+    if (widget.controller == null) {
+      _internalController =
+          TextEditingController(text: widget.initialValue ?? '');
+    }
     _focusNode.addListener(() {
       setState(() => _isFocused = _focusNode.hasFocus);
     });
   }
 
   @override
+  void didUpdateWidget(covariant AppInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.controller != widget.controller) {
+      if (oldWidget.controller == null) {
+        _internalController?.dispose();
+        _internalController = null;
+      }
+      if (widget.controller == null) {
+        _internalController =
+            TextEditingController(text: widget.initialValue ?? '');
+      }
+    }
+
+    // Sincroniza initialValue quando o widget usa controller interno.
+    // Evita sobrescrever enquanto o usuário está digitando.
+    if (widget.controller == null && !_focusNode.hasFocus) {
+      final nextText = widget.initialValue ?? '';
+      if ((_internalController?.text ?? '') != nextText) {
+        _internalController?.value = TextEditingValue(
+          text: nextText,
+          selection: TextSelection.collapsed(offset: nextText.length),
+        );
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _internalController?.dispose();
     if (widget.focusNode == null) _focusNode.dispose();
     super.dispose();
   }
@@ -104,7 +142,7 @@ class _AppInputState extends State<AppInput> {
                 : null,
           ),
           child: TextFormField(
-            controller: widget.controller,
+            controller: widget.controller ?? _internalController,
             focusNode: _focusNode,
             keyboardType: widget.keyboardType,
             obscureText: _isObscured,
@@ -114,12 +152,12 @@ class _AppInputState extends State<AppInput> {
             readOnly: widget.readOnly,
             autofocus: widget.autofocus,
             textInputAction: widget.textInputAction,
+            textCapitalization: widget.textCapitalization,
+            autofillHints: widget.autofillHints,
             inputFormatters: _buildFormatters(),
-            initialValue: widget.controller == null ? widget.initialValue : null,
             style: AppTextStyles.input.copyWith(
-              color: widget.enabled
-                  ? AppColors.textPrimary
-                  : AppColors.textSecond,
+              color:
+                  widget.enabled ? AppColors.textPrimary : AppColors.textSecond,
             ),
             onChanged: widget.onChanged,
             onFieldSubmitted: widget.onSubmitted,
@@ -131,9 +169,8 @@ class _AppInputState extends State<AppInput> {
               ),
               counterText: '',
               filled: true,
-              fillColor: widget.enabled
-                  ? AppColors.bgPrimary
-                  : AppColors.bgSecondary,
+              fillColor:
+                  widget.enabled ? AppColors.bgPrimary : AppColors.bgSecondary,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 12,

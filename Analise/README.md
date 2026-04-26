@@ -2,6 +2,17 @@
 
 A new Flutter project.
 
+## Arquitetura e Gates
+
+- Gate A (documento formal): [docs/GATE_A_ARQUITETURA_FORMAL.md](docs/GATE_A_ARQUITETURA_FORMAL.md)
+- Gate E (quality gate CI): [docs/GATE_E_QUALITY_GATE.md](docs/GATE_E_QUALITY_GATE.md)
+- Guia de metricas dinamicas: [docs/METRICAS_GUIDE.md](docs/METRICAS_GUIDE.md)
+
+## Publicação App Store
+
+- Política de Privacidade: [docs/privacy-policy.html](docs/privacy-policy.html)
+- Suporte ao Usuário: [docs/support.html](docs/support.html)
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

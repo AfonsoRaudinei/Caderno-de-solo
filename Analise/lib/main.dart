@@ -1,25 +1,44 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:soloforte/core/router/app_router.dart';
+import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:soloforte/firebase_options.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  await Hive.initFlutter();
+      await Hive.initFlutter();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-  runApp(
-    const ProviderScope(
-      child: AnaliseApp(),
-    ),
+      await AppObservability.instance.initialize();
+      AppObservability.instance.installGlobalHandlers();
+
+      runApp(
+        const ProviderScope(
+          child: AnaliseApp(),
+        ),
+      );
+    },
+    (error, stack) {
+      unawaited(
+        AppObservability.instance.recordError(
+          error,
+          stack,
+          fatal: true,
+          reason: 'run_zoned_guarded',
+        ),
+      );
+    },
   );
 }
 

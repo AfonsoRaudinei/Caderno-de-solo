@@ -101,7 +101,23 @@ final deleteAnaliseUsecaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DeleteAnaliseUsecaseRef = AutoDisposeProviderRef<DeleteAnaliseUsecase>;
-String _$analisesFiltradasHash() => r'80b4288d1736151bd8df6f01d9456e8f22646205';
+String _$authStateHash() => r'd8eb17123e8971f9b8086bb415a4b2bde52779e2';
+
+/// See also [authState].
+@ProviderFor(authState)
+final authStateProvider = AutoDisposeStreamProvider<User?>.internal(
+  authState,
+  name: r'authStateProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$authStateHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AuthStateRef = AutoDisposeStreamProviderRef<User?>;
+String _$analisesFiltradasHash() => r'ff1b69529bd3ec2e6324edbd259d729e37ca37af';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -302,12 +318,12 @@ class _AnalisesFiltradasProviderElement
   String? get busca => (origin as AnalisesFiltradasProvider).busca;
 }
 
-String _$analiseNotifierHash() => r'd5c097ac45c1ee126ecc906d55e7fcc49b0b980a';
+String _$analiseNotifierHash() => r'86736c9aeb553f4a276792bbbf0e72f035c5a669';
 
 /// See also [AnaliseNotifier].
 @ProviderFor(AnaliseNotifier)
-final analiseNotifierProvider = AutoDisposeAsyncNotifierProvider<
-    AnaliseNotifier, List<AnaliseSolo>>.internal(
+final analiseNotifierProvider =
+    StreamNotifierProvider<AnaliseNotifier, List<AnaliseSolo>>.internal(
   AnaliseNotifier.new,
   name: r'analiseNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -317,6 +333,6 @@ final analiseNotifierProvider = AutoDisposeAsyncNotifierProvider<
   allTransitiveDependencies: null,
 );
 
-typedef _$AnaliseNotifier = AutoDisposeAsyncNotifier<List<AnaliseSolo>>;
+typedef _$AnaliseNotifier = StreamNotifier<List<AnaliseSolo>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

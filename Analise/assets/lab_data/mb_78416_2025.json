@@ -1,0 +1,35 @@
+{
+  "fonte": "MB Agronegócios",
+  "analise": "78416",
+  "dataEmissao": "2025-01-01",
+  "proprietario": "Fazenda Flamboyat",
+  "propriedade": "Fazenda Flamboyat",
+  "municipio": "",
+  "amostras": [
+    {
+      "numeroAmostra": "78416-1",
+      "talhao": "TH ABACAXI",
+      "profundidade": "0-20",
+      "phCaCl2": 5.8,
+      "pMehlich": 35.0,
+      "pResina": 28.0,
+      "pRem": 15.0,
+      "k_mgdm3": 120.0,
+      "ca": 3.2,
+      "mg": 1.1,
+      "al": 0.0,
+      "hMaisAl": 3.2,
+      "mo_pct": 2.8,
+      "carbono_gdm3": 16.2,
+      "s020": null,
+      "b": 0.5,
+      "cu": null,
+      "fe": null,
+      "mn": null,
+      "zn": null,
+      "argila_pct": 42.0,
+      "silte_pct": 8.0,
+      "areiaTotal_pct": 50.0
+    }
+  ]
+}

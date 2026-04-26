@@ -1,5 +1,6 @@
 import 'package:soloforte/domain/entities/resultado_gesso.dart';
 import 'package:soloforte/domain/formulas/conversoes.dart';
+import 'package:soloforte/domain/formulas/types/gesso_input.dart';
 
 /// Motor de cálculo de gesso agrícola (02_gesso.md)
 /// Referências: EMBRAPA, UFLA, ESALQ, UEPG, Fancelli.
@@ -102,18 +103,13 @@ class GessoEngine {
 
   /// Método ④ — CTC efetiva e Ca (UEPG/Caires).
   /// NG(t/ha) = (0,60 × CTCe_sub − Ca_sub) × 6,4
-  static ResultadoGesso metodo4CTCeCa({
-    required double ctcESubCmolcDm3,
-    required double caSubCmolcDm3,
-    DiagnosticoGesso? diagnostico,
-  }) {
-    final doseTHa = (0.60 * ctcESubCmolcDm3 - caSubCmolcDm3) * 6.4;
+  static ResultadoGesso metodo4CTCeCa(GessoInput input, {DiagnosticoGesso? diagnostico}) {
+    final doseTHa = (0.60 * input.ctcEfetiva - input.ca) * 6.4;
     final doseKg = Conversoes.tHaToKgHa(doseTHa.clamp(0.0, double.infinity));
     return _buildResultado(
       metodo: MetodoGesso.ctcEfetivaCaUepg,
       doseKgHa: doseKg,
       diagnostico: diagnostico,
-      observacoes: ['Resultado negativo é tratado como 0 kg/ha.'],
     );
   }
 

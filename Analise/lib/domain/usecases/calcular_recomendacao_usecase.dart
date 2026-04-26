@@ -4,6 +4,8 @@ import 'package:soloforte/domain/entities/calibracao_entity.dart';
 import 'package:soloforte/domain/entities/citacao_calibracao_model.dart';
 import 'package:soloforte/domain/formulas/fosforo_formula.dart';
 import 'package:soloforte/domain/formulas/potassio_formula.dart';
+import 'package:soloforte/domain/formulas/types/calcario_input.dart';
+import 'package:soloforte/domain/formulas/types/fosforo_input.dart';
 import 'package:soloforte/domain/models/analise_model.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 
@@ -15,20 +17,32 @@ class CalcularRecomendacaoUseCase {
     // 1 - Cálculo de Calcário (Método V%)
     // Considerando por padrão V% desejado de 70% para as culturas em geral
     final calcario = CalcarioFormula.metodoV(
-      ctc: analise.ctc,
-      vAtual: analise.saturacaoBases,
-      vDesejado: 70.0,
-      prnt: prntDesejado,
-    );
+      CalcarioInput(
+        ctcPh7: analise.ctcTotal,
+        va: analise.vPct,
+        vd: 70.0,
+        prnt: prntDesejado,
+        profundidade: 20.0,
+      ),
+    ).ncToneladas;
 
     // 2 - Fósforo (Considerando solo argiloso para fins do exemplo > 35%)
-    final pCritico = FosforoFormula.nivelCriticoMehlich1(40.0);
-    final pDose = FosforoFormula.recomendacao(analise.fosforo, pCritico);
+    final pCritico = FosforoFormula.nivelCriticoMehlich1(
+      analise.argilaPercent == 0 ? 40.0 : analise.argilaPercent,
+    );
+    final pDose = FosforoFormula.recomendacaoCorrecao(
+      FosforoInput(
+        pAtual: analise.pMehlich ?? analise.pResina ?? 0,
+        nc: pCritico,
+        argila: analise.argilaPercent == 0 ? 25.0 : analise.argilaPercent,
+        referencia: 'IAC Bol.100',
+      ),
+    ).doseRecomendada;
 
     // 3 - Potássio (Alvo de 5% de participação na CTC)
     final kDose = PotassioFormula.recomendacao(
-      ctc: analise.ctc,
-      kAtual: analise.potassio,
+      ctc: analise.ctcTotal,
+      kAtual: analise.k ?? 0,
       participacaoDesejada: 5.0,
     );
 
@@ -61,22 +75,25 @@ class CalcularRecomendacaoUseCase {
     final model = AnaliseModel(
       id: analise.id,
       userId: 'local',
-      fazendaNome: analise.fazenda,
-      talhaoNome: analise.talhao,
+      produtor: analise.fazenda,
+      talhao: analise.talhao,
       dataColeta: DateTime.now().toIso8601String(),
       status: 'Gerada',
       cultura: analise.cultura,
-      ph: analise.ph,
-      fosforo: FosforoData(
-        pResina: analise.p,
-        pMehlich: analise.p,
-        fontePrincipal: fonteP,
-      ),
-      potassio: analise.k,
-      calcio: analise.ca,
-      magnesio: analise.mg,
-      ctc: analise.ctc,
-      saturacaoBases: analise.vPercent,
+      phAgua: analise.ph,
+      pMehlich: analise.p,
+      pResina: analise.p,
+      k: analise.k,
+      ca: analise.ca,
+      mg: analise.mg,
+      hMaisAl: analise.ctc - analise.sb,
+      b: analise.b,
+      cu: analise.cu,
+      fe: analise.fe,
+      mn: analise.mn,
+      zn: analise.zn,
+      argila: analise.argila * 10,
+      fontePrincipalP: fonteP,
     );
 
     final prntDesejado = _inferirPrnt(calibracao);

@@ -1,4 +1,3 @@
-import 'package:soloforte/domain/entities/analise_solo.dart';
 import 'package:soloforte/domain/entities/resultado_calagem.dart';
 
 /// Motor de Calagem do SoloForte — 7 Métodos
@@ -13,26 +12,27 @@ class CalagemEngine {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// SB = Ca + Mg + K  (cmolc/dm³)
-  static double calcularSB(AnaliseSolo a) => a.Ca + a.Mg + a.K;
+  static double calcularSB(dynamic a) =>
+      (a.ca ?? 0.0) + (a.mg ?? 0.0) + (a.k ?? 0.0);
 
   /// CTC = SB + H+Al  (cmolc/dm³)
-  static double calcularCTC(AnaliseSolo a) => calcularSB(a) + a.HAl;
+  static double calcularCTC(dynamic a) => calcularSB(a) + (a.hMaisAl ?? 0.0);
 
   /// t = SB + Al  (CTC efetiva)
-  static double calcularCTCEfetiva(AnaliseSolo a) => calcularSB(a) + a.Al;
+  static double calcularCTCEfetiva(dynamic a) => calcularSB(a) + (a.al ?? 0.0);
 
   /// V% = (SB / CTC) × 100
-  static double calcularV(AnaliseSolo a) {
+  static double calcularV(dynamic a) {
     final ctc = calcularCTC(a);
     if (ctc <= 0) return 0.0;
     return (calcularSB(a) / ctc) * 100.0;
   }
 
   /// m% = (Al / t) × 100
-  static double calcularM(AnaliseSolo a) {
+  static double calcularM(dynamic a) {
     final t = calcularCTCEfetiva(a);
     if (t <= 0) return 0.0;
-    return (a.Al / t) * 100.0;
+    return ((a.al ?? 0.0) / t) * 100.0;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ class CalagemEngine {
     double pctK,
     double vPctFinal,
   }) calcularNutrientesAdicionados({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double doseFinalTHa,
     required String tipoCalcario,
   }) {
@@ -164,8 +164,8 @@ class CalagemEngine {
     final caAdicionado = doseFinalTHa * fatorCa;
     final mgAdicionado = doseFinalTHa * fatorMg;
 
-    final caTotal = analise.Ca + caAdicionado;
-    final mgTotal = analise.Mg + mgAdicionado;
+    final caTotal = (analise.ca ?? 0.0) + caAdicionado;
+    final mgTotal = (analise.mg ?? 0.0) + mgAdicionado;
     final ctcAtual = calcularCTC(analise);
     final ctcNova = ctcAtual + caAdicionado + mgAdicionado;
 
@@ -173,8 +173,8 @@ class CalagemEngine {
     if (ctcNova > 0) {
       pctCa = (caTotal / ctcNova) * 100.0;
       pctMg = (mgTotal / ctcNova) * 100.0;
-      pctK = (analise.K / ctcNova) * 100.0;
-      vPctFinal = ((caTotal + mgTotal + analise.K) / ctcNova) * 100.0;
+      pctK = ((analise.k ?? 0.0) / ctcNova) * 100.0;
+      vPctFinal = ((caTotal + mgTotal + (analise.k ?? 0.0)) / ctcNova) * 100.0;
     }
 
     return (
@@ -193,7 +193,7 @@ class CalagemEngine {
   // ─────────────────────────────────────────────────────────────────────────
   static ResultadoCalagem _buildResultado({
     required MetodoCalagem metodo,
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double ncBase,
     required double profFator,
     required double prnt,
@@ -252,7 +252,7 @@ class CalagemEngine {
   ///   Milho: 60–70%  | Feijão: 60–70%  | Algodão: 65–70%
   ///   Cerrado geral: 50–55% (com MO alta) ou 60–70%
   static ResultadoCalagem metodo1SaturacaoBases({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double v2,
     required double profFator,
     required double prnt,
@@ -269,7 +269,7 @@ class CalagemEngine {
       obs.add(
           'V% atual (${v1.toStringAsFixed(1)}%) ≥ V2 desejado (${v2.toStringAsFixed(1)}%) — sem calagem.');
     }
-    if (analise.HAl > 3.0) {
+    if ((analise.hMaisAl ?? 0.0) > 3.0) {
       obs.add(
           'H+Al > 3 cmolc/dm³ — solo de alto tampão. Parcelar calagem em 2 aplicações (Fancelli).');
     }
@@ -300,18 +300,18 @@ class CalagemEngine {
   ///
   /// Fator padrão = 0,5 (configurável: 0,3 a 1,0 conforme textura/cultura)
   static ResultadoCalagem metodo2Embrapa({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double fator,
     required double profFator,
     required double prnt,
     required double scFator,
     String tipoCalcario = 'Dolomítico',
   }) {
-    final ncBase = analise.HAl * fator;
+    final ncBase = (analise.hMaisAl ?? 0.0) * fator;
 
     final obs = <String>[];
     obs.add(
-        'H+Al = ${analise.HAl.toStringAsFixed(2)} cmolc/dm³ × Fator = $fator');
+        'H+Al = ${(analise.hMaisAl ?? 0.0).toStringAsFixed(2)} cmolc/dm³ × Fator = $fator');
     obs.add('NC base = ${ncBase.toStringAsFixed(2)} t/ha');
     if (fator < 0.3 || fator > 1.0) {
       obs.add(
@@ -343,18 +343,18 @@ class CalagemEngine {
   /// Lógica: repõe toda a fração Ca+Mg atual do solo.
   /// Limitação: não considera V%, CTC nem poder tampão.
   static ResultadoCalagem metodo3CaMg({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double profFator,
     required double prnt,
     required double scFator,
     String tipoCalcario = 'Dolomítico',
   }) {
     // NC base = Ca + Mg atuais (Fancelli)
-    final ncBase = analise.Ca + analise.Mg;
+    final ncBase = (analise.ca ?? 0.0) + (analise.mg ?? 0.0);
 
     final obs = <String>[];
     obs.add(
-        'NC = Ca (${analise.Ca.toStringAsFixed(2)}) + Mg (${analise.Mg.toStringAsFixed(2)}) = ${ncBase.toStringAsFixed(2)} cmolc/dm³ → t/ha');
+        'NC = Ca (${(analise.ca ?? 0.0).toStringAsFixed(2)}) + Mg (${(analise.mg ?? 0.0).toStringAsFixed(2)}) = ${ncBase.toStringAsFixed(2)} cmolc/dm³ → t/ha');
     obs.add(
         '⚠️ Fancelli: não utilizar isoladamente. Use como referência comparativa.');
 
@@ -383,7 +383,7 @@ class CalagemEngine {
   /// Dose fixa independe da análise — intervenção de correção estrutural.
   /// Geralmente parcelada em 2 aplicações.
   static ResultadoCalagem metodo4Supercalagem({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double doseFixa, // padrão 1,75 t/ha
     required double profFator,
     required double prnt,
@@ -392,11 +392,11 @@ class CalagemEngine {
   }) {
     final obs = <String>[];
     obs.add('Dose fixa de choque: ${doseFixa.toStringAsFixed(2)} t/ha.');
-    if (analise.pH >= 4.5) {
+    if ((analise.phCaCl2 ?? 0.0) >= 4.5) {
       obs.add(
-          'pH = ${analise.pH.toStringAsFixed(1)} ≥ 4,5 — supercalagem pode ser excessiva. Verificar indicação.');
+          'pH = ${(analise.phCaCl2 ?? 0.0).toStringAsFixed(1)} ≥ 4,5 — supercalagem pode ser excessiva. Verificar indicação.');
     }
-    if (analise.pH < 4.5) {
+    if ((analise.phCaCl2 ?? 0.0) < 4.5) {
       obs.add(
           'pH < 4,5 — solo muito ácido. Parcelar em 2 aplicações (Fancelli).');
     }
@@ -431,7 +431,7 @@ class CalagemEngine {
   ///
   /// NC_base = dose calculada para suprir déficit de Ca (componente principal).
   static ResultadoCalagem metodo5Albrecht({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double pctCaAlvo, // ex: 60.0 (%)
     required double pctMgAlvo, // ex: 10.0 (%)
     required double pctKAlvo, // ex: 3.0 (%)
@@ -454,9 +454,11 @@ class CalagemEngine {
     final kAlvo = (pctKAlvo / 100.0) * ctc;
 
     // Passo 2 — Déficits
-    final deficitCa = (caAlvo - analise.Ca).clamp(0.0, double.infinity);
-    final deficitMg = (mgAlvo - analise.Mg).clamp(0.0, double.infinity);
-    final deficitK = (kAlvo - analise.K).clamp(0.0, double.infinity);
+    final deficitCa =
+        (caAlvo - (analise.ca ?? 0.0)).clamp(0.0, double.infinity);
+    final deficitMg =
+        (mgAlvo - (analise.mg ?? 0.0)).clamp(0.0, double.infinity);
+    final deficitK = (kAlvo - (analise.k ?? 0.0)).clamp(0.0, double.infinity);
 
     // Passo 3a — Ca déficit → dose calcário
     // Ca_kg_ha = deficit_Ca × 200   (1 cmolc Ca = 200 mg/dm³; × 2 = kg/ha)
@@ -483,11 +485,11 @@ class CalagemEngine {
 
     final obs = <String>[];
     obs.add(
-        'Ca alvo: ${caAlvo.toStringAsFixed(2)} cmolc/dm³ (${pctCaAlvo.toStringAsFixed(0)}% CTC) | atual: ${analise.Ca.toStringAsFixed(2)}');
+        'Ca alvo: ${caAlvo.toStringAsFixed(2)} cmolc/dm³ (${pctCaAlvo.toStringAsFixed(0)}% CTC) | atual: ${(analise.ca ?? 0.0).toStringAsFixed(2)}');
     obs.add(
-        'Mg alvo: ${mgAlvo.toStringAsFixed(2)} cmolc/dm³ (${pctMgAlvo.toStringAsFixed(0)}% CTC) | atual: ${analise.Mg.toStringAsFixed(2)}');
+        'Mg alvo: ${mgAlvo.toStringAsFixed(2)} cmolc/dm³ (${pctMgAlvo.toStringAsFixed(0)}% CTC) | atual: ${(analise.mg ?? 0.0).toStringAsFixed(2)}');
     obs.add(
-        'K alvo: ${kAlvo.toStringAsFixed(2)} cmolc/dm³ (${pctKAlvo.toStringAsFixed(0)}% CTC) | atual: ${analise.K.toStringAsFixed(2)}');
+        'K alvo: ${kAlvo.toStringAsFixed(2)} cmolc/dm³ (${pctKAlvo.toStringAsFixed(0)}% CTC) | atual: ${(analise.k ?? 0.0).toStringAsFixed(2)}');
     if (deficitCa <= 0) obs.add('Ca já na faixa ideal — sem deficit de Ca.');
     if (deficitMg > 0) {
       obs.add(
@@ -530,7 +532,7 @@ class CalagemEngine {
   ///
   /// Usar em: solos argilosos, alta MO, H+Al > 3 cmolc/dm³.
   static ResultadoCalagem metodo6AlbrechtY({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double pctCaAlvo,
     required double pctMgAlvo,
     required double pctKAlvo,
@@ -556,7 +558,7 @@ class CalagemEngine {
     );
 
     // Calcula Y
-    final y = calcularY(argila: analise.argila, prem: analise.Prem);
+    final y = calcularY(argila: (analise.argila ?? 0.0), prem: analise.pRem);
 
     // NC_base = max(NC_albrecht, Y)
     final ncAlbrecht = albrecht.ncBase;
@@ -564,7 +566,7 @@ class CalagemEngine {
 
     final obs = List<String>.from(albrecht.observacoes);
     obs.add(
-        'Y calculado: ${y.toStringAsFixed(3)} t/ha (argila=${analise.argila.toStringAsFixed(0)}%)');
+        'Y calculado: ${y.toStringAsFixed(3)} t/ha (argila=${(analise.argila ?? 0.0).toStringAsFixed(0)}%)');
     if (ncAlbrecht < y) {
       obs.add(
           'Albrecht (${ncAlbrecht.toStringAsFixed(2)} t/ha) < Y (${y.toStringAsFixed(2)} t/ha) → Y prevalece como dose mínima.');
@@ -598,14 +600,15 @@ class CalagemEngine {
   ///
   /// Evita superdose de Ca por excesso de calcário calcítico.
   static ResultadoCalagem metodo7CorrecaoMg({
-    required AnaliseSolo analise,
+    required dynamic analise,
     required double mgDesejado, // cmolc/dm³ de Mg alvo
     required double profFator,
     required double prnt,
     required double scFator,
     String tipoCalcario = 'Magnesiano',
   }) {
-    final deficitMg = (mgDesejado - analise.Mg).clamp(0.0, double.infinity);
+    final deficitMg =
+        (mgDesejado - (analise.mg ?? 0.0)).clamp(0.0, double.infinity);
 
     final fatorMg = FatoresCalcario.getFatorMg(tipoCalcario);
 
@@ -614,10 +617,10 @@ class CalagemEngine {
 
     final obs = <String>[];
     obs.add(
-        'Mg atual: ${analise.Mg.toStringAsFixed(2)} | Desejado: ${mgDesejado.toStringAsFixed(2)} cmolc/dm³');
+        'Mg atual: ${(analise.mg ?? 0.0).toStringAsFixed(2)} | Desejado: ${mgDesejado.toStringAsFixed(2)} cmolc/dm³');
     obs.add(
         'Deficit Mg: ${deficitMg.toStringAsFixed(2)} cmolc/dm³ | Fator Mg ($tipoCalcario): ${fatorMg.toStringAsFixed(3)}');
-    if (analise.Mg >= mgDesejado) {
+    if ((analise.mg ?? 0.0) >= mgDesejado) {
       obs.add('Mg já satisfatório — sem necessidade de correção.');
     }
     obs.add('Usar calcário magnesiano (MgO ≥ 12%) para eficiência máxima.');

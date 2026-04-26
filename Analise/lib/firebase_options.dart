@@ -45,8 +45,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '398774255712',
     projectId: 'soloforte-106c8',
     storageBucket: 'soloforte-106c8.firebasestorage.app',
-    iosClientId:
-        'SEU_IOS_CLIENT_ID', // TODO: cole o valor do GoogleService-Info.plist
     iosBundleId: 'com.soloforte.soloforte',
   );
 

@@ -1,0 +1,524 @@
+### 1. Ver o conteúdo completo da tela
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_table_widget.dart';
+import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
+import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
+
+class NovaAnaliseScreen extends ConsumerWidget {
+  final AnaliseSolo? analiseParaEditar;
+
+  const NovaAnaliseScreen({super.key, this.analiseParaEditar});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ctrlProvider = novaAnaliseControllerProvider(analiseParaEditar);
+    final state = ref.watch(ctrlProvider);
+    final ctrl = ref.read(ctrlProvider.notifier);
+
+    final derivados = ctrl.todosDerivados;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
+      appBar: AppBar(
+        backgroundColor: AppColors.bgPrimary,
+        elevation: 0,
+        title: Text(
+          analiseParaEditar == null ? 'Nova Análise' : 'Editar Análise',
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1D1D1F),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.primary),
+        actions: [
+          TextButton.icon(
+            onPressed: state.isSaving
+                ? null
+                : () => _importarPdf(context, ctrl),
+            icon: const Icon(Icons.upload_file, size: 18),
+            label: const Text('Importar'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              textStyle: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 100),
+              child: AnaliseTableWidget(
+                analises: state.analises,
+                derivados: derivados,
+                onCampoChanged: ctrl.atualizarCampo,
+                onGpsClicked: ctrl.capturarGps,
+                onAddAnalise: ctrl.adicionarAnalise,
+                onRemoveAnalise: ctrl.removerAnalise,
+              ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: SizedBox(
+        width: MediaQuery.of(context).size.width - 32,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: state.isSaving ? null : () => _salvar(context, ctrl),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 2,
+          ),
+          child: state.isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
+                )
+              : Text(
+                  state.analises.length == 1
+                      ? 'Salvar Análise'
+                      : 'Salvar ${state.analises.length} Análises',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _salvar(
+      BuildContext context, NovaAnaliseController ctrl) async {
+    final ok = await ctrl.salvar('');
+    if (!context.mounted) return;
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Análise salva com sucesso'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao salvar — tente novamente'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _importarPdf(
+      BuildContext context, NovaAnaliseController ctrl) async {
+    try {
+      final analises =
+          await const PdfImportService().importarDePdf(context);
+      if (analises == null) return; // usuário cancelou
+
+      ctrl.carregarDeImportacao(
+        analises.map(_analiseSoloToMap).toList(),
+      );
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '${analises.length} amostra${analises.length > 1 ? 's' : ''} importada${analises.length > 1 ? 's' : ''} — revise e salve'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } on LabNaoReconhecidoException {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.labNaoReconhecido,
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } on ExtracacaoIndisponivelException {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.extracacaoIndisponivel,
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao importar: $e')),
+      );
+    }
+  }
+
+  /// Converte AnaliseSolo → Map para alimentar o NovaAnaliseController.
+  Map<String, dynamic> _analiseSoloToMap(AnaliseSolo a) => {
+        'produtor': a.produtor,
+        'talhao': a.talhao,
+        'numeroAmostra': a.numeroAmostra,
+        'profundidade': a.profundidade,
+        'argila': a.argila,
+        'silte': a.silte,
+        'areiaTotal': a.areiaTotal,
+        'phAgua': a.phAgua,
+        'phCaCl2': a.phCaCl2,
+        'phSmp': a.phSmp,
+        'materiaOrganica': a.materiaOrganica,
+        'carbonoOrganico': a.carbonoOrganico,
+        'pMehlich': a.pMehlich,
+        'pResina': a.pResina,
+        'pRem': a.pRem,
+        's020': a.s020,
+        'k': a.k,
+        'ca': a.ca,
+        'mg': a.mg,
+        'al': a.al,
+        'hMaisAl': a.hMaisAl,
+        'na': a.na,
+        'b': a.b,
+        'cu': a.cu,
+        'fe': a.fe,
+        'mn': a.mn,
+        'zn': a.zn,
+      };
+}
+### 2. Localizar widgets de tabela referenciados
+lib/features/analise/presentation/widgets/analise_column_header.dart:6:class AnaliseColumnHeader extends StatelessWidget {
+lib/features/analise/presentation/widgets/analise_resultado_table.dart:37:class AmostraHeader {
+lib/features/analise/presentation/widgets/analise_resultado_table.dart:205:class AnaliseResultadoTable extends StatefulWidget {
+lib/features/analise/presentation/widgets/analise_resultado_table.dart:219:class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
+lib/features/analise/presentation/widgets/analise_resultado_table.dart:476:class _SampleHeaderCell extends StatelessWidget {
+lib/features/analise/presentation/widgets/analise_table_widget.dart:134:class AnaliseTableWidget extends StatelessWidget {
+lib/features/analise/presentation/widgets/analise_section_header.dart:5:class AnaliseSectionHeader extends StatelessWidget {
+### 3. Localizar o controller da tela
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte/core/services/location_service.dart';
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
+import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:uuid/uuid.dart';
+
+/// Estado do controller da tabela de nova análise
+class NovaAnaliseState {
+  final List<Map<String, dynamic>> analises;
+  final bool isSaving;
+  final String? error;
+
+  const NovaAnaliseState({
+    required this.analises,
+    this.isSaving = false,
+    this.error,
+  });
+
+  NovaAnaliseState copyWith({
+    List<Map<String, dynamic>>? analises,
+    bool? isSaving,
+    String? error,
+  }) {
+    return NovaAnaliseState(
+      analises: analises ?? this.analises,
+      isSaving: isSaving ?? this.isSaving,
+      error: error,
+    );
+  }
+}
+
+/// Controller para a tela NovaAnalise em formato tabela planilha.
+class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
+  final Ref _ref;
+  final _calc = const CalcularDerivadosAnalise();
+  final _uuid = const Uuid();
+
+  /// Máximo de colunas (amostras) permitido
+  static const int maxColunas = 6;
+
+  NovaAnaliseController(this._ref, {AnaliseSolo? analiseParaEditar})
+      : super(
+          NovaAnaliseState(
+            analises: analiseParaEditar != null
+                ? [_soloToMap(analiseParaEditar)]
+                : [{}],
+          ),
+        );
+
+  // ── Conversão entidade → map ────────────────────────────────────────────
+
+  static Map<String, dynamic> _soloToMap(AnaliseSolo a) {
+    return {
+      'fazenda': a.fazenda,
+      'produtor': a.produtor,
+      'talhao': a.talhao,
+      'numeroAmostra': a.numeroAmostra,
+      'cultura': a.cultura.label,
+      'safra': a.safra,
+      'laboratorio': a.laboratorio,
+      'profundidade': a.profundidade,
+      'latitude': a.latitude?.toString() ?? '',
+      'longitude': a.longitude?.toString() ?? '',
+      'descricaoLocal': a.descricaoLocal ?? '',
+      'pdfUrl': a.pdfUrl ?? '',
+      'argila': a.argila?.toString() ?? '',
+      'silte': a.silte?.toString() ?? '',
+      'areiaTotal': a.areiaTotal?.toString() ?? '',
+      'phAgua': a.phAgua?.toString() ?? '',
+      'phCaCl2': a.phCaCl2?.toString() ?? '',
+      'phSmp': a.phSmp?.toString() ?? '',
+      'materiaOrganica': a.materiaOrganica?.toString() ?? '',
+      'carbonoOrganico': a.carbonoOrganico?.toString() ?? '',
+      'pMehlich': a.pMehlich?.toString() ?? '',
+      'pResina': a.pResina?.toString() ?? '',
+      'pRem': a.pRem?.toString() ?? '',
+      's020': a.s020?.toString() ?? '',
+      's2040': a.s2040?.toString() ?? '',
+      'k': a.k?.toString() ?? '',
+      'ca': a.ca?.toString() ?? '',
+      'mg': a.mg?.toString() ?? '',
+      'al': a.al?.toString() ?? '',
+      'hMaisAl': a.hMaisAl?.toString() ?? '',
+      'na': a.na?.toString() ?? '',
+      'b': a.b?.toString() ?? '',
+      'cu': a.cu?.toString() ?? '',
+      'fe': a.fe?.toString() ?? '',
+      'mn': a.mn?.toString() ?? '',
+      'zn': a.zn?.toString() ?? '',
+      'ni': a.ni?.toString() ?? '',
+      'mo': a.mo?.toString() ?? '',
+      'se': a.se?.toString() ?? '',
+    };
+  }
+
+  // ── Gerência de colunas ────────────────────────────────────────────────
+
+  void adicionarAnalise() {
+    if (state.analises.length >= maxColunas) return;
+    state = state.copyWith(analises: [...state.analises, {}]);
+  }
+
+  void removerAnalise(int index) {
+    if (state.analises.length <= 1) return;
+    final updated = [...state.analises]..removeAt(index);
+    state = state.copyWith(analises: updated);
+  }
+
+  void atualizarCampo(int index, String campo, dynamic valor) {
+    final updated = [...state.analises];
+    updated[index] = {...updated[index], campo: valor};
+    state = state.copyWith(analises: updated);
+  }
+
+  Future<void> capturarGps(int analiseIndex) async {
+    final location = await LocationService().getCurrentLocation();
+    if (location == null) return;
+    
+    atualizarCampo(analiseIndex, 'latitude', location.latitude.toString());
+    atualizarCampo(analiseIndex, 'longitude', location.longitude.toString());
+  }
+
+  // ── Derivados ──────────────────────────────────────────────────────────
+
+  Map<String, double> calcularDerivados(Map<String, dynamic> analise) {
+    double? pd(String key) {
+      final v = analise[key];
+      if (v == null) return null;
+      if (v is double) return v;
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v.replaceAll(',', '.'));
+      return null;
+    }
+
+    return _calc.call({
+      'ca': pd('ca'),
+      'mg': pd('mg'),
+      'k': pd('k'),
+      'na': pd('na') ?? 0.0,
+      'al': pd('al'),
+      'hMaisAl': pd('hMaisAl'),
+    });
+  }
+
+  List<Map<String, double>> get todosDerivados =>
+      state.analises.map(calcularDerivados).toList();
+
+  // ── Importação ─────────────────────────────────────────────────────────
+
+  /// Carrega dados importados de um laboratório.
+  /// Cada item da lista é um mapa com chaves canônicas.
+  void carregarDeImportacao(List<Map<String, dynamic>> dados) {
+    if (dados.isEmpty) return;
+    final maps = dados.map((d) {
+      return d.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+    }).toList();
+    state = state.copyWith(analises: maps);
+  }
+
+  /// Converte uma [AnaliseSolo] importada para o mapa usado pelo controller.
+  void carregarDeAnaliseSolo(List<AnaliseSolo> analises) {
+    if (analises.isEmpty) return;
+    final maps = analises.map(_soloToMap).toList();
+    state = state.copyWith(analises: maps);
+  }
+
+  // ── Persistência ───────────────────────────────────────────────────────
+
+  Future<bool> salvar(String produtorPadrao) async {
+    state = state.copyWith(isSaving: true);
+    try {
+      final notifier = _ref.read(analiseNotifierProvider.notifier);
+      for (final map in state.analises) {
+        final analise = _mapToAnaliseSolo(map, produtorPadrao);
+        await notifier.salvar(analise);
+      }
+      state = state.copyWith(isSaving: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isSaving: false, error: e.toString());
+      return false;
+    }
+  }
+
+  AnaliseSolo _mapToAnaliseSolo(
+      Map<String, dynamic> map, String produtorPadrao) {
+    String s(String key, [String fallback = '']) =>
+        (map[key] as String?)?.trim() ?? fallback;
+
+    double? d(String key) {
+      final v = map[key];
+      if (v == null || (v is String && v.trim().isEmpty)) return null;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString().replaceAll(',', '.'));
+    }
+
+    Cultura parseCultura(String raw) {
+      final normalized = raw.trim().toLowerCase();
+      for (final c in Cultura.values) {
+        if (c.name == normalized || c.label.toLowerCase() == normalized) {
+          return c;
+        }
+      }
+      return Cultura.soja;
+    }
+
+    return AnaliseSolo(
+      id: _uuid.v4(),
+      fazenda: s('fazenda'),
+      produtor: s('produtor', produtorPadrao),
+      talhao: s('talhao'),
+      numeroAmostra: s('numeroAmostra'),
+      cultura: parseCultura(s('cultura')),
+      safra: s('safra'),
+      laboratorio: s('laboratorio'),
+      dataCadastro: DateTime.now(),
+      profundidade: s('profundidade'),
+      latitude: d('latitude'),
+      longitude: d('longitude'),
+      descricaoLocal: s('descricaoLocal'),
+      pdfUrl: s('pdfUrl'),
+      argila: d('argila'),
+      silte: d('silte'),
+      areiaTotal: d('areiaTotal'),
+      phAgua: d('phAgua'),
+      phCaCl2: d('phCaCl2'),
+      phSmp: d('phSmp'),
+      materiaOrganica: d('materiaOrganica'),
+      carbonoOrganico: d('carbonoOrganico'),
+      pMehlich: d('pMehlich'),
+      pResina: d('pResina'),
+      pRem: d('pRem'),
+      s020: d('s020'),
+      s2040: d('s2040'),
+      k: d('k'),
+      ca: d('ca'),
+      mg: d('mg'),
+      al: d('al'),
+      hMaisAl: d('hMaisAl'),
+      na: d('na'),
+      b: d('b'),
+      cu: d('cu'),
+      fe: d('fe'),
+      mn: d('mn'),
+      zn: d('zn'),
+      ni: d('ni'),
+      mo: d('mo'),
+      se: d('se'),
+    );
+  }
+}
+
+// ── Provider ────────────────────────────────────────────────────────────────
+
+final novaAnaliseControllerProvider = StateNotifierProvider.family
+    .autoDispose<NovaAnaliseController, NovaAnaliseState, AnaliseSolo?>(
+  (ref, analiseParaEditar) =>
+      NovaAnaliseController(ref, analiseParaEditar: analiseParaEditar),
+);
+### 4. Verificar se existe widget separado
+total 0
+drwxr-xr-x@  6 raudineisilvapereira  staff  192 Mar 27 17:47 .
+drwxr-xr-x@  5 raudineisilvapereira  staff  160 Mar 15 10:48 ..
+drwxr-xr-x@  5 raudineisilvapereira  staff  160 Mar 30 08:26 controllers
+drwxr-xr-x@  7 raudineisilvapereira  staff  224 Mar 18 14:11 providers
+drwxr-xr-x@  7 raudineisilvapereira  staff  224 Mar 30 08:26 screens
+drwxr-xr-x@ 18 raudineisilvapereira  staff  576 Mar 30 08:26 widgets
+---
+total 216
+drwxr-xr-x@ 18 raudineisilvapereira  staff    576 Mar 30 08:26 .
+drwxr-xr-x@  6 raudineisilvapereira  staff    192 Mar 27 17:47 ..
+-rw-r--r--@  1 raudineisilvapereira  staff   1205 Mar 27 17:46 analise_calc_cell.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   4292 Mar 30 09:13 analise_card_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1612 Mar 27 17:46 analise_column_header.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   3578 Mar 30 10:52 analise_input_cell.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1552 Mar 27 17:45 analise_label_cell.dart
+-rw-r--r--@  1 raudineisilvapereira  staff  28424 Mar 20 11:09 analise_resultado_table.dart
+-rw-r--r--@  1 raudineisilvapereira  staff    884 Mar 27 17:13 analise_section_header.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1445 Mar 27 17:45 analise_section_row.dart
+-rw-r--r--@  1 raudineisilvapereira  staff  11413 Mar 28 17:26 analise_table_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1098 Mar 15 10:48 filter_chips_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   5119 Mar 27 22:21 importacao_bottom_sheet.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   4138 Mar 18 14:14 localizacao_captura_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1152 Mar 15 10:48 map_preview_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff    986 Mar 15 10:48 num_field_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1417 Mar 15 12:41 produtor_row_widget.dart
+-rw-r--r--@  1 raudineisilvapereira  staff   1387 Mar 19 20:33 upload_pdf_widget.dart
+---
+total 72
+drwxr-xr-x@ 7 raudineisilvapereira  staff    224 Mar 30 08:26 .
+drwxr-xr-x@ 6 raudineisilvapereira  staff    192 Mar 27 17:47 ..
+-rw-r--r--@ 1 raudineisilvapereira  staff  10742 Mar 30 10:52 analise_detail_screen.dart
+-rw-r--r--@ 1 raudineisilvapereira  staff    288 Mar 15 10:56 analise_form_page.dart
+-rw-r--r--@ 1 raudineisilvapereira  staff   6824 Mar 15 12:41 analise_list_screen.dart
+-rw-r--r--@ 1 raudineisilvapereira  staff    422 Mar 15 10:55 analise_page.dart
+-rw-r--r--@ 1 raudineisilvapereira  staff   7045 Mar 28 17:26 nova_analise_screen.dart
+### 5. Busca ampla por ScrollController na feature analise
+lib/features/analise/presentation/screens/analise_detail_screen.dart:75:      body: SingleChildScrollView(
+lib/features/analise/presentation/screens/nova_analise_screen.dart:55:            child: SingleChildScrollView(
+lib/features/analise/presentation/widgets/analise_resultado_table.dart:293:              child: SingleChildScrollView(
+lib/features/analise/presentation/widgets/analise_resultado_table.dart:294:                scrollDirection: Axis.horizontal,
+lib/features/analise/presentation/widgets/analise_table_widget.dart:218:          child: SingleChildScrollView(
+lib/features/analise/presentation/widgets/analise_table_widget.dart:219:            scrollDirection: Axis.horizontal,
+lib/features/analise/presentation/widgets/analise_table_widget.dart:269:          child: SingleChildScrollView(
+lib/features/analise/presentation/widgets/analise_table_widget.dart:270:            scrollDirection: Axis.horizontal,
+lib/features/analise/presentation/widgets/analise_table_widget.dart:331:          child: SingleChildScrollView(
+lib/features/analise/presentation/widgets/analise_table_widget.dart:332:            scrollDirection: Axis.horizontal,
+lib/features/analise/presentation/widgets/filter_chips_widget.dart:20:        scrollDirection: Axis.horizontal,

@@ -70,6 +70,14 @@
 	<string>O SoloForte usa sua localização para registrar o ponto de coleta da amostra de solo na análise.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>O SoloForte usa sua localização para registrar o ponto de coleta da amostra de solo na análise.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Caderno de Solo precisa acessar sua galeria de fotos para importar laudos de análise de solo em formato PDF ou imagem.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>O Caderno de Solo pode salvar laudos e relatórios de análise de solo na sua galeria de fotos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O Caderno de Solo usa a câmera para fotografar laudos de análise de solo para importação.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>O Caderno de Solo pode precisar do microfone para funcionalidades de gravação de campo.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

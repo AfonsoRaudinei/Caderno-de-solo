@@ -1,21 +1,22 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:soloforte/presentation/auth/login/login_controller.dart';
-import 'package:soloforte/data/datasources/remote/auth_datasource.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:soloforte/data/repositories/auth_repository_impl.dart';
+import 'package:soloforte/domain/repositories/auth_repository.dart';
+import 'package:soloforte/features/auth/presentation/login/login_controller.dart';
 
-class MockAuthDatasource extends Mock implements AuthDatasource {}
+class MockAuthRepository extends Mock implements AuthRepository {}
 
 void main() {
-  group('LoginController - Fluxo de Autenticação e QA', () {
+  group('LoginController', () {
     late ProviderContainer container;
-    late MockAuthDatasource mockAuthDatasource;
+    late MockAuthRepository authRepository;
 
     setUp(() {
-      mockAuthDatasource = MockAuthDatasource();
+      authRepository = MockAuthRepository();
       container = ProviderContainer(
         overrides: [
-          authDatasourceProvider.overrideWithValue(mockAuthDatasource),
+          authRepositoryProvider.overrideWithValue(authRepository),
         ],
       );
     });
@@ -24,49 +25,162 @@ void main() {
       container.dispose();
     });
 
-    test('Deve iniciar no estado idle (AsyncData null)', () {
+    test('inicia em estado idle', () {
       final state = container.read(loginControllerProvider);
-      expect(state.isLoading, false);
-      expect(state.hasError, false);
+      expect(state.isLoading, isFalse);
+      expect(state.hasError, isFalse);
     });
 
-    test('Deve retornar erro se for fornecido email inválido', () async {
-      final controller = container.read(loginControllerProvider.notifier);
-      await controller.login('agronomo.com', '123456'); // Sem @
-      
+    test('retorna erro para e-mail inválido propagado pelo repository', () async {
+      when(() => authRepository.login(
+            email: 'agronomo.com',
+            password: '123456',
+          )).thenThrow('E-mail inválido.');
+
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('agronomo.com', '123456');
+
       final state = container.read(loginControllerProvider);
-      expect(state.hasError, true);
+      expect(state.hasError, isTrue);
       expect(state.error, 'E-mail inválido.');
+      verify(() => authRepository.login(
+            email: 'agronomo.com',
+            password: '123456',
+          )).called(1);
     });
 
-    test('Deve retornar erro se a senha for muito curta', () async {
-      final controller = container.read(loginControllerProvider.notifier);
-      await controller.login('agronomo@gmail.com', '123'); // < 6
-      
+    test('retorna erro para senha curta propagado pelo repository', () async {
+      when(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: '123',
+          )).thenThrow('A senha deve ter pelo menos 6 caracteres.');
+
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('agronomo@gmail.com', '123');
+
       final state = container.read(loginControllerProvider);
-      expect(state.hasError, true);
+      expect(state.hasError, isTrue);
       expect(state.error, 'A senha deve ter pelo menos 6 caracteres.');
+      verify(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: '123',
+          )).called(1);
     });
 
-    test('Deve realizar o fluxo de loading e sucesso com credenciais válidas', () async {
-      final controller = container.read(loginControllerProvider.notifier);
+    test('fluxo de sucesso no login', () async {
+      when(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: 'senha_segura',
+          )).thenAnswer((_) async {});
 
-      // Mock comportamento do auth datasource passando sem jogar erro
-      when(() => mockAuthDatasource.signInWithEmailAndPassword(
-        email: 'agronomo@gmail.com', 
-        password: 'senha_segura123',
-      )).thenAnswer((_) async => throw Exception('Mock bypass credentials')); // Simulando um tipo pra fechar o return q seria UserCredential
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('agronomo@gmail.com', 'senha_segura');
 
-      final futureLogin = controller.login('agronomo@gmail.com', 'senha_segura123');
-      
-      // Imeaditamente após a chamada entra em loading
-      expect(container.read(loginControllerProvider).isLoading, true);
+      final state = container.read(loginControllerProvider);
+      expect(state.hasError, isFalse);
+      expect(state.isLoading, isFalse);
+      expect(state, isA<AsyncData<void>>());
 
-      try {
-        await futureLogin;
-      } catch (_) {}
+      verify(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: 'senha_segura',
+          )).called(1);
+    });
 
-      expect(container.read(loginControllerProvider).isLoading, false);
+    test('propaga erro de autenticação no login', () async {
+      when(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: 'senha_segura',
+          )).thenThrow('Senha incorreta fornecida.');
+
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('agronomo@gmail.com', 'senha_segura');
+
+      final state = container.read(loginControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, 'Senha incorreta fornecida.');
+    });
+
+    test('exibe mensagem correta para network-request-failed', () async {
+      when(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: 'senha_segura',
+          )).thenThrow(
+        'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+      );
+
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('agronomo@gmail.com', 'senha_segura');
+
+      final state = container.read(loginControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(
+        state.error,
+        'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+      );
+    });
+
+    test('exibe mensagem correta para user-disabled', () async {
+      when(() => authRepository.login(
+            email: 'desativado@gmail.com',
+            password: 'senha_segura',
+          )).thenThrow(
+        'Esta conta foi desativada. Entre em contato com o suporte.',
+      );
+
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('desativado@gmail.com', 'senha_segura');
+
+      final state = container.read(loginControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(
+        state.error,
+        'Esta conta foi desativada. Entre em contato com o suporte.',
+      );
+    });
+
+    test('retorna mensagem amigável padrão quando erro não mapeado', () async {
+      when(() => authRepository.login(
+            email: 'agronomo@gmail.com',
+            password: 'senha_segura',
+          )).thenThrow(Exception('erro interno técnico'));
+
+      await container
+          .read(loginControllerProvider.notifier)
+          .login('agronomo@gmail.com', 'senha_segura');
+
+      final state = container.read(loginControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(
+        state.error,
+        'Não foi possível entrar agora. Tente novamente em instantes.',
+      );
+    });
+
+    test('logout com sucesso', () async {
+      when(() => authRepository.logout()).thenAnswer((_) async {});
+
+      await container.read(loginControllerProvider.notifier).logout();
+
+      final state = container.read(loginControllerProvider);
+      expect(state, isA<AsyncData<void>>());
+      verify(() => authRepository.logout()).called(1);
+    });
+
+    test('logout com erro retorna mensagem padrão', () async {
+      when(() => authRepository.logout()).thenThrow(Exception('falha'));
+
+      await container.read(loginControllerProvider.notifier).logout();
+
+      final state = container.read(loginControllerProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, 'Erro ao sair da conta.');
     });
   });
 }

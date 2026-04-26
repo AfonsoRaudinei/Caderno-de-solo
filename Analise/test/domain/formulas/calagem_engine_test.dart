@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/domain/entities/resultado_calagem.dart';
 import 'package:soloforte/domain/formulas/calagem_engine.dart';
 
@@ -11,18 +11,27 @@ import 'package:soloforte/domain/formulas/calagem_engine.dart';
 
 void main() {
   // ─── Análise padrão ────────────────────────────────────────────────────────
-  const analise = AnaliseSolo(
+  final analise = AnaliseSolo(
     id: 'test-001',
-    Ca: 2.0,
-    Mg: 0.5,
-    K: 0.16,
-    HAl: 2.0,
-    Al: 0.3,
+    fazenda: '',
+    produtor: '',
+    talhao: '',
+    numeroAmostra: '',
+    cultura: Cultura.soja,
+    safra: '',
+    laboratorio: '',
+    dataCadastro: DateTime(2025, 1, 1),
+    profundidade: '',
+    ca: 2.0,
+    mg: 0.5,
+    k: 0.16,
+    hMaisAl: 2.0,
+    al: 0.3,
     argila: 42.0,
-    pH: 5.2,
-    MO: 35.0,
-    P: 12.0,
-    S: 8.0,
+    phCaCl2: 5.2,
+    materiaOrganica: 35.0,
+    pMehlich: 12.0,
+    s020: 8.0,
   );
   // SB = 2.0 + 0.5 + 0.16 = 2.66
   // CTC = 2.66 + 2.0 = 4.66
@@ -54,7 +63,22 @@ void main() {
     });
 
     test('V% = 0 quando CTC = 0', () {
-      const vazio = AnaliseSolo(id: 'z', Ca: 0, Mg: 0, K: 0, HAl: 0);
+      final vazio = AnaliseSolo(
+        id: 'z',
+        fazenda: '',
+        produtor: '',
+        talhao: '',
+        numeroAmostra: '',
+        cultura: Cultura.soja,
+        safra: '',
+        laboratorio: '',
+        dataCadastro: DateTime(2025, 1, 1),
+        profundidade: '',
+        ca: 0,
+        mg: 0,
+        k: 0,
+        hMaisAl: 0,
+      );
       expect(CalagemEngine.calcularV(vazio), equals(0.0));
     });
   });
@@ -285,7 +309,28 @@ void main() {
     });
 
     test('Aviso de H+Al > 3 quando H+Al = 4', () {
-      final analiseHAl4 = analise.copyWith(HAl: 4.0);
+      final analiseHAl4 = AnaliseSolo(
+        id: analise.id,
+        fazenda: analise.fazenda,
+        produtor: analise.produtor,
+        talhao: analise.talhao,
+        numeroAmostra: analise.numeroAmostra,
+        cultura: analise.cultura,
+        safra: analise.safra,
+        laboratorio: analise.laboratorio,
+        dataCadastro: analise.dataCadastro,
+        profundidade: analise.profundidade,
+        ca: analise.ca,
+        mg: analise.mg,
+        k: analise.k,
+        al: analise.al,
+        hMaisAl: 4.0, // forced H+Al to 4.0
+        argila: analise.argila,
+        phCaCl2: analise.phCaCl2,
+        materiaOrganica: analise.materiaOrganica,
+        pMehlich: analise.pMehlich,
+        s020: analise.s020,
+      );
       final r = CalagemEngine.metodo1SaturacaoBases(
         analise: analiseHAl4,
         v2: 70.0,
@@ -400,7 +445,28 @@ void main() {
     });
 
     test('pH < 4.5 gera aviso de parcelamento', () {
-      final analisePH4 = analise.copyWith(pH: 4.2);
+      final analisePH4 = AnaliseSolo(
+        id: analise.id,
+        fazenda: analise.fazenda,
+        produtor: analise.produtor,
+        talhao: analise.talhao,
+        numeroAmostra: analise.numeroAmostra,
+        cultura: analise.cultura,
+        safra: analise.safra,
+        laboratorio: analise.laboratorio,
+        dataCadastro: analise.dataCadastro,
+        profundidade: analise.profundidade,
+        ca: analise.ca,
+        mg: analise.mg,
+        k: analise.k,
+        al: analise.al,
+        hMaisAl: analise.hMaisAl,
+        argila: analise.argila,
+        phCaCl2: 4.2, // forced pH
+        materiaOrganica: analise.materiaOrganica,
+        pMehlich: analise.pMehlich,
+        s020: analise.s020,
+      );
       final r = CalagemEngine.metodo4Supercalagem(
         analise: analisePH4,
         doseFixa: 1.75,
@@ -434,12 +500,21 @@ void main() {
     });
 
     test('Dose = 0 quando Ca já na faixa ideal', () {
-      const analiseRicaMax = AnaliseSolo(
+      final analiseRicaMax = AnaliseSolo(
         id: 'rica2',
-        Ca: 8.0,
-        Mg: 2.0,
-        K: 0.3,
-        HAl: 1.0,
+        fazenda: '',
+        produtor: '',
+        talhao: '',
+        numeroAmostra: '',
+        cultura: Cultura.soja,
+        safra: '',
+        laboratorio: '',
+        dataCadastro: DateTime(2025, 1, 1),
+        profundidade: '',
+        ca: 8.0,
+        mg: 2.0,
+        k: 0.3,
+        hMaisAl: 1.0,
         argila: 20.0,
       );
       final r = CalagemEngine.metodo5Albrecht(
@@ -489,7 +564,7 @@ void main() {
         caOPct: 38.0,
         mgOPct: 13.0,
       );
-      final y = CalagemEngine.calcularY(argila: analise.argila);
+      final y = CalagemEngine.calcularY(argila: analise.argila ?? 0.0);
       expect(r.metodo, equals(MetodoCalagem.albrechtY));
       expect(r.yUtilizado, closeTo(y, 0.01));
       // NC deve ser >= Y

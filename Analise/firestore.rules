@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function keepsUserId(uid) {
+      return request.resource.data.userId == uid;
+    }
+
+    function currentUserIdMatches(uid) {
+      return resource.data.userId == uid;
+    }
+
+    // Perfil do usuário e subcoleções privadas.
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /calibracoes/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /laudos/{docId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Análises principais.
+    match /analises/{analiseId} {
+      allow create: if signedIn() && keepsUserId(request.auth.uid);
+      allow read, delete: if signedIn() && currentUserIdMatches(request.auth.uid);
+      allow update: if signedIn() &&
+          currentUserIdMatches(request.auth.uid) &&
+          keepsUserId(request.auth.uid);
+    }
+
+    // Controle de lotes/idempotência.
+    match /analise_save_batches/{batchId} {
+      allow create: if signedIn() && keepsUserId(request.auth.uid);
+      allow read, delete: if signedIn() && currentUserIdMatches(request.auth.uid);
+      allow update: if signedIn() &&
+          currentUserIdMatches(request.auth.uid) &&
+          keepsUserId(request.auth.uid);
+    }
+
+    // Coleção legada de recomendações (caso em uso).
+    match /recomendacoes/{recomendacaoId} {
+      allow create: if signedIn() && keepsUserId(request.auth.uid);
+      allow read, delete: if signedIn() && currentUserIdMatches(request.auth.uid);
+      allow update: if signedIn() &&
+          currentUserIdMatches(request.auth.uid) &&
+          keepsUserId(request.auth.uid);
+    }
+  }
+}

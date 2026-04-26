@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
+import 'package:soloforte/features/analise/presentation/formatters/analise_number_formatter.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/presentation/widgets/map_preview_widget.dart';
 
 class AnaliseDetailScreen extends ConsumerWidget {
   final String analiseId;
+  static const _calc = CalcularDerivadosAnalise();
 
   const AnaliseDetailScreen({super.key, required this.analiseId});
 
@@ -15,19 +18,29 @@ class AnaliseDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? [];
     final analiseIndex = analises.indexWhere((a) => a.id == analiseId);
-    
+
     if (analiseIndex == -1) {
       return Scaffold(
         appBar: AppBar(title: const Text('Análise não encontrada')),
-        body: const Center(child: Text('A análise foi deletada ou não existe.')),
+        body:
+            const Center(child: Text('A análise foi deletada ou não existe.')),
       );
     }
-    
+
     final analise = analises[analiseIndex];
+
+    final derivados = _calc.call({
+      'ca': analise.ca,
+      'mg': analise.mg,
+      'k': analise.k,
+      'na': analise.na,
+      'al': analise.al,
+      'hMaisAl': analise.hMaisAl,
+    });
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(analise.nomeArea),
+        title: Text(analise.talhao),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -35,7 +48,6 @@ class AnaliseDetailScreen extends ConsumerWidget {
               // Navegar para edição usando go_router
               context.push(
                 '${AppRoutes.analise}/detalhe/${analise.id}/editar',
-                extra: analise,
               );
             },
           ),
@@ -46,15 +58,22 @@ class AnaliseDetailScreen extends ConsumerWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Excluir'),
-                  content: const Text('Tem certeza que deseja excluir esta análise?'),
+                  content: const Text(
+                      'Tem certeza que deseja excluir esta análise?'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Excluir')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Excluir')),
                   ],
                 ),
               );
               if (confirm == true) {
-                await ref.read(analiseNotifierProvider.notifier).deletar(analise.id);
+                await ref
+                    .read(analiseNotifierProvider.notifier)
+                    .deletar(analise.id);
                 if (context.mounted) context.pop();
               }
             },
@@ -70,7 +89,8 @@ class AnaliseDetailScreen extends ConsumerWidget {
             Card(
               elevation: 0,
               color: analise.cultura.color.withValues(alpha: 0.1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -78,7 +98,8 @@ class AnaliseDetailScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Text(analise.cultura.emoji, style: const TextStyle(fontSize: 24)),
+                        Text(analise.cultura.emoji,
+                            style: const TextStyle(fontSize: 24)),
                         const SizedBox(width: 8),
                         Text(
                           analise.cultura.label,
@@ -91,7 +112,7 @@ class AnaliseDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text('Produtor ID: ${analise.produtorId}'),
+                    Text('Produtor: ${analise.produtor}'),
                     Text('Safra: ${analise.safra}'),
                     Text('Laboratório: ${analise.laboratorio}'),
                   ],
@@ -99,7 +120,7 @@ class AnaliseDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Ações
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -109,8 +130,9 @@ class AnaliseDetailScreen extends ConsumerWidget {
                   label: 'Recomendar',
                   color: Colors.green,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Navega para o Lab com dados pré-carregados')),
+                    context.push(
+                      AppRoutes.labRecomendacao,
+                      extra: analise.id,
                     );
                   },
                 ),
@@ -120,7 +142,8 @@ class AnaliseDetailScreen extends ConsumerWidget {
                   color: Colors.red,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Baixando ou abrindo laudo anexado')),
+                      const SnackBar(
+                          content: Text('Baixando ou abrindo laudo anexado')),
                     );
                   },
                 ),
@@ -129,26 +152,27 @@ class AnaliseDetailScreen extends ConsumerWidget {
                   label: 'Mapa',
                   color: Colors.blue,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Abre SoloForte Mapas: soloforte-maps://analise/${analise.id}')),
+                    context.go(
+                      '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
                     );
                   },
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Localização Preview
             if (analise.latitude != null && analise.longitude != null) ...[
-              const Text('Localização', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('Localização',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               MapPreviewWidget(
                 latitude: analise.latitude!,
                 longitude: analise.longitude!,
                 onOpenMap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Abrindo aplicativo de mapa...')),
+                  context.go(
+                    '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
                   );
                 },
               ),
@@ -156,52 +180,60 @@ class AnaliseDetailScreen extends ConsumerWidget {
             ],
 
             // Dados Físicos
-            const Text('Físico e Textura', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Composição Física',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('Textura', analise.textura.name.toUpperCase()),
+            _buildDataRow('Argila (g/kg)', _fmt(analise.argila)),
+            _buildDataRow('Silte (g/kg)', _fmt(analise.silte)),
+            _buildDataRow('Areia Total (g/kg)', _fmt(analise.areiaTotal)),
             _buildDataRow('Profundidade', analise.profundidade),
             const Divider(),
 
             // pH e Tampão
-            const Text('pH', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('pH',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('pH Água', analise.phAgua?.toString() ?? '-'),
-            _buildDataRow('pH SMP', analise.phSmp?.toString() ?? '-'),
-            _buildDataRow('pH CaCl₂', analise.phCacl2?.toString() ?? '-'),
+            _buildDataRow('pH Água', _fmt(analise.phAgua)),
+            _buildDataRow('pH SMP', _fmt(analise.phSmp)),
+            _buildDataRow('pH CaCl₂', _fmt(analise.phCaCl2)),
             const Divider(),
 
             // Macronutrientes
-            const Text('Macronutrientes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Macronutrientes',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('Fósforo (mg/dm³)', analise.fosforo?.toString() ?? '-'),
-            _buildDataRow('Potássio (cmolc/dm³)', analise.potassio?.toString() ?? '-'),
-            _buildDataRow('Cálcio (cmolc/dm³)', analise.calcio?.toString() ?? '-'),
-            _buildDataRow('Magnésio (cmolc/dm³)', analise.magnesio?.toString() ?? '-'),
-            _buildDataRow('Enxofre (mg/dm³)', analise.enxofre?.toString() ?? '-'),
+            _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich)),
+            _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k)),
+            _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca)),
+            _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg)),
+            _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020)),
             const Divider(),
 
             // Acidez e CTC
-            const Text('Acidez', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Acidez',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('Alumínio (cmolc/dm³)', analise.aluminio?.toString() ?? '-'),
-            _buildDataRow('H+Al (cmolc/dm³)', analise.hMaisAl?.toString() ?? '-'),
+            _buildDataRow('Alumínio (cmolc/dm³)', _fmt(analise.al)),
+            _buildDataRow('H+Al (cmolc/dm³)', _fmt(analise.hMaisAl)),
             const Divider(),
-            
-            const Text('Calculados Automáticos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+
+            const Text('Calculados Automáticos',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('CTC', analise.ctc.toStringAsFixed(2)),
-            _buildDataRow('V%', analise.vPorcento.toStringAsFixed(2)),
+            _buildDataRow('CTC T', _fmt(derivados['ctcTotal'])),
+            _buildDataRow('V%', _fmt(derivados['vPct'])),
             const Divider(),
 
             // Micronutrientes
-            const Text('Micronutrientes (mg/dm³)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Micronutrientes (mg/dm³)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('Boro', analise.boro?.toString() ?? '-'),
-            _buildDataRow('Cobre', analise.cobre?.toString() ?? '-'),
-            _buildDataRow('Ferro', analise.ferro?.toString() ?? '-'),
-            _buildDataRow('Manganês', analise.manganes?.toString() ?? '-'),
-            _buildDataRow('Zinco', analise.zinco?.toString() ?? '-'),
-            
+            _buildDataRow('Boro', _fmt(analise.b)),
+            _buildDataRow('Cobre', _fmt(analise.cu)),
+            _buildDataRow('Ferro', _fmt(analise.fe)),
+            _buildDataRow('Manganês', _fmt(analise.mn)),
+            _buildDataRow('Zinco', _fmt(analise.zn)),
+
             const SizedBox(height: 32),
           ],
         ),
@@ -210,17 +242,27 @@ class AnaliseDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDataRow(String label, String value) {
+    final isVazio =
+        value == '-' || value.isEmpty || value == 'N/A' || value == 'null';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey.shade700)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            isVazio ? 'Não informado' : value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isVazio ? Colors.orange : Colors.black,
+            ),
+          ),
         ],
       ),
     );
   }
+
+  String _fmt(num? value) => AnaliseNumberFormatter.formatDecimal(value);
 }
 
 class _ActionButton extends StatelessWidget {
@@ -247,7 +289,9 @@ class _ActionButton extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 enum Cultura { soja, milho, feijao, algodao, arroz, sorgo }
 
-enum TexturaSolo { argiloso, medio, arenoso }
-
 extension CulturaExtension on Cultura {
   String get label {
     switch (this) {
@@ -41,83 +39,108 @@ extension CulturaExtension on Cultura {
 
 class AnaliseSolo {
   final String id;
-  final String produtorId;
-  final String nomeArea;
+  final String fazenda;
+  final String produtor;
+  final String talhao;
+  final String numeroAmostra;
   final Cultura cultura;
   final String safra;              // ex: "2025/26"
   final String laboratorio;
   final DateTime dataCadastro;
+  final String profundidade;       // ex: "0-20"
 
-  // Localização
+  // Localização (infra)
   final double? latitude;
   final double? longitude;
   final String? descricaoLocal;
 
-  // Físico
-  final TexturaSolo textura;
-  final String profundidade;       // ex: "0-20 cm"
+  // Composição física
+  final double? argila;            // g/kg
+  final double? silte;             // g/kg
+  final double? areiaTotal;        // g/kg
 
   // pH
   final double? phAgua;
   final double? phSmp;
-  final double? phCacl2;
+  final double? phCaCl2;
+
+  // Matéria orgânica
+  final double? materiaOrganica;   // dag/kg
+  final double? carbonoOrganico;   // dag/kg
+
+  // Fósforo
+  final double? pMehlich;          // mg/dm³
+  final double? pResina;           // mg/dm³
+  final double? pRem;              // mg/L
+
+  // Enxofre
+  final double? s020;              // mg/dm³
+  final double? s2040;             // mg/dm³
 
   // Macronutrientes
-  final double? fosforo;           // mg/dm³
-  final double? potassio;          // cmolc/dm³
-  final double? calcio;            // cmolc/dm³
-  final double? magnesio;          // cmolc/dm³
-  final double? enxofre;           // mg/dm³
-
-  // Acidez
-  final double? aluminio;          // cmolc/dm³
+  final double? k;                 // cmolc/dm³
+  final double? ca;                // cmolc/dm³
+  final double? mg;                // cmolc/dm³
+  final double? al;                // cmolc/dm³
   final double? hMaisAl;           // cmolc/dm³
-
-  // Calculados (getters)
-  double get ctc => (calcio ?? 0) + (magnesio ?? 0) + (potassio ?? 0) + (hMaisAl ?? 0);
-  double get vPorcento {
-    if (ctc == 0) return 0;
-    return ((calcio ?? 0) + (magnesio ?? 0) + (potassio ?? 0)) / ctc * 100;
-  }
+  final double? na;                // cmolc/dm³
 
   // Micronutrientes
-  final double? boro;
-  final double? cobre;
-  final double? ferro;
-  final double? manganes;
-  final double? zinco;
+  final double? b;
+  final double? cu;
+  final double? fe;
+  final double? mn;
+  final double? zn;
+  final double? ni;
+  final double? mo;
+  final double? se;
 
-  // Laudo
+  // Infra
   final String? pdfUrl;
+  final Map<String, dynamic>? laudoMetadata;
 
   const AnaliseSolo({
     required this.id,
-    required this.produtorId,
-    required this.nomeArea,
+    required this.fazenda,
+    required this.produtor,
+    required this.talhao,
+    required this.numeroAmostra,
     required this.cultura,
     required this.safra,
     required this.laboratorio,
     required this.dataCadastro,
+    required this.profundidade,
     this.latitude,
     this.longitude,
     this.descricaoLocal,
-    required this.textura,
-    required this.profundidade,
+    this.argila,
+    this.silte,
+    this.areiaTotal,
     this.phAgua,
     this.phSmp,
-    this.phCacl2,
-    this.fosforo,
-    this.potassio,
-    this.calcio,
-    this.magnesio,
-    this.enxofre,
-    this.aluminio,
+    this.phCaCl2,
+    this.materiaOrganica,
+    this.carbonoOrganico,
+    this.pMehlich,
+    this.pResina,
+    this.pRem,
+    this.s020,
+    this.s2040,
+    this.k,
+    this.ca,
+    this.mg,
+    this.al,
     this.hMaisAl,
-    this.boro,
-    this.cobre,
-    this.ferro,
-    this.manganes,
-    this.zinco,
+    this.na,
+    this.b,
+    this.cu,
+    this.fe,
+    this.mn,
+    this.zn,
+    this.ni,
+    this.mo,
+    this.se,
     this.pdfUrl,
+    this.laudoMetadata,
   });
 }

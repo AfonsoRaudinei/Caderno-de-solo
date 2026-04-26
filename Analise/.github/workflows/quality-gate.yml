@@ -1,0 +1,39 @@
+name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Run Quality Gate
+        run: ./tool/quality_gate.sh
+
+      - name: Upload Test Artifacts (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-gate-artifacts
+          if-no-files-found: ignore
+          path: |
+            coverage/lcov.info
+            test/failures/**
+            *.log

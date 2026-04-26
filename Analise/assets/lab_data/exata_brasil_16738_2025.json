@@ -1,0 +1,220 @@
+{
+  "fonte": "Exata Brasil",
+  "os": "16738",
+  "dataEmissao": "2025-07-24",
+  "proprietario": "ANDRE LUIZ DE SIQUEIRA",
+  "propriedade": "MOEMA",
+  "municipio": "Palmas - TO",
+  "responsavel": "Marcos Anzileiro",
+  "amostras": [
+    {
+      "numeroAmostra": "SBA25.147312",
+      "talhao": "T01",
+      "profundidade": "20-40",
+      "phCaCl2": 6.00,
+      "pMehlich": 1.41,
+      "k_mgdm3": 50.70,
+      "ca": 2.19,
+      "mg": 1.32,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147294",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.20,
+      "pMehlich": 5.63,
+      "k_mgdm3": 109.90,
+      "ca": 2.97,
+      "mg": 1.67,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147295",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.27,
+      "pMehlich": 4.82,
+      "k_mgdm3": 186.80,
+      "ca": 3.23,
+      "mg": 1.94,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147296",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.30,
+      "pMehlich": 13.45,
+      "k_mgdm3": 120.70,
+      "ca": 3.45,
+      "mg": 2.04,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147297",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.14,
+      "pMehlich": 13.13,
+      "k_mgdm3": 163.60,
+      "ca": 2.19,
+      "mg": 1.39,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147298",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.03,
+      "pMehlich": 31.41,
+      "k_mgdm3": 107.40,
+      "ca": 2.27,
+      "mg": 1.55,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147299",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.94,
+      "pMehlich": 24.98,
+      "k_mgdm3": 114.00,
+      "ca": 4.12,
+      "mg": 2.10,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147300",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.23,
+      "pMehlich": 20.21,
+      "k_mgdm3": 97.70,
+      "ca": 3.48,
+      "mg": 1.97,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147301",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.69,
+      "pMehlich": 14.09,
+      "k_mgdm3": 130.00,
+      "ca": 3.11,
+      "mg": 1.60,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147302",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.08,
+      "pMehlich": 16.99,
+      "k_mgdm3": 107.00,
+      "ca": 3.49,
+      "mg": 1.87,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147303",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.10,
+      "pMehlich": 20.25,
+      "k_mgdm3": 105.00,
+      "ca": 3.44,
+      "mg": 1.97,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147304",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.68,
+      "pMehlich": 31.68,
+      "k_mgdm3": 94.40,
+      "ca": 2.84,
+      "mg": 1.62,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147305",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.77,
+      "pMehlich": 16.13,
+      "k_mgdm3": 118.00,
+      "ca": 3.25,
+      "mg": 1.80,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147306",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.81,
+      "pMehlich": 23.53,
+      "k_mgdm3": 129.00,
+      "ca": 3.33,
+      "mg": 1.92,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147307",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.00,
+      "pMehlich": 18.19,
+      "k_mgdm3": 65.30,
+      "ca": 3.84,
+      "mg": 2.07,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147308",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.03,
+      "pMehlich": 54.96,
+      "k_mgdm3": 113.00,
+      "ca": 3.87,
+      "mg": 2.14,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147309",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.92,
+      "pMehlich": 38.01,
+      "k_mgdm3": 79.90,
+      "ca": 3.63,
+      "mg": 1.99,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147310",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 6.08,
+      "pMehlich": 17.24,
+      "k_mgdm3": 124.00,
+      "ca": 3.44,
+      "mg": 1.74,
+      "argila": 174.45
+    },
+    {
+      "numeroAmostra": "SBA25.147311",
+      "talhao": "T01",
+      "profundidade": "0-20",
+      "phCaCl2": 5.75,
+      "pMehlich": 15.22,
+      "k_mgdm3": 119.00,
+      "ca": 2.74,
+      "mg": 1.40,
+      "argila": 174.45
+    }
+  ]
+}

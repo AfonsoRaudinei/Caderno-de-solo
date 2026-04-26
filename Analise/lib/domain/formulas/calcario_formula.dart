@@ -1,4 +1,5 @@
 import 'package:soloforte/domain/formulas/conversoes.dart';
+import 'package:soloforte/domain/formulas/types/calcario_input.dart';
 
 enum ClasseRelacaoCaMg {
   estreita,
@@ -271,26 +272,28 @@ class CalcarioFormula {
   /// Método SMP
   /// Calcula a Necessidade de Calagem (NC) baseada no índice SMP
   /// NC = (pH ideal - pH atual) * Fator
-  /// Exemplo simplificado para uso didático/testes:
   static double metodoSMP({
     required double phSmp,
     required double prnt,
     double profundidadeCm = 20.0,
     double sc = 1.0,
-    // tabela SMP simplificada:
-    // SMP 4.5 -> 15.0 t/ha, SMP 5.0 -> 10.0 t/ha, SMP 5.5 -> 5.0 t/ha, SMP 6.0 -> 2.5 t/ha, acima -> 0
+    double? overrideNcBase,
   }) {
     double ncBase = 0;
-    if (phSmp <= 4.5) {
-      ncBase = 15.0;
-    } else if (phSmp <= 5.0) {
-      ncBase = 10.0;
-    } else if (phSmp <= 5.5) {
-      ncBase = 5.0;
-    } else if (phSmp <= 6.0) {
-      ncBase = 2.5;
+    if (overrideNcBase != null) {
+      ncBase = overrideNcBase;
     } else {
-      ncBase = 0.0;
+      if (phSmp <= 4.5) {
+        ncBase = 15.0;
+      } else if (phSmp <= 5.0) {
+        ncBase = 10.0;
+      } else if (phSmp <= 5.5) {
+        ncBase = 5.0;
+      } else if (phSmp <= 6.0) {
+        ncBase = 2.5;
+      } else {
+        ncBase = 0.0;
+      }
     }
     return aplicarCorrecoes(
       ncBase: ncBase,
@@ -300,24 +303,22 @@ class CalcarioFormula {
     ).doseFinal;
   }
 
+
   /// Método saturação por bases (V%)
   /// NC = (CTC * (V2 - V1)) / PRNT
-  static double metodoV({
-    required double ctc,
-    required double vAtual,
-    required double vDesejado,
-    required double prnt,
-    double profundidadeCm = 20.0,
-    double sc = 1.0,
-  }) {
-    if (vAtual >= vDesejado) return 0.0;
-    final ncBase = ((vDesejado - vAtual) * ctc) / 100.0;
-    return aplicarCorrecoes(
+  static CalcarioResult metodoV(CalcarioInput input) {
+    if (input.prnt <= 0) {
+      throw ArgumentError('PRNT deve ser maior que zero para compor a fração calcário.');
+    }
+    if (input.va >= input.vd) return const CalcarioResult(ncToneladas: 0.0, formula: 'V%');
+    final ncBase = ((input.vd - input.va) * input.ctcPh7) / 100.0;
+    final doseFinal = aplicarCorrecoes(
       ncBase: ncBase,
-      profundidadeCm: profundidadeCm,
-      prnt: prnt,
-      sc: sc,
+      profundidadeCm: input.profundidade,
+      prnt: input.prnt,
+      sc: 1.0,
     ).doseFinal;
+    return CalcarioResult(ncToneladas: doseFinal, formula: 'V%');
   }
 
   /// Método IAC (cálcio e magnésio)
@@ -421,28 +422,33 @@ class CalcarioFormula {
     double pisoKCmolc = 0.15,
     double profundidadeCm = 20.0,
     double sc = 1.0,
+    double? overrideNcBase,
   }) {
-    final caNecessario = ((pctCaAlvo / 100.0) * ctc) > pisoCaCmolc
-        ? ((pctCaAlvo / 100.0) * ctc)
-        : pisoCaCmolc;
-    final mgNecessario = ((pctMgAlvo / 100.0) * ctc) > pisoMgCmolc
-        ? ((pctMgAlvo / 100.0) * ctc)
-        : pisoMgCmolc;
-    final kNecessario = ((pctKAlvo / 100.0) * ctc) > pisoKCmolc
-        ? ((pctKAlvo / 100.0) * ctc)
-        : pisoKCmolc;
-
-    final deficitCa = (caNecessario - caAtual).clamp(0.0, double.infinity);
-    final deficitMg = (mgNecessario - mgAtual).clamp(0.0, double.infinity);
-    final deficitK = (kNecessario - kAtual).clamp(0.0, double.infinity);
-    // Mantidos para documentação técnica do método:
-    // ignore: unused_local_variable
-    final _ = deficitMg + deficitK;
-
     double ncBase = 0.0;
-    if (deficitCa > 0 && caO > 0) {
-      final caKgHa = deficitCa * 200.0;
-      ncBase = (caKgHa / ((caO / 100.0) * Conversoes.fatorCaO_Ca)) / 1000.0;
+    if (overrideNcBase != null) {
+      ncBase = overrideNcBase;
+    } else {
+      final caNecessario = ((pctCaAlvo / 100.0) * ctc) > pisoCaCmolc
+          ? ((pctCaAlvo / 100.0) * ctc)
+          : pisoCaCmolc;
+      final mgNecessario = ((pctMgAlvo / 100.0) * ctc) > pisoMgCmolc
+          ? ((pctMgAlvo / 100.0) * ctc)
+          : pisoMgCmolc;
+      final kNecessario = ((pctKAlvo / 100.0) * ctc) > pisoKCmolc
+          ? ((pctKAlvo / 100.0) * ctc)
+          : pisoKCmolc;
+
+      final deficitCa = (caNecessario - caAtual).clamp(0.0, double.infinity);
+      final deficitMg = (mgNecessario - mgAtual).clamp(0.0, double.infinity);
+      final deficitK = (kNecessario - kAtual).clamp(0.0, double.infinity);
+      // Mantidos para documentação técnica do método:
+      // ignore: unused_local_variable
+      final _ = deficitMg + deficitK;
+
+      if (deficitCa > 0 && caO > 0) {
+        final caKgHa = deficitCa * 200.0;
+        ncBase = (caKgHa / ((caO / 100.0) * Conversoes.fatorCaO_Ca)) / 1000.0;
+      }
     }
 
     return aplicarCorrecoes(

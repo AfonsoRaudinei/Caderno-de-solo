@@ -1,0 +1,461 @@
+### 1. Conteúdo completo do widget
+import 'package:flutter/material.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_calc_cell.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_column_header.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_input_cell.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_label_cell.dart';
+import 'package:soloforte/features/analise/presentation/widgets/analise_section_row.dart';
+
+/// Definição de um campo da tabela
+class _FieldDef {
+  final String key;
+  final String label;
+  final String? unit;
+  final bool isText;
+  final bool isGps;
+
+  const _FieldDef(this.key, this.label,
+      {this.unit, this.isText = false, this.isGps = false});
+}
+
+/// Definição de um campo calculado
+class _CalcFieldDef {
+  final String key;
+  final String label;
+  final String? unit;
+
+  const _CalcFieldDef(this.key, this.label, {this.unit});
+}
+
+/// Definição de uma seção da tabela
+class _SectionDef {
+  final String title;
+  final List<_FieldDef> fields;
+  final List<_CalcFieldDef> calcFields;
+
+  const _SectionDef(this.title, this.fields, {this.calcFields = const []});
+}
+
+const double _stickyWidth = 152;
+const double _colWidth = 88;
+
+const List<_SectionDef> _sections = [
+  _SectionDef('1. Identificação', [
+    _FieldDef('fazenda', 'Fazenda', isText: true),
+    _FieldDef('produtor', 'Produtor', isText: true),
+    _FieldDef('talhao', 'Talhão', isText: true),
+    _FieldDef('numeroAmostra', 'Nº Amostra', isText: true),
+    _FieldDef('cultura', 'Cultura', isText: true),
+    _FieldDef('safra', 'Safra', isText: true),
+    _FieldDef('laboratorio', 'Laboratório', isText: true),
+    _FieldDef('profundidade', 'Profundidade', unit: 'cm', isText: true),
+  ]),
+  _SectionDef('2. Localização', [
+    _FieldDef('gps', 'GPS', isGps: true),
+    _FieldDef('latitude', 'Latitude'),
+    _FieldDef('longitude', 'Longitude'),
+    _FieldDef('descricaoLocal', 'Descrição', isText: true),
+  ]),
+  _SectionDef('3. Composição Física', [
+    _FieldDef('argila', 'Argila', unit: 'g/kg'),
+    _FieldDef('silte', 'Silte', unit: 'g/kg'),
+    _FieldDef('areiaTotal', 'Areia Total', unit: 'g/kg'),
+  ]),
+  _SectionDef('4. pH', [
+    _FieldDef('phAgua', 'pH Água'),
+    _FieldDef('phCaCl2', 'pH CaCl₂'),
+    _FieldDef('phSmp', 'pH SMP'),
+  ]),
+  _SectionDef('5. Matéria Orgânica', [
+    _FieldDef('materiaOrganica', 'M.O.', unit: 'dag/kg'),
+    _FieldDef('carbonoOrganico', 'C Orgânico', unit: 'dag/kg'),
+  ]),
+  _SectionDef('6. Fósforo', [
+    _FieldDef('pMehlich', 'P Mehlich', unit: 'mg/dm³'),
+    _FieldDef('pResina', 'P Resina', unit: 'mg/dm³'),
+    _FieldDef('pRem', 'P-rem', unit: 'mg/L'),
+  ]),
+  _SectionDef('7. Enxofre', [
+    _FieldDef('s020', 'S 0-20', unit: 'mg/dm³'),
+    _FieldDef('s2040', 'S 20-40', unit: 'mg/dm³'),
+  ]),
+  _SectionDef('8. Macronutrientes', [
+    _FieldDef('k', 'K', unit: 'cmolc/dm³'),
+    _FieldDef('ca', 'Ca', unit: 'cmolc/dm³'),
+    _FieldDef('mg', 'Mg', unit: 'cmolc/dm³'),
+    _FieldDef('al', 'Al', unit: 'cmolc/dm³'),
+    _FieldDef('hMaisAl', 'H+Al', unit: 'cmolc/dm³'),
+    _FieldDef('na', 'Na', unit: 'cmolc/dm³'),
+  ]),
+  _SectionDef(
+    '9. Bases e CTC',
+    [],
+    calcFields: [
+      _CalcFieldDef('sb', 'SB', unit: 'cmolc/dm³'),
+      _CalcFieldDef('ctcTotal', 'CTC(T)', unit: 'cmolc/dm³'),
+      _CalcFieldDef('ctcEfetiva', 'CTC(e)', unit: 'cmolc/dm³'),
+      _CalcFieldDef('vPct', 'V%', unit: '%'),
+      _CalcFieldDef('mPct', 'm%', unit: '%'),
+    ],
+  ),
+  _SectionDef(
+    '10. Saturação das Bases',
+    [],
+    calcFields: [
+      _CalcFieldDef('caPctT', 'Ca/T', unit: '%'),
+      _CalcFieldDef('mgPctT', 'Mg/T', unit: '%'),
+      _CalcFieldDef('kPctT', 'K/T', unit: '%'),
+      _CalcFieldDef('hAlPctT', 'H+Al/T', unit: '%'),
+    ],
+  ),
+  _SectionDef(
+    '11. Relações entre Bases',
+    [],
+    calcFields: [
+      _CalcFieldDef('relCaMg', 'Ca/Mg'),
+      _CalcFieldDef('relCaK', 'Ca/K'),
+      _CalcFieldDef('relMgK', 'Mg/K'),
+      _CalcFieldDef('relCaMgT', '(Ca+Mg)/T', unit: '%'),
+    ],
+  ),
+  _SectionDef('12. Micronutrientes', [
+    _FieldDef('b', 'B', unit: 'mg/dm³'),
+    _FieldDef('cu', 'Cu', unit: 'mg/dm³'),
+    _FieldDef('fe', 'Fe', unit: 'mg/dm³'),
+    _FieldDef('mn', 'Mn', unit: 'mg/dm³'),
+    _FieldDef('zn', 'Zn', unit: 'mg/dm³'),
+    _FieldDef('ni', 'Ni', unit: 'mg/dm³'),
+    _FieldDef('mo', 'Mo', unit: 'mg/dm³'),
+    _FieldDef('se', 'Se', unit: 'mg/dm³'),
+  ]),
+];
+
+/// Tabela planilha de análise de solo com sticky column e scroll horizontal.
+class AnaliseTableWidget extends StatelessWidget {
+  /// Lista de mapas; cada mapa é uma coluna (amostra).
+  final List<Map<String, dynamic>> analises;
+
+  /// Mapa de derivados por índice de coluna.
+  final List<Map<String, double>> derivados;
+
+  /// Callback ao editar um campo.
+  final void Function(int index, String campo, String valor) onCampoChanged;
+
+  /// Callback ao capturar GPS.
+  final void Function(int index)? onGpsClicked;
+
+  /// Callback ao adicionar nova amostra (coluna).
+  final VoidCallback? onAddAnalise;
+
+  /// Callback ao remover amostra por índice.
+  final void Function(int index)? onRemoveAnalise;
+
+  const AnaliseTableWidget({
+    super.key,
+    required this.analises,
+    required this.derivados,
+    required this.onCampoChanged,
+    this.onGpsClicked,
+    this.onAddAnalise,
+    this.onRemoveAnalise,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colCount = analises.length;
+    final canAdd = colCount < 6;
+    final canRemove = colCount > 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Linha de cabeçalho das colunas
+        _buildHeaderRow(colCount, canRemove, canAdd),
+
+        // Corpo da tabela
+        for (final section in _sections) ...[
+          AnaliseSectionRow(
+            title: section.title,
+            stickyWidth: _stickyWidth,
+            columnWidth: _colWidth,
+            columnCount: colCount,
+          ),
+          for (final field in section.fields)
+            _buildInputRow(field, colCount, canAdd),
+          for (final calcField in section.calcFields)
+            _buildCalcRow(calcField, colCount, canAdd),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeaderRow(int colCount, bool canRemove, bool canAdd) {
+    return Row(
+      children: [
+        // Célula de canto
+        Container(
+          width: _stickyWidth,
+          decoration: const BoxDecoration(
+            color: AppColors.bgSecondary,
+            border: Border(
+              right: BorderSide(color: AppColors.border, width: 0.5),
+              bottom: BorderSide(color: AppColors.border, width: 0.5),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: const Text(
+            'PARÂMETRO',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF86868B),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        // Cabeçalhos de coluna com scroll
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < colCount; i++)
+                  AnaliseColumnHeader(
+                    width: _colWidth,
+                    index: i,
+                    canRemove: canRemove,
+                    onRemove: () => onRemoveAnalise?.call(i),
+                  ),
+                if (canAdd)
+                  GestureDetector(
+                    onTap: onAddAnalise,
+                    child: Container(
+                      width: 44,
+                      decoration: const BoxDecoration(
+                        color: AppColors.bgSecondary,
+                        border: Border(
+                          left: BorderSide(
+                              color: AppColors.border, width: 0.5),
+                          bottom: BorderSide(
+                              color: AppColors.border, width: 0.5),
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.add,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputRow(_FieldDef field, int colCount, bool canAdd) {
+    return Row(
+      children: [
+        AnaliseLabelCell(
+          label: field.label,
+          unit: field.unit,
+          width: _stickyWidth,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < colCount; i++)
+                  if (field.isGps)
+                    _buildGpsButton(i)
+                  else
+                    AnaliseInputCell(
+                      width: _colWidth,
+                      initialValue: analises[i][field.key]?.toString() ?? '',
+                      type: field.isText
+                          ? AnaliseCellType.text
+                          : AnaliseCellType.numeric,
+                      onChanged: (v) => onCampoChanged(i, field.key, v),
+                    ),
+                if (canAdd) const SizedBox(width: 44),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGpsButton(int index) {
+    final hasLat = (analises[index]['latitude']?.toString() ?? '').isNotEmpty;
+    final hasLng = (analises[index]['longitude']?.toString() ?? '').isNotEmpty;
+    final success = hasLat && hasLng;
+
+    return Container(
+      width: _colWidth,
+      height: 56,
+      decoration: const BoxDecoration(
+        border: Border(
+          left: BorderSide(color: AppColors.border, width: 0.5),
+          bottom: BorderSide(color: AppColors.border, width: 0.5),
+        ),
+      ),
+      alignment: Alignment.center,
+      child: IconButton(
+        onPressed: () => onGpsClicked?.call(index),
+        icon: Icon(
+          success ? Icons.gps_fixed : Icons.gps_not_fixed,
+          size: 20,
+          color: success ? AppColors.success : AppColors.primary,
+        ),
+        tooltip: 'Capturar GPS',
+      ),
+    );
+  }
+
+  Widget _buildCalcRow(_CalcFieldDef field, int colCount, bool canAdd) {
+    return Row(
+      children: [
+        AnaliseLabelCell(
+          label: field.label,
+          unit: field.unit,
+          width: _stickyWidth,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < colCount; i++)
+                  AnaliseCalcCell(
+                    width: _colWidth,
+                    value: i < derivados.length
+                        ? derivados[i][field.key]
+                        : null,
+                  ),
+                if (canAdd) const SizedBox(width: 44),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+### 2. Tamanho total
+     351 lib/features/analise/presentation/widgets/analise_table_widget.dart
+### 3. Contexto das 3 linhas de scroll
+--- Linhas 200-240 ---
+            border: Border(
+              right: BorderSide(color: AppColors.border, width: 0.5),
+              bottom: BorderSide(color: AppColors.border, width: 0.5),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: const Text(
+            'PARÂMETRO',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF86868B),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        // Cabeçalhos de coluna com scroll
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < colCount; i++)
+                  AnaliseColumnHeader(
+                    width: _colWidth,
+                    index: i,
+                    canRemove: canRemove,
+                    onRemove: () => onRemoveAnalise?.call(i),
+                  ),
+                if (canAdd)
+                  GestureDetector(
+                    onTap: onAddAnalise,
+                    child: Container(
+                      width: 44,
+                      decoration: const BoxDecoration(
+                        color: AppColors.bgSecondary,
+                        border: Border(
+                          left: BorderSide(
+                              color: AppColors.border, width: 0.5),
+                          bottom: BorderSide(
+--- Linhas 255-285 ---
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputRow(_FieldDef field, int colCount, bool canAdd) {
+    return Row(
+      children: [
+        AnaliseLabelCell(
+          label: field.label,
+          unit: field.unit,
+          width: _stickyWidth,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < colCount; i++)
+                  if (field.isGps)
+                    _buildGpsButton(i)
+                  else
+                    AnaliseInputCell(
+                      width: _colWidth,
+                      initialValue: analises[i][field.key]?.toString() ?? '',
+                      type: field.isText
+                          ? AnaliseCellType.text
+                          : AnaliseCellType.numeric,
+                      onChanged: (v) => onCampoChanged(i, field.key, v),
+                    ),
+--- Linhas 315-345 ---
+          color: success ? AppColors.success : AppColors.primary,
+        ),
+        tooltip: 'Capturar GPS',
+      ),
+    );
+  }
+
+  Widget _buildCalcRow(_CalcFieldDef field, int colCount, bool canAdd) {
+    return Row(
+      children: [
+        AnaliseLabelCell(
+          label: field.label,
+          unit: field.unit,
+          width: _stickyWidth,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const ClampingScrollPhysics(),
+            child: Row(
+              children: [
+                for (int i = 0; i < colCount; i++)
+                  AnaliseCalcCell(
+                    width: _colWidth,
+                    value: i < derivados.length
+                        ? derivados[i][field.key]
+                        : null,
+                  ),
+                if (canAdd) const SizedBox(width: 44),
+              ],
+            ),

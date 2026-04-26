@@ -14,21 +14,19 @@ void main() {
       const analise = AnaliseModel(
         id: '123',
         userId: 'user1',
-        fazendaNome: 'Fazenda AAA',
-        talhaoNome: 'Talhão 1',
+        produtor: 'Fazenda AAA',
+        talhao: 'Talhão 1',
         dataColeta: '2023-10-01',
         status: 'Concluído',
         cultura: 'Soja',
-        ph: 5.0,
-        fosforo: FosforoData(
-          pResina: 4.0, // menor que o critico (8.0 para argila>35)
-          fontePrincipal: FonteP.resina,
-        ),
-        potassio: 0.2, // ~2% de CTC 10
-        calcio: 2.0,
-        magnesio: 1.0,
-        ctc: 10.0,
-        saturacaoBases: 32.0, // V% = 32% (abaixo do alvo 70%)
+        phAgua: 5.0,
+        pResina: 4.0, // menor que o critico (18.0 Mehlich para argiloso)
+        k: 0.2, // ~2% de CTC 10
+        ca: 2.0,
+        mg: 1.0,
+        hMaisAl: 6.8,
+        argila: 400.0,
+        fontePrincipalP: FonteP.resina,
       );
 
       final recomendacao = useCase(analise: analise, prntDesejado: 100);
@@ -36,8 +34,10 @@ void main() {
       // Asserts Calcário: (10.0 * (70-32))/100 = 3.8 t/ha
       expect(recomendacao.necessidadeCalagem, 3.8);
 
-      // Asserts Fósforo (modo correção atualizado): 210.0 kg/ha
-      expect(recomendacao.p2o5, 210.0);
+      // Asserts Fósforo (modo correção):
+      // argilaPercent=40 → argiloso → NC_Mehlich=18, fator=4, fep=15
+      // deficit=14, doseBase=56, dose=56/(15/100)=373.33 kg/ha P₂O₅
+      expect(recomendacao.p2o5, closeTo(373.33, 0.01));
 
       // Asserts Potássio: fator atualizado 942.31
       expect(recomendacao.k2o, closeTo(282.693, 0.01));
@@ -51,21 +51,19 @@ void main() {
       const analise = AnaliseModel(
         id: '123',
         userId: 'user1',
-        fazendaNome: '',
-        talhaoNome: '',
+        produtor: '',
+        talhao: '',
         dataColeta: '',
         status: '',
         cultura: '',
-        ph: 6.5,
-        fosforo: FosforoData(
-          pMehlich: 20.0, // super fértil
-          fontePrincipal: FonteP.mehlich,
-        ),
-        potassio: 1.0, // 10% da CTC
-        calcio: 6.0,
-        magnesio: 2.0,
-        ctc: 10.0,
-        saturacaoBases: 90.0, // V% super alto
+        phAgua: 6.5,
+        pMehlich: 20.0, // super fértil
+        k: 1.0, // 10% da CTC
+        ca: 6.0,
+        mg: 2.0,
+        hMaisAl: 1.0,
+        argila: 400.0,
+        fontePrincipalP: FonteP.mehlich,
       );
 
       final recomendacao = useCase(analise: analise, prntDesejado: 100);

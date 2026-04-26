@@ -1,0 +1,19 @@
+--- 1. Estrutura da tela ---
+     205 lib/features/analise/presentation/screens/nova_analise_screen.dart
+55:            child: SingleChildScrollView(
+--- 2. LinkedScrollController check ---
+--- 3. Header e linhas check ---
+52:      body: Column(
+--- 4. Scroll horizontal check ---
+55:            child: SingleChildScrollView(
+--- 5. Providers check ---
+6:import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
+18:    final ctrlProvider = novaAnaliseControllerProvider(analiseParaEditar);
+19:    final state = ref.watch(ctrlProvider);
+20:    final ctrl = ref.read(ctrlProvider.notifier);
+--- 6. pubspec dependencies ---
+  intl: ^0.20.2
+  uuid: ^4.3.0
+  equatable: ^2.0.5
+  hooks_riverpod: ^2.6.1
+  flutter_localizations:

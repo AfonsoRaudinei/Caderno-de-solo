@@ -1,4 +1,5 @@
 import 'package:soloforte/domain/models/analise_model.dart';
+import 'package:soloforte/domain/formulas/types/fosforo_input.dart';
 
 class LegacyPResultado {
   const LegacyPResultado({
@@ -19,7 +20,8 @@ class FosforoFormula {
   }
 
   /// NC para Resina (IAC): 12/20/30/40 mg/dm³.
-  static double nivelCriticoResina(double argilaPercent) {
+  static double nivelCriticoResina(double argilaPercent, {double? overrideValue}) {
+    if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
       case 'arenoso':
@@ -34,7 +36,8 @@ class FosforoFormula {
   }
 
   /// NC para Mehlich-1: 8/12/18/25 mg/dm³.
-  static double nivelCriticoMehlich1(double argilaPercent) {
+  static double nivelCriticoMehlich1(double argilaPercent, {double? overrideValue}) {
+    if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
       case 'arenoso':
@@ -51,15 +54,17 @@ class FosforoFormula {
   static double nivelCritico({
     required FonteP extrator,
     required double argilaPercent,
+    double? overrideValue,
   }) {
     if (extrator == FonteP.resina) {
-      return nivelCriticoResina(argilaPercent);
+      return nivelCriticoResina(argilaPercent, overrideValue: overrideValue);
     }
-    return nivelCriticoMehlich1(argilaPercent);
+    return nivelCriticoMehlich1(argilaPercent, overrideValue: overrideValue);
   }
 
   /// fator_solo: arenoso=2, médio=3, argiloso=4, muito argiloso=5.
-  static double fatorSolo(double argilaPercent) {
+  static double fatorSolo(double argilaPercent, {double? overrideValue}) {
+    if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
       case 'arenoso':
@@ -74,7 +79,8 @@ class FosforoFormula {
   }
 
   /// FEP base: arenoso=30, médio=20, argiloso=15, muito argiloso=10.
-  static double fepBase(double argilaPercent) {
+  static double fepBase(double argilaPercent, {double? overrideValue}) {
+    if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
       case 'arenoso':
@@ -106,22 +112,17 @@ class FosforoFormula {
   /// deficit = max(0, NC - Psolo)
   /// dose_base = deficit × fator_solo × (pct_correcao/100)
   /// dose_final = dose_base / (FEP/100)
-  static double recomendacaoCorrecao({
-    required double pSolo,
-    required double nivelCritico,
-    required double argilaPercent,
-    double percentualCorrecao = 100.0,
-    double? fep,
-  }) {
-    final deficit = (nivelCritico - pSolo).clamp(0.0, double.infinity);
-    if (deficit <= 0) return 0.0;
+  static FosforoResult recomendacaoCorrecao(FosforoInput input) {
+    final deficit = (input.nc - input.pAtual).clamp(0.0, double.infinity);
+    if (deficit <= 0) return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
 
-    final fator = fatorSolo(argilaPercent);
-    final doseBase = deficit * fator * (percentualCorrecao / 100.0);
-    final fepUsado = (fep ?? fepBase(argilaPercent));
-    if (fepUsado <= 0) return 0.0;
-    return doseBase / (fepUsado / 100.0);
+    final fator = fatorSolo(input.argila);
+    final doseBase = deficit * fator * (100.0 / 100.0);
+    final fepUsado = fepBase(input.argila);
+    if (fepUsado <= 0) return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
+    return FosforoResult(doseRecomendada: doseBase / (fepUsado / 100.0), formula: input.referencia);
   }
+
 
   /// Modo 2 (extração).
   static double recomendacaoExtracao({
@@ -158,7 +159,7 @@ class FosforoFormula {
 
   /// Mantida para integração existente da recomendação.
   /// Quando a textura não é informada, assume classe média (argila=25%).
-  static double recomendacao(
+  static FosforoResult recomendacao(
     FosforoData fosforo,
     double pCritico, {
     double argilaPercent = 25.0,
@@ -167,11 +168,12 @@ class FosforoFormula {
   }) {
     final pAtual = fosforo.valorParaCalculo;
     return recomendacaoCorrecao(
-      pSolo: pAtual,
-      nivelCritico: pCritico,
-      argilaPercent: argilaPercent,
-      percentualCorrecao: percentualCorrecao,
-      fep: fep,
+      FosforoInput(
+        argila: argilaPercent,
+        pAtual: pAtual,
+        nc: pCritico,
+        referencia: 'Metodo Correcao',
+      )
     );
   }
 }

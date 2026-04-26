@@ -13,14 +13,16 @@ class NutrienteCard extends StatefulWidget {
     required this.cor,
     required this.children,
     this.initiallyExpanded = false,
+    this.isExpanded,
+    this.onToggle,
     this.trailing,
   });
 
   /// Nome do nutriente (ex: 'Calcário')
   final String nutriente;
 
-  /// Emoji ou ícone representativo
-  final String icon;
+  /// Ícone representativo
+  final IconData icon;
 
   /// Cor identificadora da borda lateral
   final Color cor;
@@ -28,8 +30,14 @@ class NutrienteCard extends StatefulWidget {
   /// Conteúdo do card quando expandido (campos de calibração)
   final List<Widget> children;
 
-  /// Se começa expandido
+  /// Se começa expandido (ignorando se isExpanded for passado)
   final bool initiallyExpanded;
+
+  /// Controle externo opcional de expansão
+  final bool? isExpanded;
+
+  /// Callback quando o header é clicado
+  final VoidCallback? onToggle;
 
   /// Widget adicional na linha do header (ex: badge com status)
   final Widget? trailing;
@@ -40,22 +48,36 @@ class NutrienteCard extends StatefulWidget {
 
 class _NutrienteCardState extends State<NutrienteCard>
     with SingleTickerProviderStateMixin {
-  late bool _expanded;
   late AnimationController _controller;
   late Animation<double> _rotateAnimation;
+
+  bool get _isExpanded => widget.isExpanded ?? _internalExpanded;
+  bool _internalExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _expanded = widget.initiallyExpanded;
+    _internalExpanded = widget.initiallyExpanded;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
-      value: widget.initiallyExpanded ? 1.0 : 0.0,
+      value: _isExpanded ? 1.0 : 0.0,
     );
     _rotateAnimation = Tween<double>(begin: 0, end: 0.5).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant NutrienteCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isExpanded != null && widget.isExpanded != oldWidget.isExpanded) {
+      if (widget.isExpanded!) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
   }
 
   @override
@@ -65,9 +87,14 @@ class _NutrienteCardState extends State<NutrienteCard>
   }
 
   void _toggle() {
+    if (widget.onToggle != null) {
+      widget.onToggle!();
+      return;
+    }
+
     setState(() {
-      _expanded = !_expanded;
-      if (_expanded) {
+      _internalExpanded = !_internalExpanded;
+      if (_internalExpanded) {
         _controller.forward();
       } else {
         _controller.reverse();
@@ -106,7 +133,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                   vertical: AppDimens.md,
                 ),
                 decoration: BoxDecoration(
-                  color: _expanded
+                  color: _isExpanded
                       ? widget.cor.withValues(alpha: 0.06)
                       : Colors.white,
                 ),
@@ -123,19 +150,15 @@ class _NutrienteCardState extends State<NutrienteCard>
                     ),
                     const SizedBox(width: AppDimens.md),
 
-                    // Emoji/Ícone
-                    Text(
-                      widget.icon,
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(width: AppDimens.sm),
-
                     // Nome do nutriente
                     Expanded(
                       child: Text(
                         widget.nutriente,
                         style: AppTextStyles.value.copyWith(
-                          color: _expanded
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.1,
+                          color: _isExpanded
                               ? widget.cor.withValues(alpha: 0.85)
                               : AppColors.textPrimary,
                         ),
@@ -153,7 +176,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                       turns: _rotateAnimation,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: _expanded ? widget.cor : AppColors.textSecond,
+                        color: _isExpanded ? widget.cor : AppColors.textSecond,
                         size: 22,
                       ),
                     ),
@@ -167,16 +190,16 @@ class _NutrienteCardState extends State<NutrienteCard>
               duration: const Duration(milliseconds: 200),
               firstCurve: Curves.easeOut,
               secondCurve: Curves.easeIn,
-              crossFadeState: _expanded
+              crossFadeState: _isExpanded
                   ? CrossFadeState.showFirst
                   : CrossFadeState.showSecond,
               firstChild: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(
-                  AppDimens.lg,
                   AppDimens.md,
-                  AppDimens.lg,
-                  AppDimens.lg,
+                  AppDimens.sm,
+                  AppDimens.md,
+                  AppDimens.sm,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -193,7 +216,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                     for (int i = 0; i < widget.children.length; i++) ...[
                       widget.children[i],
                       if (i < widget.children.length - 1)
-                        const SizedBox(height: AppDimens.md),
+                        const SizedBox(height: AppDimens.sm),
                     ],
                   ],
                 ),
