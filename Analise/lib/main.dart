@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:soloforte/core/config/app_config.dart';
 import 'package:soloforte/core/router/app_router.dart';
 import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
@@ -20,6 +22,7 @@ void main() {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
+      await _activateFirebaseAppCheck();
       await AppObservability.instance.initialize();
       AppObservability.instance.installGlobalHandlers();
 
@@ -39,6 +42,17 @@ void main() {
         ),
       );
     },
+  );
+}
+
+Future<void> _activateFirebaseAppCheck() async {
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: AppConfig.isRelease
+        ? const AndroidPlayIntegrityProvider()
+        : const AndroidDebugProvider(),
+    providerApple: AppConfig.isRelease
+        ? const AppleAppAttestWithDeviceCheckFallbackProvider()
+        : const AppleDebugProvider(),
   );
 }
 

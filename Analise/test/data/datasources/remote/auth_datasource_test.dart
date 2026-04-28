@@ -39,14 +39,15 @@ void main() {
     );
 
     expect(result, same(credential));
-    expect(await storage.read(key: AuthDatasource.authUidStorageKey), 'uid-123');
+    expect(
+        await storage.read(key: AuthDatasource.authUidStorageKey), 'uid-123');
     expect(
       await storage.read(key: AuthDatasource.legacyAuthTokenStorageKey),
       isNull,
     );
   });
 
-  test('signIn converte wrong-password para mensagem amigável', () async {
+  test('signIn converte wrong-password para mensagem genérica', () async {
     when(() => auth.signInWithEmailAndPassword(
           email: 'user@solo.com',
           password: '123456',
@@ -59,11 +60,11 @@ void main() {
         email: 'user@solo.com',
         password: '123456',
       ),
-      throwsA('Senha incorreta fornecida.'),
+      throwsA(AuthDatasource.genericSignInMessage),
     );
   });
 
-  test('user-not-found retorna mensagem amigável (sem auto-seed)', () async {
+  test('user-not-found retorna mesma mensagem genérica do login', () async {
     when(() => auth.signInWithEmailAndPassword(
           email: 'inexistente@solo.com',
           password: '123456',
@@ -76,7 +77,7 @@ void main() {
         email: 'inexistente@solo.com',
         password: '123456',
       ),
-      throwsA('Nenhum usuário encontrado para este e-mail.'),
+      throwsA(AuthDatasource.genericSignInMessage),
     );
   });
 
@@ -93,11 +94,13 @@ void main() {
         email: 'user@solo.com',
         password: '123456',
       ),
-      throwsA('Sem conexão com a internet. Verifique sua rede e tente novamente.'),
+      throwsA(
+          'Sem conexão com a internet. Verifique sua rede e tente novamente.'),
     );
   });
 
-  test('user-disabled retorna mensagem amigável', () async {
+  test('user-disabled retorna mensagem genérica para evitar enumeração',
+      () async {
     when(() => auth.signInWithEmailAndPassword(
           email: 'desativado@solo.com',
           password: '123456',
@@ -110,7 +113,25 @@ void main() {
         email: 'desativado@solo.com',
         password: '123456',
       ),
-      throwsA('Esta conta foi desativada. Entre em contato com o suporte.'),
+      throwsA(AuthDatasource.genericSignInMessage),
+    );
+  });
+
+  test('createUser converte email-already-in-use para mensagem genérica',
+      () async {
+    when(() => auth.createUserWithEmailAndPassword(
+          email: 'existente@solo.com',
+          password: '123456',
+        )).thenThrow(
+      FirebaseAuthException(code: 'email-already-in-use'),
+    );
+
+    await expectLater(
+      () => datasource.createUserWithEmailAndPassword(
+        email: 'existente@solo.com',
+        password: '123456',
+      ),
+      throwsA(AuthDatasource.genericCreateAccountMessage),
     );
   });
 
@@ -142,16 +163,32 @@ void main() {
     );
   });
 
-  test('signOut remove apenas chaves de auth e preserva dados não-auth', () async {
-    await storage.write(key: AuthDatasource.authUidStorageKey, value: 'uid-123');
-    await storage.write(key: AuthDatasource.legacyAuthTokenStorageKey, value: 'legacy-uid-123');
+  test('sendPasswordResetEmail não revela user-not-found', () async {
+    when(() => auth.sendPasswordResetEmail(email: 'inexistente@solo.com'))
+        .thenThrow(
+      FirebaseAuthException(code: 'user-not-found'),
+    );
+
+    await expectLater(
+      datasource.sendPasswordResetEmail(email: 'inexistente@solo.com'),
+      completes,
+    );
+  });
+
+  test('signOut remove apenas chaves de auth e preserva dados não-auth',
+      () async {
+    await storage.write(
+        key: AuthDatasource.authUidStorageKey, value: 'uid-123');
+    await storage.write(
+        key: AuthDatasource.legacyAuthTokenStorageKey, value: 'legacy-uid-123');
     await storage.write(key: 'feature_flag_cache', value: 'enabled');
     when(() => auth.signOut()).thenAnswer((_) async {});
 
     await datasource.signOut();
 
     expect(await storage.read(key: AuthDatasource.authUidStorageKey), isNull);
-    expect(await storage.read(key: AuthDatasource.legacyAuthTokenStorageKey), isNull);
+    expect(await storage.read(key: AuthDatasource.legacyAuthTokenStorageKey),
+        isNull);
     expect(await storage.read(key: 'feature_flag_cache'), 'enabled');
   });
 }

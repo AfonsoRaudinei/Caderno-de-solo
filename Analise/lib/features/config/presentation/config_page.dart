@@ -467,7 +467,8 @@ class ConfigPage extends ConsumerWidget {
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Dados locais removidos com sucesso.'),
+                            content:
+                                Text('Dados locais removidos com sucesso.'),
                             backgroundColor: Color(0xFF34C759),
                           ),
                         );
@@ -512,8 +513,9 @@ class ConfigPage extends ConsumerWidget {
                           );
                           if (prosseguir != true || !context.mounted) return;
 
-                          // Passo 2: digitar EXCLUIR para confirmar
+                          // Passo 2: senha + EXCLUIR para confirmar
                           final confirmController = TextEditingController();
+                          final passwordController = TextEditingController();
                           final confirmado = await showCupertinoDialog<bool>(
                             context: context,
                             builder: (dialogContext) => CupertinoAlertDialog(
@@ -521,12 +523,22 @@ class ConfigPage extends ConsumerWidget {
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  const Text(
+                                    'Digite sua senha atual e EXCLUIR para confirmar:',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  CupertinoTextField(
+                                    controller: passwordController,
+                                    placeholder: 'Senha atual',
+                                    obscureText: true,
+                                    autofocus: true,
+                                  ),
+                                  const SizedBox(height: 12),
                                   const Text('Digite EXCLUIR para confirmar:'),
                                   const SizedBox(height: 12),
                                   CupertinoTextField(
                                     controller: confirmController,
                                     placeholder: 'EXCLUIR',
-                                    autofocus: true,
                                   ),
                                 ],
                               ),
@@ -539,9 +551,9 @@ class ConfigPage extends ConsumerWidget {
                                 CupertinoDialogAction(
                                   isDestructiveAction: true,
                                   onPressed: () {
-                                    final ok =
-                                        confirmController.text.trim() ==
-                                            'EXCLUIR';
+                                    final ok = confirmController.text.trim() ==
+                                            'EXCLUIR' &&
+                                        passwordController.text.isNotEmpty;
                                     Navigator.of(dialogContext).pop(ok);
                                   },
                                   child: const Text('Excluir conta'),
@@ -549,18 +561,28 @@ class ConfigPage extends ConsumerWidget {
                               ],
                             ),
                           );
+                          final password = passwordController.text;
+                          confirmController.dispose();
+                          passwordController.dispose();
                           if (confirmado != true || !context.mounted) return;
 
                           try {
                             await ref
                                 .read(configControllerProvider.notifier)
-                                .excluirConta();
+                                .excluirConta(
+                                  password: password,
+                                );
                             if (context.mounted) context.go(AppRoutes.login);
                           } on FirebaseAuthException catch (e) {
                             if (!context.mounted) return;
-                            final msg = e.code == 'requires-recent-login'
-                                ? 'Por segurança, faça logout e login novamente antes de excluir a conta.'
-                                : 'Erro ao excluir conta. Tente novamente.';
+                            final msg = switch (e.code) {
+                              'wrong-password' ||
+                              'invalid-credential' =>
+                                'Senha incorreta. Confira e tente novamente.',
+                              'requires-recent-login' =>
+                                'Por segurança, confirme sua senha novamente.',
+                              _ => 'Erro ao excluir conta. Tente novamente.',
+                            };
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(msg),

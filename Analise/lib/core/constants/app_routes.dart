@@ -5,6 +5,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String cadastro = '/cadastro';
   static const String recuperarSenha = '/recuperar-senha';
+  static const String verificarEmail = '/verificar-email';
   static const String authBootstrap = '/auth-bootstrap';
 
   static const String home = '/'; // Raiz redireciona

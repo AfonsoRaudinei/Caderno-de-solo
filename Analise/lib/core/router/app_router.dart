@@ -45,21 +45,32 @@ String? resolveAppRedirect({
   required User? currentUser,
 }) {
   final isAuthenticated = currentUser != null;
+  final hasVerifiedEmail = currentUser?.emailVerified == true;
 
   final isAuthRoute = path == AppRoutes.login ||
       path == AppRoutes.cadastro ||
       path == AppRoutes.recuperarSenha;
 
+  if (!isAuthenticated && path == AppRoutes.verificarEmail) {
+    return AppRoutes.login;
+  }
+
   if (!isAuthenticated && !isAuthRoute) {
     return AppRoutes.login;
   }
 
-  if (isAuthenticated && isAuthRoute) {
+  if (isAuthenticated && !hasVerifiedEmail) {
+    return path == AppRoutes.verificarEmail ? null : AppRoutes.verificarEmail;
+  }
+
+  if (isAuthenticated && (isAuthRoute || path == AppRoutes.verificarEmail)) {
     return AppRoutes.analise;
   }
 
   if (path == AppRoutes.home) {
-    return isAuthenticated ? AppRoutes.analise : AppRoutes.login;
+    return isAuthenticated && hasVerifiedEmail
+        ? AppRoutes.analise
+        : AppRoutes.login;
   }
 
   return null;
@@ -111,7 +122,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (path == AppRoutes.authBootstrap) {
-        return auth.currentUser != null ? AppRoutes.analise : AppRoutes.login;
+        final user = auth.currentUser;
+        if (user == null) return AppRoutes.login;
+        return user.emailVerified
+            ? AppRoutes.analise
+            : AppRoutes.verificarEmail;
       }
 
       return resolveAppRedirect(
@@ -135,6 +150,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.recuperarSenha,
         builder: (context, state) => const RecuperarSenhaPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.verificarEmail,
+        builder: (context, state) => const _EmailVerificationPage(),
       ),
       GoRoute(
         path: AppRoutes.culturas,
@@ -331,6 +350,109 @@ class _AuthBootstrapPage extends StatelessWidget {
     return const Scaffold(
       body: Center(
         child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class _EmailVerificationPage extends ConsumerWidget {
+  const _EmailVerificationPage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(firebaseAuthProvider);
+    final user = auth.currentUser;
+    final email = user?.email ?? 'seu e-mail';
+
+    Future<void> resendEmail() async {
+      try {
+        await auth.currentUser?.sendEmailVerification();
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('E-mail de verificação reenviado.'),
+          ),
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível reenviar agora. Tente novamente.'),
+          ),
+        );
+      }
+    }
+
+    Future<void> checkVerification() async {
+      try {
+        await auth.currentUser?.reload();
+        final refreshedUser = auth.currentUser;
+        if (!context.mounted) return;
+        if (refreshedUser?.emailVerified == true) {
+          context.go(AppRoutes.analise);
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('E-mail ainda não verificado.'),
+          ),
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível atualizar a sessão.'),
+          ),
+        );
+      }
+    }
+
+    Future<void> signOut() async {
+      await auth.signOut();
+      if (context.mounted) context.go(AppRoutes.login);
+    }
+
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.mark_email_unread_outlined, size: 56),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Verifique seu e-mail',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Enviamos um link para $email. Confirme o endereço antes de acessar o app.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: checkVerification,
+                    child: const Text('Já verifiquei'),
+                  ),
+                  TextButton(
+                    onPressed: resendEmail,
+                    child: const Text('Reenviar e-mail'),
+                  ),
+                  TextButton(
+                    onPressed: signOut,
+                    child: const Text('Sair'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

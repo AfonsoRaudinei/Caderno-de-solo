@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:soloforte/data/datasources/remote/auth_datasource.dart';
@@ -76,19 +77,29 @@ class ConfigController extends AsyncNotifier<UserProfileData> {
     ref.invalidateSelf(); // seguro aqui — não está no path de salvar análises
   }
 
-  /// Exclui permanentemente a conta: Firebase Auth + dados Firestore + Hive local.
-  Future<void> excluirConta() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    // 1. Limpar Hive primeiro (não depende de rede)
-    await limparDadosLocais();
-
-    // 2. Deletar documento do usuário no Firestore
-    if (uid != null) {
-      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+  /// Exclui permanentemente a conta.
+  ///
+  /// A reautenticação acontece antes de qualquer remoção para evitar apagar
+  /// dados quando o Firebase Auth ainda exigiria login recente.
+  Future<void> excluirConta({required String password}) async {
+    final auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || email.trim().isEmpty) {
+      throw FirebaseAuthException(
+        code: 'user-not-authenticated',
+        message: 'Usuário não autenticado.',
+      );
     }
 
-    // 3. Deletar conta no Firebase Auth (deve ser último)
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: password,
+    );
+    await user.reauthenticateWithCredential(credential);
+
+    await _deleteCloudDataForUser(user.uid);
+    await limparDadosLocais();
     await ref.read(authDatasourceProvider).deleteAccount();
   }
 
@@ -110,6 +121,73 @@ class ConfigController extends AsyncNotifier<UserProfileData> {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return '—';
     return trimmed;
+  }
+
+  Future<void> _deleteCloudDataForUser(String uid) async {
+    final firestore = FirebaseFirestore.instance;
+    final userRef = firestore.collection('users').doc(uid);
+
+    await _deleteStorageDirectory(FirebaseStorage.instance.ref('users/$uid'));
+    await _deleteCollection(
+      userRef.collection('calibracoes'),
+      firestore: firestore,
+    );
+    await _deleteCollection(
+      userRef.collection('laudos'),
+      firestore: firestore,
+    );
+    await _deleteQuery(
+      firestore.collection('analises').where('userId', isEqualTo: uid),
+      firestore: firestore,
+    );
+    await _deleteQuery(
+      firestore.collection('recomendacoes').where('userId', isEqualTo: uid),
+      firestore: firestore,
+    );
+    await _deleteQuery(
+      firestore
+          .collection('analise_save_batches')
+          .where('userId', isEqualTo: uid),
+      firestore: firestore,
+    );
+    await userRef.delete();
+  }
+
+  Future<void> _deleteCollection(
+    CollectionReference<Map<String, dynamic>> collection, {
+    required FirebaseFirestore firestore,
+  }) async {
+    await _deleteQuery(collection.limit(400), firestore: firestore);
+  }
+
+  Future<void> _deleteQuery(
+    Query<Map<String, dynamic>> query, {
+    required FirebaseFirestore firestore,
+  }) async {
+    while (true) {
+      final snapshot = await query.limit(400).get();
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> _deleteStorageDirectory(Reference ref) async {
+    try {
+      final result = await ref.listAll();
+      for (final item in result.items) {
+        await item.delete();
+      }
+      for (final prefix in result.prefixes) {
+        await _deleteStorageDirectory(prefix);
+      }
+    } on FirebaseException catch (e) {
+      if (e.code != 'object-not-found') rethrow;
+    }
   }
 }
 

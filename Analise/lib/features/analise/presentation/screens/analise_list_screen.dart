@@ -41,7 +41,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       );
     }
 
-    final analisesRaw = ref.watch(analiseNotifierProvider).valueOrNull ?? [];
+    final analiseState = ref.watch(analiseNotifierProvider);
+    final analisesRaw = analiseState.valueOrNull ?? [];
+    
     final safras = analisesRaw
         .map((e) => e.safra)
         .where((s) => s.isNotEmpty)
@@ -203,51 +205,120 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 ),
               ),
             ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.0,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == itensGrid.length) {
-                      return _NovaAnaliseCard(
-                        onTap: () => context.push(AppRoutes.analiseForm),
-                      );
-                    }
-
-                    if (!mostrandoAmostras) {
-                      final pasta = itensGrid[index] as _AnaliseFolderSummary;
-                      return _PastaAnaliseCard(
-                        pasta: pasta,
-                        onTap: () {
-                          setState(() {
-                            _selectedFolderKey = pasta.key;
-                          });
-                        },
-                        onLongPress: () =>
-                            _showPastaOptionsSheet(context, pasta),
-                      );
-                    }
-
-                    final analise = itensGrid[index] as AnaliseSolo;
-                    return _AnaliseAmostraCard(
-                      analise: analise,
-                      onTap: () {
-                        context
-                            .push('${AppRoutes.analise}/detalhe/${analise.id}');
-                      },
-                      onLongPress: () =>
-                          _showAnaliseOptionsSheet(context, analise),
-                    );
-                  },
-                  childCount: itensGrid.length + 1,
+            analiseState.when(
+              loading: () => const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (err, stack) => SliverFillRemaining(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_off, size: 48, color: AppColors.error),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Erro ao carregar dados do Firestore',
+                          style: AppTextStyles.headline.copyWith(color: AppColors.error),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          err.toString(),
+                          style: AppTextStyles.body,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(analiseNotifierProvider),
+                          child: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+              data: (listaCompleta) {
+                if (listaCompleta.isEmpty && !mostrandoAmostras) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.analytics_outlined, size: 64, color: AppColors.textTertiary),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Nenhuma análise encontrada',
+                              style: AppTextStyles.headline,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Você ainda não possui análises salvas no Firestore. Se estiver testando, você pode ativar o Modo de Demonstração nas Configurações.',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+                            ),
+                            const SizedBox(height: 32),
+                            _NovaAnaliseCard(
+                              onTap: () => context.push(AppRoutes.analiseForm),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == itensGrid.length) {
+                          return _NovaAnaliseCard(
+                            onTap: () => context.push(AppRoutes.analiseForm),
+                          );
+                        }
+
+                        if (!mostrandoAmostras) {
+                          final pasta = itensGrid[index] as _AnaliseFolderSummary;
+                          return _PastaAnaliseCard(
+                            pasta: pasta,
+                            onTap: () {
+                              setState(() {
+                                _selectedFolderKey = pasta.key;
+                              });
+                            },
+                            onLongPress: () =>
+                                _showPastaOptionsSheet(context, pasta),
+                          );
+                        }
+
+                        final analise = itensGrid[index] as AnaliseSolo;
+                        return _AnaliseAmostraCard(
+                          analise: analise,
+                          onTap: () {
+                            context
+                                .push('${AppRoutes.analise}/detalhe/${analise.id}');
+                          },
+                          onLongPress: () =>
+                              _showAnaliseOptionsSheet(context, analise),
+                        );
+                      },
+                      childCount: itensGrid.length + 1,
+                    ),
+                  ),
+                );
+              },
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
@@ -540,7 +611,12 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
               ),
               onTap: () {
                 Navigator.of(sheetContext).pop();
-                _showMoverAnaliseSheet(context, analise);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Em breve'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -602,167 +678,6 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro ao excluir. Tente novamente.'),
-          duration: Duration(seconds: 2),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
-  Future<void> _showMoverAnaliseSheet(
-    BuildContext context,
-    AnaliseSolo analise,
-  ) async {
-    final todasAnalises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
-    final todasPastas = _agruparPorPasta(todasAnalises);
-    final pastaAtualKey = _getPastaKeyDeAnalise(analise);
-    final pastasDestino = todasPastas
-        .where((p) => p.key != pastaAtualKey)
-        .toList()
-      ..sort((a, b) => b.dataMaisRecente.compareTo(a.dataMaisRecente));
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isDismissible: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'Mover para',
-                style: AppTextStyles.body.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            if (pastasDestino.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Nenhuma outra pasta disponível.',
-                  style:
-                      AppTextStyles.body.copyWith(color: AppColors.textSecond),
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.4,
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: pastasDestino.length,
-                  separatorBuilder: (_, __) =>
-                      const Divider(height: 1, indent: 16),
-                  itemBuilder: (_, index) {
-                    final destino = pastasDestino[index];
-                    return ListTile(
-                      leading: const Icon(
-                        Icons.folder_open_rounded,
-                        color: AppColors.primary,
-                      ),
-                      title: Text(
-                        destino.laboratorio,
-                        style: AppTextStyles.body.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${destino.analises.length} amostra(s)',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecond,
-                          fontSize: 12,
-                        ),
-                      ),
-                      onTap: () async {
-                        Navigator.of(sheetContext).pop();
-                        await _executarMoverAnalise(analise, destino);
-                      },
-                    );
-                  },
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getPastaKeyDeAnalise(AnaliseSolo analise) {
-    final laboratorio = analise.laboratorio.trim().isEmpty
-        ? 'Laboratório não informado'
-        : analise.laboratorio.trim();
-    final metadata = analise.laudoMetadata;
-    final groupId = _extrairGroupId(analise);
-    final os = _extrairOs(analise);
-    final isLegacy = metadata != null &&
-        metadata.isNotEmpty &&
-        groupId.isEmpty &&
-        os.isEmpty;
-
-    if (groupId.isNotEmpty) {
-      return 'group:$groupId';
-    }
-    if (isLegacy) {
-      return 'legacy:$laboratorio';
-    }
-    if (os.isNotEmpty) {
-      return '$laboratorio::$os';
-    }
-    return 'manual:${analise.id}';
-  }
-
-  Future<void> _executarMoverAnalise(
-    AnaliseSolo analise,
-    _AnaliseFolderSummary destino,
-  ) async {
-    try {
-      final referenciaDestino = destino.analises.first;
-      final destinoGroupId = _extrairGroupId(referenciaDestino);
-      final destinoGroupTitle = _extrairGroupTitle(referenciaDestino);
-      final destinoOs = _extrairOs(referenciaDestino);
-
-      await ref.read(analiseNotifierProvider.notifier).moverAnalise(
-            analiseId: analise.id,
-            destinoLaboratorio: destino.laboratorio,
-            destinoOs: destinoOs,
-            destinoGroupId: destinoGroupId,
-            destinoGroupTitle: destinoGroupTitle,
-          );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Análise movida para ${destino.laboratorio}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erro ao mover análise. Tente novamente.'),
           duration: Duration(seconds: 2),
           backgroundColor: AppColors.error,
         ),

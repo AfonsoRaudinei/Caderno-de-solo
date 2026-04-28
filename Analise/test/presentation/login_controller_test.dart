@@ -31,7 +31,8 @@ void main() {
       expect(state.hasError, isFalse);
     });
 
-    test('retorna erro para e-mail inválido propagado pelo repository', () async {
+    test('retorna erro para e-mail inválido propagado pelo repository',
+        () async {
       when(() => authRepository.login(
             email: 'agronomo.com',
             password: '123456',
@@ -94,7 +95,7 @@ void main() {
       when(() => authRepository.login(
             email: 'agronomo@gmail.com',
             password: 'senha_segura',
-          )).thenThrow('Senha incorreta fornecida.');
+          )).thenThrow('Não foi possível autenticar com esses dados.');
 
       await container
           .read(loginControllerProvider.notifier)
@@ -102,7 +103,7 @@ void main() {
 
       final state = container.read(loginControllerProvider);
       expect(state.hasError, isTrue);
-      expect(state.error, 'Senha incorreta fornecida.');
+      expect(state.error, 'Não foi possível autenticar com esses dados.');
     });
 
     test('exibe mensagem correta para network-request-failed', () async {
@@ -125,12 +126,12 @@ void main() {
       );
     });
 
-    test('exibe mensagem correta para user-disabled', () async {
+    test('exibe mensagem genérica para user-disabled', () async {
       when(() => authRepository.login(
             email: 'desativado@gmail.com',
             password: 'senha_segura',
           )).thenThrow(
-        'Esta conta foi desativada. Entre em contato com o suporte.',
+        'Não foi possível autenticar com esses dados.',
       );
 
       await container
@@ -141,7 +142,7 @@ void main() {
       expect(state.hasError, isTrue);
       expect(
         state.error,
-        'Esta conta foi desativada. Entre em contato com o suporte.',
+        'Não foi possível autenticar com esses dados.',
       );
     });
 

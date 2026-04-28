@@ -42,14 +42,14 @@ void main() {
     when(() => datasource.signInWithEmailAndPassword(
           email: 'agronomo@gmail.com',
           password: 'senha_segura',
-        )).thenThrow('Senha incorreta fornecida.');
+        )).thenThrow(AuthDatasource.genericSignInMessage);
 
     await expectLater(
       () => repository.login(
         email: 'agronomo@gmail.com',
         password: 'senha_segura',
       ),
-      throwsA('Senha incorreta fornecida.'),
+      throwsA(AuthDatasource.genericSignInMessage),
     );
   });
 

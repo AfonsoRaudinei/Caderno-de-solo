@@ -10,6 +10,10 @@ final authDatasourceProvider = Provider<AuthDatasource>((ref) {
 class AuthDatasource {
   static const String authUidStorageKey = 'auth_uid';
   static const String legacyAuthTokenStorageKey = 'auth_token';
+  static const String genericSignInMessage =
+      'Não foi possível autenticar com esses dados.';
+  static const String genericCreateAccountMessage =
+      'Não foi possível criar a conta com esses dados.';
 
   final FirebaseAuth _auth;
   final _storage = const FlutterSecureStorage();
@@ -39,8 +43,9 @@ class AuthDatasource {
           }
 
           return credential;
-        } on FirebaseAuthException catch (e) {
-          throw _handleAuthException(e);
+        } on FirebaseAuthException catch (e, stack) {
+          await _recordAuthException(e, stack, operation: 'sign_in');
+          throw _handleSignInException(e);
         }
       },
       attributes: {'flow': 'auth', 'method': 'email_password'},
@@ -59,8 +64,9 @@ class AuthDatasource {
             email: email,
             password: password,
           );
-        } on FirebaseAuthException catch (e) {
-          throw _handleAuthException(e);
+        } on FirebaseAuthException catch (e, stack) {
+          await _recordAuthException(e, stack, operation: 'create_user');
+          throw _handleCreateUserException(e);
         }
       },
       attributes: {'flow': 'auth', 'method': 'email_password'},
@@ -73,8 +79,10 @@ class AuthDatasource {
       () async {
         try {
           await _auth.sendPasswordResetEmail(email: email);
-        } on FirebaseAuthException catch (e) {
-          throw _handleAuthException(e);
+        } on FirebaseAuthException catch (e, stack) {
+          await _recordAuthException(e, stack, operation: 'password_reset');
+          if (_isAccountEnumerationCode(e.code)) return;
+          throw _handlePasswordResetException(e);
         }
       },
       attributes: {'flow': 'auth'},
@@ -110,23 +118,56 @@ class AuthDatasource {
     );
   }
 
-  String _handleAuthException(FirebaseAuthException e) {
+  Future<void> _recordAuthException(
+    FirebaseAuthException e,
+    StackTrace stack, {
+    required String operation,
+  }) {
+    return AppObservability.instance.recordError(
+      e,
+      stack,
+      reason: 'firebase_auth_exception',
+      extras: {
+        'auth_operation': operation,
+        'auth_error_code': e.code,
+      },
+    );
+  }
+
+  bool _isAccountEnumerationCode(String code) {
+    return code == 'user-not-found' ||
+        code == 'wrong-password' ||
+        code == 'invalid-credential' ||
+        code == 'user-disabled' ||
+        code == 'email-already-in-use';
+  }
+
+  String _handleSignInException(FirebaseAuthException e) {
+    if (_isAccountEnumerationCode(e.code)) {
+      return genericSignInMessage;
+    }
+    return _handleCommonAuthException(e);
+  }
+
+  String _handleCreateUserException(FirebaseAuthException e) {
+    if (e.code == 'email-already-in-use') {
+      return genericCreateAccountMessage;
+    }
+    return _handleCommonAuthException(e);
+  }
+
+  String _handlePasswordResetException(FirebaseAuthException e) {
+    return _handleCommonAuthException(e);
+  }
+
+  String _handleCommonAuthException(FirebaseAuthException e) {
     switch (e.code) {
-      case 'user-not-found':
-        return 'Nenhum usuário encontrado para este e-mail.';
-      case 'wrong-password':
-      case 'invalid-credential':
-        return 'Senha incorreta fornecida.';
-      case 'email-already-in-use':
-        return 'Este e-mail já está em uso.';
       case 'weak-password':
         return 'A senha fornecida é muito fraca.';
       case 'invalid-email':
         return 'O formato do e-mail é inválido.';
       case 'network-request-failed':
         return 'Sem conexão com a internet. Verifique sua rede e tente novamente.';
-      case 'user-disabled':
-        return 'Esta conta foi desativada. Entre em contato com o suporte.';
       case 'too-many-requests':
         return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
       case 'operation-not-allowed':

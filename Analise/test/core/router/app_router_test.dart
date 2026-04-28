@@ -46,11 +46,12 @@ void main() {
   setUp(() {
     auth = MockFirebaseAuth();
     user = MockUser();
-    when(() => auth.authStateChanges()).thenAnswer((_) => const Stream<User?>.empty());
+    when(() => user.emailVerified).thenReturn(true);
+    when(() => auth.authStateChanges())
+        .thenAnswer((_) => const Stream<User?>.empty());
   });
 
-  test('redirect para login quando não autenticado em rota protegida',
-      () {
+  test('redirect para login quando não autenticado em rota protegida', () {
     final redirect = resolveAppRedirect(
       path: AppRoutes.analise,
       currentUser: null,
@@ -71,6 +72,37 @@ void main() {
   test('redireciona rota auth para análise quando sessão ativa', () {
     final redirect = resolveAppRedirect(
       path: AppRoutes.login,
+      currentUser: user,
+    );
+
+    expect(redirect, AppRoutes.analise);
+  });
+
+  test('redireciona usuário sem e-mail verificado para verificação', () {
+    when(() => user.emailVerified).thenReturn(false);
+
+    final redirect = resolveAppRedirect(
+      path: AppRoutes.analise,
+      currentUser: user,
+    );
+
+    expect(redirect, AppRoutes.verificarEmail);
+  });
+
+  test('permite rota de verificação para usuário não verificado', () {
+    when(() => user.emailVerified).thenReturn(false);
+
+    final redirect = resolveAppRedirect(
+      path: AppRoutes.verificarEmail,
+      currentUser: user,
+    );
+
+    expect(redirect, isNull);
+  });
+
+  test('usuário verificado não acessa rota de verificação', () {
+    final redirect = resolveAppRedirect(
+      path: AppRoutes.verificarEmail,
       currentUser: user,
     );
 
@@ -143,6 +175,7 @@ void main() {
         AppRoutes.login,
         AppRoutes.cadastro,
         AppRoutes.recuperarSenha,
+        AppRoutes.verificarEmail,
         AppRoutes.authBootstrap,
         AppRoutes.culturas,
         AppRoutes.historico,
@@ -163,7 +196,8 @@ void main() {
     );
   });
 
-  test('auth refresh notifier encerra bootstrapping ao receber evento', () async {
+  test('auth refresh notifier encerra bootstrapping ao receber evento',
+      () async {
     final controller = StreamController<User?>();
     final notifier = GoRouterAuthRefreshNotifier(controller.stream);
     addTearDown(() async {
