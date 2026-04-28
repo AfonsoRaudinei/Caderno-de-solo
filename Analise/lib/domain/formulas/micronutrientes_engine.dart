@@ -83,6 +83,8 @@ class MicronutrientesEngine {
 
   static bool _temNc(ElementoMicro e) => _limites.containsKey(e);
 
+  static bool temReferenciaNc(ElementoMicro e) => _temNc(e);
+
   static double nivelCritico(ElementoMicro e) {
     final l = _limites[e];
     if (l == null) return 0.0;
@@ -113,8 +115,7 @@ class MicronutrientesEngine {
     final nc = nivelCritico(elemento);
     final avisos = <String>[];
     if (!_temNc(elemento)) {
-      avisos.add(
-          'Sem tabela NC para $elemento; cálculo de déficit não aplicado.');
+      avisos.add('Micronutriente $elemento sem referência de NC.');
     }
 
     final deficit =

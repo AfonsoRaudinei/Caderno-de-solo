@@ -1,32 +1,31 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:soloforte/data/datasources/local/calibracao_hive_datasource.dart';
-import 'package:soloforte/data/datasources/remote/calibracao_firestore_datasource.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
+import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
 import 'package:soloforte/features/config/presentation/providers/tabela_metricas_provider.dart';
+import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
+import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
-
-class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
-
-class _MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
 
 class _FakeCalibracaoController extends CalibracaoController {
   _FakeCalibracaoController({required List<CalibracaoProfile> profiles})
       : super(
-          hiveDatasource: CalibracaoHiveDatasource(),
-          firestoreDatasource:
-              CalibracaoFirestoreDatasource(_MockFirebaseFirestore()),
-          auth: _mockAuth(),
+          carregarCalibracoes: CarregarCalibracoesUsecase(
+            _FakeCalibracaoRepository(profiles),
+          ),
+          salvarCalibracao: SalvarCalibracaoUsecase(
+            _FakeCalibracaoRepository(profiles),
+          ),
+          excluirCalibracao: ExcluirCalibracaoUsecase(
+            _FakeCalibracaoRepository(profiles),
+          ),
         ) {
     final first = profiles.isNotEmpty ? profiles.first : _emptyProfile;
     state = state.copyWith(
@@ -36,11 +35,30 @@ class _FakeCalibracaoController extends CalibracaoController {
       draft: first,
     );
   }
+}
 
-  static FirebaseAuth _mockAuth() {
-    final auth = _MockFirebaseAuth();
-    when(() => auth.currentUser).thenReturn(null);
-    return auth;
+class _FakeCalibracaoRepository implements CalibracaoRepository {
+  _FakeCalibracaoRepository(this.profiles);
+
+  List<CalibracaoProfile> profiles;
+
+  @override
+  Future<List<CalibracaoProfile>> carregarPerfis() async => profiles;
+
+  @override
+  Future<void> salvarPerfis({
+    required List<CalibracaoProfile> perfis,
+    required CalibracaoProfile perfilSincronizar,
+  }) async {
+    profiles = perfis;
+  }
+
+  @override
+  Future<void> excluirPerfil({
+    required List<CalibracaoProfile> perfisRestantes,
+    required String perfilId,
+  }) async {
+    profiles = perfisRestantes;
   }
 }
 
@@ -135,8 +153,39 @@ AnaliseSolo _analise() {
     profundidade: '0-20',
     argila: 350,
     phAgua: 5.3,
+    materiaOrganica: 3.0,
     pMehlich: 8.0,
     k: 0.22,
+    ca: 2.1,
+    mg: 0.9,
+    hMaisAl: 4.6,
+    al: 0.2,
+    s020: 7.0,
+    b: 0.25,
+    cu: 0.6,
+    fe: 35,
+    mn: 3.2,
+    zn: 1.4,
+  );
+}
+
+AnaliseSolo _analiseSemPotassio() {
+  return AnaliseSolo(
+    id: 'a-2',
+    fazenda: 'Fazenda A',
+    produtor: 'Produtor A',
+    talhao: 'Talhão A',
+    numeroAmostra: '002',
+    cultura: Cultura.soja,
+    safra: '24/25',
+    laboratorio: 'Lab A',
+    dataCadastro: DateTime(2026, 4, 5),
+    profundidade: '0-20',
+    argila: 350,
+    phAgua: 5.3,
+    materiaOrganica: 3.0,
+    pMehlich: 8.0,
+    k: null,
     ca: 2.1,
     mg: 0.9,
     hMaisAl: 4.6,
@@ -154,7 +203,7 @@ Future<void> _pumpRecomendacao(
   WidgetTester tester, {
   required List<CalibracaoProfile> profiles,
   required List<AnaliseSolo> analises,
-  List<TabelaMetricas> tabelas = const [],
+  List<TabelaMetricas>? tabelas,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -166,7 +215,9 @@ Future<void> _pumpRecomendacao(
           () => _FakeAnaliseNotifier(analises),
         ),
         tabelaMetricasProvider.overrideWith(
-          () => _FakeTabelaMetricasNotifier(tabelas),
+          () => _FakeTabelaMetricasNotifier(
+            tabelas ?? TabelaMetricasDefaults.build(),
+          ),
         ),
         perfilAssetsProvider.overrideWith(
           (ref) => _FakePerfilAssetsNotifier(),
@@ -238,9 +289,38 @@ void main() {
     await tester.tap(find.text('Gerar Recomendação'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Recomendação de Adubação'), findsOneWidget);
-    expect(find.text('AÇÕES'), findsOneWidget);
     expect(find.text('Salvar Recomendação'), findsOneWidget);
     expect(find.text('Exportar PDF'), findsOneWidget);
+  });
+
+  testWidgets(
+      'exibe diagnóstico e não renderiza resultado quando análise é inválida',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpRecomendacao(
+      tester,
+      profiles: [_profile()],
+      analises: [_analiseSemPotassio()],
+    );
+
+    await _setDropdownValue(
+      tester,
+      dropdownIndex: 0,
+      value: 'a-2',
+    );
+    await _setDropdownValue(
+      tester,
+      dropdownIndex: 1,
+      value: 'c-1',
+    );
+
+    await tester.tap(find.text('Gerar Recomendação'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('K não analisado'), findsWidgets);
+    expect(find.text('Salvar Recomendação'), findsNothing);
+    expect(find.text('Exportar PDF'), findsNothing);
   });
 }

@@ -36,9 +36,14 @@ class BaseDadosFormPage extends StatelessWidget {
                     label: 'Tipo',
                     hint: 'Selecione',
                     value: null,
-                    items: const ['Boletim', 'Tese', 'Artigo', 'Embrapa', 'IAC', 'Outro']
-                        .map((e) => AppDropdownItem(value: e, label: e))
-                        .toList(),
+                    items: const [
+                      'Boletim',
+                      'Tese',
+                      'Artigo',
+                      'Embrapa',
+                      'IAC',
+                      'Outro'
+                    ].map((e) => AppDropdownItem(value: e, label: e)).toList(),
                     onChanged: (v) {},
                   ),
                   const SizedBox(height: 16),
@@ -81,7 +86,8 @@ class BaseDadosFormPage extends StatelessWidget {
               label: 'Salvar Referência',
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Referência salva com sucesso!')),
+                  const SnackBar(
+                      content: Text('Referência salva com sucesso!')),
                 );
                 context.pop();
               },

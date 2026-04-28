@@ -101,7 +101,8 @@ class RecuperarSenhaPage extends HookConsumerWidget {
                               onSubmitted: (_) {
                                 if (formKey.currentState!.validate()) {
                                   ref
-                                      .read(recuperarSenhaControllerProvider.notifier)
+                                      .read(recuperarSenhaControllerProvider
+                                          .notifier)
                                       .enviarLink(emailController.text);
                                 }
                               },

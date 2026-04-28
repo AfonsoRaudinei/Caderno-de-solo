@@ -4,96 +4,56 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:soloforte/features/historico/presentation/historico_page.dart';
-import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
-import 'package:soloforte/features/laboratorio/domain/repositories/laudo_repository.dart';
-import 'package:soloforte/features/laboratorio/presentation/providers/laudo_provider.dart';
+import 'package:soloforte/features/historico/presentation/historico_provider.dart';
 
-class FakeLaudoRepository implements LaudoRepository {
-  FakeLaudoRepository({
-    List<LaudoRecomendacao>? initial,
-    this.failGet = false,
-    this.delayGet,
-  }) : _laudos = List<LaudoRecomendacao>.from(initial ?? const []);
+class _FakeHistoricoNotifier extends HistoricoNotifier {
+  _FakeHistoricoNotifier({
+    required this.items,
+    this.fail = false,
+    this.delay,
+  });
 
-  final List<LaudoRecomendacao> _laudos;
-  final bool failGet;
-  final Completer<void>? delayGet;
-  final List<String> deletedIds = [];
+  final List<RecomendacaoModel> items;
+  final bool fail;
+  final Completer<void>? delay;
 
   @override
-  Future<List<LaudoRecomendacao>> getLaudos() async {
-    if (delayGet != null) {
-      await delayGet!.future;
+  Future<List<RecomendacaoModel>> build() async {
+    if (delay != null) {
+      await delay!.future;
     }
-    if (failGet) {
+    if (fail) {
       throw Exception('falha get');
     }
-    return List<LaudoRecomendacao>.from(_laudos);
-  }
-
-  @override
-  Future<void> saveLaudo(LaudoRecomendacao laudo) async {
-    _laudos.removeWhere((e) => e.id == laudo.id);
-    _laudos.insert(0, laudo);
-  }
-
-  @override
-  Future<void> deleteLaudo(String id) async {
-    deletedIds.add(id);
-    _laudos.removeWhere((e) => e.id == id);
+    return items;
   }
 }
 
-LaudoRecomendacao _laudo({
-  String id = 'L1',
-  LaudoStatus status = LaudoStatus.completo,
+RecomendacaoModel _recomendacao({
+  String id = 'R1',
+  DateTime? createdAt,
 }) {
-  return LaudoRecomendacao(
+  return RecomendacaoModel(
     id: id,
-    userId: 'u1',
     analiseId: 'a1',
-    calibracaoId: 'c1',
-    geradaEm: DateTime(2026, 4, 5, 10, 0),
-    talhao: 'Talhão 01',
-    fazenda: 'Fazenda Central',
-    cliente: 'Cliente',
     cultura: 'Soja',
-    safra: '24/25',
-    laboratorio: 'Lab',
-    nomeCalibra: 'Calibração A',
-    metodoCalagem: '① Saturação por Bases (V%)',
-    doseCalcarioTHa: 1.2,
-    vAtual: 45,
-    vEsperado: 65,
-    caAtual: 2,
-    caEsperado: 2.4,
-    mgAtual: 0.8,
-    mgEsperado: 1.0,
-    relacaoCaMg: 2.5,
-    parcelamento: const [],
-    gessoIndicado: false,
-    gessoKgHa: 0,
-    modoFosforo: '① Correção do solo',
-    pSoloMgDm3: 10,
-    ncFosforo: 20,
-    doseP2O5KgHa: 35,
-    legacyP: false,
-    criterioPotassio: 'Ambos',
-    kSolo: 0.2,
-    ncPotassio: 70,
-    doseK2OKgHa: 80,
-    micros: const [],
-    avisos: const [],
-    argumentos: 'ok',
-    status: status,
+    necessidadeCalagem: 1.2,
+    prnt: 80,
+    doseCalcario: 1.2,
+    p2o5: 35,
+    k2o: 80,
+    createdAt: createdAt ?? DateTime(2026, 4, 5, 10, 0),
   );
 }
 
 Future<void> _pumpPage(
-  WidgetTester tester,
-  FakeLaudoRepository repo,
-) async {
+  WidgetTester tester, {
+  List<RecomendacaoModel> items = const [],
+  bool fail = false,
+  Completer<void>? delay,
+}) async {
   final router = GoRouter(
     routes: [
       GoRoute(
@@ -106,7 +66,13 @@ Future<void> _pumpPage(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        laudoRepositoryProvider.overrideWithValue(repo),
+        historicoProvider.overrideWith(
+          () => _FakeHistoricoNotifier(
+            items: items,
+            fail: fail,
+            delay: delay,
+          ),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -116,9 +82,8 @@ Future<void> _pumpPage(
 void main() {
   testWidgets('exibe loading enquanto carrega', (tester) async {
     final completer = Completer<void>();
-    final repo = FakeLaudoRepository(delayGet: completer);
 
-    await _pumpPage(tester, repo);
+    await _pumpPage(tester, delay: completer);
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -126,31 +91,25 @@ void main() {
     completer.complete();
   });
 
-  testWidgets('exibe estado vazio quando não há laudos', (tester) async {
-    final repo = FakeLaudoRepository();
-
-    await _pumpPage(tester, repo);
+  testWidgets('exibe estado vazio quando não há recomendações', (tester) async {
+    await _pumpPage(tester);
     await tester.pumpAndSettle();
 
-    expect(find.text('Histórico vazio'), findsOneWidget);
-    expect(find.text('Ir para Lab'), findsOneWidget);
+    expect(find.text('Nenhuma recomendação salva ainda'), findsOneWidget);
+    expect(find.text('Gere uma recomendação na aba Lab'), findsOneWidget);
   });
 
-  testWidgets('exibe card de laudo quando há dados', (tester) async {
-    final repo = FakeLaudoRepository(initial: [_laudo()]);
-
-    await _pumpPage(tester, repo);
+  testWidgets('exibe card de recomendação quando há dados', (tester) async {
+    await _pumpPage(tester, items: [_recomendacao()]);
     await tester.pumpAndSettle();
 
-    expect(find.text('Talhão 01'), findsOneWidget);
+    expect(find.text('Talhão não informado'), findsOneWidget);
     expect(find.text('Completo'), findsOneWidget);
-    expect(find.textContaining('Calcário'), findsOneWidget);
+    expect(find.textContaining('Calcário'), findsWidgets);
   });
 
-  testWidgets('exibe estado de erro quando getLaudos falha', (tester) async {
-    final repo = FakeLaudoRepository(failGet: true);
-
-    await _pumpPage(tester, repo);
+  testWidgets('exibe estado de erro quando histórico falha', (tester) async {
+    await _pumpPage(tester, fail: true);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Erro ao carregar histórico'), findsOneWidget);

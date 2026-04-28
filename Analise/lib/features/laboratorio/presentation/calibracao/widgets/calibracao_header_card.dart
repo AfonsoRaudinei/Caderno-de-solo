@@ -184,10 +184,16 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildToggleBtn(label: 'Sacas/ha', selected: _emSacas,
-                onTap: () => _onToggleUnidade(true), isLeft: true),
-            _buildToggleBtn(label: 't/ha', selected: !_emSacas,
-                onTap: () => _onToggleUnidade(false), isLeft: false),
+            _buildToggleBtn(
+                label: 'Sacas/ha',
+                selected: _emSacas,
+                onTap: () => _onToggleUnidade(true),
+                isLeft: true),
+            _buildToggleBtn(
+                label: 't/ha',
+                selected: !_emSacas,
+                onTap: () => _onToggleUnidade(false),
+                isLeft: false),
           ],
         ),
         const SizedBox(height: 8),
@@ -197,8 +203,7 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
           controller: _prodCtrl,
           hint: _emSacas ? 'Ex.: 70' : 'Ex.: 4.2',
           maxLength: 7,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
           ],
@@ -248,4 +253,3 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
     );
   }
 }
-

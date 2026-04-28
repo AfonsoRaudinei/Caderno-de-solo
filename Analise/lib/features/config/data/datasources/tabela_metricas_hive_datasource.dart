@@ -10,12 +10,10 @@ class TabelaMetricasHiveDatasource {
 
   Future<List<TabelaMetricas>> getTabelasOuSeed() async {
     final box = await Hive.openBox(_boxName);
-    final raw =
-        box.get(_key, defaultValue: <dynamic>[]) as List<dynamic>;
+    final raw = box.get(_key, defaultValue: <dynamic>[]) as List<dynamic>;
     final salvas = raw
         .whereType<Map>()
-        .map((e) =>
-            TabelaMetricas.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) => TabelaMetricas.fromJson(Map<String, dynamic>.from(e)))
         .toList();
 
     // Primeira execução: injeta defaults

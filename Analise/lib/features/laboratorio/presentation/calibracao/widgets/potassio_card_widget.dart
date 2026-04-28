@@ -246,8 +246,7 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
     _criterio = _criterioFromString(source['criterioNc']?.toString());
     _modo = _modoFromString(source['modoCalculo']?.toString());
     _aplicacao = _aplicacaoFromString(source['modoAplicacao']?.toString());
-    _potassioTipoFonte =
-        source['potassioTipoFonte']?.toString() ?? 'Autores';
+    _potassioTipoFonte = source['potassioTipoFonte']?.toString() ?? 'Autores';
     _potassioFonteNome = source['potassioFonteNome']?.toString();
     _potassioModoAbsorcao =
         source['potassioModoAbsorcao']?.toString() ?? 'extracao';
@@ -623,8 +622,9 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
         const SizedBox(height: AppDimens.sm),
 
         // 8 · FEK — único campo editável do card
-        _buildFekSection(),        const SizedBox(height: AppDimens.sm),
-        _buildAbsorcaoSecaoK(),      ],
+        _buildFekSection(), const SizedBox(height: AppDimens.sm),
+        _buildAbsorcaoSecaoK(),
+      ],
     );
   }
 
@@ -691,7 +691,8 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
             decoration: BoxDecoration(
               color: AppColors.bgSuccess,
               borderRadius: BorderRadius.circular(7),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.5), width: 1),
+              border: Border.all(
+                  color: AppColors.success.withValues(alpha: 0.5), width: 1),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -764,7 +765,9 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
             ),
           ),
           const SizedBox(width: 5),
-          Text(unit, style: const TextStyle(fontSize: 11, color: AppColors.textSecond)),
+          Text(unit,
+              style:
+                  const TextStyle(fontSize: 11, color: AppColors.textSecond)),
           const Spacer(),
           Icon(Icons.lock_outline_rounded,
               size: 13, color: valC.withValues(alpha: 0.35)),
@@ -824,7 +827,8 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
                     LengthLimitingTextInputFormatter(7),
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                   ],
-                  style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                      fontSize: 15, color: AppColors.textPrimary),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -1001,7 +1005,8 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
           border: Border.all(color: AppColors.borderSoft, width: 1),
         ),
         alignment: Alignment.centerLeft,
-        child: Text(v, style: const TextStyle(fontSize: 15, color: AppColors.textSecond)),
+        child: Text(v,
+            style: const TextStyle(fontSize: 15, color: AppColors.textSecond)),
       );
 
   Widget _drop<T>({

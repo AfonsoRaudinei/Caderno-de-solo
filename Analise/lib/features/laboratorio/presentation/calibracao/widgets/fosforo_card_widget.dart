@@ -28,7 +28,6 @@ import 'package:soloforte/data/culturas_data.dart';
 // WIDGET PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
 
-
 class FosforoCardWidget extends ConsumerStatefulWidget {
   const FosforoCardWidget({
     super.key,
@@ -96,8 +95,7 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
     _modo = _modoFromString(source['modoCalculo']?.toString());
     _tipo = _tipoFromString(source['tipoDadoCultivar']?.toString());
     _faixa = _faixaFromString(source['faixaArgila']?.toString());
-    _fosforoTipoFonte =
-        source['fosforoTipoFonte']?.toString() ?? 'Autores';
+    _fosforoTipoFonte = source['fosforoTipoFonte']?.toString() ?? 'Autores';
     _fosforoFonteNome = source['fosforoFonteNome']?.toString();
     _fosforoModoAbsorcao =
         source['fosforoModoAbsorcao']?.toString() ?? 'extracao';
@@ -345,7 +343,9 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
                   _lbl('Extrator'),
                   const SizedBox(height: AppDimens.xs),
                   _readOnly(
-                    _d.extrator == ExtratorP.resinaIAC ? 'Resina IAC' : 'Mehlich-1',
+                    _d.extrator == ExtratorP.resinaIAC
+                        ? 'Resina IAC'
+                        : 'Mehlich-1',
                   ),
                 ],
               ),
@@ -377,7 +377,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
         // 3 · NC + Camada lado a lado
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _lbl('NC (mg/dm³)'),
               const SizedBox(height: AppDimens.xs),
               // Badge + ⓘ na mesma linha
@@ -390,7 +391,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _lbl('Camada'),
               const SizedBox(height: AppDimens.xs),
               _drop<CamadaP>(
@@ -452,7 +454,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
               _drop<TipoCalculo>(
                 value: _tipo,
                 items: TipoCalculo.values,
-                labelOf: (t) => t == TipoCalculo.exportacao ? 'Exportação' : 'Manutenção',
+                labelOf: (t) =>
+                    t == TipoCalculo.exportacao ? 'Exportação' : 'Manutenção',
                 onChanged: (v) => setState(() {
                   _tipo = v!;
                   _emitChange();
@@ -470,8 +473,10 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
               _numField(_pSoloCtrl),
             ],
           )),
-        ]),        const SizedBox(height: AppDimens.sm),
-        _buildAbsorcaoSecaoP(),      ],
+        ]),
+        const SizedBox(height: AppDimens.sm),
+        _buildAbsorcaoSecaoP(),
+      ],
     );
   }
 
@@ -516,7 +521,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
                 color: valC,
                 letterSpacing: -0.3)),
         const SizedBox(width: 5),
-        Text(unit, style: const TextStyle(fontSize: 11, color: AppColors.textSecond)),
+        Text(unit,
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecond)),
         const Spacer(),
         Icon(Icons.lock_outline_rounded,
             size: 13, color: valC.withValues(alpha: 0.35)),
@@ -536,13 +542,16 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
       children: [
         // Label com fonte
         Row(children: [
-          const Icon(Icons.layers_outlined, size: 11, color: AppColors.textSecond),
+          const Icon(Icons.layers_outlined,
+              size: 11, color: AppColors.textSecond),
           const SizedBox(width: 4),
           Expanded(
             child: Text(
               '% Argila  ·  ${_d.fonte}',
               style: const TextStyle(
-                  fontSize: 11, color: AppColors.textSecond, fontWeight: FontWeight.w500),
+                  fontSize: 11,
+                  color: AppColors.textSecond,
+                  fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -570,8 +579,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
                   decoration: BoxDecoration(
                     color: sel ? accent : AppColors.bgPrimary,
                     borderRadius: BorderRadius.circular(7),
-                    border:
-                        Border.all(color: sel ? accent : AppColors.border, width: 1),
+                    border: Border.all(
+                        color: sel ? accent : AppColors.border, width: 1),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -583,7 +592,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
                               fontSize: 9,
                               fontWeight:
                                   sel ? FontWeight.w600 : FontWeight.w400,
-                              color: sel ? Colors.white : AppColors.textSecond)),
+                              color:
+                                  sel ? Colors.white : AppColors.textSecond)),
                       const SizedBox(height: 2),
                       // NC correspondente — feedback imediato
                       Text(ncLabel,
@@ -703,10 +713,12 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
   Widget _cultivarRow() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-            color: AppColors.bgSecondary, borderRadius: BorderRadius.circular(8)),
+            color: AppColors.bgSecondary,
+            borderRadius: BorderRadius.circular(8)),
         child: Row(children: [
           Text('Cultivar: ${widget.cultura ?? 'Soja'}',
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecond)),
+              style:
+                  const TextStyle(fontSize: 13, color: AppColors.textSecond)),
           const Spacer(),
           GestureDetector(
             onTap: () {/* navegar para culturas */},
@@ -736,7 +748,8 @@ class _FosforoCardWidgetState extends ConsumerState<FosforoCardWidget> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppColors.borderSoft, width: 1)),
         alignment: Alignment.centerLeft,
-        child: Text(v, style: const TextStyle(fontSize: 15, color: AppColors.textSecond)),
+        child: Text(v,
+            style: const TextStyle(fontSize: 15, color: AppColors.textSecond)),
       );
 
   Widget _drop<T>({

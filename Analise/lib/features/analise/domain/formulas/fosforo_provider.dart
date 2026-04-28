@@ -54,8 +54,8 @@ class RefDesc {
   final String label;
   final ExtratorP extrator;
   final bool fixo;
-  final bool placeholder; 
-  final String fonte; 
+  final bool placeholder;
+  final String fonte;
 
   const RefDesc({
     required this.label,
@@ -99,31 +99,46 @@ class RefDesc {
 
 double _ncCerrado(FaixaArgila f) {
   switch (f) {
-    case FaixaArgila.f1: return 15;
-    case FaixaArgila.f2: return 15; 
-    case FaixaArgila.f3: return 8; 
-    case FaixaArgila.f4: return 4; 
-    case FaixaArgila.f5: return 3; 
+    case FaixaArgila.f1:
+      return 15;
+    case FaixaArgila.f2:
+      return 15;
+    case FaixaArgila.f3:
+      return 8;
+    case FaixaArgila.f4:
+      return 4;
+    case FaixaArgila.f5:
+      return 3;
   }
 }
 
 double _ncRsSc(FaixaArgila f) {
   switch (f) {
-    case FaixaArgila.f1: return 21; 
-    case FaixaArgila.f2: return 18; 
-    case FaixaArgila.f3: return 12; 
-    case FaixaArgila.f4: return 9; 
-    case FaixaArgila.f5: return 6; 
+    case FaixaArgila.f1:
+      return 21;
+    case FaixaArgila.f2:
+      return 18;
+    case FaixaArgila.f3:
+      return 12;
+    case FaixaArgila.f4:
+      return 9;
+    case FaixaArgila.f5:
+      return 6;
   }
 }
 
 double _ncUfla(FaixaArgila f) {
   switch (f) {
-    case FaixaArgila.f1: return 20; 
-    case FaixaArgila.f2: return 16; 
-    case FaixaArgila.f3: return 10; 
-    case FaixaArgila.f4: return 6; 
-    case FaixaArgila.f5: return 4; 
+    case FaixaArgila.f1:
+      return 20;
+    case FaixaArgila.f2:
+      return 16;
+    case FaixaArgila.f3:
+      return 10;
+    case FaixaArgila.f4:
+      return 6;
+    case FaixaArgila.f5:
+      return 4;
   }
 }
 

@@ -7,4 +7,8 @@ abstract class AuthRepository {
   Future<void> enviarEmailRedefinicaoSenha(String email);
 
   Future<void> logout();
+
+  String? currentUserId();
+
+  Future<String?> waitForCurrentUserId({Duration timeout});
 }

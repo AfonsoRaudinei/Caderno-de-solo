@@ -40,7 +40,8 @@ class AbsorcaoStatsCard extends StatelessWidget {
       SummaryCardData(
         title: 'Nutriente',
         value: selectedNutrient,
-        subtitle: AbsorcaoNutrientesData.nutrientNames[selectedNutrient] ?? selectedNutrient,
+        subtitle: AbsorcaoNutrientesData.nutrientNames[selectedNutrient] ??
+            selectedNutrient,
         color: AbsorcaoNutrientesCores.greenMid,
       ),
       SummaryCardData(

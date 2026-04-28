@@ -22,7 +22,6 @@ class AbsorcaoNutrientesReferenciaPage extends StatefulWidget {
 
 class _AbsorcaoNutrientesReferenciaPageState
     extends State<AbsorcaoNutrientesReferenciaPage> {
-
   final TextEditingController _yieldController = TextEditingController(
     text: '4.2',
   );
@@ -35,13 +34,14 @@ class _AbsorcaoNutrientesReferenciaPageState
   ReferenceSection _section = ReferenceSection.painel;
 
   List<String> get _sourceNames =>
-      AbsorcaoNutrientesData.nutrientData[_sourceType]?.keys.toList(growable: false) ?? const [];
-  String get _sourceLabel =>
-      _sourceType == 'Autores'
-          ? 'Autor'
-          : _sourceType == 'Guidorizzi'
-              ? 'Tecnologia'
-              : 'Cultivar';
+      AbsorcaoNutrientesData.nutrientData[_sourceType]?.keys
+          .toList(growable: false) ??
+      const [];
+  String get _sourceLabel => _sourceType == 'Autores'
+      ? 'Autor'
+      : _sourceType == 'Guidorizzi'
+          ? 'Tecnologia'
+          : 'Cultivar';
 
   List<String> get _macroNutrients => const ['N', 'P', 'K', 'Ca', 'Mg', 'S'];
   List<String> get _microNutrients => const [
@@ -67,7 +67,8 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   DataValue resolveDataValue() {
-    final source = AbsorcaoNutrientesData.nutrientData[_sourceType]?[_selectedSource];
+    final source =
+        AbsorcaoNutrientesData.nutrientData[_sourceType]?[_selectedSource];
     if (source == null) {
       return const DataValue(
         valuePerTon: 0,
@@ -105,22 +106,26 @@ class _AbsorcaoNutrientesReferenciaPageState
 
   List<StagePoint> computeStageData() {
     final resolved = resolveDataValue();
-    final percentages = AbsorcaoNutrientesData.absorptionPercentages[_selectedNutrient];
+    final percentages =
+        AbsorcaoNutrientesData.absorptionPercentages[_selectedNutrient];
     if (percentages == null) {
       return const [];
     }
 
     final isMacro = _macroNutrients.contains(_selectedNutrient);
-    final valuePerTonInKg = isMacro ? resolved.valuePerTon : resolved.valuePerTon / 1000;
+    final valuePerTonInKg =
+        isMacro ? resolved.valuePerTon : resolved.valuePerTon / 1000;
     final totalInKg = valuePerTonInKg * _expectedYield;
     final useGram = totalInKg < 1;
     final multiplier = useGram ? 1000.0 : 1.0;
 
-    return List<StagePoint>.generate(AbsorcaoNutrientesData.stageKeys.length, (index) {
+    return List<StagePoint>.generate(AbsorcaoNutrientesData.stageKeys.length,
+        (index) {
       final key = AbsorcaoNutrientesData.stageKeys[index];
       final currentPct = percentages[key] ?? 0;
-      final previousPct =
-          index == 0 ? 0 : (percentages[AbsorcaoNutrientesData.stageKeys[index - 1]] ?? 0);
+      final previousPct = index == 0
+          ? 0
+          : (percentages[AbsorcaoNutrientesData.stageKeys[index - 1]] ?? 0);
 
       final pctForMode = _viewMode == ViewMode.accumulated
           ? currentPct
@@ -138,7 +143,8 @@ class _AbsorcaoNutrientesReferenciaPageState
   String get displayUnit {
     final resolved = resolveDataValue();
     final isMacro = _macroNutrients.contains(_selectedNutrient);
-    final valuePerTonInKg = isMacro ? resolved.valuePerTon : resolved.valuePerTon / 1000;
+    final valuePerTonInKg =
+        isMacro ? resolved.valuePerTon : resolved.valuePerTon / 1000;
     final totalInKg = valuePerTonInKg * _expectedYield;
     return totalInKg < 1 ? 'g' : 'kg';
   }
@@ -159,7 +165,8 @@ class _AbsorcaoNutrientesReferenciaPageState
         : (_viewMode == ViewMode.accumulated
             ? stageData.last.value
             : stageData.fold<double>(0, (sum, row) => sum + row.value));
-    final modeText = _viewMode == ViewMode.accumulated ? 'Acumulado' : 'Por Estádio';
+    final modeText =
+        _viewMode == ViewMode.accumulated ? 'Acumulado' : 'Por Estádio';
 
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
@@ -298,7 +305,9 @@ class _AbsorcaoNutrientesReferenciaPageState
             label,
             style: AppTextStyles.label.copyWith(
               fontSize: 13,
-              color: isSelected ? AbsorcaoNutrientesCores.greenDark : AbsorcaoNutrientesCores.textMuted,
+              color: isSelected
+                  ? AbsorcaoNutrientesCores.greenDark
+                  : AbsorcaoNutrientesCores.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -330,7 +339,8 @@ class _AbsorcaoNutrientesReferenciaPageState
               }
               setState(() {
                 _sourceType = value;
-                _selectedSource = _sourceNames.isNotEmpty ? _sourceNames.first : '';
+                _selectedSource =
+                    _sourceNames.isNotEmpty ? _sourceNames.first : '';
               });
             },
           ),
@@ -351,7 +361,8 @@ class _AbsorcaoNutrientesReferenciaPageState
             label: 'Nutriente',
             value: _selectedNutrient,
             items: AbsorcaoNutrientesData.nutrientNames.keys.toList(),
-            labelBuilder: (nutrient) => AbsorcaoNutrientesData.nutrientNames[nutrient] ?? nutrient,
+            labelBuilder: (nutrient) =>
+                AbsorcaoNutrientesData.nutrientNames[nutrient] ?? nutrient,
             onChanged: (value) {
               if (value == null) {
                 return;
@@ -396,7 +407,8 @@ class _AbsorcaoNutrientesReferenciaPageState
           const SizedBox(height: 10),
           Text(
             'Produtividade esperada (t/ha)',
-            style: AppTextStyles.label.copyWith(fontSize: 13, color: AbsorcaoNutrientesCores.textMuted),
+            style: AppTextStyles.label.copyWith(
+                fontSize: 13, color: AbsorcaoNutrientesCores.textMuted),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -447,7 +459,8 @@ class _AbsorcaoNutrientesReferenciaPageState
           const SizedBox(height: 2),
           Text(
             '$_sourceType · $_selectedSource',
-            style: AppTextStyles.caption.copyWith(color: AbsorcaoNutrientesCores.textMuted),
+            style: AppTextStyles.caption
+                .copyWith(color: AbsorcaoNutrientesCores.textMuted),
           ),
           const SizedBox(height: 12),
           ...stageData.map((row) {
@@ -484,7 +497,10 @@ class _AbsorcaoNutrientesReferenciaPageState
                                   height: 12,
                                   decoration: const BoxDecoration(
                                     gradient: LinearGradient(
-                                      colors: [AbsorcaoNutrientesCores.greenDark, AbsorcaoNutrientesCores.greenAccent],
+                                      colors: [
+                                        AbsorcaoNutrientesCores.greenDark,
+                                        AbsorcaoNutrientesCores.greenAccent
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -565,7 +581,8 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   Widget _buildIndexReferenceCard() {
-    final indexEntries = AbsorcaoNutrientesData.exportIndexes.entries.toList(growable: false);
+    final indexEntries =
+        AbsorcaoNutrientesData.exportIndexes.entries.toList(growable: false);
 
     return AbsorcaoCardWrapper(
       child: Column(
@@ -616,7 +633,8 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   Widget _buildReferenceTablesView() {
-    final source = AbsorcaoNutrientesData.nutrientData[_sourceType]?[_selectedSource];
+    final source =
+        AbsorcaoNutrientesData.nutrientData[_sourceType]?[_selectedSource];
     final exportacao = source?['Exportação'] ?? const <String, double>{};
     final extracao = source?['Extração'] ?? const <String, double>{};
 
@@ -656,8 +674,7 @@ class _AbsorcaoNutrientesReferenciaPageState
       ),
       ReferenceTableCardData(
         title: 'Exportação — Micronutrientes',
-        description:
-            'Micronutrientes exportados por tonelada na colheita.',
+        description: 'Micronutrientes exportados por tonelada na colheita.',
         unit: 'g/t',
         rows: _buildNutrientRows(
           exportacao,
@@ -667,15 +684,13 @@ class _AbsorcaoNutrientesReferenciaPageState
       ),
       ReferenceTableCardData(
         title: 'Curva Acumulada — $_selectedNutrient',
-        description:
-            'Percentual acumulado de absorção por estádio fenológico.',
+        description: 'Percentual acumulado de absorção por estádio fenológico.',
         unit: '%',
         rows: _buildStagePercentRows(accumulated: true),
       ),
       ReferenceTableCardData(
         title: 'Absorção por Estádio — $_selectedNutrient',
-        description:
-            'Percentual absorvido em cada estádio individual.',
+        description: 'Percentual absorvido em cada estádio individual.',
         unit: '%',
         rows: _buildStagePercentRows(accumulated: false),
       ),
@@ -707,15 +722,19 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   List<ReferenceTableRow> _buildStagePercentRows({required bool accumulated}) {
-    final percentages = AbsorcaoNutrientesData.absorptionPercentages[_selectedNutrient];
+    final percentages =
+        AbsorcaoNutrientesData.absorptionPercentages[_selectedNutrient];
     if (percentages == null) {
       return const [];
     }
 
-    return List<ReferenceTableRow>.generate(AbsorcaoNutrientesData.stageKeys.length, (index) {
+    return List<ReferenceTableRow>.generate(
+        AbsorcaoNutrientesData.stageKeys.length, (index) {
       final key = AbsorcaoNutrientesData.stageKeys[index];
       final current = percentages[key] ?? 0;
-      final previous = index == 0 ? 0 : (percentages[AbsorcaoNutrientesData.stageKeys[index - 1]] ?? 0);
+      final previous = index == 0
+          ? 0
+          : (percentages[AbsorcaoNutrientesData.stageKeys[index - 1]] ?? 0);
       final value = accumulated ? current : current - previous;
       return ReferenceTableRow(
         label: AbsorcaoNutrientesData.stages[index],

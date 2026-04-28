@@ -38,9 +38,7 @@ class LaudoFirestoreDatasource {
       final data = laudo.toJson();
       data['userId'] = uid;
       data['updatedAt'] = FieldValue.serverTimestamp();
-      await _collection(uid)
-          .doc(laudo.id)
-          .set(data, SetOptions(merge: true));
+      await _collection(uid).doc(laudo.id).set(data, SetOptions(merge: true));
     } catch (_) {
       // Falha remota é tolerada; dado já foi salvo localmente pelo Hive.
     }

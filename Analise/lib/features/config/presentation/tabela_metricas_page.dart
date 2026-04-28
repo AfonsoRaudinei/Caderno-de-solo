@@ -112,8 +112,7 @@ class _TabelaCard extends StatelessWidget {
                     style: AppTextStyles.label.copyWith(fontSize: 15)),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -126,7 +125,8 @@ class _TabelaCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(tabela.descricao,
-              style: AppTextStyles.caption, maxLines: 2,
+              style: AppTextStyles.caption,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis),
           const SizedBox(height: 10),
           // Preview das faixas
@@ -137,8 +137,7 @@ class _TabelaCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         linha['faixa']?.toString() ?? '—',
-                        style: AppTextStyles.caption
-                            .copyWith(fontSize: 12),
+                        style: AppTextStyles.caption.copyWith(fontSize: 12),
                       ),
                     ),
                     Text(
@@ -185,9 +184,8 @@ class _TabelaEditorPageState extends State<_TabelaEditorPage> {
   @override
   void initState() {
     super.initState();
-    _linhas = widget.tabela.linhas
-        .map((l) => Map<String, dynamic>.from(l))
-        .toList();
+    _linhas =
+        widget.tabela.linhas.map((l) => Map<String, dynamic>.from(l)).toList();
   }
 
   @override
@@ -195,8 +193,7 @@ class _TabelaEditorPageState extends State<_TabelaEditorPage> {
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        title: Text(widget.tabela.nome,
-            style: const TextStyle(fontSize: 15)),
+        title: Text(widget.tabela.nome, style: const TextStyle(fontSize: 15)),
         actions: [
           if (_salvando)
             const Padding(
@@ -252,9 +249,7 @@ class _TabelaEditorPageState extends State<_TabelaEditorPage> {
         linhas: _linhas,
         updatedAt: DateTime.now(),
       );
-      await widget.ref
-          .read(tabelaMetricasProvider.notifier)
-          .salvar(atualizado);
+      await widget.ref.read(tabelaMetricasProvider.notifier).salvar(atualizado);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -307,8 +302,7 @@ class _LinhaEditorState extends State<_LinhaEditor> {
   void initState() {
     super.initState();
     _ctrl = TextEditingController(
-        text: widget.valor.toStringAsFixed(
-            widget.valor % 1 == 0 ? 0 : 2));
+        text: widget.valor.toStringAsFixed(widget.valor % 1 == 0 ? 0 : 2));
   }
 
   @override
@@ -349,16 +343,15 @@ class _LinhaEditorState extends State<_LinhaEditor> {
                   const SizedBox(height: 2),
                   TextFormField(
                     controller: _ctrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 8),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                            color: AppColors.border),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -367,8 +360,7 @@ class _LinhaEditorState extends State<_LinhaEditor> {
                       ),
                     ),
                     onChanged: (v) {
-                      final parsed = double.tryParse(
-                          v.replaceAll(',', '.'));
+                      final parsed = double.tryParse(v.replaceAll(',', '.'));
                       if (parsed != null) widget.onChanged(parsed);
                     },
                   ),

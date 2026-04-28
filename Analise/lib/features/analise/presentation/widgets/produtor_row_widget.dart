@@ -20,10 +20,12 @@ class ProdutorRowWidget extends StatelessWidget {
         backgroundColor: Colors.blue.shade100,
         child: Text(
           _getInitials(produtor.nome),
-          style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: Colors.blue.shade900, fontWeight: FontWeight.bold),
         ),
       ),
-      title: Text(produtor.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(produtor.nome,
+          style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(produtor.fazenda),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

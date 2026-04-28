@@ -16,12 +16,11 @@ double? getNcParaReferencia(String referenciaNome, String elemento) {
 List<String> get referenciasComNc => _ncPorReferencia.keys.toList();
 
 // Nomes IDÊNTICOS aos usados nos dropdowns.
-const Map<String, Map<String, double>> _ncPorReferencia = {
-
+const Map<String, Map<String, double?>> _ncPorReferencia = {
   '06 — Micronutrientes: Motor de Cálculo': {
-    'B':  0.36,
+    'B': 0.36,
     'Cu': 0.71,
-    'Fe': 19.0,  // calibracao_controller.dart
+    'Fe': 19.0, // calibracao_controller.dart
     'Mn': 6.0,
     'Zn': 0.91,
     'Mo': 0.1,
@@ -29,17 +28,15 @@ const Map<String, Map<String, double>> _ncPorReferencia = {
     'Ni': 0.1,
     'Se': 0.05,
   },
-
   'EMBRAPA Soja': {
-    'B':  1.0,
+    'B': 1.0,
     'Cu': 0.8,
-    'Fe': 0.0,  // TODO: verificar — não encontrado
-    'Mn': 0.0,  // TODO: verificar — não encontrado
-    'Zn': 0.0,  // TODO: verificar — não encontrado
-    'Mo': 0.0,  // TODO: verificar — não encontrado
-    'Co': 0.0,  // TODO: verificar — não encontrado
-    'Ni': 0.0,  // TODO: verificar — não encontrado
-    'Se': 0.0,  // TODO: verificar — não encontrado
+    'Fe': null, // TODO: verificar — não encontrado
+    'Mn': null, // TODO: verificar — não encontrado
+    'Zn': null, // TODO: verificar — não encontrado
+    'Mo': null, // TODO: verificar — não encontrado
+    'Co': null, // TODO: verificar — não encontrado
+    'Ni': null, // TODO: verificar — não encontrado
+    'Se': null, // TODO: verificar — não encontrado
   },
-
 };

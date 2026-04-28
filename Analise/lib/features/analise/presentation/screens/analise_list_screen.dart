@@ -43,7 +43,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
 
     final analiseState = ref.watch(analiseNotifierProvider);
     final analisesRaw = analiseState.valueOrNull ?? [];
-    
+
     final safras = analisesRaw
         .map((e) => e.safra)
         .where((s) => s.isNotEmpty)
@@ -216,11 +216,13 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.cloud_off, size: 48, color: AppColors.error),
+                        const Icon(Icons.cloud_off,
+                            size: 48, color: AppColors.error),
                         const SizedBox(height: 16),
                         Text(
-                          'Erro ao carregar dados do Firestore',
-                          style: AppTextStyles.headline.copyWith(color: AppColors.error),
+                          'Erro ao carregar dados da nuvem',
+                          style: AppTextStyles.headline
+                              .copyWith(color: AppColors.error),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
@@ -231,7 +233,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton(
-                          onPressed: () => ref.invalidate(analiseNotifierProvider),
+                          onPressed: () =>
+                              ref.invalidate(analiseNotifierProvider),
                           child: const Text('Tentar novamente'),
                         ),
                       ],
@@ -249,7 +252,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.analytics_outlined, size: 64, color: AppColors.textTertiary),
+                            const Icon(Icons.analytics_outlined,
+                                size: 64, color: AppColors.textTertiary),
                             const SizedBox(height: 24),
                             Text(
                               'Nenhuma análise encontrada',
@@ -257,9 +261,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Você ainda não possui análises salvas no Firestore. Se estiver testando, você pode ativar o Modo de Demonstração nas Configurações.',
+                              'Você ainda não possui análises salvas na nuvem. Se estiver testando, você pode ativar o Modo de Demonstração nas Configurações.',
                               textAlign: TextAlign.center,
-                              style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+                              style: AppTextStyles.body
+                                  .copyWith(color: AppColors.textSecond),
                             ),
                             const SizedBox(height: 32),
                             _NovaAnaliseCard(
@@ -275,7 +280,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 return SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
@@ -290,7 +296,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         }
 
                         if (!mostrandoAmostras) {
-                          final pasta = itensGrid[index] as _AnaliseFolderSummary;
+                          final pasta =
+                              itensGrid[index] as _AnaliseFolderSummary;
                           return _PastaAnaliseCard(
                             pasta: pasta,
                             onTap: () {
@@ -307,8 +314,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         return _AnaliseAmostraCard(
                           analise: analise,
                           onTap: () {
-                            context
-                                .push('${AppRoutes.analise}/detalhe/${analise.id}');
+                            context.push(
+                                '${AppRoutes.analise}/detalhe/${analise.id}');
                           },
                           onLongPress: () =>
                               _showAnaliseOptionsSheet(context, analise),

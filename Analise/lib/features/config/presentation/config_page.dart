@@ -1,247 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/config/application/providers/demo_mode_provider.dart';
+import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 
-class PerfilAssets {
-  final String? logoUrl;
-  final String? assinaturaUrl;
-  final bool isUploadingLogo;
-  final bool isUploadingAssinatura;
-
-  const PerfilAssets({
-    this.logoUrl,
-    this.assinaturaUrl,
-    this.isUploadingLogo = false,
-    this.isUploadingAssinatura = false,
-  });
-
-  PerfilAssets copyWith({
-    String? logoUrl,
-    String? assinaturaUrl,
-    bool? isUploadingLogo,
-    bool? isUploadingAssinatura,
-  }) {
-    return PerfilAssets(
-      logoUrl: logoUrl ?? this.logoUrl,
-      assinaturaUrl: assinaturaUrl ?? this.assinaturaUrl,
-      isUploadingLogo: isUploadingLogo ?? this.isUploadingLogo,
-      isUploadingAssinatura:
-          isUploadingAssinatura ?? this.isUploadingAssinatura,
-    );
-  }
-}
-
-class PerfilAssetsNotifier extends StateNotifier<PerfilAssets> {
-  PerfilAssetsNotifier() : super(const PerfilAssets()) {
-    _loadFromFirestore();
-  }
-
-  final _storage = FirebaseStorage.instance;
-  final _firestore = FirebaseFirestore.instance;
-  final _picker = ImagePicker();
-
-  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
-
-  Future<void> _loadFromFirestore() async {
-    if (_uid.isEmpty) return;
-
-    try {
-      final doc = await _firestore.collection('users').doc(_uid).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        final logo = data['logoUrl'] as String?;
-        final assinatura = data['assinaturaUrl'] as String?;
-
-        state = state.copyWith(
-          logoUrl: (logo == null || logo.isEmpty) ? null : _withCacheBust(logo),
-          assinaturaUrl: (assinatura == null || assinatura.isEmpty)
-              ? null
-              : _withCacheBust(assinatura),
-        );
-      }
-    } catch (_) {
-      // no-op
-    }
-  }
-
-  String _withCacheBust(String url) {
-    final token = DateTime.now().millisecondsSinceEpoch;
-    final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}v=$token';
-  }
-
-  String _contentType(XFile file) {
-    final mimeType = file.mimeType?.trim().toLowerCase();
-    if (mimeType != null && mimeType.startsWith('image/')) return mimeType;
-
-    final path = file.path.toLowerCase();
-    if (path.endsWith('.png')) return 'image/png';
-    if (path.endsWith('.webp')) return 'image/webp';
-    if (path.endsWith('.heic')) return 'image/heic';
-    if (path.endsWith('.heif')) return 'image/heif';
-    return 'image/jpeg';
-  }
-
-  Never _throwFriendlyError(Object error) {
-    if (error is FirebaseException) {
-      if (error.code == 'unauthorized') {
-        throw Exception(
-            'Sem permissão para enviar imagem. Verifique as regras do Storage.');
-      }
-      throw Exception('Falha no upload (${error.code}). Tente novamente.');
-    }
-    if (error is PlatformException) {
-      throw Exception(
-          'Não foi possível acessar a galeria. Verifique as permissões do app.');
-    }
-    throw Exception('Falha ao enviar imagem. Tente novamente.');
-  }
-
-  Future<String> _uploadImage(XFile file, String path) async {
-    try {
-      final bytes = await file.readAsBytes();
-      if (bytes.isEmpty) {
-        throw Exception('Arquivo de imagem vazio.');
-      }
-
-      final ref = _storage.ref().child(path);
-      final uploadTask = await ref.putData(
-        bytes,
-        SettableMetadata(
-          contentType: _contentType(file),
-          cacheControl: 'no-cache',
-        ),
-      );
-      return uploadTask.ref.getDownloadURL();
-    } catch (error) {
-      _throwFriendlyError(error);
-    }
-  }
-
-  Future<void> _saveToFirestore(String field, String url) async {
-    if (_uid.isEmpty) return;
-
-    await _firestore.collection('users').doc(_uid).set(
-      {field: url, 'updatedAt': FieldValue.serverTimestamp()},
-      SetOptions(merge: true),
-    );
-  }
-
-  Future<XFile?> _pickImage({
-    required int imageQuality,
-    required double maxWidth,
-  }) async {
-    try {
-      return await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: imageQuality,
-        maxWidth: maxWidth,
-      );
-    } on PlatformException {
-      throw Exception('Permita acesso à galeria para selecionar a imagem.');
-    }
-  }
-
-  Future<bool> uploadLogo() async {
-    if (_uid.isEmpty) {
-      throw Exception('Usuário não autenticado. Faça login novamente.');
-    }
-
-    final file = await _pickImage(imageQuality: 85, maxWidth: 800);
-    if (file == null) return false;
-
-    state = state.copyWith(isUploadingLogo: true);
-    try {
-      final url = await _uploadImage(file, 'users/$_uid/logo.jpg');
-      await _saveToFirestore('logoUrl', url);
-      state = state.copyWith(logoUrl: _withCacheBust(url));
-      return true;
-    } finally {
-      state = state.copyWith(isUploadingLogo: false);
-    }
-  }
-
-  Future<bool> uploadAssinatura() async {
-    if (_uid.isEmpty) {
-      throw Exception('Usuário não autenticado. Faça login novamente.');
-    }
-
-    final file = await _pickImage(imageQuality: 90, maxWidth: 600);
-    if (file == null) return false;
-
-    state = state.copyWith(isUploadingAssinatura: true);
-    try {
-      final url = await _uploadImage(file, 'users/$_uid/assinatura.jpg');
-      await _saveToFirestore('assinaturaUrl', url);
-      state = state.copyWith(assinaturaUrl: _withCacheBust(url));
-      return true;
-    } finally {
-      state = state.copyWith(isUploadingAssinatura: false);
-    }
-  }
-
-  Future<bool> removeLogo() async {
-    if (_uid.isEmpty) {
-      throw Exception('Usuário não autenticado. Faça login novamente.');
-    }
-
-    try {
-      await _storage.ref().child('users/$_uid/logo.jpg').delete();
-    } on FirebaseException catch (error) {
-      if (error.code != 'object-not-found') {
-        _throwFriendlyError(error);
-      }
-    }
-
-    await _saveToFirestore('logoUrl', '');
-    state = PerfilAssets(
-      logoUrl: null,
-      assinaturaUrl: state.assinaturaUrl,
-      isUploadingLogo: state.isUploadingLogo,
-      isUploadingAssinatura: state.isUploadingAssinatura,
-    );
-    return true;
-  }
-
-  Future<bool> removeAssinatura() async {
-    if (_uid.isEmpty) {
-      throw Exception('Usuário não autenticado. Faça login novamente.');
-    }
-
-    try {
-      await _storage.ref().child('users/$_uid/assinatura.jpg').delete();
-    } on FirebaseException catch (error) {
-      if (error.code != 'object-not-found') {
-        _throwFriendlyError(error);
-      }
-    }
-
-    await _saveToFirestore('assinaturaUrl', '');
-    state = PerfilAssets(
-      logoUrl: state.logoUrl,
-      assinaturaUrl: null,
-      isUploadingLogo: state.isUploadingLogo,
-      isUploadingAssinatura: state.isUploadingAssinatura,
-    );
-    return true;
-  }
-}
-
-final perfilAssetsProvider =
-    StateNotifierProvider<PerfilAssetsNotifier, PerfilAssets>(
-  (ref) => PerfilAssetsNotifier(),
-);
+export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
+    show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
 
 /// Bottom sheet iOS para edição de campo de texto.
 Future<void> _showEditSheet(
@@ -573,19 +343,11 @@ class ConfigPage extends ConsumerWidget {
                                   password: password,
                                 );
                             if (context.mounted) context.go(AppRoutes.login);
-                          } on FirebaseAuthException catch (e) {
+                          } on ConfigActionException catch (e) {
                             if (!context.mounted) return;
-                            final msg = switch (e.code) {
-                              'wrong-password' ||
-                              'invalid-credential' =>
-                                'Senha incorreta. Confira e tente novamente.',
-                              'requires-recent-login' =>
-                                'Por segurança, confirme sua senha novamente.',
-                              _ => 'Erro ao excluir conta. Tente novamente.',
-                            };
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(msg),
+                                content: Text(e.message),
                                 backgroundColor: const Color(0xFFFF3B30),
                               ),
                             );

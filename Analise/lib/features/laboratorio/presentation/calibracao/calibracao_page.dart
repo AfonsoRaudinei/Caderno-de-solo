@@ -271,7 +271,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                 draft: draft,
                 draftKey: draftKey,
                 corretivos: corretivos,
-                onChanged: (map) => controller.updateCalcario(CalcarioState(parametros: map)),
+                onChanged: (map) =>
+                    controller.updateCalcario(CalcarioState(parametros: map)),
               ),
             ],
           ),
@@ -279,14 +280,16 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
             key: ValueKey('fosforo-$draftKey'),
             initialData: fosforo,
             cultura: draft.cultura,
-            onChanged: (map) => controller.updateFosforo(FosforoState(parametros: map)),
+            onChanged: (map) =>
+                controller.updateFosforo(FosforoState(parametros: map)),
           ),
           const SizedBox(height: AppDimens.md),
           PotassioCardWidget(
             key: ValueKey('potassio-$draftKey'),
             initialData: _asMap(draft.parametrosCards['potassio']),
             cultura: draft.cultura,
-            onChanged: (map) => controller.updatePotassio(PotassioState(parametros: map)),
+            onChanged: (map) =>
+                controller.updatePotassio(PotassioState(parametros: map)),
           ),
           NutrienteCard(
             nutriente: 'Micronutrientes',
@@ -312,8 +315,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                     _microFonteNome = nome;
                   });
                 },
-                onChanged: (map) => controller.updateMicros(
-                    MicronutrientesState(parametros: map)),
+                onChanged: (map) => controller
+                    .updateMicros(MicronutrientesState(parametros: map)),
               ),
             ],
           ),
@@ -673,7 +676,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
               onChanged(atualizado);
             },
           ),
-        if (metodoCalagem.startsWith('Albrecht') || metodoCalagem.startsWith('⑥')) ...[
+        if (metodoCalagem.startsWith('Albrecht') ||
+            metodoCalagem.startsWith('⑥')) ...[
           const SizedBox(height: 14),
           const CalibracaoSubsectionTitle('Bloco Albrecht'),
           const SizedBox(height: 8),
@@ -952,8 +956,7 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
           const CalibracaoStatusBadge(
             icon: Icons.auto_awesome_outlined,
             color: AppColors.warning,
-            label:
-                'Dados de subsolo virão da Análise · diagnóstico: indicado',
+            label: 'Dados de subsolo virão da Análise · diagnóstico: indicado',
           ),
         ],
       ],
@@ -1173,7 +1176,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                         ? referenciaGrupo
                         : null,
                     items: _referenciasMicrosComPersonalizada
-                        .map((item) => AppDropdownItem(value: item, label: item))
+                        .map(
+                            (item) => AppDropdownItem(value: item, label: item))
                         .toList(),
                     onChanged: (value) {
                       final referencia = value ?? '';
@@ -1204,7 +1208,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                     label: 'Tipo de Fonte (Absorção)',
                     value: tipoFonteGrupo,
                     items: tiposFonteGrupo
-                        .map((item) => AppDropdownItem(value: item, label: item))
+                        .map(
+                            (item) => AppDropdownItem(value: item, label: item))
                         .toList(),
                     onChanged: (value) {
                       final novoTipo = value ?? tiposFonteGrupo.first;
@@ -1225,7 +1230,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                     label: labelFonteGrupo,
                     value: fonteGrupo,
                     items: fontesGrupo
-                        .map((item) => AppDropdownItem(value: item, label: item))
+                        .map(
+                            (item) => AppDropdownItem(value: item, label: item))
                         .toList(),
                     onChanged: (value) => _updateGrupo(
                       micros: micros,
@@ -1245,52 +1251,49 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: _elementosMicros
-                        .map(
-                          (simbolo) {
-                            final isSelected = elementosGrupo.contains(simbolo);
-                            return FilterChip(
-                              label: Text(simbolo),
-                              selected: isSelected,
-                              selectedColor: const Color(0xFF007AFF)
-                                  .withValues(alpha: 0.15),
-                              checkmarkColor: const Color(0xFF007AFF),
-                              backgroundColor: const Color(0xFFF2F2F7),
-                              labelStyle: TextStyle(
-                                color: isSelected
-                                    ? const Color(0xFF007AFF)
-                                    : const Color(0xFF1D1D1F),
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              ),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? const Color(0xFF007AFF)
-                                    : const Color(0xFFD1D1D6),
-                                width: 1,
-                              ),
-                              onSelected: (selected) {
-                                final atual = [...elementosGrupo];
-                                if (selected) {
-                                  if (!atual.contains(simbolo)) {
-                                    atual.add(simbolo);
-                                  }
-                                } else {
-                                  atual.remove(simbolo);
-                                }
-                                _updateGrupo(
-                                  micros: micros,
-                                  grupos: grupos,
-                                  index: index,
-                                  patch: {'elementos': atual},
-                                  onChanged: onChanged,
-                                );
-                              },
+                    children: _elementosMicros.map(
+                      (simbolo) {
+                        final isSelected = elementosGrupo.contains(simbolo);
+                        return FilterChip(
+                          label: Text(simbolo),
+                          selected: isSelected,
+                          selectedColor:
+                              const Color(0xFF007AFF).withValues(alpha: 0.15),
+                          checkmarkColor: const Color(0xFF007AFF),
+                          backgroundColor: const Color(0xFFF2F2F7),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? const Color(0xFF007AFF)
+                                : const Color(0xFF1D1D1F),
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                          side: BorderSide(
+                            color: isSelected
+                                ? const Color(0xFF007AFF)
+                                : const Color(0xFFD1D1D6),
+                            width: 1,
+                          ),
+                          onSelected: (selected) {
+                            final atual = [...elementosGrupo];
+                            if (selected) {
+                              if (!atual.contains(simbolo)) {
+                                atual.add(simbolo);
+                              }
+                            } else {
+                              atual.remove(simbolo);
+                            }
+                            _updateGrupo(
+                              micros: micros,
+                              grupos: grupos,
+                              index: index,
+                              patch: {'elementos': atual},
+                              onChanged: onChanged,
                             );
                           },
-                        )
-                        .toList(),
+                        );
+                      },
+                    ).toList(),
                   ),
                   const SizedBox(height: 12),
                   AppInput(
@@ -1404,7 +1407,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                               label: 'Referência',
                               value: _string(
                                 elemento['referencia'],
-                                fallback: '06 — Micronutrientes: Motor de Cálculo',
+                                fallback:
+                                    '06 — Micronutrientes: Motor de Cálculo',
                               ),
                               items: _referenciasMicrosComPersonalizada
                                   .map((item) =>
@@ -1427,7 +1431,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                               children: [
                                 Text('Referência', style: AppTextStyles.label),
                                 const SizedBox(height: 6),
-                                if (!(_editandoInline[chaveReferencia] ?? false))
+                                if (!(_editandoInline[chaveReferencia] ??
+                                    false))
                                   _buildCampoPropagado(
                                     valor: _string(elemento['referencia']),
                                     onEditar: () => setState(() {
@@ -1436,7 +1441,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                                   )
                                 else
                                   _buildCampoInlineEdicao(
-                                    initialValue: _string(elemento['referencia']),
+                                    initialValue:
+                                        _string(elemento['referencia']),
                                     keyboardType: TextInputType.text,
                                     onChanged: (value) => _updateElementoMicro(
                                       micros: micros,
@@ -1484,8 +1490,10 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                                   )
                                 else
                                   _buildCampoInlineEdicao(
-                                    initialValue: _fmt(_num(elemento['ncSolo'])),
-                                    keyboardType: const TextInputType.numberWithOptions(
+                                    initialValue:
+                                        _fmt(_num(elemento['ncSolo'])),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
                                       decimal: true,
                                     ),
                                     inputFormatters: [

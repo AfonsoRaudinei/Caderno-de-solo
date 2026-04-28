@@ -53,6 +53,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  String? currentUserId() => _datasource.currentUserId();
+
+  @override
+  Future<String?> waitForCurrentUserId({
+    Duration timeout = const Duration(seconds: 5),
+  }) {
+    return _datasource.waitForCurrentUserId(timeout: timeout);
+  }
+
+  @override
   Future<void> enviarEmailRedefinicaoSenha(String email) async {
     if (!_isValidEmail(email)) {
       throw _invalidEmailMessage;

@@ -105,7 +105,9 @@ class _AnaliseInputCellState extends State<AnaliseInputCell> {
             border: Border(
               left: const BorderSide(color: AppColors.border, width: 0.5),
               bottom: BorderSide(
-                color: widget.highlightedByNavigator ? AppColors.primary : statusColor,
+                color: widget.highlightedByNavigator
+                    ? AppColors.primary
+                    : statusColor,
                 width: (widget.hasError ||
                         widget.hasWarning ||
                         widget.highlightedByNavigator ||
@@ -156,9 +158,13 @@ class _AnaliseInputCellState extends State<AnaliseInputCell> {
                   right: 4,
                   top: 4,
                   child: Icon(
-                    widget.hasError ? Icons.error_outline : Icons.warning_amber_outlined,
+                    widget.hasError
+                        ? Icons.error_outline
+                        : Icons.warning_amber_outlined,
                     size: 12,
-                    color: widget.hasError ? AppColors.error : const Color(0xFFD97706),
+                    color: widget.hasError
+                        ? AppColors.error
+                        : const Color(0xFFD97706),
                   ),
                 ),
             ],

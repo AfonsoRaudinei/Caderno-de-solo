@@ -72,8 +72,7 @@ class LaudoPdfGenerator {
       pw.MultiPage(
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.symmetric(
-              horizontal: 36, vertical: 40),
+          margin: const pw.EdgeInsets.symmetric(horizontal: 36, vertical: 40),
           theme: theme,
           buildBackground: (context) => _buildBackground(),
         ),
@@ -94,8 +93,7 @@ class LaudoPdfGenerator {
       pw.MultiPage(
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.symmetric(
-              horizontal: 36, vertical: 40),
+          margin: const pw.EdgeInsets.symmetric(horizontal: 36, vertical: 40),
           theme: theme,
           buildBackground: (context) => _buildBackground(),
         ),
@@ -149,8 +147,7 @@ class LaudoPdfGenerator {
   static pw.Widget _buildHeader(LaudoRecomendacao laudo) {
     return pw.Container(
       decoration: const pw.BoxDecoration(
-        border: pw.Border(
-            bottom: pw.BorderSide(color: _verde, width: 2)),
+        border: pw.Border(bottom: pw.BorderSide(color: _verde, width: 2)),
       ),
       padding: const pw.EdgeInsets.only(bottom: 8),
       margin: const pw.EdgeInsets.only(bottom: 12),
@@ -185,11 +182,10 @@ class LaudoPdfGenerator {
 
   // ── Rodapé ───────────────────────────────────────────────────────────────
 
-  static pw.Widget _buildFooter(
-      pw.Context context, LaudoRecomendacao laudo) {
+  static pw.Widget _buildFooter(pw.Context context, LaudoRecomendacao laudo) {
     return pw.Container(
       decoration: const pw.BoxDecoration(
-        border: pw.Border(top: pw.BorderSide(color: _cinzaBorda))),
+          border: pw.Border(top: pw.BorderSide(color: _cinzaBorda))),
       padding: const pw.EdgeInsets.only(top: 6),
       margin: const pw.EdgeInsets.only(top: 12),
       child: pw.Row(
@@ -261,8 +257,8 @@ class LaudoPdfGenerator {
           // Dose principal em destaque
           pw.Container(
             width: double.infinity,
-            padding: const pw.EdgeInsets.symmetric(
-                vertical: 10, horizontal: 14),
+            padding:
+                const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 14),
             decoration: pw.BoxDecoration(
               color: _azul,
               borderRadius: pw.BorderRadius.circular(8),
@@ -286,16 +282,8 @@ class LaudoPdfGenerator {
                 '${f(laudo.vAtual, 1)}%',
                 '${f(laudo.vEsperado, 1)}%'
               ],
-              [
-                'Ca (cmolc/dm³)',
-                f(laudo.caAtual, 2),
-                f(laudo.caEsperado, 2)
-              ],
-              [
-                'Mg (cmolc/dm³)',
-                f(laudo.mgAtual, 2),
-                f(laudo.mgEsperado, 2)
-              ],
+              ['Ca (cmolc/dm³)', f(laudo.caAtual, 2), f(laudo.caEsperado, 2)],
+              ['Mg (cmolc/dm³)', f(laudo.mgAtual, 2), f(laudo.mgEsperado, 2)],
               ['Relação Ca:Mg', '${f(laudo.relacaoCaMg, 2)}:1', '—'],
             ],
           ),
@@ -303,9 +291,7 @@ class LaudoPdfGenerator {
           if (laudo.parcelamento.isNotEmpty) ...[
             pw.SizedBox(height: 8),
             _subtitulo('Parcelamento recomendado:'),
-            ...laudo.parcelamento
-                .map((item) => _bullet(item))
-                ,
+            ...laudo.parcelamento.map((item) => _bullet(item)),
           ],
         ],
       ),
@@ -357,7 +343,8 @@ class LaudoPdfGenerator {
                 _metodoBadge(laudo.modoFosforo, _verdeClaro),
                 pw.SizedBox(height: 6),
                 _infoRow('P solo', '${f(laudo.pSoloMgDm3, 1)} mg/dm³'),
-                _infoRow('NC (nível crítico)', '${f(laudo.ncFosforo, 1)} mg/dm³'),
+                _infoRow(
+                    'NC (nível crítico)', '${f(laudo.ncFosforo, 1)} mg/dm³'),
                 _infoRow(
                     'Status',
                     laudo.pSoloMgDm3 >= laudo.ncFosforo
@@ -384,7 +371,8 @@ class LaudoPdfGenerator {
                   pw.Text(
                     'Solo acima do NC — dose mínima de manutenção aplicada.',
                     style: pw.TextStyle(
-                        fontSize: 7, color: _laranjaAgro,
+                        fontSize: 7,
+                        color: _laranjaAgro,
                         fontStyle: pw.FontStyle.italic),
                   ),
                 ],
@@ -464,11 +452,9 @@ class LaudoPdfGenerator {
                 pw.Text(dose,
                     style: const pw.TextStyle(fontSize: 9, color: _azul)),
                 pw.Text('Via: $via',
-                    style:
-                        const pw.TextStyle(fontSize: 8, color: _cinzaTexto)),
+                    style: const pw.TextStyle(fontSize: 8, color: _cinzaTexto)),
                 pw.Text('Fonte: $fonte',
-                    style:
-                        const pw.TextStyle(fontSize: 8, color: _cinzaTexto)),
+                    style: const pw.TextStyle(fontSize: 8, color: _cinzaTexto)),
               ],
             ),
           );
@@ -496,8 +482,8 @@ class LaudoPdfGenerator {
                     border: pw.Border.all(color: _laranjaAgro),
                   ),
                   child: pw.Text(a,
-                      style: const pw.TextStyle(
-                          fontSize: 9, color: _laranjaAgro)),
+                      style:
+                          const pw.TextStyle(fontSize: 9, color: _laranjaAgro)),
                 ))
             .toList(),
       ),
@@ -562,8 +548,7 @@ class LaudoPdfGenerator {
           // Cabeçalho do card
           pw.Container(
             width: double.infinity,
-            padding: const pw.EdgeInsets.symmetric(
-                horizontal: 12, vertical: 7),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: pw.BoxDecoration(
               color: corTitulo,
               borderRadius: const pw.BorderRadius.only(
@@ -574,9 +559,7 @@ class LaudoPdfGenerator {
             child: pw.Text(
               titulo,
               style: pw.TextStyle(
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                  color: _branco),
+                  fontSize: 10, fontWeight: pw.FontWeight.bold, color: _branco),
             ),
           ),
           // Corpo
@@ -599,17 +582,14 @@ class LaudoPdfGenerator {
             width: 110,
             child: pw.Text(
               '$label:',
-              style: const pw.TextStyle(
-                  fontSize: 8, color: _cinzaTexto),
+              style: const pw.TextStyle(fontSize: 8, color: _cinzaTexto),
             ),
           ),
           pw.Expanded(
             child: pw.Text(
               value.isEmpty ? '—' : value,
               style: pw.TextStyle(
-                  fontSize: 8,
-                  fontWeight: pw.FontWeight.bold,
-                  color: _preto),
+                  fontSize: 8, fontWeight: pw.FontWeight.bold, color: _preto),
             ),
           ),
         ],
@@ -623,9 +603,7 @@ class LaudoPdfGenerator {
       child: pw.Text(
         text,
         style: pw.TextStyle(
-            fontSize: 9,
-            fontWeight: pw.FontWeight.bold,
-            color: _preto),
+            fontSize: 9, fontWeight: pw.FontWeight.bold, color: _preto),
       ),
     );
   }
@@ -636,8 +614,7 @@ class LaudoPdfGenerator {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('• ',
-              style: const pw.TextStyle(fontSize: 8, color: _verde)),
+          pw.Text('• ', style: const pw.TextStyle(fontSize: 8, color: _verde)),
           pw.Expanded(
               child: pw.Text(text,
                   style: const pw.TextStyle(fontSize: 8, color: _preto))),
@@ -662,8 +639,7 @@ class LaudoPdfGenerator {
   }
 
   static pw.Widget _statusBadge(String texto, bool positivo) {
-    final cor =
-        positivo ? _laranjaAgro : const PdfColor.fromInt(0xFF388E3C);
+    final cor = positivo ? _laranjaAgro : const PdfColor.fromInt(0xFF388E3C);
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: pw.BoxDecoration(
@@ -678,8 +654,7 @@ class LaudoPdfGenerator {
     );
   }
 
-  static pw.Widget _tabelaEvolucao(
-      {required List<List<String>> linhas}) {
+  static pw.Widget _tabelaEvolucao({required List<List<String>> linhas}) {
     return pw.Table(
       border: pw.TableBorder.all(color: _cinzaBorda, width: 0.5),
       columnWidths: {
@@ -691,7 +666,8 @@ class LaudoPdfGenerator {
         final isHeader = entry.key == 0;
         return pw.TableRow(
           decoration: pw.BoxDecoration(
-            color: isHeader ? _azul : (entry.key.isEven ? _cinzaFundo : _branco),
+            color:
+                isHeader ? _azul : (entry.key.isEven ? _cinzaFundo : _branco),
           ),
           children: entry.value
               .map((cell) => pw.Padding(

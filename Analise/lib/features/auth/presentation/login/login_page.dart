@@ -264,11 +264,14 @@ class _DevBanner extends StatelessWidget {
         children: [
           const Icon(Icons.info_outline, color: Color(0xFF8FD39D), size: 16),
           const SizedBox(width: 8),
-          Text(
-            'Modo Dev: Qualquer login válido',
-            style: AppTextStyles.caption.copyWith(
-              color: const Color(0xFF8FD39D),
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              'Modo Dev: Qualquer login válido',
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption.copyWith(
+                color: const Color(0xFF8FD39D),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -475,7 +478,7 @@ class _BrandMessageCarousel extends HookWidget {
     }, const []);
 
     return SizedBox(
-      height: 96 * scale,
+      height: 108 * scale,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

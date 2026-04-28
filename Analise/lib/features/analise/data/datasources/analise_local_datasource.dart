@@ -66,7 +66,8 @@ class _BatchRecord {
 
 class AnaliseLocalDatasource implements AnaliseDataSource {
   final List<AnaliseSoloModel> _analisesMock = [];
-  final _streamController = StreamController<List<AnaliseSoloModel>>.broadcast();
+  final _streamController =
+      StreamController<List<AnaliseSoloModel>>.broadcast();
   bool _mockLoaded = false;
   final bool _useAssetSeed;
   final BatchFaultInjection _faultInjection;
@@ -82,8 +83,6 @@ class AnaliseLocalDatasource implements AnaliseDataSource {
     BatchFaultInjection faultInjection = const BatchFaultInjection(),
   })  : _useAssetSeed = useAssetSeed,
         _faultInjection = faultInjection;
-
-
 
   static const List<String> _jsonFiles = [
     'assets/lab_data/exata_brasil_16723_2024.json',
@@ -405,7 +404,7 @@ class AnaliseLocalDatasource implements AnaliseDataSource {
         lastError: 'Recovery converteu lote persisting órfão para compensated.',
       );
     }
-    
+
     if (stale.isNotEmpty) {
       await _notify();
     }

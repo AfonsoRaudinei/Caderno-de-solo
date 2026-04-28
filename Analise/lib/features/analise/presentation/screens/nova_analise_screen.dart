@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
@@ -8,6 +7,7 @@ import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
+import 'package:soloforte/features/auth/application/providers/auth_usecase_providers.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
@@ -58,7 +58,7 @@ class NovaAnaliseScreen extends ConsumerWidget {
         actions: [
           TextButton.icon(
             onPressed:
-                state.isSaving ? null : () => _importarPdf(context, ctrl),
+                state.isSaving ? null : () => _importarPdf(context, ref, ctrl),
             icon: const Icon(Icons.upload_file, size: 18),
             label: const Text('Importar'),
             style: TextButton.styleFrom(
@@ -472,24 +472,20 @@ class NovaAnaliseScreen extends ConsumerWidget {
   }
 
   Future<void> _importarPdf(
-      BuildContext context, NovaAnaliseController ctrl) async {
+    BuildContext context,
+    WidgetRef ref,
+    NovaAnaliseController ctrl,
+  ) async {
     try {
       final analises = await PdfImportService().importarDePdf(context);
       if (analises == null) return;
 
       ctrl.carregarDeAnaliseSolo(analises);
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        try {
-          user = await FirebaseAuth.instance.authStateChanges()
-              .firstWhere((u) => u != null)
-              .timeout(const Duration(seconds: 5));
-        } catch (_) {
-          user = null;
-        }
-      }
+      final userId = await ref
+          .read(waitForCurrentUserIdUsecaseProvider)
+          .call(timeout: const Duration(seconds: 5));
 
-      if (user == null) {
+      if (userId == null || userId.isEmpty) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -510,7 +506,8 @@ class NovaAnaliseScreen extends ConsumerWidget {
             ),
             backgroundColor: const Color(0xFF34C759),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             margin: const EdgeInsets.all(16),
           ),
         );

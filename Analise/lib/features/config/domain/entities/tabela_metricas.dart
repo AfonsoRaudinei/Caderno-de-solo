@@ -53,8 +53,7 @@ class TabelaMetricas {
   /// Retorna o valor da tabela para [argilaPercent].
   /// Busca pela linha onde argilaMin <= argila < argilaMax.
   /// Se não encontrar correspondência, retorna [fallback].
-  double valorParaArgila(double argilaPercent,
-      {required double fallback}) {
+  double valorParaArgila(double argilaPercent, {required double fallback}) {
     for (final linha in linhas) {
       final min = _asDouble(linha['argilaMin']);
       final max = _asDouble(linha['argilaMax']);

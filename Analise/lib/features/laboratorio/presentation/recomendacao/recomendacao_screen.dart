@@ -9,18 +9,16 @@ import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
-import 'package:soloforte/domain/entities/analise_entity.dart';
-import 'package:soloforte/domain/models/calibracao_profile.dart';
-import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
+import 'package:soloforte/domain/models/resultado_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/laboratorio/services/laudo_pdf_generator.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/auth/application/providers/auth_usecase_providers.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_header_footer.dart';
-import 'package:soloforte/features/config/application/providers/tabela_metricas_provider.dart';
-import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/application/providers/laudo_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
+import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_header_footer.dart';
+import 'package:soloforte/features/laboratorio/services/laudo_pdf_generator.dart';
 import 'package:uuid/uuid.dart';
 
 class RecomendacaoScreen extends ConsumerStatefulWidget {
@@ -35,10 +33,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   final _uuid = const Uuid();
   String? _analiseIdSelecionada;
   String? _calibracaoIdSelecionada;
-  bool _gerando = false;
   bool _salvando = false;
   bool _exportando = false;
-  ResultadoRecomendacao? _resultado;
 
   @override
   void initState() {
@@ -58,6 +54,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
         opcoesAnalise.where((e) => e.id == _analiseIdSelecionada).firstOrNull;
     final perfilSelecionado =
         perfis.where((p) => p.id == _calibracaoIdSelecionada).firstOrNull;
+    final request = RecomendacaoRequest(
+      analiseId: _analiseIdSelecionada,
+      calibracaoId: _calibracaoIdSelecionada,
+    );
+    final result = ref.watch(recomendacaoProvider(request));
+    final resultado = result.recomendacao;
 
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
@@ -112,7 +114,6 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                       : (value) {
                           setState(() {
                             _analiseIdSelecionada = value;
-                            _resultado = null;
                           });
                         },
                 ),
@@ -136,31 +137,24 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                       : (value) {
                           setState(() {
                             _calibracaoIdSelecionada = value;
-                            _resultado = null;
                           });
+                          ref
+                              .read(calibracaoUsadaNaRecomendacaoProvider
+                                  .notifier)
+                              .state = value;
                         },
                 ),
                 const SizedBox(height: 12),
                 AppButton(
+                  key: const Key('btn_gerar_recomendacao'),
                   label: 'Gerar Recomendação',
                   icon: Icons.auto_awesome_rounded,
-                  isLoading: _gerando,
-                  onPressed: (analiseSelecionada != null &&
-                          perfilSelecionado != null &&
-                          !_gerando)
-                      ? () {
-                          final tabelas =
-                              (ref.read(tabelaMetricasProvider).valueOrNull ??
-                                      const [])
-                                  .map((tabela) => tabela.toJson())
-                                  .toList(growable: false);
-                          _gerar(
-                            analiseSelecionada: analiseSelecionada,
-                            perfilSelecionado: perfilSelecionado,
-                            tabelas: tabelas,
-                          );
-                        }
-                      : null,
+                  onPressed:
+                      (analiseSelecionada != null && perfilSelecionado != null)
+                          ? () {
+                              ref.invalidate(recomendacaoProvider(request));
+                            }
+                          : null,
                 ),
                 if (analisesAsync.hasError) ...[
                   const SizedBox(height: 10),
@@ -189,28 +183,36 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                     label: 'Nenhuma análise salva. Cadastre em Análise.',
                   ),
                 ],
+                if (!result.diagnostico.valido) ...[
+                  const SizedBox(height: 10),
+                  _Badge(
+                    icon: Icons.warning_amber_rounded,
+                    color: AppColors.warning,
+                    label: result.diagnostico.erros.join(' | '),
+                  ),
+                ],
               ],
             ),
           ),
-          if (_resultado != null) ...[
+          if (resultado != null) ...[
             const SizedBox(height: 14),
             const RecomendacaoHeader(),
             const SizedBox(height: 12),
-            _buildIdentificacao(_resultado!),
+            _buildIdentificacao(resultado),
             const SizedBox(height: 12),
-            _buildCalcario(_resultado!),
+            _buildCalcario(resultado),
             const SizedBox(height: 12),
-            _buildGesso(_resultado!),
+            _buildGesso(resultado),
             const SizedBox(height: 12),
-            _buildFosforo(_resultado!),
+            _buildFosforo(resultado),
             const SizedBox(height: 12),
-            _buildPotassio(_resultado!),
+            _buildPotassio(resultado),
             const SizedBox(height: 12),
-            _buildMicros(_resultado!),
+            _buildMicros(resultado),
             const SizedBox(height: 12),
-            _buildAvisos(_resultado!),
+            _buildAvisos(resultado),
             const SizedBox(height: 12),
-            _buildArgumentos(_resultado!),
+            _buildArgumentos(resultado),
             const SizedBox(height: 12),
             AppCardSection(
               title: 'Ações',
@@ -218,22 +220,24 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                 children: [
                   Expanded(
                     child: AppButton(
+                      key: const Key('btn_salvar_recomendacao'),
                       label: 'Salvar Recomendação',
                       icon: Icons.save_alt_rounded,
                       isLoading: _salvando,
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _salvarResultado(_resultado!),
+                          : () => _salvarResultado(resultado),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: AppButtonSecondary(
+                      key: const Key('btn_exportar_pdf'),
                       label: _exportando ? 'Gerando...' : 'Exportar PDF',
                       icon: Icons.picture_as_pdf_outlined,
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _exportarPdf(_resultado!),
+                          : () => _exportarPdf(resultado),
                     ),
                   ),
                 ],
@@ -523,81 +527,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     );
   }
 
-  Future<void> _gerar({
-    required _AnaliseOption analiseSelecionada,
-    required CalibracaoProfile perfilSelecionado,
-    required List<Map<String, dynamic>> tabelas,
-  }) async {
-    setState(() => _gerando = true);
-    try {
-      final resultado = await AppObservability.instance.trace(
-        'recomendacao_generate',
-        () async {
-          const engine = RecomendacaoEngine();
-          return engine.calcular(
-            analise: analiseSelecionada.entity,
-            labelAnalise: analiseSelecionada.label,
-            calibracao: perfilSelecionado,
-            tabelas: tabelas,
-          );
-        },
-        attributes: {'flow': 'recomendacao', 'action': 'gerar'},
-      );
-      ref.read(calibracaoUsadaNaRecomendacaoProvider.notifier).state =
-          perfilSelecionado.id;
-      setState(() {
-        _resultado = resultado;
-      });
-    } catch (_) {
-      _showMensagem(
-          'Falha ao gerar recomendação para os parâmetros selecionados.');
-    } finally {
-      setState(() => _gerando = false);
-    }
-  }
-
   _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
-    final sb = (analise.ca ?? 0) +
-        (analise.mg ?? 0) +
-        (analise.k ?? 0) +
-        (analise.na ?? 0);
-    final ctcTotal = sb + (analise.hMaisAl ?? 0);
-    final vPct = ctcTotal > 0 ? (sb / ctcTotal) * 100 : 0.0;
-    final argilaPercent = (analise.argila ?? 0) / 10.0;
-
-    final entity = AnaliseEntity(
-      id: analise.id,
-      nome: analise.talhao,
-      consultor: 'Consultor',
-      fazenda: analise.talhao,
-      talhao: analise.talhao,
-      localizacao: analise.descricaoLocal ?? '-',
-      cultura: analise.cultura.label,
-      ph: analise.phAgua ?? analise.phCaCl2 ?? analise.phSmp ?? 0,
-      mo: analise.materiaOrganica ?? 0,
-      p: analise.pMehlich ?? 0,
-      k: analise.k ?? 0,
-      ca: analise.ca ?? 0,
-      mg: analise.mg ?? 0,
-      hAl: analise.hMaisAl ?? 0,
-      al: analise.al ?? 0,
-      s: analise.s020 ?? 0,
-      b: analise.b ?? 0,
-      cu: analise.cu ?? 0,
-      fe: analise.fe ?? 0,
-      mn: analise.mn ?? 0,
-      zn: analise.zn ?? 0,
-      sb: sb,
-      ctc: ctcTotal,
-      vPercent: vPct,
-      argila: argilaPercent,
-    );
     final label =
         '${analise.talhao} · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analise.dataCadastro)}';
     return _AnaliseOption(
       id: analise.id,
       label: label,
-      entity: entity,
     );
   }
 
@@ -615,7 +550,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   Future<void> _salvarResultado(ResultadoRecomendacao resultado) async {
     setState(() => _salvando = true);
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final uid = ref.read(getCurrentUserIdUsecaseProvider)() ?? '';
       await AppObservability.instance.trace(
         'recomendacao_save_laudo',
         () async {
@@ -645,7 +580,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   Future<void> _exportarPdf(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final uid = ref.read(getCurrentUserIdUsecaseProvider)() ?? '';
       await AppObservability.instance.trace(
         'recomendacao_export_pdf',
         () async {
@@ -754,12 +689,10 @@ class _AnaliseOption {
   const _AnaliseOption({
     required this.id,
     required this.label,
-    required this.entity,
   });
 
   final String id;
   final String label;
-  final AnaliseEntity entity;
 }
 
 extension<T> on Iterable<T> {

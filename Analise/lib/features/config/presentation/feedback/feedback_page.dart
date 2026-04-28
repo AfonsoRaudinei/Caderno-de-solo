@@ -78,7 +78,8 @@ class FeedbackPage extends StatelessWidget {
               label: 'Enviar Feedback',
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Obrigado! Recebemos seu feedback.')),
+                  const SnackBar(
+                      content: Text('Obrigado! Recebemos seu feedback.')),
                 );
                 context.pop();
               },

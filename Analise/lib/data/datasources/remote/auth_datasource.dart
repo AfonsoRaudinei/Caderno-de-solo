@@ -20,6 +20,19 @@ class AuthDatasource {
 
   AuthDatasource(this._auth);
 
+  String? currentUserId() => _auth.currentUser?.uid;
+
+  Future<String?> waitForCurrentUserId(
+      {Duration timeout = const Duration(seconds: 5)}) async {
+    final current = _auth.currentUser?.uid;
+    if (current != null && current.isNotEmpty) return current;
+    final user = await _auth
+        .authStateChanges()
+        .firstWhere((u) => u != null)
+        .timeout(timeout, onTimeout: () => null);
+    return user?.uid;
+  }
+
   Future<UserCredential> signInWithEmailAndPassword({
     required String email,
     required String password,

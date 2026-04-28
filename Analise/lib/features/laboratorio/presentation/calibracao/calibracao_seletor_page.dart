@@ -122,7 +122,9 @@ class CalibracaoSeletorPage extends ConsumerWidget {
     );
     if (confirmar == true) {
       ref.read(calibracaoControllerProvider.notifier).carregarPerfil(profile);
-      await ref.read(calibracaoControllerProvider.notifier).excluirSelecionado();
+      await ref
+          .read(calibracaoControllerProvider.notifier)
+          .excluirSelecionado();
     }
   }
 }

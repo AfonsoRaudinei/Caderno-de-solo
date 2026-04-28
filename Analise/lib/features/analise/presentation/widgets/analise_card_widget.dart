@@ -54,7 +54,8 @@ class AnaliseCardWidget extends StatelessWidget {
                   const SizedBox(height: 8),
                   Builder(builder: (context) {
                     final valor = analise.talhao;
-                    final isVazio = valor.isEmpty || valor == 'N/A' || valor == 'null';
+                    final isVazio =
+                        valor.isEmpty || valor == 'N/A' || valor == 'null';
                     return Text(
                       isVazio ? 'Área não informada' : valor,
                       style: TextStyle(
@@ -73,7 +74,8 @@ class AnaliseCardWidget extends StatelessWidget {
                       const SizedBox(width: 4),
                       Builder(builder: (context) {
                         final valor = analise.produtor;
-                        final isVazio = valor.isEmpty || valor == 'N/A' || valor == 'null';
+                        final isVazio =
+                            valor.isEmpty || valor == 'N/A' || valor == 'null';
                         return Expanded(
                           child: Text(
                             isVazio ? 'Produtor não informado' : valor,
@@ -91,11 +93,13 @@ class AnaliseCardWidget extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                      Icon(Icons.calendar_today,
+                          size: 14, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Builder(builder: (context) {
                         final valor = analise.safra;
-                        final isVazio = valor.isEmpty || valor == 'N/A' || valor == 'null';
+                        final isVazio =
+                            valor.isEmpty || valor == 'N/A' || valor == 'null';
                         return Text(
                           isVazio ? 'Safra não informada' : valor,
                           style: TextStyle(
@@ -122,8 +126,7 @@ class AnaliseCardWidget extends StatelessWidget {
           top: 8,
           right: 8,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: const Color(0xFF007AFF).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
@@ -142,5 +145,6 @@ class AnaliseCardWidget extends StatelessWidget {
           ),
         ),
       ],
-    );  }
+    );
+  }
 }

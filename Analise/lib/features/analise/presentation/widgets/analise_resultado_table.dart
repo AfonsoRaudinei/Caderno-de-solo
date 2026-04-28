@@ -152,13 +152,25 @@ List<ParamGroup> _buildExataGroups() {
         values: [0.17, 0.15, 0.24, 0.20],
         convType: ConvType.cmolc,
       ),
-      ParamRow(name: 'P (Meh)', baseUnit: 'mg/dm³', values: [5.68, 10.75, 7.66, 5.40]),
-      ParamRow(name: 'P (rem)', baseUnit: 'mg/dm³', values: [29.19, 29.97, 33.95, 31.18]),
+      ParamRow(
+          name: 'P (Meh)',
+          baseUnit: 'mg/dm³',
+          values: [5.68, 10.75, 7.66, 5.40]),
+      ParamRow(
+          name: 'P (rem)',
+          baseUnit: 'mg/dm³',
+          values: [29.19, 29.97, 33.95, 31.18]),
       ParamRow(name: 'S', baseUnit: 'mg/dm³', values: [3.40, 3.25, 9.79, 8.75]),
     ]),
     ParamGroup('Matéria Orgânica', [
-      ParamRow(name: 'M.O.', baseUnit: 'g/dm³', values: [20.78, 20.30, 21.20, 19.30]),
-      ParamRow(name: 'C.O.', baseUnit: 'g/dm³', values: [12.05, 11.77, 12.30, 11.19]),
+      ParamRow(
+          name: 'M.O.',
+          baseUnit: 'g/dm³',
+          values: [20.78, 20.30, 21.20, 19.30]),
+      ParamRow(
+          name: 'C.O.',
+          baseUnit: 'g/dm³',
+          values: [12.05, 11.77, 12.30, 11.19]),
     ]),
     ParamGroup('CTC e Saturação', [
       ParamRow(
@@ -167,31 +179,85 @@ List<ParamGroup> _buildExataGroups() {
         values: [6.05, 7.22, 7.79, 7.29],
         convType: ConvType.cmolc,
       ),
-      ParamRow(name: 'V%', baseUnit: '%', values: [71.40, 80.33, 72.40, 67.22], decimals: 1),
-      ParamRow(name: 'm%', baseUnit: '%', values: [0.7, 0.3, 0.4, 0.2], decimals: 1),
-      ParamRow(name: 'Ca/CTC', baseUnit: '%', values: [48.60, 56.79, 48.52, 43.21], decimals: 1),
-      ParamRow(name: 'Mg/CTC', baseUnit: '%', values: [20.00, 21.47, 20.80, 21.26], decimals: 1),
+      ParamRow(
+          name: 'V%',
+          baseUnit: '%',
+          values: [71.40, 80.33, 72.40, 67.22],
+          decimals: 1),
+      ParamRow(
+          name: 'm%', baseUnit: '%', values: [0.7, 0.3, 0.4, 0.2], decimals: 1),
+      ParamRow(
+          name: 'Ca/CTC',
+          baseUnit: '%',
+          values: [48.60, 56.79, 48.52, 43.21],
+          decimals: 1),
+      ParamRow(
+          name: 'Mg/CTC',
+          baseUnit: '%',
+          values: [20.00, 21.47, 20.80, 21.26],
+          decimals: 1),
       ParamRow(name: 'K/CTC', baseUnit: '%', values: [2.81, 2.08, 3.08, 2.74]),
-      ParamRow(name: 'H+Al/CTC', baseUnit: '%', values: [28.60, 19.67, 27.60, 32.78], decimals: 1),
+      ParamRow(
+          name: 'H+Al/CTC',
+          baseUnit: '%',
+          values: [28.60, 19.67, 27.60, 32.78],
+          decimals: 1),
     ]),
     ParamGroup('Micronutrientes (Meh)', [
       ParamRow(name: 'B', baseUnit: 'mg/dm³', values: [0.34, 0.58, 0.34, 0.38]),
-      ParamRow(name: 'Cu (Meh)', baseUnit: 'mg/dm³', values: [1.99, 1.80, 2.97, 4.24]),
-      ParamRow(name: 'Fe (Meh)', baseUnit: 'mg/dm³', values: [46.37, 42.65, 55.01, 47.41]),
-      ParamRow(name: 'Mn (Meh)', baseUnit: 'mg/dm³', values: [26.07, 37.72, 82.34, 76.68]),
-      ParamRow(name: 'Zn (Meh)', baseUnit: 'mg/dm³', values: [1.59, 2.82, 2.50, 1.49]),
+      ParamRow(
+          name: 'Cu (Meh)',
+          baseUnit: 'mg/dm³',
+          values: [1.99, 1.80, 2.97, 4.24]),
+      ParamRow(
+          name: 'Fe (Meh)',
+          baseUnit: 'mg/dm³',
+          values: [46.37, 42.65, 55.01, 47.41]),
+      ParamRow(
+          name: 'Mn (Meh)',
+          baseUnit: 'mg/dm³',
+          values: [26.07, 37.72, 82.34, 76.68]),
+      ParamRow(
+          name: 'Zn (Meh)',
+          baseUnit: 'mg/dm³',
+          values: [1.59, 2.82, 2.50, 1.49]),
     ]),
     ParamGroup('Micronutrientes (DTPA)', [
-      ParamRow(name: 'Cu (DTPA)', baseUnit: 'mg/dm³', values: [1.02, 0.96, 1.92, 2.41]),
-      ParamRow(name: 'Fe (DTPA)', baseUnit: 'mg/dm³', values: [10.68, 11.83, 15.72, 15.78]),
-      ParamRow(name: 'Mn (DTPA)', baseUnit: 'mg/dm³', values: [2.46, 2.72, 10.90, 11.66]),
-      ParamRow(name: 'Zn (DTPA)', baseUnit: 'mg/dm³', values: [0.75, 1.06, 1.41, 0.90]),
+      ParamRow(
+          name: 'Cu (DTPA)',
+          baseUnit: 'mg/dm³',
+          values: [1.02, 0.96, 1.92, 2.41]),
+      ParamRow(
+          name: 'Fe (DTPA)',
+          baseUnit: 'mg/dm³',
+          values: [10.68, 11.83, 15.72, 15.78]),
+      ParamRow(
+          name: 'Mn (DTPA)',
+          baseUnit: 'mg/dm³',
+          values: [2.46, 2.72, 10.90, 11.66]),
+      ParamRow(
+          name: 'Zn (DTPA)',
+          baseUnit: 'mg/dm³',
+          values: [0.75, 1.06, 1.41, 0.90]),
     ]),
     ParamGroup('Granulometria', [
-      ParamRow(name: 'Argila', baseUnit: 'g/dm³', values: [419.0, 396.5, 448.5, 523.5], decimals: 1),
-      ParamRow(name: 'Silte', baseUnit: 'g/dm³', values: [54.0, 46.5, 76.5, 76.5], decimals: 1),
-      ParamRow(name: 'Areia', baseUnit: 'g/dm³', values: [527.0, 557.0, 475.0, 400.0], decimals: 1),
-      ParamRow(name: 'Na', baseUnit: 'mg/dm³', values: [3.07, 3.10, 2.80, 2.20]),
+      ParamRow(
+          name: 'Argila',
+          baseUnit: 'g/dm³',
+          values: [419.0, 396.5, 448.5, 523.5],
+          decimals: 1),
+      ParamRow(
+          name: 'Silte',
+          baseUnit: 'g/dm³',
+          values: [54.0, 46.5, 76.5, 76.5],
+          decimals: 1),
+      ParamRow(
+          name: 'Areia',
+          baseUnit: 'g/dm³',
+          values: [527.0, 557.0, 475.0, 400.0],
+          decimals: 1),
+      ParamRow(
+          name: 'Na', baseUnit: 'mg/dm³', values: [3.07, 3.10, 2.80, 2.20]),
     ]),
   ];
 }
@@ -226,7 +292,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
   static const double _rowHeight = 56;
 
   late List<ParamGroup> _groups;
-  late List<List<List<int>>> _steps; // [groupIdx][rowIdx][sampleIdx] = stepIndex
+  late List<List<List<int>>>
+      _steps; // [groupIdx][rowIdx][sampleIdx] = stepIndex
 
   @override
   void initState() {
@@ -237,7 +304,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
   @override
   void didUpdateWidget(covariant AnaliseResultadoTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.headers.length != widget.headers.length || oldWidget.groups != widget.groups) {
+    if (oldWidget.headers.length != widget.headers.length ||
+        oldWidget.groups != widget.groups) {
       _syncFromWidget();
     }
   }
@@ -246,7 +314,9 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
     _groups = widget.groups ?? _buildExataGroups();
     _steps = _groups
         .map(
-          (g) => g.rows.map((_) => List<int>.filled(widget.headers.length, 0)).toList(),
+          (g) => g.rows
+              .map((_) => List<int>.filled(widget.headers.length, 0))
+              .toList(),
         )
         .toList();
   }
@@ -274,7 +344,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
           border: Border.all(color: _C.borderSoft, width: _divider),
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
-            BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(
+                color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
           ],
         ),
         child: Row(
@@ -284,7 +355,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
               width: _paramColWidth,
               child: DecoratedBox(
                 decoration: const BoxDecoration(
-                  border: Border(right: BorderSide(color: _C.borderSoft, width: _divider)),
+                  border: Border(
+                      right: BorderSide(color: _C.borderSoft, width: _divider)),
                 ),
                 child: _buildLeftColumn(),
               ),
@@ -339,7 +411,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
           _leftCell(
             height: _groupHeight,
             color: _C.groupBg,
-            border: const Border(bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+            border: const Border(
+                bottom: BorderSide(color: _C.borderSoft, width: _divider)),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               child: Text(
@@ -363,7 +436,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
     return _leftCell(
       height: _rowHeight,
       color: _C.card,
-      border: const Border(bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+      border: const Border(
+          bottom: BorderSide(color: _C.borderSoft, width: _divider)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Column(
@@ -424,7 +498,10 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
           height: _headerHeight,
           color: _C.bg,
           child: Row(
-            children: [for (final h in widget.headers) _SampleHeaderCell(header: h, width: _sampleColWidth)],
+            children: [
+              for (final h in widget.headers)
+                _SampleHeaderCell(header: h, width: _sampleColWidth)
+            ],
           ),
         ),
         _hDivider(),
@@ -433,10 +510,12 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
             height: _groupHeight,
             decoration: const BoxDecoration(
               color: _C.groupBg,
-              border: Border(bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+              border: Border(
+                  bottom: BorderSide(color: _C.borderSoft, width: _divider)),
             ),
           ),
-          for (int ri = 0; ri < _groups[gi].rows.length; ri++) _buildValuesRow(gi, ri),
+          for (int ri = 0; ri < _groups[gi].rows.length; ri++)
+            _buildValuesRow(gi, ri),
         ],
       ],
     );
@@ -451,7 +530,8 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
       height: _rowHeight,
       decoration: const BoxDecoration(
         color: _C.card,
-        border: Border(bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+        border:
+            Border(bottom: BorderSide(color: _C.borderSoft, width: _divider)),
       ),
       child: Row(
         children: [
@@ -544,7 +624,8 @@ class _ValueCell extends StatefulWidget {
   State<_ValueCell> createState() => _ValueCellState();
 }
 
-class _ValueCellState extends State<_ValueCell> with SingleTickerProviderStateMixin {
+class _ValueCellState extends State<_ValueCell>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ac;
   late Animation<Color?> _numColor;
   late Animation<Color?> _unitColor;
@@ -552,7 +633,8 @@ class _ValueCellState extends State<_ValueCell> with SingleTickerProviderStateMi
   @override
   void initState() {
     super.initState();
-    _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+    _ac = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 350));
     _numColor = ColorTween(begin: _C.primary, end: _C.textMain).animate(_ac);
     _unitColor = ColorTween(begin: _C.primary, end: _C.textSub).animate(_ac);
   }
@@ -609,7 +691,8 @@ class _ValueCellState extends State<_ValueCell> with SingleTickerProviderStateMi
                     : (_isConverted ? _C.primary : _C.textSub);
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -629,7 +712,9 @@ class _ValueCellState extends State<_ValueCell> with SingleTickerProviderStateMi
                           _unitLabel(),
                           style: TextStyle(
                             fontSize: 9,
-                            fontWeight: _isConverted ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: _isConverted
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             color: unitColor,
                             letterSpacing: 0.1,
                           ),
@@ -645,10 +730,10 @@ class _ValueCellState extends State<_ValueCell> with SingleTickerProviderStateMi
             if (widget.hasTap)
               Positioned(
                 bottom: 10,
-        child: Container(
-          width: 20,
-          height: 1.5,
-          decoration: BoxDecoration(
+                child: Container(
+                  width: 20,
+                  height: 1.5,
+                  decoration: BoxDecoration(
                     color: _C.primary.withAlpha(64),
                     borderRadius: BorderRadius.circular(1),
                   ),
@@ -716,7 +801,8 @@ class AnaliseResultadoScreen extends StatelessWidget {
                     color: _C.primaryBg,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Icon(Icons.swap_horiz, size: 12, color: _C.primary),
+                  child:
+                      const Icon(Icons.swap_horiz, size: 12, color: _C.primary),
                 ),
                 const SizedBox(width: 6),
                 const Text(
@@ -750,7 +836,8 @@ class _LaudoInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _C.borderSoft, width: 0.5),
         boxShadow: const [
-          BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
+          BoxShadow(
+              color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -776,7 +863,8 @@ class _LaudoInfoCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: _C.primaryBg,
                     borderRadius: BorderRadius.circular(20),
@@ -849,5 +937,6 @@ class _InfoRow extends StatelessWidget {
 class _Divider extends StatelessWidget {
   const _Divider();
   @override
-  Widget build(BuildContext context) => const SizedBox(height: 0.5, child: ColoredBox(color: _C.borderSoft));
+  Widget build(BuildContext context) =>
+      const SizedBox(height: 0.5, child: ColoredBox(color: _C.borderSoft));
 }

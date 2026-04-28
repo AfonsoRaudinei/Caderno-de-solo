@@ -20,7 +20,8 @@ class AnaliseGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = DateFormat('dd/MM/yyyy').format(analise.dataCadastro);
-    final titulo = analise.talhao.trim().isEmpty ? 'Sem talhao' : analise.talhao;
+    final titulo =
+        analise.talhao.trim().isEmpty ? 'Sem talhao' : analise.talhao;
     final subtitulo = '${analise.cultura.label} · $data';
 
     return Material(
@@ -98,13 +99,16 @@ class AnaliseGridCard extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.visibility_outlined),
                 title: const Text('Ver detalhes'),
-                onTap: () => Navigator.of(context).pop(AnaliseGridCardAction.viewDetails),
+                onTap: () => Navigator.of(context)
+                    .pop(AnaliseGridCardAction.viewDetails),
               ),
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Color(0xFFFF3B30)),
+                leading:
+                    const Icon(Icons.delete_outline, color: Color(0xFFFF3B30)),
                 title: const Text('Excluir'),
                 textColor: const Color(0xFFFF3B30),
-                onTap: () => Navigator.of(context).pop(AnaliseGridCardAction.delete),
+                onTap: () =>
+                    Navigator.of(context).pop(AnaliseGridCardAction.delete),
               ),
             ],
           ),

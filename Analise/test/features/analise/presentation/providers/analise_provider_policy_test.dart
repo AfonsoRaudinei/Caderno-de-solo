@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('analiseDataSourceProvider limita mock a builds fora de release', () {
     final file = File(
-      '/Users/raudineisilvapereira/dev/Caderno de Solo/Analise/lib/features/analise/presentation/providers/analise_provider.dart',
+      '/Users/raudineisilvapereira/dev/Caderno de Solo/Analise/lib/features/analise/application/providers/analise_provider.dart',
     );
     final content = file.readAsStringSync();
 
