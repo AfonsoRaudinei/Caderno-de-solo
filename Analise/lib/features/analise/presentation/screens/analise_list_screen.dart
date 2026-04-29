@@ -210,36 +210,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (err, stack) => SliverFillRemaining(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.cloud_off,
-                            size: 48, color: AppColors.error),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Erro ao carregar dados da nuvem',
-                          style: AppTextStyles.headline
-                              .copyWith(color: AppColors.error),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          err.toString(),
-                          style: AppTextStyles.body,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () =>
-                              ref.invalidate(analiseNotifierProvider),
-                          child: const Text('Tentar novamente'),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: _AnaliseLoadError(
+                  error: err,
+                  onRetry: () => ref.invalidate(analiseNotifierProvider),
                 ),
               ),
               data: (listaCompleta) {
@@ -767,6 +740,67 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     final metadata = analise.laudoMetadata;
     if (metadata == null) return '';
     return metadata['groupTitle']?.toString().trim() ?? '';
+  }
+}
+
+class _AnaliseLoadError extends StatefulWidget {
+  const _AnaliseLoadError({
+    required this.error,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final VoidCallback onRetry;
+
+  @override
+  State<_AnaliseLoadError> createState() => _AnaliseLoadErrorState();
+}
+
+class _AnaliseLoadErrorState extends State<_AnaliseLoadError> {
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('Erro visível na tela de análise: ${widget.error}');
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnaliseLoadError oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.error != widget.error) {
+      debugPrint('Erro visível na tela de análise: ${widget.error}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(
+              'Erro ao carregar dados da nuvem',
+              style: AppTextStyles.headline.copyWith(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.error.toString(),
+              style: AppTextStyles.body,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: widget.onRetry,
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:soloforte/core/config/app_config.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:soloforte/data/datasources/remote/analise_firestore_datasource.dart';
 import 'package:soloforte/features/analise/data/datasources/analise_datasource.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
@@ -65,25 +66,39 @@ Stream<User?> authState(AuthStateRef ref) {
 class AnaliseNotifier extends _$AnaliseNotifier {
   @override
   Stream<List<AnaliseSolo>> build() async* {
+    final currentUser = FirebaseAuth.instance.currentUser;
     final auth = ref.watch(authStateProvider);
-    final user = auth.valueOrNull ?? await ref.watch(authStateProvider.future);
+    final user = currentUser ?? auth.valueOrNull;
     if (user == null) {
       yield [];
       return;
     }
 
     final isDemoAsync = ref.watch(demoModeNotifierProvider);
-    final bool isDemoOn = ((isDemoAsync.valueOrNull ??
-            await ref.watch(demoModeNotifierProvider.future)) ==
-        true);
+    final bool isDemoOn = isDemoAsync.when(
+      data: (value) => value,
+      loading: () => false,
+      error: (error, stackTrace) {
+        debugPrint('Erro ao carregar modo demonstração: $error');
+        return false;
+      },
+    );
 
     ref
         .read(analiseRepositoryProvider)
         .recoverPendingBatches(timeout: const Duration(minutes: 10))
         .catchError((_) {});
 
+    // Garante saída imediata de loading enquanto stream remoto inicializa.
+    yield const <AnaliseSolo>[];
+
     if (!isDemoOn) {
-      yield* ref.read(getAnalisesUsecaseProvider).stream();
+      yield* ref.read(getAnalisesUsecaseProvider).stream().handleError(
+        (Object error, StackTrace stackTrace) {
+          debugPrint('Erro ao carregar análises do Firestore: $error');
+          throw error;
+        },
+      );
       return;
     }
 
@@ -98,7 +113,10 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     yield* ref
         .read(getAnalisesUsecaseProvider)
         .stream()
-        .map((firestoreList) => [...seedsMapped, ...firestoreList]);
+        .handleError((Object error, StackTrace stackTrace) {
+      debugPrint('Erro ao carregar análises do Firestore: $error');
+      throw error;
+    }).map((firestoreList) => [...seedsMapped, ...firestoreList]);
   }
 
   Future<void> salvar(AnaliseSolo analise) async {

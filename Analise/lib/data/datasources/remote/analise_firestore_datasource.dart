@@ -82,6 +82,7 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
     }
 
     void emitError(Object error, [StackTrace? stackTrace]) {
+      debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
       if (!controller.isClosed) controller.addError(error, stackTrace);
     }
 
@@ -98,26 +99,25 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
       // Dispara recover pendente fire-and-forget
       recoverPendingBatches().catchError((_) {});
 
-      querySub = _collection
-          .where('userId', isEqualTo: uid)
-          .snapshots()
-          .listen(
-            (snapshot) => emit(_toCommittedAnalises(snapshot.docs)),
-            onError: emitError,
-          );
+      querySub = _collection.where('userId', isEqualTo: uid).snapshots().listen(
+        (snapshot) {
+          emit(_toCommittedAnalises(snapshot.docs));
+        },
+        onError: emitError,
+      );
     }
 
     authSub = _auth.authStateChanges().listen(
-      (user) {
-        bindQueue = bindQueue.then((_) => bindUser(user));
-      },
-      onError: emitError,
-      onDone: () async {
-        await bindQueue;
-        await querySub?.cancel();
-        await controller.close();
-      },
-    );
+          (user) {
+            bindQueue = bindQueue.then((_) => bindUser(user));
+          },
+          onError: emitError,
+          onDone: () async {
+            await bindQueue;
+            await querySub?.cancel();
+            await controller.close();
+          },
+        );
 
     controller.onCancel = () async {
       await authSub?.cancel();

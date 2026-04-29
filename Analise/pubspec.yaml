@@ -1,6 +1,6 @@
 name: soloforte
 description: App profissional de análise e recomendação de fertilidade de solo.
-version: 1.0.1+68
+version: 1.0.1+76
 publish_to: 'none'
 
 environment:
