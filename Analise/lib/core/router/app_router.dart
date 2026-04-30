@@ -80,32 +80,50 @@ final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
 });
 
+String _authUserTag(User? user) {
+  if (user == null) return 'user=null';
+  final uid = user.uid;
+  final shortUid = uid.length <= 8 ? uid : uid.substring(0, 8);
+  return 'user=$shortUid verified=${user.emailVerified}';
+}
+
+void _authRouterLog(String message) {
+  debugPrint('[auth-router] $message');
+}
+
 class GoRouterAuthRefreshNotifier extends ChangeNotifier {
   GoRouterAuthRefreshNotifier(
     Stream<User?> stream, {
     required User? initialUser,
     this.bootstrapTimeout = const Duration(seconds: 5),
   }) {
+    _authRouterLog(
+      'notifier:init ${_authUserTag(initialUser)} timeout=${bootstrapTimeout.inSeconds}s',
+    );
+
     if (initialUser != null) {
       _isBootstrapping = false;
     }
 
     _bootstrapFallback = Timer(bootstrapTimeout, () {
       if (_isBootstrapping) {
+        _authRouterLog('bootstrap:timeout -> unlock');
         _isBootstrapping = false;
         notifyListeners();
       }
     });
 
     _subscription = stream.asBroadcastStream().listen(
-      (_) {
+      (user) {
+        _authRouterLog('auth:event ${_authUserTag(user)}');
         if (_isBootstrapping) {
           _isBootstrapping = false;
         }
         _bootstrapFallback?.cancel();
         notifyListeners();
       },
-      onError: (_, __) {
+      onError: (error, _) {
+        _authRouterLog('auth:error $error');
         if (_isBootstrapping) {
           _isBootstrapping = false;
         }
@@ -144,26 +162,35 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authRefresh,
     redirect: (context, state) {
       final path = state.uri.path;
+      final currentUser = auth.currentUser;
+      String? target;
 
       if (authRefresh.isBootstrapping) {
         if (path == AppRoutes.authBootstrap) {
-          return null;
+          target = null;
+        } else {
+          target = AppRoutes.authBootstrap;
         }
-        return AppRoutes.authBootstrap;
+      } else if (path == AppRoutes.authBootstrap) {
+        if (currentUser == null) {
+          target = AppRoutes.login;
+        } else {
+          target = currentUser.emailVerified
+              ? AppRoutes.analise
+              : AppRoutes.verificarEmail;
+        }
+      } else {
+        target = resolveAppRedirect(
+          path: path,
+          currentUser: currentUser,
+        );
       }
 
-      if (path == AppRoutes.authBootstrap) {
-        final user = auth.currentUser;
-        if (user == null) return AppRoutes.login;
-        return user.emailVerified
-            ? AppRoutes.analise
-            : AppRoutes.verificarEmail;
-      }
-
-      return resolveAppRedirect(
-        path: path,
-        currentUser: auth.currentUser,
+      _authRouterLog(
+        'redirect path=$path bootstrap=${authRefresh.isBootstrapping} ${_authUserTag(currentUser)} -> ${target ?? 'stay'}',
       );
+
+      return target;
     },
     routes: [
       GoRoute(
