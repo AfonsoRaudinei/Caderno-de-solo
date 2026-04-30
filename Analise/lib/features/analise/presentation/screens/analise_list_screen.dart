@@ -77,7 +77,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     final mostrandoAmostras = pastaSelecionada != null;
     final itensGrid = mostrandoAmostras ? pastaSelecionada.analises : pastas;
 
-    final produtores = ref.watch(analiseRepositoryProvider).getProdutores();
+    final produtores = ref.watch(produtoresAnaliseProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
@@ -139,36 +139,32 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
           controller: _scrollController,
           slivers: [
             SliverToBoxAdapter(
-              child: FutureBuilder(
-                future: produtores,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
-                  final list = snapshot.data!;
-                  if (list.isEmpty) return const SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          'Produtores',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+              child: produtores.isEmpty
+                  ? const SizedBox.shrink()
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text(
+                            'Produtores',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: list.length,
-                        itemBuilder: (context, index) {
-                          return ProdutorRowWidget(produtor: list[index]);
-                        },
-                      ),
-                      const Divider(),
-                    ],
-                  );
-                },
-              ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: produtores.length,
+                          itemBuilder: (context, index) {
+                            return ProdutorRowWidget(
+                              produtor: produtores[index],
+                            );
+                          },
+                        ),
+                        const Divider(),
+                      ],
+                    ),
             ),
             SliverToBoxAdapter(
               child: Padding(

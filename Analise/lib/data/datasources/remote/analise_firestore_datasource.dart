@@ -60,8 +60,6 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
       final uid = _auth.currentUser?.uid;
       if (uid == null) return [];
 
-      await recoverPendingBatches();
-
       final querySnapshot =
           await _collection.where('userId', isEqualTo: uid).get();
       return _toCommittedAnalises(querySnapshot.docs);

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:soloforte/data/datasources/remote/analise_firestore_datasource.dart';
 import 'package:soloforte/features/analise/data/datasources/analise_datasource.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/entities/produtor.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/usecases/get_analises_usecase.dart';
 import 'package:soloforte/features/analise/domain/usecases/save_analise_usecase.dart';
@@ -83,11 +84,6 @@ class AnaliseNotifier extends _$AnaliseNotifier {
         return false;
       },
     );
-
-    ref
-        .read(analiseRepositoryProvider)
-        .recoverPendingBatches(timeout: const Duration(minutes: 10))
-        .catchError((_) {});
 
     // Garante saída imediata de loading enquanto stream remoto inicializa.
     yield const <AnaliseSolo>[];
@@ -343,3 +339,36 @@ List<AnaliseSolo> analisesFiltradas(
     return true;
   }).toList();
 }
+
+final produtoresAnaliseProvider = Provider<List<Produtor>>((ref) {
+  final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
+  final produtores = <String, Produtor>{};
+
+  for (final analise in analises) {
+    if (analise.produtor.isEmpty) continue;
+
+    final key = '${analise.produtor}_${analise.fazenda}';
+    final existente = produtores[key];
+
+    if (existente == null) {
+      produtores[key] = Produtor(
+        id: key,
+        nome: analise.produtor,
+        fazenda: analise.fazenda,
+        totalAnalises: 1,
+      );
+      continue;
+    }
+
+    produtores[key] = Produtor(
+      id: existente.id,
+      nome: existente.nome,
+      fazenda: existente.fazenda,
+      totalAnalises: existente.totalAnalises + 1,
+    );
+  }
+
+  final lista = produtores.values.toList()
+    ..sort((a, b) => a.nome.compareTo(b.nome));
+  return List.unmodifiable(lista);
+});
