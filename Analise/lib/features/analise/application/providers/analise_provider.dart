@@ -63,27 +63,46 @@ Stream<User?> authState(AuthStateRef ref) {
   return FirebaseAuth.instance.authStateChanges();
 }
 
+/// Expõe apenas o UID do usuário logado (ou null).
+/// Por ser String?, só muda em login/logout real — nunca em refresh de token.
+/// É seguro usar ref.watch neste provider dentro de um gerador async*.
+@riverpod
+String? currentUserId(CurrentUserIdRef ref) {
+  return ref.watch(authStateProvider).valueOrNull?.uid;
+}
+
 @Riverpod(keepAlive: true)
 class AnaliseNotifier extends _$AnaliseNotifier {
   @override
   Stream<List<AnaliseSolo>> build() async* {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final auth = ref.watch(authStateProvider);
-    final user = currentUser ?? auth.valueOrNull;
-    if (user == null) {
+    // ✅ ref.watch em String? — reinicia o gerador APENAS em login/logout,
+    //    nunca em refresh silencioso de token do Firebase.
+    final uid = ref.watch(currentUserIdProvider);
+
+    if (uid == null) {
       yield [];
+      // Não retorna: mantém o gerador vivo para que ref.watch(currentUserIdProvider)
+      // reative automaticamente quando o usuário fizer login.
       return;
     }
 
-    final isDemoAsync = ref.watch(demoModeNotifierProvider);
-    final bool isDemoOn = isDemoAsync.when(
-      data: (value) => value,
-      loading: () => false,
-      error: (error, stackTrace) {
-        debugPrint('Erro ao carregar modo demonstração: $error');
-        return false;
-      },
-    );
+    // ✅ demoMode: lê valor atual sem criar dependência reativa no async*.
+    //    Aguarda se ainda estiver carregando (Hive abrindo).
+    final bool isDemoOn;
+    final demoSnapshot = ref.read(demoModeNotifierProvider);
+    if (demoSnapshot.hasValue) {
+      isDemoOn = demoSnapshot.requireValue;
+    } else {
+      isDemoOn = await ref.read(demoModeNotifierProvider.future);
+    }
+
+    // ✅ Escuta mudanças FUTURAS do demoMode e invalida só quando o valor
+    //    realmente muda (evita re-rebuild por AsyncLoading transitório).
+    ref.listen<AsyncValue<bool>>(demoModeNotifierProvider, (prev, next) {
+      if (prev?.valueOrNull != next.valueOrNull) {
+        ref.invalidateSelf();
+      }
+    });
 
     // Garante saída imediata de loading enquanto stream remoto inicializa.
     yield const <AnaliseSolo>[];

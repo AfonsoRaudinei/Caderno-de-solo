@@ -117,6 +117,27 @@ final authStateProvider = AutoDisposeStreamProvider<User?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthStateRef = AutoDisposeStreamProviderRef<User?>;
+String _$currentUserIdHash() => r'68443e1059c5dfff3131f3d6402641bbbcc385a8';
+
+/// Expõe apenas o UID do usuário logado (ou null).
+/// Por ser String?, só muda em login/logout real — nunca em refresh de token.
+/// É seguro usar ref.watch neste provider dentro de um gerador async*.
+///
+/// Copied from [currentUserId].
+@ProviderFor(currentUserId)
+final currentUserIdProvider = AutoDisposeProvider<String?>.internal(
+  currentUserId,
+  name: r'currentUserIdProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$currentUserIdHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CurrentUserIdRef = AutoDisposeProviderRef<String?>;
 String _$analisesFiltradasHash() => r'ff1b69529bd3ec2e6324edbd259d729e37ca37af';
 
 /// Copied from Dart SDK
@@ -318,7 +339,7 @@ class _AnalisesFiltradasProviderElement
   String? get busca => (origin as AnalisesFiltradasProvider).busca;
 }
 
-String _$analiseNotifierHash() => r'86736c9aeb553f4a276792bbbf0e72f035c5a669';
+String _$analiseNotifierHash() => r'7e69fe5c4eb0e1d778d6005034b3b2711cbba0a4';
 
 /// See also [AnaliseNotifier].
 @ProviderFor(AnaliseNotifier)

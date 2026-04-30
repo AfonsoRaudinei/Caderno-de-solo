@@ -178,9 +178,6 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
     final batchDocId = '$uid:$idempotencyKey';
     final batchRef = _batchCollection.doc(batchDocId);
 
-    final replay = await _readReplayIfAny(batchRef, idempotencyKey);
-    if (replay != null) return replay;
-
     final strategy =
         _preferAtomic ? SaveStrategy.atomic : SaveStrategy.compensating;
     final batchId = _newBatchId();
@@ -195,6 +192,13 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
     );
 
     try {
+      // _readReplayIfAny dentro do try: garante que FirebaseException
+      // (ex: permission-denied quando o doc de idempotência ainda não existe
+      // e a regra usa resource.data que é null) seja capturado e convertido
+      // em SaveBatchException em vez de escapar como erro cru.
+      final replay = await _readReplayIfAny(batchRef, idempotencyKey);
+      if (replay != null) return replay;
+
       final result = switch (strategy) {
         SaveStrategy.atomic => await _saveAtomic(
             uid: uid,

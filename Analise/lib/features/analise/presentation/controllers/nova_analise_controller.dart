@@ -502,7 +502,7 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
 
     if (msg.contains('permission-denied') ||
         msg.contains('missing or insufficient permissions')) {
-      return 'Sem permissão para salvar. Faça login novamente.';
+      return 'Erro de permissão no servidor. Tente novamente.';
     }
 
     if (msg.contains('unauthenticated') ||

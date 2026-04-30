@@ -34,8 +34,10 @@ class DemoModeNotifier extends AsyncNotifier<bool> {
     final current = await future;
     final next = !current;
     await ref.read(setDemoModeUsecaseProvider).call(next);
+    // Apenas atualiza o estado — não chama invalidateSelf() aqui pois
+    // isso forçaria uma transição por AsyncLoading, que reiniciaria o
+    // AnaliseNotifier via ref.listen e causaria o spinner de loading.
     state = AsyncData(next);
-    ref.invalidateSelf();
   }
 }
 
