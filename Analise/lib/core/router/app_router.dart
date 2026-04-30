@@ -81,22 +81,50 @@ final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
 });
 
 class GoRouterAuthRefreshNotifier extends ChangeNotifier {
-  GoRouterAuthRefreshNotifier(Stream<User?> stream) {
-    _subscription = stream.asBroadcastStream().listen((_) {
+  GoRouterAuthRefreshNotifier(
+    Stream<User?> stream, {
+    required User? initialUser,
+    this.bootstrapTimeout = const Duration(seconds: 5),
+  }) {
+    if (initialUser != null) {
+      _isBootstrapping = false;
+    }
+
+    _bootstrapFallback = Timer(bootstrapTimeout, () {
       if (_isBootstrapping) {
         _isBootstrapping = false;
+        notifyListeners();
       }
-      notifyListeners();
     });
+
+    _subscription = stream.asBroadcastStream().listen(
+      (_) {
+        if (_isBootstrapping) {
+          _isBootstrapping = false;
+        }
+        _bootstrapFallback?.cancel();
+        notifyListeners();
+      },
+      onError: (_, __) {
+        if (_isBootstrapping) {
+          _isBootstrapping = false;
+        }
+        _bootstrapFallback?.cancel();
+        notifyListeners();
+      },
+    );
   }
 
   bool _isBootstrapping = true;
   late final StreamSubscription<User?> _subscription;
+  final Duration bootstrapTimeout;
+  Timer? _bootstrapFallback;
 
   bool get isBootstrapping => _isBootstrapping;
 
   @override
   void dispose() {
+    _bootstrapFallback?.cancel();
     _subscription.cancel();
     super.dispose();
   }
@@ -104,7 +132,10 @@ class GoRouterAuthRefreshNotifier extends ChangeNotifier {
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(firebaseAuthProvider);
-  final authRefresh = GoRouterAuthRefreshNotifier(auth.authStateChanges());
+  final authRefresh = GoRouterAuthRefreshNotifier(
+    auth.authStateChanges(),
+    initialUser: auth.currentUser,
+  );
   ref.onDispose(authRefresh.dispose);
 
   return GoRouter(
