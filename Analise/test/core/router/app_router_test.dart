@@ -46,6 +46,7 @@ void main() {
   setUp(() {
     auth = MockFirebaseAuth();
     user = MockUser();
+    when(() => user.uid).thenReturn('test-user-id');
     when(() => user.emailVerified).thenReturn(true);
     when(() => auth.authStateChanges())
         .thenAnswer((_) => const Stream<User?>.empty());
@@ -199,7 +200,10 @@ void main() {
   test('auth refresh notifier encerra bootstrapping ao receber evento',
       () async {
     final controller = StreamController<User?>();
-    final notifier = GoRouterAuthRefreshNotifier(controller.stream);
+    final notifier = GoRouterAuthRefreshNotifier(
+      controller.stream,
+      initialUser: null,
+    );
     addTearDown(() async {
       await controller.close();
       notifier.dispose();

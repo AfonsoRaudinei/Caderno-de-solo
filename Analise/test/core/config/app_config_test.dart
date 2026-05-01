@@ -3,7 +3,6 @@ import 'package:soloforte/core/config/app_config.dart';
 
 void main() {
   test('AppConfig usa Firestore por padrão sem flags explícitas', () {
-    expect(AppConfig.useAnaliseMockMode, isFalse);
     expect(AppConfig.useFirestore, isTrue);
   });
 

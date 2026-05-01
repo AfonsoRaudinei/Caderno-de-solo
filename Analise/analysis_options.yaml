@@ -10,6 +10,9 @@ linter:
     - always_use_package_imports
 
 analyzer:
+  exclude:
+    - lib/dataconnect_generated/**
+    - ../dataconnect/**
   errors:
     missing_required_param: error
     missing_return: error
