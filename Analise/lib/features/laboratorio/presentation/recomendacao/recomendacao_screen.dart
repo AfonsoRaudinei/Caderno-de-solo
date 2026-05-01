@@ -7,8 +7,10 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
+import 'package:soloforte/core/widgets/nivel_gradiente_bar.dart';
 import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/domain/formulas/classificacao_nivel.dart';
 import 'package:soloforte/domain/models/resultado_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
@@ -198,18 +200,36 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             const SizedBox(height: 14),
             const RecomendacaoHeader(),
             const SizedBox(height: 12),
+
+            // BLOCO 1 — Identificação
             _buildIdentificacao(resultado),
-            const SizedBox(height: 12),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 2 — Qualidade do Solo
+            _buildQualidadeSolo(resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 3 — Correções
             _buildCalcario(resultado),
-            const SizedBox(height: 12),
             _buildGesso(resultado),
-            const SizedBox(height: 12),
+            _buildComparativoVPercent(resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 4 — Nutrientes
             _buildFosforo(resultado),
-            const SizedBox(height: 12),
             _buildPotassio(resultado),
-            const SizedBox(height: 12),
             _buildMicros(resultado),
-            const SizedBox(height: 12),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 5 — O Que Comprar
+            _buildOQueComprar(resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 6 — Micronutrientes por Aplicação
+            _buildMicrosSolo(resultado),
+            _buildMicrosFoliar(resultado),
+
+            // Avisos e Argumentos (mantidos no final)
             _buildAvisos(resultado),
             const SizedBox(height: 12),
             _buildArgumentos(resultado),
@@ -262,6 +282,296 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             _buildInfoRow('Data',
                 DateFormat('dd/MM/yyyy HH:mm').format(resultado.geradaEm!)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQualidadeSolo(ResultadoRecomendacao resultado) {
+    final analise = resultado.analise;
+    final ph = analise.ph;
+    final mo = analise.mo;
+    final s = analise.s;
+    final argila = analise.argila;
+
+    return AppCardSection(
+      title: 'QUALIDADE DO SOLO',
+      child: Column(
+        children: [
+          // pH
+          AppCardRow(
+            label: 'pH (CaCl₂)',
+            value: ph.toStringAsFixed(1),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: NivelGradienteBar(
+              valor: ph,
+              min: 4.0,
+              max: 7.5,
+              rotulo: ClassificacaoNivel.classificar(
+                nutriente: 'ph',
+                valor: ph,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+          // Argila
+          AppCardRow(
+            label: 'Argila',
+            value: '${argila.toStringAsFixed(0)} g/kg',
+          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+          // Matéria Orgânica
+          AppCardRow(
+            label: 'Matéria Orgânica',
+            value: '${mo.toStringAsFixed(1)} g/dm³',
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: NivelGradienteBar(
+              valor: mo,
+              min: 0.0,
+              max: 50.0,
+              rotulo: ClassificacaoNivel.classificar(
+                nutriente: 'mo',
+                valor: mo,
+              ),
+            ),
+          ),
+          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+          // Enxofre
+          AppCardRow(
+            label: 'Enxofre (S)',
+            value: '${s.toStringAsFixed(1)} mg/dm³',
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: NivelGradienteBar(
+              valor: s,
+              min: 0.0,
+              max: 30.0,
+              rotulo: ClassificacaoNivel.classificar(
+                nutriente: 's',
+                valor: s,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComparativoVPercent(ResultadoRecomendacao resultado) {
+    final vAtual = resultado.analise.vPercent;
+    final vDepois = resultado.vEsperado;
+    const maxV = 100.0;
+
+    return AppCardSection(
+      title: 'SATURAÇÃO POR BASES — ANTES E DEPOIS',
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _barraComparativa(
+              label: 'Antes',
+              valor: vAtual,
+              maxV: maxV,
+              cor: const Color(0xFFFF3B30),
+            ),
+            _barraComparativa(
+              label: 'Depois',
+              valor: vDepois,
+              maxV: maxV,
+              cor: const Color(0xFF007AFF),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _barraComparativa({
+    required String label,
+    required double valor,
+    required double maxV,
+    required Color cor,
+  }) {
+    final proporcao = (valor / maxV).clamp(0.0, 1.0);
+    const alturaMax = 80.0;
+    return Column(
+      children: [
+        Text(
+          '${valor.toStringAsFixed(1)}%',
+          style: AppTextStyles.value.copyWith(color: cor),
+        ),
+        const SizedBox(height: 4),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
+          width: 48,
+          height: alturaMax * proporcao,
+          decoration: BoxDecoration(
+            color: cor.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(label, style: AppTextStyles.caption),
+      ],
+    );
+  }
+
+  Widget _buildOQueComprar(ResultadoRecomendacao resultado) {
+    final itens = <Map<String, String>>[];
+
+    final calcario = resultado.doseCalcarioTHa;
+    if (calcario > 0) {
+      itens.add({
+        'nome': 'Calcário',
+        'dose': '${calcario.toStringAsFixed(2)} t/ha',
+        'icone': '🪨'
+      });
+    }
+
+    final gessoDose = resultado.gesso.doseKgHa;
+    if (gessoDose > 0) {
+      itens.add({
+        'nome': 'Gesso Agrícola',
+        'dose': '${gessoDose.toStringAsFixed(0)} kg/ha',
+        'icone': '🔵'
+      });
+    }
+
+    final fosforo = resultado.doseP2O5KgHa;
+    if (fosforo > 0) {
+      itens.add({
+        'nome': 'Fertilizante Fosfatado',
+        'dose': '${fosforo.toStringAsFixed(1)} kg P₂O₅/ha',
+        'icone': '🟠'
+      });
+    }
+
+    final potassio = resultado.doseK2OKgHa;
+    if (potassio > 0) {
+      itens.add({
+        'nome': 'Fertilizante Potássico',
+        'dose': '${potassio.toStringAsFixed(1)} kg K₂O/ha',
+        'icone': '🟡'
+      });
+    }
+
+    return AppCardSection(
+      title: 'O QUE COMPRAR',
+      child: itens.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Nenhuma correção necessária.',
+                style: TextStyle(color: Color(0xFF86868B), fontSize: 14),
+              ),
+            )
+          : Column(
+              children: List.generate(itens.length * 2 - 1, (i) {
+                if (i.isOdd) {
+                  return const Divider(
+                      height: 1, thickness: 0.5, color: Color(0xFFE5E5E7));
+                }
+                final item = itens[i ~/ 2];
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Text(item['icone']!, style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(item['nome']!, style: AppTextStyles.label),
+                      ),
+                      Text(item['dose']!, style: AppTextStyles.value),
+                    ],
+                  ),
+                );
+              }),
+            ),
+    );
+  }
+
+  Widget _buildMicrosSolo(ResultadoRecomendacao resultado) {
+    return _buildMicrosAgrupados(
+      resultado: resultado,
+      titulo: 'MICRONUTRIENTES — APLICAÇÃO NO SOLO',
+      filtroVia: const ['Solo', 'Ambas'],
+      campoExtra: (m) => 'Produto: ${m?.doseProdutoLabel ?? '-'}',
+    );
+  }
+
+  Widget _buildMicrosFoliar(ResultadoRecomendacao resultado) {
+    return _buildMicrosAgrupados(
+      resultado: resultado,
+      titulo: 'MICRONUTRIENTES — APLICAÇÃO FOLIAR',
+      filtroVia: const ['Foliar', 'Ambas'],
+      campoExtra: (m) => 'Produto: ${m?.doseProdutoLabel ?? '-'}',
+    );
+  }
+
+  Widget _buildMicrosAgrupados({
+    required ResultadoRecomendacao resultado,
+    required String titulo,
+    required List<String> filtroVia,
+    required String? Function(dynamic) campoExtra,
+  }) {
+    final micros = resultado.micros
+        .where((m) {
+          final via = m.via;
+          return filtroVia.any((f) => via.contains(f));
+        })
+        .toList();
+
+    if (micros.isEmpty) return const SizedBox.shrink();
+
+    return AppCardSection(
+      title: titulo,
+      child: Column(
+        children: micros.asMap().entries.map((entry) {
+          final i = entry.key;
+          final m = entry.value;
+          final nome = m.elemento;
+          final teor = m.valorAtual;
+          final extra = campoExtra(m);
+
+          return Column(
+            children: [
+              if (i > 0)
+                const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(nome, style: AppTextStyles.label),
+                        const Spacer(),
+                        Text(
+                          '${teor.toStringAsFixed(2)} mg/dm³',
+                          style: AppTextStyles.caption,
+                        ),
+                      ],
+                    ),
+                    if (extra != null) ...[
+                      const SizedBox(height: 4),
+                      Text(extra, style: AppTextStyles.caption),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -347,6 +657,19 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
           _infoRow('Modo', resultado.modoFosforo),
           _infoRow('P solo / NC',
               '${_fmt(resultado.analise.p, 2)} / ${_fmt(resultado.ncFosforo, 2)} mg/dm³'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: NivelGradienteBar(
+              valor: resultado.analise.p,
+              min: NivelEscala.escala('p', argila: resultado.analise.argila).$1,
+              max: NivelEscala.escala('p', argila: resultado.analise.argila).$2,
+              rotulo: ClassificacaoNivel.classificar(
+                nutriente: 'p',
+                valor: resultado.analise.p,
+                argila: resultado.analise.argila,
+              ),
+            ),
+          ),
           Text(
             '${_fmt(resultado.doseP2O5KgHa, 1)} kg P₂O₅/ha',
             style: AppTextStyles.value.copyWith(color: AppColors.fosforo),
@@ -373,6 +696,18 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
           _infoRow('Critério', resultado.criterioPotassio),
           _infoRow('K solo / NC',
               '${_fmt(resultado.analise.k, 2)} / ${_fmt(resultado.ncPotassio, 2)}'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: NivelGradienteBar(
+              valor: resultado.analise.k,
+              min: NivelEscala.escala('k').$1,
+              max: NivelEscala.escala('k').$2,
+              rotulo: ClassificacaoNivel.classificar(
+                nutriente: 'k',
+                valor: resultado.analise.k,
+              ),
+            ),
+          ),
           Text(
             '${_fmt(resultado.doseK2OKgHa, 1)} kg K₂O/ha',
             style: AppTextStyles.value.copyWith(color: AppColors.potassio),
