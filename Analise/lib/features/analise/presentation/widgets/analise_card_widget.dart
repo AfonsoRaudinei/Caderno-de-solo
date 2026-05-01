@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:intl/intl.dart';
 
@@ -15,8 +14,7 @@ class AnaliseCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDemo = analise.id.startsWith('demo_');
-    final card = Card(
+    return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -116,35 +114,6 @@ class AnaliseCardWidget extends StatelessWidget {
           ],
         ),
       ),
-    );
-    if (!isDemo) return card;
-
-    return Stack(
-      children: [
-        card,
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0xFF007AFF).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(
-                color: const Color(0xFF007AFF).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Text(
-              'DEMO',
-              style: AppTextStyles.caption.copyWith(
-                color: const Color(0xFF007AFF),
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

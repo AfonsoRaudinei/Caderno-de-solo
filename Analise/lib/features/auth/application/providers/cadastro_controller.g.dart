@@ -7,7 +7,7 @@ part of 'cadastro_controller.dart';
 // **************************************************************************
 
 String _$cadastroControllerHash() =>
-    r'19686712adafe5371ad2ae1be7f640e2e6182202';
+    r'eeff501e48b5772376fa514b62353a418ece2f99';
 
 /// See also [CadastroController].
 @ProviderFor(CadastroController)

@@ -18,6 +18,13 @@ service cloud.firestore {
       return resource.data.userId == uid;
     }
 
+    // Permite GET de documento ainda inexistente (resource == null)
+    // para o handshake de idempotência do save em lote.
+    // Para docs existentes, mantém ownership por userId.
+    function currentUserIdMatchesOrMissing(uid) {
+      return resource == null || resource.data.userId == uid;
+    }
+
     // Perfil do usuário e subcoleções privadas.
     match /users/{uid} {
       allow read, write: if isOwner(uid);
@@ -34,7 +41,8 @@ service cloud.firestore {
     // Análises principais.
     match /analises/{analiseId} {
       allow create: if signedIn() && keepsUserId(request.auth.uid);
-      allow read, delete: if signedIn() && currentUserIdMatches(request.auth.uid);
+      allow read: if signedIn() && currentUserIdMatchesOrMissing(request.auth.uid);
+      allow delete: if signedIn() && currentUserIdMatches(request.auth.uid);
       allow update: if signedIn() &&
           currentUserIdMatches(request.auth.uid) &&
           keepsUserId(request.auth.uid);
@@ -43,7 +51,8 @@ service cloud.firestore {
     // Controle de lotes/idempotência.
     match /analise_save_batches/{batchId} {
       allow create: if signedIn() && keepsUserId(request.auth.uid);
-      allow read, delete: if signedIn() && currentUserIdMatches(request.auth.uid);
+      allow read: if signedIn() && currentUserIdMatchesOrMissing(request.auth.uid);
+      allow delete: if signedIn() && currentUserIdMatches(request.auth.uid);
       allow update: if signedIn() &&
           currentUserIdMatches(request.auth.uid) &&
           keepsUserId(request.auth.uid);

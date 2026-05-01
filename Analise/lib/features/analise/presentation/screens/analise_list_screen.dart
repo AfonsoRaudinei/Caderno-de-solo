@@ -42,7 +42,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     }
 
     final analiseState = ref.watch(analiseNotifierProvider);
-    final analisesRaw = analiseState.valueOrNull ?? [];
+    final analisesRaw = analiseState.valueOrNull ?? const <AnaliseSolo>[];
 
     final safras = analisesRaw
         .map((e) => e.safra)
@@ -51,33 +51,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         .toList()
       ..sort((a, b) => b.compareTo(a));
 
-    final analises = ref.watch(
-      analisesFiltradasProvider(
-        cultura: culturaEnum,
-        safra: _selectedSafra,
-        busca: _searchQuery,
-      ),
-    );
-    final pastas = _agruparPorPasta(analises);
-    _AnaliseFolderSummary? pastaSelecionada;
-    if (_selectedFolderKey != null) {
-      for (final pasta in pastas) {
-        if (pasta.key == _selectedFolderKey) {
-          pastaSelecionada = pasta;
-          break;
-        }
-      }
-      if (pastaSelecionada == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          setState(() => _selectedFolderKey = null);
-        });
-      }
-    }
-    final mostrandoAmostras = pastaSelecionada != null;
-    final itensGrid = mostrandoAmostras ? pastaSelecionada.analises : pastas;
-
     final produtores = ref.watch(produtoresAnaliseProvider);
+    final mostrandoAmostrasHeader = _selectedFolderKey != null;
 
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
@@ -173,13 +148,15 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      mostrandoAmostras ? 'Amostras' : 'Pastas de Análises',
+                      mostrandoAmostrasHeader
+                          ? 'Amostras'
+                          : 'Pastas de Análises',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (mostrandoAmostras) ...[
+                    if (mostrandoAmostrasHeader) ...[
                       const SizedBox(height: 8),
                       TextButton.icon(
                         onPressed: () =>
@@ -202,6 +179,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
               ),
             ),
             analiseState.when(
+              skipLoadingOnRefresh: true,
+              skipLoadingOnReload: true,
               loading: () => const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               ),
@@ -212,7 +191,33 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 ),
               ),
               data: (listaCompleta) {
-                if (listaCompleta.isEmpty && !mostrandoAmostras) {
+                final analises = _filtrarAnalises(
+                  listaCompleta,
+                  cultura: culturaEnum,
+                  safra: _selectedSafra,
+                  busca: _searchQuery,
+                );
+                final pastas = _agruparPorPasta(analises);
+                _AnaliseFolderSummary? pastaSelecionada;
+                if (_selectedFolderKey != null) {
+                  for (final pasta in pastas) {
+                    if (pasta.key == _selectedFolderKey) {
+                      pastaSelecionada = pasta;
+                      break;
+                    }
+                  }
+                  if (pastaSelecionada == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      setState(() => _selectedFolderKey = null);
+                    });
+                  }
+                }
+                final mostrandoAmostras = pastaSelecionada != null;
+                final itensGrid =
+                    mostrandoAmostras ? pastaSelecionada.analises : pastas;
+
+                if (analises.isEmpty && !mostrandoAmostras) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
@@ -230,7 +235,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Você ainda não possui análises salvas na nuvem. Se estiver testando, você pode ativar o Modo de Demonstração nas Configurações.',
+                              'Você ainda não possui análises salvas na nuvem.',
                               textAlign: TextAlign.center,
                               style: AppTextStyles.body
                                   .copyWith(color: AppColors.textSecond),
@@ -714,6 +719,28 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     final pastas = map.values.toList(growable: false);
     pastas.sort((a, b) => b.dataMaisRecente.compareTo(a.dataMaisRecente));
     return pastas;
+  }
+
+  List<AnaliseSolo> _filtrarAnalises(
+    List<AnaliseSolo> lista, {
+    Cultura? cultura,
+    String? produtorId,
+    String? safra,
+    String? busca,
+  }) {
+    return lista.where((analise) {
+      if (cultura != null && analise.cultura != cultura) return false;
+      if (produtorId != null && analise.produtor != produtorId) return false;
+      if (safra != null && analise.safra != safra) return false;
+      if (busca != null && busca.isNotEmpty) {
+        final query = busca.toLowerCase();
+        return analise.talhao.toLowerCase().contains(query) ||
+            analise.laboratorio.toLowerCase().contains(query) ||
+            analise.produtor.toLowerCase().contains(query) ||
+            analise.fazenda.toLowerCase().contains(query);
+      }
+      return true;
+    }).toList(growable: false);
   }
 
   String _extrairOs(AnaliseSolo analise) {

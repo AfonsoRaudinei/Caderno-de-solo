@@ -7,7 +7,6 @@ import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
-import 'package:soloforte/features/config/application/providers/demo_mode_provider.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 
 export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
@@ -382,64 +381,6 @@ class ConfigPage extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const _SectionLabel('SISTEMA'),
-                _CardSection(
-                  children: [
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final isDemoAsync = ref.watch(demoModeNotifierProvider);
-                        return isDemoAsync.when(
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                          data: (isDemo) => Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Análises de Demonstração',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w400,
-                                          color: Color(0xFF1C1C1E),
-                                        ),
-                                      ),
-                                      SizedBox(height: 2),
-                                      Text(
-                                        'Exibe laudos reais de exemplo na lista',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Color(0xFF86868B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                CupertinoSwitch(
-                                  value: isDemo,
-                                  activeTrackColor: AppColors.primary,
-                                  onChanged: (_) async {
-                                    await ref
-                                        .read(demoModeNotifierProvider.notifier)
-                                        .toggle();
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
                     ),
                   ],
                 ),

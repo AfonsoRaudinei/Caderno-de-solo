@@ -13,7 +13,6 @@ import 'package:soloforte/features/analise/domain/usecases/delete_analise_usecas
 import 'package:soloforte/features/analise/domain/repositories/analise_repository.dart';
 import 'package:soloforte/features/analise/data/repositories/analise_repository_impl.dart';
 import 'package:soloforte/features/analise/data/datasources/analise_local_datasource.dart';
-import 'package:soloforte/features/config/application/providers/demo_mode_provider.dart';
 
 part 'analise_provider.g.dart';
 
@@ -28,9 +27,6 @@ final analiseFirestoreDatasourceProvider =
 });
 
 final analiseDataSourceProvider = Provider<AnaliseDataSource>((ref) {
-  if (AppConfig.allowAnaliseMockMode) {
-    return ref.watch(analiseLocalDatasourceProvider);
-  }
   return ref.watch(analiseFirestoreDatasourceProvider);
 });
 
@@ -86,54 +82,12 @@ class AnaliseNotifier extends _$AnaliseNotifier {
       return;
     }
 
-    // ✅ YIELD ANTES DE QUALQUER AWAIT — sai de AsyncLoading imediatamente.
-    //    Sem este yield aqui, o estado permanece AsyncLoading durante o
-    //    await do demoMode abaixo, causando o spinner infinito.
-    yield const <AnaliseSolo>[];
-
-    // ✅ Listener registrado ANTES do await para não perder a transição
-    //    AsyncLoading→AsyncData que ocorre enquanto o Hive está abrindo.
-    ref.listen<AsyncValue<bool>>(demoModeNotifierProvider, (prev, next) {
-      if (prev?.valueOrNull != next.valueOrNull) {
-        ref.invalidateSelf();
-      }
-    });
-
-    // ✅ demoMode: lê valor atual sem criar dependência reativa no async*.
-    //    O await é seguro porque já emitimos yield [] acima.
-    final bool isDemoOn;
-    final demoSnapshot = ref.read(demoModeNotifierProvider);
-    if (demoSnapshot.hasValue) {
-      isDemoOn = demoSnapshot.requireValue;
-    } else {
-      isDemoOn = await ref.read(demoModeNotifierProvider.future);
-    }
-
-    if (!isDemoOn) {
-      yield* ref.read(getAnalisesUsecaseProvider).stream().handleError(
-        (Object error, StackTrace stackTrace) {
-          debugPrint('Erro ao carregar análises do Firestore: $error');
-          throw error;
-        },
-      );
-      return;
-    }
-
-    // Demo mode ativo: carregar seeds locais uma única vez
-    final localDs = AnaliseLocalDatasource(useAssetSeed: true);
-    final seeds = await localDs.getAnalises();
-    final seedsMapped = seeds
-        .map((m) => m.copyWith(id: 'demo_${m.id}') as AnaliseSolo)
-        .toList(growable: false);
-
-    // Mesclar seeds ANTES de cada emissão do Firestore
-    yield* ref
-        .read(getAnalisesUsecaseProvider)
-        .stream()
-        .handleError((Object error, StackTrace stackTrace) {
-      debugPrint('Erro ao carregar análises do Firestore: $error');
-      throw error;
-    }).map((firestoreList) => [...seedsMapped, ...firestoreList]);
+    yield* ref.read(getAnalisesUsecaseProvider).stream().handleError(
+      (Object error, StackTrace stackTrace) {
+        debugPrint('Erro ao carregar análises do Firestore: $error');
+        throw error;
+      },
+    );
   }
 
   Future<void> salvar(AnaliseSolo analise) async {
@@ -154,7 +108,9 @@ class AnaliseNotifier extends _$AnaliseNotifier {
   }
 
   Future<void> recarregar() async {
-    ref.invalidateSelf();
+    // O stream do Firestore já emite alterações após salvar/excluir/mover.
+    // Manter este método como no-op evita que o caminho de save force reload
+    // do StreamNotifier e volte para AsyncLoading na tela de Pastas.
   }
 
   Future<void> deletar(String id) async {

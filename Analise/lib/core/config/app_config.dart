@@ -2,31 +2,10 @@ import 'package:flutter/foundation.dart';
 
 /// Configuração central do Caderno de Solo.
 ///
-/// [useFirestore] controla qual datasource está ativo:
-///   - Padrão (sem flags) -> usa Firestore (real) em todos os modos.
-///   - Diagnóstico interno -> mock local apenas com flag explícita:
-///     `--dart-define=ANALISE_MOCK_MODE=true`
-///
-/// Nunca exponha essa flag na UI; é estritamente interna e temporária.
+/// O app opera somente com Firestore (dados reais).
 abstract final class AppConfig {
-  // ------------------------------------------------------------------ //
-  //  Datasource toggle
-  // ------------------------------------------------------------------ //
-
-  /// Habilita datasource mock somente para diagnóstico interno.
-  /// Default `false` para manter o fluxo principal 100% real.
-  static const bool useAnaliseMockMode = bool.fromEnvironment(
-    'ANALISE_MOCK_MODE',
-    defaultValue: false,
-  );
-
-  /// Mock só pode rodar fora de release.
-  /// Garante Firestore real em builds de produção/App Store.
-  static bool get allowAnaliseMockMode => !kReleaseMode && useAnaliseMockMode;
-
-  /// `true`  -> Firestore ativo (dados reais)
-  /// `false` -> Mock local ativo (somente diagnóstico explícito fora de release)
-  static bool get useFirestore => !allowAnaliseMockMode;
+  /// Firestore sempre ativo (dados reais).
+  static const bool useFirestore = true;
 
   // ------------------------------------------------------------------ //
   //  Telemetria de operação (Fase 5 P1)

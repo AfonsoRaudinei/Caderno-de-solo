@@ -145,13 +145,43 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
   }
 
   void atualizarCampo(int index, String campo, dynamic valor) {
+    final texto = valor?.toString() ?? '';
+    final coordenadas = _parseCoordenadasCombinadas(texto);
+
     final updated = [...state.analises];
-    updated[index] = updated[index].withField(campo, valor?.toString() ?? '');
+    if (coordenadas != null && (campo == 'latitude' || campo == 'longitude')) {
+      updated[index] = updated[index]
+          .withField('latitude', coordenadas.latitude)
+          .withField('longitude', coordenadas.longitude);
+    } else {
+      updated[index] = updated[index].withField(campo, texto);
+    }
     state = state.copyWith(
       analises: updated,
       clearError: true,
     );
     _refreshValidation();
+  }
+
+  ({String latitude, String longitude})? _parseCoordenadasCombinadas(
+      String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+
+    final match = RegExp(
+      r'^\s*([+-]?\d+(?:[\.,]\d+)?)\s*[,;]\s*([+-]?\d+(?:[\.,]\d+)?)\s*$',
+    ).firstMatch(trimmed);
+    if (match == null) return null;
+
+    final lat = double.tryParse(match.group(1)!.replaceAll(',', '.'));
+    final lng = double.tryParse(match.group(2)!.replaceAll(',', '.'));
+    if (lat == null || lng == null) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+    return (
+      latitude: lat.toStringAsFixed(8),
+      longitude: lng.toStringAsFixed(8),
+    );
   }
 
   void atualizarLaudoProdutor(String valor) {
@@ -389,7 +419,6 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
         );
       }
 
-      await persistence.recarregar();
       telemetry.emit(
         eventName: AnaliseTelemetryEvents.saveCommitted,
         operationId: operationId,
