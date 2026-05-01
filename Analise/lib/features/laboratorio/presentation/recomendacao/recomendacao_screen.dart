@@ -7,7 +7,9 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
+import 'package:soloforte/core/widgets/agronomic_progress_bar.dart';
 import 'package:soloforte/core/widgets/nivel_gradiente_bar.dart';
+import 'package:soloforte/core/widgets/nutrient_ph_bar_chart.dart';
 import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/domain/formulas/classificacao_nivel.dart';
@@ -288,77 +290,29 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
   Widget _buildQualidadeSolo(ResultadoRecomendacao resultado) {
     final analise = resultado.analise;
-    final ph = analise.ph;
-    final mo = analise.mo;
-    final s = analise.s;
-    final argila = analise.argila;
 
     return AppCardSection(
       title: 'QUALIDADE DO SOLO',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // pH
-          AppCardRow(
-            label: 'pH (CaCl₂)',
-            value: ph.toStringAsFixed(1),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: NivelGradienteBar(
-              valor: ph,
-              min: 4.0,
-              max: 7.5,
-              rotulo: ClassificacaoNivel.classificar(
-                nutriente: 'ph',
-                valor: ph,
-              ),
-            ),
-          ),
+          // ── Gráfico pH ──────────────────────────────────────────
+          NutrientPhBarChart(ph: analise.ph),
+
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
-          // Argila
-          AppCardRow(
-            label: 'Argila',
-            value: '${argila.toStringAsFixed(0)} g/kg',
-          ),
+          // ── Argila + Classe Textural ────────────────────────────────────
+          _buildArgilaCard(analise.argila.toDouble()),
+
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
-          // Matéria Orgânica
-          AppCardRow(
-            label: 'Matéria Orgânica',
-            value: '${mo.toStringAsFixed(1)} g/dm³',
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: NivelGradienteBar(
-              valor: mo,
-              min: 0.0,
-              max: 50.0,
-              rotulo: ClassificacaoNivel.classificar(
-                nutriente: 'mo',
-                valor: mo,
-              ),
-            ),
-          ),
+          // ── Matéria Orgânica ─────────────────────────────────────
+          _buildMOCard(analise.mo),
+
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
-          // Enxofre
-          AppCardRow(
-            label: 'Enxofre (S)',
-            value: '${s.toStringAsFixed(1)} mg/dm³',
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: NivelGradienteBar(
-              valor: s,
-              min: 0.0,
-              max: 30.0,
-              rotulo: ClassificacaoNivel.classificar(
-                nutriente: 's',
-                valor: s,
-              ),
-            ),
-          ),
+          // ── Enxofre ──────────────────────────────────────────────
+          _buildEnxofreCard(analise.s),
         ],
       ),
     );
@@ -980,6 +934,273 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       avisos: resultado.avisos,
       argumentos: resultado.argumentos,
       status: LaudoStatus.completo,
+    );
+  }
+
+  Widget _buildEnxofreCard(double s) {
+    // Percentual relativo para a barra (escala 0–30 mg/dm³ → 0–100%)
+    final barPercent = (s / 30.0 * 100).clamp(0.0, 100.0);
+    final rotulo = ClassificacaoNivel.classificar(nutriente: 's', valor: s);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Linha principal: label + valor
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              const Text(
+                'Enxofre (S)',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF86868B),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${s.toStringAsFixed(1)} mg/dm³',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D1D1F),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Barra agronômica
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: AgronomicProgressBar(value: barPercent),
+        ),
+
+        // Classificação + profundidade
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Row(
+            children: [
+              Text(
+                rotulo,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D1D1F),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '· 0–20 cm',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFC7C7CC),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArgilaCard(double argila) {
+    // Classe textural simplificada por % argila
+    // argila vem em g/kg — converter para % dividindo por 10
+    final argilaPct = argila / 10.0;
+
+    String classeTextural;
+    if (argilaPct < 15) {
+      classeTextural = 'Arenosa';
+    } else if (argilaPct < 35) {
+      classeTextural = 'Franco-Arenosa';
+    } else if (argilaPct < 60) {
+      classeTextural = 'Franco-Argilosa';
+    } else {
+      classeTextural = 'Argilosa';
+    }
+
+    // Barra: escala 0–1000 g/kg → 0–100%
+    final barPercent = (argila / 1000.0 * 100).clamp(0.0, 100.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Linha principal: label + valor
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              const Text(
+                'Argila',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF86868B),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${argila.toStringAsFixed(0)} g/kg',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D1D1F),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Barra de argila
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: AgronomicProgressBar(value: barPercent),
+        ),
+
+        // Classe textural + nota futura
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Row(
+            children: [
+              Text(
+                classeTextural,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D1D1F),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '· Areia e Silte em breve',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFC7C7CC),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMOCard(double mo) {
+    // Cálculos agronômicos
+    final carbono = mo / 1.724;           // Van Bemmelen
+    final nitrogenio = mo * 1.0;          // Fancelli/ESALQ (t/ha estimada)
+
+    // Percentual relativo para a barra (escala 0–50 g/dm³ → 0–100%)
+    final barPercent = (mo / 50.0 * 100).clamp(0.0, 100.0);
+
+    // Classificação textual
+    final rotulo = ClassificacaoNivel.classificar(nutriente: 'mo', valor: mo);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título da seção
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              const Text(
+                'Matéria Orgânica',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF86868B),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${mo.toStringAsFixed(1)} g/dm³',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1D1D1F),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Barra agronômica
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: AgronomicProgressBar(value: barPercent),
+        ),
+
+        // Label de classificação
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          child: Text(
+            rotulo,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF86868B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+
+        // Box de dados derivados
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F7),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE5E5E7), width: 0.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Carbono
+                Row(
+                  children: [
+                    const Text(
+                      'Carbono (C)',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF1D1D1F)),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${carbono.toStringAsFixed(2)} %',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1D1D1F),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+                const SizedBox(height: 6),
+                // Nitrogênio estimado
+                Row(
+                  children: [
+                    const Text(
+                      'N estimado (Fancelli)',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF1D1D1F)),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${nitrogenio.toStringAsFixed(2)} t/ha',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1D1D1F),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
