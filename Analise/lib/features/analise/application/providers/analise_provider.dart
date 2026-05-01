@@ -86,8 +86,21 @@ class AnaliseNotifier extends _$AnaliseNotifier {
       return;
     }
 
+    // ✅ YIELD ANTES DE QUALQUER AWAIT — sai de AsyncLoading imediatamente.
+    //    Sem este yield aqui, o estado permanece AsyncLoading durante o
+    //    await do demoMode abaixo, causando o spinner infinito.
+    yield const <AnaliseSolo>[];
+
+    // ✅ Listener registrado ANTES do await para não perder a transição
+    //    AsyncLoading→AsyncData que ocorre enquanto o Hive está abrindo.
+    ref.listen<AsyncValue<bool>>(demoModeNotifierProvider, (prev, next) {
+      if (prev?.valueOrNull != next.valueOrNull) {
+        ref.invalidateSelf();
+      }
+    });
+
     // ✅ demoMode: lê valor atual sem criar dependência reativa no async*.
-    //    Aguarda se ainda estiver carregando (Hive abrindo).
+    //    O await é seguro porque já emitimos yield [] acima.
     final bool isDemoOn;
     final demoSnapshot = ref.read(demoModeNotifierProvider);
     if (demoSnapshot.hasValue) {
@@ -95,17 +108,6 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     } else {
       isDemoOn = await ref.read(demoModeNotifierProvider.future);
     }
-
-    // ✅ Escuta mudanças FUTURAS do demoMode e invalida só quando o valor
-    //    realmente muda (evita re-rebuild por AsyncLoading transitório).
-    ref.listen<AsyncValue<bool>>(demoModeNotifierProvider, (prev, next) {
-      if (prev?.valueOrNull != next.valueOrNull) {
-        ref.invalidateSelf();
-      }
-    });
-
-    // Garante saída imediata de loading enquanto stream remoto inicializa.
-    yield const <AnaliseSolo>[];
 
     if (!isDemoOn) {
       yield* ref.read(getAnalisesUsecaseProvider).stream().handleError(
