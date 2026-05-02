@@ -31,6 +31,14 @@ class AnaliseEntity with _$AnaliseEntity {
     required double ctc,
     required double vPercent,
     required double argila,
+    // ── Fósforo por extrator ──────────────────────────────────────
+    double? pMehlich,
+    double? pResina,
+    double? pRem,
+    // ── Enxofre por camada ────────────────────────────────────────
+    double? s2040,
+    double? silte,
+    double? areiaTotal,
   }) = _AnaliseEntity;
 
   factory AnaliseEntity.fromJson(Map<String, dynamic> json) =>

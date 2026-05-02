@@ -33,6 +33,12 @@ _$AnaliseEntityImpl _$$AnaliseEntityImplFromJson(Map<String, dynamic> json) =>
       ctc: (json['ctc'] as num).toDouble(),
       vPercent: (json['vPercent'] as num).toDouble(),
       argila: (json['argila'] as num).toDouble(),
+      pMehlich: (json['pMehlich'] as num?)?.toDouble(),
+      pResina: (json['pResina'] as num?)?.toDouble(),
+      pRem: (json['pRem'] as num?)?.toDouble(),
+      s2040: (json['s2040'] as num?)?.toDouble(),
+      silte: (json['silte'] as num?)?.toDouble(),
+      areiaTotal: (json['areiaTotal'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$$AnaliseEntityImplToJson(_$AnaliseEntityImpl instance) =>
@@ -62,4 +68,10 @@ Map<String, dynamic> _$$AnaliseEntityImplToJson(_$AnaliseEntityImpl instance) =>
       'ctc': instance.ctc,
       'vPercent': instance.vPercent,
       'argila': instance.argila,
+      'pMehlich': instance.pMehlich,
+      'pResina': instance.pResina,
+      'pRem': instance.pRem,
+      's2040': instance.s2040,
+      'silte': instance.silte,
+      'areiaTotal': instance.areiaTotal,
     };

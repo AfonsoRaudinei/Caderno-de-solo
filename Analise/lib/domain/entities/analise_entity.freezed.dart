@@ -44,7 +44,15 @@ mixin _$AnaliseEntity {
   double get sb => throw _privateConstructorUsedError;
   double get ctc => throw _privateConstructorUsedError;
   double get vPercent => throw _privateConstructorUsedError;
-  double get argila => throw _privateConstructorUsedError;
+  double get argila =>
+      throw _privateConstructorUsedError; // ── Fósforo por extrator ──────────────────────────────────────
+  double? get pMehlich => throw _privateConstructorUsedError;
+  double? get pResina => throw _privateConstructorUsedError;
+  double? get pRem =>
+      throw _privateConstructorUsedError; // ── Enxofre por camada ────────────────────────────────────────
+  double? get s2040 => throw _privateConstructorUsedError;
+  double? get silte => throw _privateConstructorUsedError;
+  double? get areiaTotal => throw _privateConstructorUsedError;
 
   /// Serializes this AnaliseEntity to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -87,7 +95,13 @@ abstract class $AnaliseEntityCopyWith<$Res> {
       double sb,
       double ctc,
       double vPercent,
-      double argila});
+      double argila,
+      double? pMehlich,
+      double? pResina,
+      double? pRem,
+      double? s2040,
+      double? silte,
+      double? areiaTotal});
 }
 
 /// @nodoc
@@ -130,6 +144,12 @@ class _$AnaliseEntityCopyWithImpl<$Res, $Val extends AnaliseEntity>
     Object? ctc = null,
     Object? vPercent = null,
     Object? argila = null,
+    Object? pMehlich = freezed,
+    Object? pResina = freezed,
+    Object? pRem = freezed,
+    Object? s2040 = freezed,
+    Object? silte = freezed,
+    Object? areiaTotal = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -232,6 +252,30 @@ class _$AnaliseEntityCopyWithImpl<$Res, $Val extends AnaliseEntity>
           ? _value.argila
           : argila // ignore: cast_nullable_to_non_nullable
               as double,
+      pMehlich: freezed == pMehlich
+          ? _value.pMehlich
+          : pMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      pResina: freezed == pResina
+          ? _value.pResina
+          : pResina // ignore: cast_nullable_to_non_nullable
+              as double?,
+      pRem: freezed == pRem
+          ? _value.pRem
+          : pRem // ignore: cast_nullable_to_non_nullable
+              as double?,
+      s2040: freezed == s2040
+          ? _value.s2040
+          : s2040 // ignore: cast_nullable_to_non_nullable
+              as double?,
+      silte: freezed == silte
+          ? _value.silte
+          : silte // ignore: cast_nullable_to_non_nullable
+              as double?,
+      areiaTotal: freezed == areiaTotal
+          ? _value.areiaTotal
+          : areiaTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
     ) as $Val);
   }
 }
@@ -269,7 +313,13 @@ abstract class _$$AnaliseEntityImplCopyWith<$Res>
       double sb,
       double ctc,
       double vPercent,
-      double argila});
+      double argila,
+      double? pMehlich,
+      double? pResina,
+      double? pRem,
+      double? s2040,
+      double? silte,
+      double? areiaTotal});
 }
 
 /// @nodoc
@@ -310,6 +360,12 @@ class __$$AnaliseEntityImplCopyWithImpl<$Res>
     Object? ctc = null,
     Object? vPercent = null,
     Object? argila = null,
+    Object? pMehlich = freezed,
+    Object? pResina = freezed,
+    Object? pRem = freezed,
+    Object? s2040 = freezed,
+    Object? silte = freezed,
+    Object? areiaTotal = freezed,
   }) {
     return _then(_$AnaliseEntityImpl(
       id: null == id
@@ -412,6 +468,30 @@ class __$$AnaliseEntityImplCopyWithImpl<$Res>
           ? _value.argila
           : argila // ignore: cast_nullable_to_non_nullable
               as double,
+      pMehlich: freezed == pMehlich
+          ? _value.pMehlich
+          : pMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      pResina: freezed == pResina
+          ? _value.pResina
+          : pResina // ignore: cast_nullable_to_non_nullable
+              as double?,
+      pRem: freezed == pRem
+          ? _value.pRem
+          : pRem // ignore: cast_nullable_to_non_nullable
+              as double?,
+      s2040: freezed == s2040
+          ? _value.s2040
+          : s2040 // ignore: cast_nullable_to_non_nullable
+              as double?,
+      silte: freezed == silte
+          ? _value.silte
+          : silte // ignore: cast_nullable_to_non_nullable
+              as double?,
+      areiaTotal: freezed == areiaTotal
+          ? _value.areiaTotal
+          : areiaTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
     ));
   }
 }
@@ -444,7 +524,13 @@ class _$AnaliseEntityImpl implements _AnaliseEntity {
       required this.sb,
       required this.ctc,
       required this.vPercent,
-      required this.argila});
+      required this.argila,
+      this.pMehlich,
+      this.pResina,
+      this.pRem,
+      this.s2040,
+      this.silte,
+      this.areiaTotal});
 
   factory _$AnaliseEntityImpl.fromJson(Map<String, dynamic> json) =>
       _$$AnaliseEntityImplFromJson(json);
@@ -499,10 +585,24 @@ class _$AnaliseEntityImpl implements _AnaliseEntity {
   final double vPercent;
   @override
   final double argila;
+// ── Fósforo por extrator ──────────────────────────────────────
+  @override
+  final double? pMehlich;
+  @override
+  final double? pResina;
+  @override
+  final double? pRem;
+// ── Enxofre por camada ────────────────────────────────────────
+  @override
+  final double? s2040;
+  @override
+  final double? silte;
+  @override
+  final double? areiaTotal;
 
   @override
   String toString() {
-    return 'AnaliseEntity(id: $id, nome: $nome, consultor: $consultor, fazenda: $fazenda, talhao: $talhao, localizacao: $localizacao, cultura: $cultura, ph: $ph, mo: $mo, p: $p, k: $k, ca: $ca, mg: $mg, hAl: $hAl, al: $al, s: $s, b: $b, cu: $cu, fe: $fe, mn: $mn, zn: $zn, sb: $sb, ctc: $ctc, vPercent: $vPercent, argila: $argila)';
+    return 'AnaliseEntity(id: $id, nome: $nome, consultor: $consultor, fazenda: $fazenda, talhao: $talhao, localizacao: $localizacao, cultura: $cultura, ph: $ph, mo: $mo, p: $p, k: $k, ca: $ca, mg: $mg, hAl: $hAl, al: $al, s: $s, b: $b, cu: $cu, fe: $fe, mn: $mn, zn: $zn, sb: $sb, ctc: $ctc, vPercent: $vPercent, argila: $argila, pMehlich: $pMehlich, pResina: $pResina, pRem: $pRem, s2040: $s2040, silte: $silte, areiaTotal: $areiaTotal)';
   }
 
   @override
@@ -537,7 +637,15 @@ class _$AnaliseEntityImpl implements _AnaliseEntity {
             (identical(other.ctc, ctc) || other.ctc == ctc) &&
             (identical(other.vPercent, vPercent) ||
                 other.vPercent == vPercent) &&
-            (identical(other.argila, argila) || other.argila == argila));
+            (identical(other.argila, argila) || other.argila == argila) &&
+            (identical(other.pMehlich, pMehlich) ||
+                other.pMehlich == pMehlich) &&
+            (identical(other.pResina, pResina) || other.pResina == pResina) &&
+            (identical(other.pRem, pRem) || other.pRem == pRem) &&
+            (identical(other.s2040, s2040) || other.s2040 == s2040) &&
+            (identical(other.silte, silte) || other.silte == silte) &&
+            (identical(other.areiaTotal, areiaTotal) ||
+                other.areiaTotal == areiaTotal));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -568,7 +676,13 @@ class _$AnaliseEntityImpl implements _AnaliseEntity {
         sb,
         ctc,
         vPercent,
-        argila
+        argila,
+        pMehlich,
+        pResina,
+        pRem,
+        s2040,
+        silte,
+        areiaTotal
       ]);
 
   /// Create a copy of AnaliseEntity
@@ -613,7 +727,13 @@ abstract class _AnaliseEntity implements AnaliseEntity {
       required final double sb,
       required final double ctc,
       required final double vPercent,
-      required final double argila}) = _$AnaliseEntityImpl;
+      required final double argila,
+      final double? pMehlich,
+      final double? pResina,
+      final double? pRem,
+      final double? s2040,
+      final double? silte,
+      final double? areiaTotal}) = _$AnaliseEntityImpl;
 
   factory _AnaliseEntity.fromJson(Map<String, dynamic> json) =
       _$AnaliseEntityImpl.fromJson;
@@ -667,7 +787,21 @@ abstract class _AnaliseEntity implements AnaliseEntity {
   @override
   double get vPercent;
   @override
-  double get argila;
+  double
+      get argila; // ── Fósforo por extrator ──────────────────────────────────────
+  @override
+  double? get pMehlich;
+  @override
+  double? get pResina;
+  @override
+  double?
+      get pRem; // ── Enxofre por camada ────────────────────────────────────────
+  @override
+  double? get s2040;
+  @override
+  double? get silte;
+  @override
+  double? get areiaTotal;
 
   /// Create a copy of AnaliseEntity
   /// with the given fields replaced by the non-null parameter values.

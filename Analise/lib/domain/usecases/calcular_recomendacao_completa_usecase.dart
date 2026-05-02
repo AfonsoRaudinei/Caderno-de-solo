@@ -183,6 +183,12 @@ class CalcularRecomendacaoCompletaUsecase {
       ctc: ctc,
       vPercent: vPercent,
       argila: analise.argila.valor!,
+      // Extratores de P — nullable
+      pMehlich: analise.pMehlich.isValido ? analise.pMehlich.valor : null,
+      pResina: analise.pResina.isValido ? analise.pResina.valor : null,
+      pRem: analise.pRem.isValido ? analise.pRem.valor : null,
+      // Enxofre 20–40 cm
+      s2040: analise.s2040.isValido ? analise.s2040.valor : null,
     );
   }
 
