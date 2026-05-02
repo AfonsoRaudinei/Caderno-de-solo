@@ -202,7 +202,11 @@ class AnaliseDetailScreen extends ConsumerWidget {
             const Text('Macronutrientes',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich)),
+            _buildDataRow(
+                analise.pResina != null && analise.pMehlich == null
+                    ? 'P Resina (mg/dm³)'
+                    : 'P Mehlich (mg/dm³)',
+                _fmt(analise.pResina ?? analise.pMehlich)),
             _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k)),
             _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca)),
             _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg)),

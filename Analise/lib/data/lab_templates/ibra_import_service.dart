@@ -125,7 +125,7 @@ class IbraImportService {
       mg: mgCmolc,
       al: alCmolc,
       hMaisAl: halCmolc,
-      na: null,
+      na: toDouble(raw('na')),
       b: toDouble(raw('b')),
       cu: toDouble(raw('cu')),
       fe: toDouble(raw('fe')),

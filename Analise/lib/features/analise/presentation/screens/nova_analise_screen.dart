@@ -7,7 +7,6 @@ import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
-import 'package:soloforte/features/auth/application/providers/auth_usecase_providers.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
@@ -481,37 +480,21 @@ class NovaAnaliseScreen extends ConsumerWidget {
       if (analises == null) return;
 
       ctrl.carregarDeAnaliseSolo(analises);
-      final userId = await ref
-          .read(waitForCurrentUserIdUsecaseProvider)
-          .call(timeout: const Duration(seconds: 5));
-
-      if (userId == null || userId.isEmpty) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sessão expirada. Faça login novamente.'),
-            backgroundColor: Color(0xFFFF3B30),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        return;
-      }
-
-      final ok = await ctrl.salvar();
-      if (ok && context.mounted) {
+      // Dados carregados na tela — usuário revisa e salva manualmente.
+      // NÃO salvar automaticamente aqui.
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${analises.length} ${analises.length == 1 ? 'análise importada' : 'análises importadas'} com sucesso',
+              '${analises.length} ${analises.length == 1 ? 'análise carregada' : 'análises carregadas'} — revise e salve',
             ),
-            backgroundColor: const Color(0xFF34C759),
+            backgroundColor: const Color(0xFF007AFF),
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
             margin: const EdgeInsets.all(16),
           ),
         );
-        if (context.mounted) context.pop();
       }
     } on LabConfiancaBaixaException catch (e) {
       if (!context.mounted) return;
@@ -542,12 +525,12 @@ class NovaAnaliseScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${analises.length} amostra${analises.length > 1 ? 's' : ''} importada${analises.length > 1 ? 's' : ''} após confirmação do laboratório',
+            '${analises.length} amostra${analises.length > 1 ? 's' : ''} carregada${analises.length > 1 ? 's' : ''} — revise e salve',
           ),
-          backgroundColor: _darkGreen,
+          backgroundColor: const Color(0xFF007AFF),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
         ),
       );
     } on LabNaoReconhecidoException {

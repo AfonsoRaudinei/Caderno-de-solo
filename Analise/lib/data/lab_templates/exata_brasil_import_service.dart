@@ -55,11 +55,12 @@ class ExataBrasilImportService {
     final moDagKg = moRaw != null ? moRaw / 10.0 : null;
     final coDagKg = coRaw != null ? coRaw / 10.0 : null;
 
-    // Micronutrientes: DTPA como principal
-    final cuPrincipal = toDouble(raw('cu_dtpa'));
-    final fePrincipal = toDouble(raw('fe_dtpa'));
-    final mnPrincipal = toDouble(raw('mn_dtpa'));
-    final znPrincipal = toDouble(raw('zn_dtpa'));
+    // Exata Brasil usa extrator Mehlich para micronutrientes
+    // cu_dtpa/fe_dtpa não existem neste lab — usar cu_meh/fe_meh
+    final cuPrincipal = toDouble(raw('cu_meh'));
+    final fePrincipal = toDouble(raw('fe_meh'));
+    final mnPrincipal = toDouble(raw('mn_meh'));
+    final znPrincipal = toDouble(raw('zn_meh'));
 
     final metadata = <String, dynamic>{
       'fonte': laudo['fonte'],

@@ -672,30 +672,35 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       final laboratorio = analise.laboratorio.trim().isEmpty
           ? 'Laboratório não informado'
           : analise.laboratorio.trim();
-      final metadata = analise.laudoMetadata;
       final groupId = _extrairGroupId(analise);
       final groupTitle = _extrairGroupTitle(analise);
       final os = _extrairOs(analise);
-      final isLegacy = metadata != null &&
-          metadata.isNotEmpty &&
-          groupId.isEmpty &&
-          os.isEmpty;
+      // Chave do produtor para agrupar análises do mesmo cliente
+      final produtor = analise.produtor.trim();
+      final fazenda = analise.fazenda.trim();
+      final produtorKey = produtor.isNotEmpty
+          ? produtor.toLowerCase()
+          : (fazenda.isNotEmpty ? fazenda.toLowerCase() : 'sem-produtor');
+
       final folderKey = groupId.isNotEmpty
           ? 'group:$groupId'
-          : (isLegacy
-              ? 'legacy:$laboratorio'
-              : (os.isNotEmpty ? '$laboratorio::$os' : 'manual:${analise.id}'));
+          : (os.isNotEmpty
+              ? 'produtor:$produtorKey::os:$os'
+              : 'produtor:$produtorKey');
+
       final folderOs = groupId.isNotEmpty
           ? (os.isNotEmpty
               ? os
               : (groupTitle.isNotEmpty ? groupTitle : groupId))
-          : (isLegacy ? 'Importações antigas' : (os.isEmpty ? 'Sem O.S.' : os));
+          : (os.isNotEmpty ? os : 'Importações antigas');
 
       final current = map[folderKey];
       if (current == null) {
         map[folderKey] = _AnaliseFolderSummary(
           key: folderKey,
-          laboratorio: laboratorio,
+          laboratorio: produtor.isNotEmpty
+              ? produtor
+              : (fazenda.isNotEmpty ? fazenda : laboratorio),
           os: folderOs,
           analises: [analise],
           dataMaisRecente: analise.dataCadastro,
