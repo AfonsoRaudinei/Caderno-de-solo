@@ -1,7 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/data/datasources/remote/recomendacao_firestore_datasource.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:soloforte/features/historico/domain/repositories/historico_repository.dart';
+
+final historicoRepositoryProvider = Provider<HistoricoRepository>((ref) {
+  return HistoricoRepositoryImpl(
+    datasource: ref.watch(recomendacaoDatasourceProvider),
+    firestore: FirebaseFirestore.instance,
+  );
+});
 
 class HistoricoRepositoryImpl implements HistoricoRepository {
   HistoricoRepositoryImpl({

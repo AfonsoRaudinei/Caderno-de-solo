@@ -45,11 +45,12 @@ class CalcularRecomendacaoCompletaUsecase {
     _validarCritico(nome: 'Al', valor: analise.al, erros: erros);
     _validarCritico(nome: 'H+Al', valor: analise.hAl, erros: erros);
     _validarCritico(nome: 'S', valor: _preferirS(analise), erros: erros);
-    _validarCritico(nome: 'B', valor: analise.b, erros: erros);
-    _validarCritico(nome: 'Cu', valor: analise.cu, erros: erros);
-    _validarCritico(nome: 'Fe', valor: analise.fe, erros: erros);
-    _validarCritico(nome: 'Mn', valor: analise.mn, erros: erros);
-    _validarCritico(nome: 'Zn', valor: analise.zn, erros: erros);
+    // Micronutrientes — ausência gera aviso, não bloqueia recomendação
+    _validarNaoCritico(nome: 'B', valor: analise.b, avisos: avisos);
+    _validarNaoCritico(nome: 'Cu', valor: analise.cu, avisos: avisos);
+    _validarNaoCritico(nome: 'Fe', valor: analise.fe, avisos: avisos);
+    _validarNaoCritico(nome: 'Mn', valor: analise.mn, avisos: avisos);
+    _validarNaoCritico(nome: 'Zn', valor: analise.zn, avisos: avisos);
 
     if (erros.isNotEmpty) {
       return RecomendacaoResult(
@@ -174,11 +175,11 @@ class CalcularRecomendacaoCompletaUsecase {
       hAl: analise.hAl.valor!,
       al: analise.al.valor!,
       s: _preferirS(analise).valor!,
-      b: analise.b.valor!,
-      cu: analise.cu.valor!,
-      fe: analise.fe.valor!,
-      mn: analise.mn.valor!,
-      zn: analise.zn.valor!,
+      b: analise.b.isValido ? analise.b.valor! : 0.0,
+      cu: analise.cu.isValido ? analise.cu.valor! : 0.0,
+      fe: analise.fe.isValido ? analise.fe.valor! : 0.0,
+      mn: analise.mn.isValido ? analise.mn.valor! : 0.0,
+      zn: analise.zn.isValido ? analise.zn.valor! : 0.0,
       sb: sb,
       ctc: ctc,
       vPercent: vPercent,
@@ -330,6 +331,22 @@ class CalcularRecomendacaoCompletaUsecase {
     }
     if (status == StatusNutriente.invalido) {
       erros.add('$nome inválido na análise.');
+    }
+  }
+
+  /// Valida nutriente não-crítico — ausência gera aviso, nunca bloqueia.
+  void _validarNaoCritico({
+    required String nome,
+    required ValorNutriente valor,
+    required List<String> avisos,
+  }) {
+    final status = _statusDoValor(valor);
+    if (status == StatusNutriente.ausente) {
+      avisos.add('$nome não analisado — dose não calculada.');
+      return;
+    }
+    if (status == StatusNutriente.invalido) {
+      avisos.add('$nome com valor inválido — ignorado no cálculo.');
     }
   }
 

@@ -39,12 +39,18 @@ class LabDetector {
 
   static const Set<String> supportedLabs = {
     'sellar',
+    'solum',
     'exata_brasil',
     'ibra',
     'mb',
   };
 
   static final Map<String, List<_SignalRule>> _rules = {
+    'solum': [
+      _SignalRule(RegExp(r'solum\s+laborat[oó]rio', caseSensitive: false), 0.35, 'brand_solum'),
+      _SignalRule(RegExp(r'solumlab\.com\.br', caseSensitive: false), 0.25, 'domain_solum'),
+      _SignalRule(RegExp(r'amo\s+\d+\/\d+', caseSensitive: false), 0.15, 'amostra_solum'),
+    ],
     'sellar': [
       _SignalRule(
           RegExp(r'sellar\s+an[aá]lises\s+agr[íi]colas', caseSensitive: false),

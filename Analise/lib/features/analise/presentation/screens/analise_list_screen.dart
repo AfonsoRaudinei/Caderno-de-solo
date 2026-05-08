@@ -6,7 +6,6 @@ import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/widgets/produtor_row_widget.dart';
 import 'package:soloforte/features/analise/presentation/widgets/filter_chips_widget.dart';
 
 class AnaliseListScreen extends ConsumerStatefulWidget {
@@ -22,6 +21,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   String? _selectedCultura;
   String? _selectedSafra;
   String? _selectedFolderKey;
+  bool _isSelectingFolders = false;
+  final Set<String> _selectedFolderKeys = <String>{};
+  bool _isSelectingAnalises = false;
+  final Set<String> _selectedAnaliseIds = <String>{};
   String _searchQuery = '';
 
   @override
@@ -51,7 +54,6 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         .toList()
       ..sort((a, b) => b.compareTo(a));
 
-    final produtores = ref.watch(produtoresAnaliseProvider);
     final mostrandoAmostrasHeader = _selectedFolderKey != null;
 
     return Scaffold(
@@ -114,34 +116,6 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
           controller: _scrollController,
           slivers: [
             SliverToBoxAdapter(
-              child: produtores.isEmpty
-                  ? const SizedBox.shrink()
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Text(
-                            'Produtores',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: produtores.length,
-                          itemBuilder: (context, index) {
-                            return ProdutorRowWidget(
-                              produtor: produtores[index],
-                            );
-                          },
-                        ),
-                        const Divider(),
-                      ],
-                    ),
-            ),
-            SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Column(
@@ -159,8 +133,13 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                     if (mostrandoAmostrasHeader) ...[
                       const SizedBox(height: 8),
                       TextButton.icon(
-                        onPressed: () =>
-                            setState(() => _selectedFolderKey = null),
+                        onPressed: () {
+                          setState(() {
+                            _selectedFolderKey = null;
+                            _isSelectingAnalises = false;
+                            _selectedAnaliseIds.clear();
+                          });
+                        },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           foregroundColor: const Color(0xFF007AFF),
@@ -172,6 +151,80 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (_isSelectingAnalises)
+                            Text(
+                              '${_selectedAnaliseIds.length} selecionada(s)',
+                              style: AppTextStyles.body.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecond,
+                              ),
+                            ),
+                          const Spacer(),
+                          if (_isSelectingAnalises) ...[
+                            TextButton(
+                              onPressed: _selectedAnaliseIds.isEmpty
+                                  ? null
+                                  : () => _confirmarExcluirAnalisesSelecionadas(
+                                        context,
+                                      ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                              ),
+                              child: const Text('Excluir'),
+                            ),
+                            TextButton(
+                              onPressed: _cancelarSelecaoAnalises,
+                              child: const Text('Cancelar'),
+                            ),
+                          ] else
+                            TextButton.icon(
+                              onPressed: _iniciarSelecaoAnalises,
+                              icon: const Icon(Icons.checklist_rounded),
+                              label: const Text('Selecionar'),
+                            ),
+                        ],
+                      ),
+                    ],
+                    if (!mostrandoAmostrasHeader) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (_isSelectingFolders)
+                            Text(
+                              '${_selectedFolderKeys.length} selecionada(s)',
+                              style: AppTextStyles.body.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecond,
+                              ),
+                            ),
+                          const Spacer(),
+                          if (_isSelectingFolders) ...[
+                            TextButton(
+                              onPressed: _selectedFolderKeys.isEmpty
+                                  ? null
+                                  : () => _confirmarExcluirPastasSelecionadas(
+                                        context,
+                                      ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                              ),
+                              child: const Text('Excluir'),
+                            ),
+                            TextButton(
+                              onPressed: _cancelarSelecaoPastas,
+                              child: const Text('Cancelar'),
+                            ),
+                          ] else
+                            TextButton.icon(
+                              onPressed: _iniciarSelecaoPastas,
+                              icon: const Icon(Icons.checklist_rounded),
+                              label: const Text('Selecionar'),
+                            ),
+                        ],
                       ),
                     ],
                   ],
@@ -198,6 +251,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   busca: _searchQuery,
                 );
                 final pastas = _agruparPorPasta(analises);
+                _sincronizarSelecaoComPastasVisiveis(pastas);
                 _AnaliseFolderSummary? pastaSelecionada;
                 if (_selectedFolderKey != null) {
                   for (final pasta in pastas) {
@@ -214,8 +268,18 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   }
                 }
                 final mostrandoAmostras = pastaSelecionada != null;
+                if (mostrandoAmostras) {
+                  _sincronizarSelecaoComAnalisesVisiveis(
+                    pastaSelecionada.analises,
+                  );
+                } else {
+                  _limparSelecaoAnalisesSeNecessario();
+                }
                 final itensGrid =
                     mostrandoAmostras ? pastaSelecionada.analises : pastas;
+                final showNovaAnaliseCard = mostrandoAmostras
+                    ? !_isSelectingAnalises
+                    : !_isSelectingFolders;
 
                 if (analises.isEmpty && !mostrandoAmostras) {
                   return SliverFillRemaining(
@@ -263,7 +327,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        if (index == itensGrid.length) {
+                        if (showNovaAnaliseCard && index == itensGrid.length) {
                           return _NovaAnaliseCard(
                             onTap: () => context.push(AppRoutes.analiseForm),
                           );
@@ -274,28 +338,51 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               itensGrid[index] as _AnaliseFolderSummary;
                           return _PastaAnaliseCard(
                             pasta: pasta,
+                            isSelectionMode: _isSelectingFolders,
+                            isSelected: _selectedFolderKeys.contains(pasta.key),
                             onTap: () {
+                              if (_isSelectingFolders) {
+                                _alternarSelecaoPasta(pasta.key);
+                                return;
+                              }
                               setState(() {
                                 _selectedFolderKey = pasta.key;
                               });
                             },
-                            onLongPress: () =>
-                                _showPastaOptionsSheet(context, pasta),
+                            onLongPress: () {
+                              if (_isSelectingFolders) {
+                                _alternarSelecaoPasta(pasta.key);
+                                return;
+                              }
+                              _showPastaOptionsSheet(context, pasta);
+                            },
                           );
                         }
 
                         final analise = itensGrid[index] as AnaliseSolo;
                         return _AnaliseAmostraCard(
                           analise: analise,
+                          isSelectionMode: _isSelectingAnalises,
+                          isSelected: _selectedAnaliseIds.contains(analise.id),
                           onTap: () {
+                            if (_isSelectingAnalises) {
+                              _alternarSelecaoAnalise(analise.id);
+                              return;
+                            }
                             context.push(
                                 '${AppRoutes.analise}/detalhe/${analise.id}');
                           },
-                          onLongPress: () =>
-                              _showAnaliseOptionsSheet(context, analise),
+                          onLongPress: () {
+                            if (_isSelectingAnalises) {
+                              _alternarSelecaoAnalise(analise.id);
+                              return;
+                            }
+                            _showAnaliseOptionsSheet(context, analise);
+                          },
                         );
                       },
-                      childCount: itensGrid.length + 1,
+                      childCount:
+                          itensGrid.length + (showNovaAnaliseCard ? 1 : 0),
                     ),
                   ),
                 );
@@ -306,6 +393,113 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         ),
       ),
     );
+  }
+
+  void _iniciarSelecaoPastas() {
+    setState(() {
+      _isSelectingFolders = true;
+      _selectedFolderKey = null;
+      _selectedFolderKeys.clear();
+    });
+  }
+
+  void _cancelarSelecaoPastas() {
+    setState(() {
+      _isSelectingFolders = false;
+      _selectedFolderKeys.clear();
+    });
+  }
+
+  void _alternarSelecaoPasta(String pastaKey) {
+    setState(() {
+      if (_selectedFolderKeys.contains(pastaKey)) {
+        _selectedFolderKeys.remove(pastaKey);
+        return;
+      }
+      _selectedFolderKeys.add(pastaKey);
+    });
+  }
+
+  void _iniciarSelecaoAnalises() {
+    setState(() {
+      _isSelectingAnalises = true;
+      _selectedAnaliseIds.clear();
+    });
+  }
+
+  void _cancelarSelecaoAnalises() {
+    setState(() {
+      _isSelectingAnalises = false;
+      _selectedAnaliseIds.clear();
+    });
+  }
+
+  void _alternarSelecaoAnalise(String analiseId) {
+    setState(() {
+      if (_selectedAnaliseIds.contains(analiseId)) {
+        _selectedAnaliseIds.remove(analiseId);
+        return;
+      }
+      _selectedAnaliseIds.add(analiseId);
+    });
+  }
+
+  void _sincronizarSelecaoComPastasVisiveis(
+      List<_AnaliseFolderSummary> pastas) {
+    if (_selectedFolderKeys.isEmpty && !_isSelectingFolders) return;
+    final chavesVisiveis = pastas.map((pasta) => pasta.key).toSet();
+    final selecionadasAtualizadas =
+        _selectedFolderKeys.where(chavesVisiveis.contains).toSet();
+    final mudouSelecao =
+        selecionadasAtualizadas.length != _selectedFolderKeys.length;
+    final deveSairDaSelecao = _isSelectingFolders && chavesVisiveis.isEmpty;
+    if (!mudouSelecao && !deveSairDaSelecao) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedFolderKeys
+          ..clear()
+          ..addAll(selecionadasAtualizadas);
+        if (deveSairDaSelecao) {
+          _isSelectingFolders = false;
+        }
+      });
+    });
+  }
+
+  void _sincronizarSelecaoComAnalisesVisiveis(List<AnaliseSolo> analises) {
+    if (_selectedAnaliseIds.isEmpty && !_isSelectingAnalises) return;
+    final idsVisiveis = analises.map((analise) => analise.id).toSet();
+    final selecionadasAtualizadas =
+        _selectedAnaliseIds.where(idsVisiveis.contains).toSet();
+    final mudouSelecao =
+        selecionadasAtualizadas.length != _selectedAnaliseIds.length;
+    final deveSairDaSelecao = _isSelectingAnalises && idsVisiveis.isEmpty;
+    if (!mudouSelecao && !deveSairDaSelecao) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _selectedAnaliseIds
+          ..clear()
+          ..addAll(selecionadasAtualizadas);
+        if (deveSairDaSelecao) {
+          _isSelectingAnalises = false;
+        }
+      });
+    });
+  }
+
+  void _limparSelecaoAnalisesSeNecessario() {
+    if (!_isSelectingAnalises && _selectedAnaliseIds.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _isSelectingAnalises = false;
+        _selectedAnaliseIds.clear();
+      });
+    });
   }
 
   Future<void> _showPastaOptionsSheet(
@@ -514,9 +708,15 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       final ids = pasta.analises.map((analise) => analise.id).toList();
       await ref.read(analiseNotifierProvider.notifier).excluirPasta(ids);
       if (!mounted) return;
-      if (_selectedFolderKey == pasta.key) {
-        setState(() => _selectedFolderKey = null);
-      }
+      setState(() {
+        if (_selectedFolderKey == pasta.key) {
+          _selectedFolderKey = null;
+        }
+        _selectedFolderKeys.remove(pasta.key);
+        if (_isSelectingFolders && _selectedFolderKeys.isEmpty) {
+          _isSelectingFolders = false;
+        }
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Pasta excluída'),
@@ -528,6 +728,226 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro ao excluir pasta. Tente novamente.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmarExcluirPastasSelecionadas(BuildContext context) async {
+    final analises =
+        ref.read(analiseNotifierProvider).valueOrNull ?? const <AnaliseSolo>[];
+    final Cultura? culturaSelecionada = _selectedCultura == null
+        ? null
+        : Cultura.values.firstWhere(
+            (e) => e.label == _selectedCultura,
+            orElse: () => Cultura.soja,
+          );
+    final pastasSelecionadas = _agruparPorPasta(
+      _filtrarAnalises(
+        analises,
+        cultura: culturaSelecionada,
+        safra: _selectedSafra,
+        busca: _searchQuery,
+      ),
+    ).where((pasta) => _selectedFolderKeys.contains(pasta.key)).toList(
+          growable: false,
+        );
+
+    if (pastasSelecionadas.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione ao menos uma pasta para excluir.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final totalPastas = pastasSelecionadas.length;
+    final totalAnalises = pastasSelecionadas.fold<int>(
+      0,
+      (acc, pasta) => acc + pasta.analises.length,
+    );
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir pastas selecionadas?'),
+        content: Text(
+          'Esta ação não pode ser desfeita. '
+          '$totalPastas pasta(s) e $totalAnalises análise(s) serão excluídas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _excluirPastasSelecionadas(pastasSelecionadas);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmarExcluirAnalisesSelecionadas(
+      BuildContext context) async {
+    final analises =
+        ref.read(analiseNotifierProvider).valueOrNull ?? const <AnaliseSolo>[];
+    final Cultura? culturaSelecionada = _selectedCultura == null
+        ? null
+        : Cultura.values.firstWhere(
+            (e) => e.label == _selectedCultura,
+            orElse: () => Cultura.soja,
+          );
+
+    final pastasFiltradas = _agruparPorPasta(
+      _filtrarAnalises(
+        analises,
+        cultura: culturaSelecionada,
+        safra: _selectedSafra,
+        busca: _searchQuery,
+      ),
+    );
+    final pastaAtual =
+        pastasFiltradas.where((p) => p.key == _selectedFolderKey);
+    if (pastaAtual.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pasta não encontrada. Atualize e tente novamente.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final analisesSelecionadas = pastaAtual.first.analises
+        .where((analise) => _selectedAnaliseIds.contains(analise.id))
+        .toList(growable: false);
+    if (analisesSelecionadas.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione ao menos uma amostra para excluir.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final totalAnalises = analisesSelecionadas.length;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir amostras selecionadas?'),
+        content: Text(
+          'Esta ação não pode ser desfeita. '
+          '$totalAnalises amostra(s) serão excluídas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _excluirAnalisesSelecionadas(analisesSelecionadas);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _excluirAnalisesSelecionadas(
+    List<AnaliseSolo> analisesSelecionadas,
+  ) async {
+    try {
+      final ids = analisesSelecionadas
+          .map((analise) => analise.id)
+          .toSet()
+          .toList(growable: false);
+      await ref.read(analiseNotifierProvider.notifier).excluirPasta(ids);
+      if (!mounted) return;
+
+      setState(() {
+        for (final id in ids) {
+          _selectedAnaliseIds.remove(id);
+        }
+        if (_selectedAnaliseIds.isEmpty) {
+          _isSelectingAnalises = false;
+        }
+      });
+
+      final total = ids.length;
+      final label =
+          total == 1 ? '1 amostra excluída' : '$total amostras excluídas';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(label),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao excluir amostras. Tente novamente.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _excluirPastasSelecionadas(
+    List<_AnaliseFolderSummary> pastasSelecionadas,
+  ) async {
+    try {
+      final ids = <String>{
+        for (final pasta in pastasSelecionadas)
+          ...pasta.analises.map((analise) => analise.id),
+      }.toList(growable: false);
+      await ref.read(analiseNotifierProvider.notifier).excluirPasta(ids);
+      if (!mounted) return;
+
+      final removeSelectedFolder = _selectedFolderKey != null &&
+          pastasSelecionadas.any((pasta) => pasta.key == _selectedFolderKey);
+      setState(() {
+        if (removeSelectedFolder) {
+          _selectedFolderKey = null;
+        }
+        _selectedFolderKeys.clear();
+        _isSelectingFolders = false;
+      });
+
+      final totalPastas = pastasSelecionadas.length;
+      final pastasLabel = totalPastas == 1
+          ? '1 pasta excluída'
+          : '$totalPastas pastas excluídas';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(pastasLabel),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao excluir pastas. Tente novamente.'),
           duration: Duration(seconds: 2),
           backgroundColor: AppColors.error,
         ),
@@ -851,11 +1271,15 @@ class _AnaliseFolderSummary {
 class _PastaAnaliseCard extends StatelessWidget {
   const _PastaAnaliseCard({
     required this.pasta,
+    required this.isSelectionMode,
+    required this.isSelected,
     required this.onTap,
     required this.onLongPress,
   });
 
   final _AnaliseFolderSummary pasta;
+  final bool isSelectionMode;
+  final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -874,6 +1298,12 @@ class _PastaAnaliseCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(
+                    color: const Color(0xFF007AFF),
+                    width: 2,
+                  )
+                : null,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
@@ -887,6 +1317,20 @@ class _PastaAnaliseCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                if (isSelectionMode) ...[
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Icon(
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: isSelected
+                          ? const Color(0xFF007AFF)
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
                 const Icon(
                   Icons.folder_open_rounded,
                   size: 42,
@@ -939,11 +1383,15 @@ class _PastaAnaliseCard extends StatelessWidget {
 class _AnaliseAmostraCard extends StatelessWidget {
   const _AnaliseAmostraCard({
     required this.analise,
+    required this.isSelectionMode,
+    required this.isSelected,
     required this.onTap,
     required this.onLongPress,
   });
 
   final AnaliseSolo analise;
+  final bool isSelectionMode;
+  final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -966,6 +1414,12 @@ class _AnaliseAmostraCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(
+                    color: const Color(0xFF007AFF),
+                    width: 2,
+                  )
+                : null,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
@@ -979,6 +1433,20 @@ class _AnaliseAmostraCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                if (isSelectionMode) ...[
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Icon(
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: isSelected
+                          ? const Color(0xFF007AFF)
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
                 Icon(
                   Icons.science,
                   size: 48,

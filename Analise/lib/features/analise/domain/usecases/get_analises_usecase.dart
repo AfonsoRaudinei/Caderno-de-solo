@@ -10,7 +10,7 @@ class GetAnalisesUsecase {
     return await repository.getAnalises();
   }
 
-  Stream<List<AnaliseSolo>> stream() {
-    return repository.watchAnalises();
+  Stream<List<AnaliseSolo>> stream({required String userId}) {
+    return repository.watchAnalises(userId: userId);
   }
 }

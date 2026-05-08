@@ -1,10 +1,20 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/data/datasources/local/calibracao_hive_datasource.dart';
 import 'package:soloforte/data/datasources/remote/calibracao_firestore_datasource.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/lab/calibracao/data/calibracao_padrao.dart';
 import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
 import 'package:uuid/uuid.dart';
+
+final calibracaoRepositoryProvider = Provider<CalibracaoRepository>((ref) {
+  return CalibracaoRepositoryImpl(
+    hiveDatasource: CalibracaoHiveDatasource(),
+    firestoreDatasource: CalibracaoFirestoreDatasource(FirebaseFirestore.instance),
+    auth: FirebaseAuth.instance,
+  );
+});
 
 class CalibracaoRepositoryImpl implements CalibracaoRepository {
   CalibracaoRepositoryImpl({

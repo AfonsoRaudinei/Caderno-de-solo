@@ -69,60 +69,15 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
   }
 
   @override
-  Stream<List<AnaliseSoloModel>> watchAnalises() {
-    final controller = StreamController<List<AnaliseSoloModel>>();
-    StreamSubscription<User?>? authSub;
-    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? querySub;
-    Future<void> bindQueue = Future.value();
-
-    void emit(List<AnaliseSoloModel> value) {
-      if (!controller.isClosed) controller.add(value);
-    }
-
-    void emitError(Object error, [StackTrace? stackTrace]) {
-      debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
-      if (!controller.isClosed) controller.addError(error, stackTrace);
-    }
-
-    Future<void> bindUser(User? user) async {
-      await querySub?.cancel();
-      querySub = null;
-
-      final uid = user?.uid;
-      if (uid == null) {
-        emit(const <AnaliseSoloModel>[]);
-        return;
-      }
-
-      // Dispara recover pendente fire-and-forget
-      recoverPendingBatches().catchError((_) {});
-
-      querySub = _collection.where('userId', isEqualTo: uid).snapshots().listen(
-        (snapshot) {
-          emit(_toCommittedAnalises(snapshot.docs));
-        },
-        onError: emitError,
-      );
-    }
-
-    authSub = _auth.authStateChanges().listen(
-          (user) {
-            bindQueue = bindQueue.then((_) => bindUser(user));
-          },
-          onError: emitError,
-          onDone: () async {
-            await bindQueue;
-            await querySub?.cancel();
-            await controller.close();
-          },
-        );
-
-    controller.onCancel = () async {
-      await authSub?.cancel();
-      await querySub?.cancel();
-    };
-
-    return controller.stream;
+  Stream<List<AnaliseSoloModel>> watchAnalises({required String userId}) {
+    return _collection
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => _toCommittedAnalises(snapshot.docs))
+        .handleError((Object error, StackTrace stackTrace) {
+          debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
+          throw error;
+        });
   }
 
   List<AnaliseSoloModel> _toCommittedAnalises(

@@ -421,13 +421,3 @@ Para tudo e reporta se:
 
 **Não resolve sozinho. Para. Reporta. Espera instrução.**
 
----
-
-## 📦 ENTREGA DE PROMPTS
-
-- Formato: arquivo `.md`
-- Local: `/mnt/user-data/outputs/`
-- Header obrigatório: especialização do agente + objetivo + fase (1 ou 2)
-- Nunca entrega `.dart` pronto — o Antigravity escreve o código
-- Nunca entrega `.docx` — o VSCode não lê corretamente
-- Nunca entrega o prompt como texto no chat

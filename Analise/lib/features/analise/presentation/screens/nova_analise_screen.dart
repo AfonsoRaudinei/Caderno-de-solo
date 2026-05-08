@@ -476,7 +476,7 @@ class NovaAnaliseScreen extends ConsumerWidget {
     NovaAnaliseController ctrl,
   ) async {
     try {
-      final analises = await PdfImportService().importarDePdf(context);
+      final analises = await PdfImportService().importarDePdf();
       if (analises == null) return;
 
       ctrl.carregarDeAnaliseSolo(analises);

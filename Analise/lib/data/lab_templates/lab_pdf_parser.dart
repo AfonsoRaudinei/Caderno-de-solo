@@ -27,6 +27,8 @@ class LabPdfParserService {
         return _parseMb(text);
       case 'sellar':
         return _parseSellar(text);
+      case 'solum':
+        return _parseSolum(text);
       default:
         throw LabPdfParseException('Parser não implementado para $labId');
     }
@@ -91,17 +93,26 @@ class LabPdfParserService {
         final parsed = _parseRowWithTailValues(row, valueCount: 8);
         if (parsed == null) continue;
 
+        final colMap = _buildColMapFromLines(section.header);
+
+        // Acesso seguro via mapa — retorna null se coluna não encontrada
+        double? byCol(String label) {
+          final idx = colMap[label.toLowerCase()];
+          return (idx != null && idx < parsed.values.length) ? _toDouble(parsed.values[idx]) : null;
+        }
+
         if (isTablePhK) {
           mergeSample(
             parsed.sampleId,
             <String, dynamic>{
-              'phCaCl2': _toDouble(parsed.values[0]),
-              'ca': _toDouble(parsed.values[2]),
-              'mg': _toDouble(parsed.values[3]),
-              'al': _toDouble(parsed.values[4]),
-              'hMaisAl': _toDouble(parsed.values[5]),
-              'k': _toDouble(parsed.values[6]),
-              'k_mgdm3': _toDouble(parsed.values[7]),
+              'phCaCl2': byCol('cacl2') ?? byCol('ph') ?? byCol('phcacl2'),
+              'ca': byCol('ca'),
+              'mg': byCol('mg'),
+              'al': byCol('al'),
+              'hMaisAl': byCol('h+al') ?? byCol('h + al') ?? byCol('h+al³⁺'),
+              'k': byCol('k'),
+              // Se K aparecer em cmolc e mg/dm3, tentar resgatar via fallback se colMap sobresscreveu  
+              'k_mgdm3': colMap.containsKey('mg/dm3') ? byCol('k') : (parsed.values.length > 7 ? _toDouble(parsed.values[7]) : null),
             },
             talhao: parsed.talhao,
             profundidade: parsed.profundidade,
@@ -113,14 +124,14 @@ class LabPdfParserService {
           mergeSample(
             parsed.sampleId,
             <String, dynamic>{
-              'pMehlich': _toDouble(parsed.values[0]),
-              'pRem': _toDouble(parsed.values[1]),
-              'pResina': _toDouble(parsed.values[2]),
-              's020': _toDouble(parsed.values[3]),
-              'materiaOrganica': _toDouble(parsed.values[4]),
-              'carbonoOrganico': _toDouble(parsed.values[5]),
-              'b': _toDouble(parsed.values[6]),
-              'cu_meh': _toDouble(parsed.values[7]),
+              'pMehlich': byCol('mehlich') ?? byCol('p (meh)'),
+              'pRem': byCol('rem') ?? byCol('p (rem)'),
+              'pResina': byCol('resina') ?? byCol('p (res)'),
+              's020': byCol('s'),
+              'materiaOrganica': byCol('m.o.') ?? byCol('mo') ?? byCol('m.o'),
+              'carbonoOrganico': byCol('c.o.') ?? byCol('co') ?? byCol('c.o'),
+              'b': byCol('b'),
+              'cu_meh': byCol('cu'),
             },
             talhao: parsed.talhao,
             profundidade: parsed.profundidade,
@@ -130,47 +141,43 @@ class LabPdfParserService {
 
         if (isTableMicrosA && !isTableSilteAreia) {
           // Detectar variante por presença de colunas no header
-          final hasBoroCol = header.contains(' b ') || header.contains('boro');
-          final hasPMehCol = header.contains('p (meh)') || header.contains('p(meh)');
+          final hasBoroCol = RegExp(r'\bb\b|\bboro\b|\bb\s*\(|\bb\s+mg/dm\u00B3|\bb\s+dtpa', caseSensitive: false).hasMatch(header);
+          final hasPMehCol = RegExp(r'p\s*\(\s*meh|\bp\b', caseSensitive: false).hasMatch(header);
 
           Map<String, dynamic> fields;
 
           if (hasPMehCol && !hasBoroCol) {
             // Variante padrão BA:
-            // P(meh) | S | Cu(meh) | Fe(meh) | Mn(meh) | Zn(meh) | Na | Argila
-            // S pode vir como "-" => _toDouble retorna null (ok, não desloca)
             fields = <String, dynamic>{
-              'pMehlich': _toDouble(parsed.values[0]),
-              's020':     _toDouble(parsed.values[1]),
-              'cu_meh':   _toDouble(parsed.values[2]),
-              'fe_meh':   _toDouble(parsed.values[3]),
-              'mn_meh':   _toDouble(parsed.values[4]),
-              'zn_meh':   _toDouble(parsed.values[5]),
-              'na':       _toDouble(parsed.values[6]),
-              'argila':   _toDouble(parsed.values[7]),
+              'pMehlich': byCol('p') ?? byCol('p (meh)'),
+              's020':     byCol('s'),
+              'cu_meh':   byCol('cu'),
+              'fe_meh':   byCol('fe'),
+              'mn_meh':   byCol('mn'),
+              'zn_meh':   byCol('zn'),
+              'na':       byCol('na'),
+              'argila':   byCol('argila'),
             };
           } else if (hasPMehCol && hasBoroCol) {
             // Variante GO / completa:
-            // K(NH4Cl) | P(meh) | P(res) | S | M.O | C.O | B | Cu(meh)
-            // Fe/Mn/Zn virão em tabela separada (bloco isTableMicrosA && isTableSilteAreia)
             fields = <String, dynamic>{
-              'k_mgdm3':         _toDouble(parsed.values[0]),
-              'pMehlich':        _toDouble(parsed.values[1]),
-              'pResina':         _toDouble(parsed.values[2]),
-              's020':            _toDouble(parsed.values[3]),
-              'materiaOrganica': _toDouble(parsed.values[4]),
-              'carbonoOrganico': _toDouble(parsed.values[5]),
-              'b':               _toDouble(parsed.values[6]),
-              'cu_meh':          _toDouble(parsed.values[7]),
+              'k_mgdm3':         byCol('nh4cl') ?? byCol('k'),
+              'pMehlich':        byCol('mehlich') ?? byCol('p (meh)'),
+              'pResina':         byCol('resina') ?? byCol('p (res)'),
+              's020':            byCol('s'),
+              'materiaOrganica': byCol('m.o.') ?? byCol('mo'),
+              'carbonoOrganico': byCol('c.o.') ?? byCol('co'),
+              'b':               byCol('b'),
+              'cu_meh':          byCol('cu'),
             };
           } else {
             // Variante sem P no header (Fe, Mn, Zn, Na, Argila apenas)
             fields = <String, dynamic>{
-              'fe_meh':  _toDouble(parsed.values[0]),
-              'mn_meh':  _toDouble(parsed.values[1]),
-              'zn_meh':  _toDouble(parsed.values[2]),
-              'na':      _toDouble(parsed.values[3]),
-              'argila':  _toDouble(parsed.values[4]),
+              'fe_meh':  byCol('fe'),
+              'mn_meh':  byCol('mn'),
+              'zn_meh':  byCol('zn'),
+              'na':      byCol('na'),
+              'argila':  byCol('argila'),
             };
           }
 
@@ -184,17 +191,17 @@ class LabPdfParserService {
         }
 
         if (isTableMicrosA && isTableSilteAreia) {
-          // Variante GO: Fe(meh) | Mn(meh) | Zn(meh) | Na | Argila | Silte | Areia | T
+          // Variante GO: Fe(meh) | Mn(meh) | Zn(meh) | Na | Argila | Silte | Areia
           mergeSample(
             parsed.sampleId,
             <String, dynamic>{
-              'fe_meh':    _toDouble(parsed.values[0]),
-              'mn_meh':    _toDouble(parsed.values[1]),
-              'zn_meh':    _toDouble(parsed.values[2]),
-              'na':        _toDouble(parsed.values[3]),
-              'argila':    _toDouble(parsed.values[4]),
-              'silte':     _toDouble(parsed.values[5]),
-              'areiaTotal':_toDouble(parsed.values[6]),
+              'fe_meh':    byCol('fe'),
+              'mn_meh':    byCol('mn'),
+              'zn_meh':    byCol('zn'),
+              'na':        byCol('na'),
+              'argila':    byCol('argila'),
+              'silte':     byCol('silte'),
+              'areiaTotal':byCol('areia'),
             },
             talhao: parsed.talhao,
             profundidade: parsed.profundidade,
@@ -206,8 +213,8 @@ class LabPdfParserService {
           mergeSample(
             parsed.sampleId,
             <String, dynamic>{
-              'silte': _toDouble(parsed.values[0]),
-              'areiaTotal': _toDouble(parsed.values[1]),
+              'silte': byCol('silte'),
+              'areiaTotal': byCol('areia'),
             },
             talhao: parsed.talhao,
             profundidade: parsed.profundidade,
@@ -345,18 +352,18 @@ class LabPdfParserService {
           'numeroAmostra': sampleId,
           'talhao': meta['talhao'] ?? '',
           'profundidade': meta['profundidade'] ?? '0-20',
-          'pResina': _toDouble(values[0]),
-          'pRem': _toDouble(values[1]),
-          'mo_gdm3': _toDouble(values[2]),
-          'cot_gdm3': _toDouble(values[3]),
-          'phCaCl2': _toDouble(values[4]),
-          'phSmp': _toDouble(values[5]),
-          'k_mmolc': _toDouble(values[6]),
-          'ca_mmolc': _toDouble(values[7]),
-          'mg_mmolc': _toDouble(values[8]),
-          'na': _toDouble(values[9]),
-          'hMaisAl_mmolc': _toDouble(values[10]),
-          'al_mmolc': _toDouble(values[11]),
+          'pResina': values.isNotEmpty ? _toDouble(values[0]) : null,
+          'pRem': values.length > 1 ? _toDouble(values[1]) : null,
+          'mo_gdm3': values.length > 2 ? _toDouble(values[2]) : null,
+          'cot_gdm3': values.length > 3 ? _toDouble(values[3]) : null,
+          'phCaCl2': values.length > 4 ? _toDouble(values[4]) : null,
+          'phSmp': values.length > 5 ? _toDouble(values[5]) : null,
+          'k_mmolc': values.length > 6 ? _toDouble(values[6]) : null,
+          'ca_mmolc': values.length > 7 ? _toDouble(values[7]) : null,
+          'mg_mmolc': values.length > 8 ? _toDouble(values[8]) : null,
+          'na': values.length > 9 ? _toDouble(values[9]) : null,
+          'hMaisAl_mmolc': values.length > 10 ? _toDouble(values[10]) : null,
+          'al_mmolc': values.length > 11 ? _toDouble(values[11]) : null,
           's020': values.length > 18 ? _toDouble(values[18]) : null,
           'b': values.length > 19 ? _toDouble(values[19]) : null,
           'cu': values.length > 20 ? _toDouble(values[20]) : null,
@@ -585,6 +592,140 @@ class LabPdfParserService {
     );
   }
 
+  LabPdfParseResult _parseSolum(String text) {
+    final lines = _cleanLines(text);
+    final warnings = <String>[];
+
+    // ── Cabeçalho ────────────────────────────────────────────────────
+    final laudoNumero = _firstMatch(text, RegExp(r'LAUDO\s+N[ºO]\s*([0-9]+)', caseSensitive: false));
+    final proprietario = _firstMatch(
+            text, RegExp(r'Propriet[aá]rio:\s*([^\n\r]+?)(?:\s{2,}|\t|Propriedade:|$)', caseSensitive: false))
+        ?.trim();
+    final propriedade = _firstMatch(
+            text, RegExp(r'Propriedade:\s*([^\n\r]+?)(?:\s{2,}|\t|Matr[ií]cula:|$)', caseSensitive: false))
+        ?.trim();
+    final cliente = _firstMatch(
+            text, RegExp(r'Cliente:\s*([^\n\r]+?)(?:\s{2,}|\t|Cidade:|CNPJ|$)', caseSensitive: false))
+        ?.trim();
+    final municipio = _firstMatch(
+            text, RegExp(r'Cidade:\s*([^\n\r]+?)(?:\s{2,}|\t|UF:|$)', caseSensitive: false))
+        ?.trim();
+    final dataEmissao = _dateBrToIso(_firstMatch(
+        text, RegExp(r'Fim Ensaio:\s*([0-9]{2}/[0-9]{2}/[0-9]{4})', caseSensitive: false)));
+
+    // ── IDs e identificações das amostras ────────────────────────────
+    final sampleMeta = <String, Map<String, String>>{};
+    final identRegex = RegExp(
+      r'(\d{5})\s+([^;\n]+?)\s*;\s*([0-9]{2}-[0-9]{2})\s*;',
+      caseSensitive: false,
+    );
+    for (final line in lines) {
+      final m = identRegex.firstMatch(line);
+      if (m != null) {
+        final id = m.group(1)!;
+        final talhao = m.group(2)!.trim();
+        final prof = m.group(3)!.replaceFirst(RegExp(r'^0+'), ''); // 00-20→0-20
+        sampleMeta[id] = {'talhao': talhao, 'profundidade': prof};
+      }
+    }
+
+    // ── Extração de dados por campo ──────────────────────────────────
+    final tableHeaderMatch = RegExp(r'AMOSTRAS\s*((?:\d{5}\s*)+)').firstMatch(text);
+    final orderedIds = tableHeaderMatch != null
+        ? RegExp(r'\d{5}')
+            .allMatches(tableHeaderMatch.group(1) ?? '')
+            .map((m) => m.group(0)!)
+            .toList()
+        : sampleMeta.keys.toList();
+
+    if (orderedIds.isEmpty) {
+      throw const LabPdfParseException('IDs Solum não encontrados');
+    }
+    final n = orderedIds.length;
+
+    List<double?> solumRow(String label) {
+      final pattern = RegExp(
+        '$label[^\\n\\r]*?(?:IAC|Cálculo|-)\\s+([\\d.,\\s\\-]+)',
+        caseSensitive: false,
+      );
+      final match = pattern.firstMatch(text);
+      if (match == null) return List.filled(n, null);
+      final tokens = match.group(1)!
+          .split(RegExp(r'\s+'))
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .take(n)
+          .toList();
+      return List.generate(n, (i) {
+        if (i >= tokens.length) return null;
+        final s = tokens[i];
+        if (s == '-') return null;
+        return double.tryParse(s.replaceAll(',', '.'));
+      });
+    }
+
+    final kRow = solumRow(r'K\s+Pot');
+    final mgRow = solumRow(r'Mg\s+Magn');
+    final caRow = solumRow(r'Ca\s+C[aá]lc');
+    final pRow = solumRow(r'P\s+F[oó]sf');
+    final alRow = solumRow(r'Al');
+    final moRow = solumRow(r'MO\s+Mat');
+    final halRow = solumRow(r'H[°o]\s*\+\s*Al');
+    final phRow = solumRow(r'pH\s+pH CaCl');
+    final phSmpRow = solumRow(r'pH SMP');
+    final sRow = solumRow(r'S(?:[\s]+Enxofre)?|Enxofre');
+    final bRow = solumRow(r'B(?:[a-zA-Z\s/()]+)?|Boro');
+    final cuRow = solumRow(r'Cu(?:[\s]+Cobre)?|Cobre');
+    final feRow = solumRow(r'Fe\s+Ferro');
+    final mnRow = solumRow(r'Mn\s+Mang');
+    final znRow = solumRow(r'Zn\s+Zinco');
+
+    final amostras = <Map<String, dynamic>>[];
+    for (var i = 0; i < n; i++) {
+      final id = orderedIds[i];
+      final meta = sampleMeta[id] ?? {};
+      amostras.add({
+        'numeroAmostra': id,
+        'talhao': meta['talhao'] ?? '',
+        'profundidade': meta['profundidade'] ?? '0-20',
+        'k_mmolc': kRow[i],
+        'mg_mmolc': mgRow[i],
+        'ca_mmolc': caRow[i],
+        'p_mgdm3': pRow[i],
+        'al_mmolc': alRow[i],
+        'mo_gdm3': moRow[i],
+        'hMaisAl_mmolc': halRow[i],
+        'phCaCl2': phRow[i],
+        'phSmp': phSmpRow[i],
+        's020': sRow[i],
+        'b': bRow[i],
+        'cu': cuRow[i],
+        'fe': feRow[i],
+        'mn': mnRow[i],
+        'zn': znRow[i],
+      });
+    }
+
+    if (amostras.isEmpty) {
+      throw const LabPdfParseException('Sem amostras válidas no layout Solum');
+    }
+
+    return LabPdfParseResult(
+      labId: 'solum',
+      laudo: {
+        'fonte': 'Solum Laboratório S.A.',
+        'laudoNumero': laudoNumero ?? '',
+        'dataEmissao': dataEmissao ?? '',
+        'proprietario': proprietario ?? '',
+        'propriedade': propriedade ?? '',
+        'cliente': cliente ?? '',
+        'municipio': municipio ?? '',
+        'amostras': amostras,
+      },
+      warnings: warnings,
+    );
+  }
+
   LabPdfParseResult _parseSellar(String text) {
     final lines = _cleanLines(text);
     final tokens = _cleanTokens(text);
@@ -645,6 +786,7 @@ class LabPdfParserService {
     final kValues = _extractTripletAfter(tokens, 'K');
     final sValues = _extractTripletAfter(tokens, 'S-SO4-2');
     final coValues = _extractTripletAfter(tokens, 'C.O.');
+    final bValues = _extractTripletAfterRegex(tokens, RegExp(r'^(B|Boro|B\s+mg/dm3|B\s+dtpa)$', caseSensitive: false));
 
     final amostras = <Map<String, dynamic>>[];
     for (var i = 0; i < n; i++) {
@@ -665,9 +807,9 @@ class LabPdfParserService {
         'materiaOrganica': _toDouble(mo[i]),
         's020': sValues.length > i ? _toDouble(sValues[i]) : null,
         'carbonoOrganico': coValues.length > i ? _toDouble(coValues[i]) : null,
-        'b': microAndRatios.length > base
-            ? _toDouble(microAndRatios[base])
-            : null,
+        'b': bValues.length > i
+            ? _toDouble(bValues[i])
+            : (microAndRatios.length > base ? _toDouble(microAndRatios[base]) : null),
         'cu': microAndRatios.length > base + 1
             ? _toDouble(microAndRatios[base + 1])
             : null,
@@ -772,10 +914,40 @@ class LabPdfParserService {
     return const [];
   }
 
+  List<String> _extractTripletAfterRegex(List<String> tokens, RegExp pattern) {
+    for (var i = 0; i < tokens.length; i++) {
+      if (pattern.hasMatch(tokens[i])) {
+        final out = <String>[];
+        for (var j = i + 1; j < tokens.length && out.length < 3; j++) {
+          if (_looksLikeValueToken(tokens[j])) {
+            out.add(tokens[j]);
+          }
+        }
+        return out;
+      }
+    }
+    return const [];
+  }
+
   List<String> _takeGroup(List<String> values, int group, int size) {
     final start = group * size;
     if (start + size > values.length) return List<String>.filled(size, '');
     return values.sublist(start, start + size);
+  }
+
+  Map<String, int> _buildColMapFromLines(List<String> headerLines) {
+    // Juntar todas as linhas e tokenizar por espaços
+    final tokens = headerLines
+        .join(' ')
+        .split(RegExp(r'\s+'))
+        .map((t) => t.trim().toLowerCase())
+        .where((t) => t.isNotEmpty)
+        .toList();
+    final map = <String, int>{};
+    for (var i = 0; i < tokens.length; i++) {
+      map[tokens[i]] = i;
+    }
+    return map;
   }
 
   List<_TableSection> _extractTableSections({

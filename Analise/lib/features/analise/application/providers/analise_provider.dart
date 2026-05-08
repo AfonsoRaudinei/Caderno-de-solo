@@ -56,7 +56,13 @@ DeleteAnaliseUsecase deleteAnaliseUsecase(DeleteAnaliseUsecaseRef ref) {
 
 @riverpod
 Stream<User?> authState(AuthStateRef ref) {
-  return FirebaseAuth.instance.authStateChanges();
+  if (!kDebugMode) return FirebaseAuth.instance.authStateChanges();
+
+  debugPrint('🟢 [authState] Stream iniciada');
+  return FirebaseAuth.instance.authStateChanges().map((user) {
+    debugPrint('🟢 [authState] Evento recebido: uid=${user?.uid}');
+    return user;
+  });
 }
 
 /// Expõe apenas o UID do usuário logado (ou null).
@@ -71,19 +77,29 @@ String? currentUserId(CurrentUserIdRef ref) {
 class AnaliseNotifier extends _$AnaliseNotifier {
   @override
   Stream<List<AnaliseSolo>> build() async* {
-    // ✅ ref.watch em String? — reinicia o gerador APENAS em login/logout,
-    //    nunca em refresh silencioso de token do Firebase.
-    final uid = ref.watch(currentUserIdProvider);
+    if (kDebugMode) debugPrint('🔵 [AnaliseNotifier] build() iniciado');
+    final authState = await ref.watch(authStateProvider.future);
+    final uid = authState?.uid;
+    if (kDebugMode) debugPrint('🟡 [AnaliseNotifier] Auth resolvido: uid=$uid');
 
     if (uid == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '⚠️ [AnaliseNotifier] Usuário não autenticado — yield [] permanente',
+        );
+      }
       yield [];
-      // Não retorna: mantém o gerador vivo para que ref.watch(currentUserIdProvider)
-      // reative automaticamente quando o usuário fizer login.
       return;
     }
 
-    yield* ref.read(getAnalisesUsecaseProvider).stream().handleError(
+    if (kDebugMode) {
+      debugPrint('✅ [AnaliseNotifier] UID válido — iniciando stream Firestore');
+    }
+    yield* ref.read(getAnalisesUsecaseProvider).stream(userId: uid).handleError(
       (Object error, StackTrace stackTrace) {
+        if (kDebugMode) {
+          debugPrint('❌ [AnaliseNotifier] Erro na stream: $error');
+        }
         debugPrint('Erro ao carregar análises do Firestore: $error');
         throw error;
       },

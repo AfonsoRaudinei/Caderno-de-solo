@@ -1,6 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/data/datasources/remote/auth_datasource.dart';
 import 'package:soloforte/features/auth/domain/repositories/cadastro_repository.dart';
+
+final cadastroRepositoryProvider = Provider<CadastroRepository>((ref) {
+  return CadastroRepositoryImpl(
+    authDatasource: ref.watch(authDatasourceProvider),
+    firestore: FirebaseFirestore.instance,
+  );
+});
 
 class CadastroRepositoryImpl implements CadastroRepository {
   const CadastroRepositoryImpl({

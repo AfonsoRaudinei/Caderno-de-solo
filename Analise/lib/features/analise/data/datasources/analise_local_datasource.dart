@@ -206,7 +206,7 @@ class AnaliseLocalDatasource implements AnaliseDataSource {
   }
 
   @override
-  Stream<List<AnaliseSoloModel>> watchAnalises() async* {
+  Stream<List<AnaliseSoloModel>> watchAnalises({required String userId}) async* {
     yield await getAnalises();
     yield* _streamController.stream;
   }

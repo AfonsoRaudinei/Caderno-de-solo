@@ -4,7 +4,7 @@ import 'package:soloforte/features/analise/domain/entities/produtor.dart';
 
 abstract class AnaliseRepository {
   Future<List<AnaliseSolo>> getAnalises();
-  Stream<List<AnaliseSolo>> watchAnalises();
+  Stream<List<AnaliseSolo>> watchAnalises({required String userId});
   Future<void> saveAnalise(AnaliseSolo analise);
   Future<SaveBatchResult> saveAnalisesBatch(List<AnaliseSolo> analises);
   Future<void> recoverPendingBatches({Duration timeout});

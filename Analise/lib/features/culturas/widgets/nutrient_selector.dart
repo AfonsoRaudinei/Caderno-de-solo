@@ -24,10 +24,10 @@ class NutrientSelector extends ConsumerWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
-              color: isSel ? n.color : Colors.white,
+              color: isSel ? Color(n.color) : Colors.white,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isSel ? n.color : const Color(0xFFE5E5EA),
+                color: isSel ? Color(n.color) : const Color(0xFFE5E5EA),
                 width: 1.5,
               ),
             ),

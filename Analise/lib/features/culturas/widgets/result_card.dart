@@ -199,7 +199,7 @@ class _SingleBars extends StatelessWidget {
                     value: v,
                     minHeight: 7,
                     backgroundColor: const Color(0xFFF0F0F5),
-                    valueColor: AlwaysStoppedAnimation(meta.color),
+                    valueColor: AlwaysStoppedAnimation(Color(meta.color)),
                   ),
                 ),
               ),

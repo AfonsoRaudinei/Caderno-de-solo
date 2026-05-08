@@ -1,33 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:soloforte/data/datasources/local/calibracao_hive_datasource.dart';
-import 'package:soloforte/data/datasources/remote/calibracao_firestore_datasource.dart';
 import 'package:soloforte/data/base_dados/nc_por_referencia.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/laboratorio/application/providers/calibracao_state.dart';
 import 'package:soloforte/features/laboratorio/data/repositories/calibracao_repository_impl.dart';
-import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:uuid/uuid.dart';
-
-final calibracaoHiveDatasourceProvider =
-    Provider<CalibracaoHiveDatasource>((ref) {
-  return CalibracaoHiveDatasource();
-});
-
-final calibracaoFirestoreDatasourceProvider =
-    Provider<CalibracaoFirestoreDatasource>((ref) {
-  return CalibracaoFirestoreDatasource(FirebaseFirestore.instance);
-});
-
-final calibracaoRepositoryProvider = Provider<CalibracaoRepository>((ref) {
-  return CalibracaoRepositoryImpl(
-    hiveDatasource: ref.read(calibracaoHiveDatasourceProvider),
-    firestoreDatasource: ref.read(calibracaoFirestoreDatasourceProvider),
-    auth: FirebaseAuth.instance,
-  );
-});
 
 final carregarCalibracoesUsecaseProvider =
     Provider<CarregarCalibracoesUsecase>((ref) {

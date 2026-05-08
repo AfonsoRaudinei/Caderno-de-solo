@@ -12,7 +12,7 @@
 //   Valor 0.0 = dado não disponível na literatura
 // ============================================================
 
-import 'package:flutter/material.dart';
+
 
 // ─── ENUMS ───────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ class NutrientMeta {
   final String key;
   final String fullName;
   final String unit;
-  final Color color;
+  final int color;
   final bool isMacro;
 
   const NutrientMeta({
@@ -93,67 +93,67 @@ const List<NutrientMeta> kNutrients = [
       key: 'N',
       fullName: 'Nitrogênio',
       unit: 'kg/t',
-      color: Color(0xFF007AFF),
+      color: 0xFF007AFF,
       isMacro: true),
   NutrientMeta(
       key: 'P',
       fullName: 'Fósforo',
       unit: 'kg/t',
-      color: Color(0xFF34C759),
+      color: 0xFF34C759,
       isMacro: true),
   NutrientMeta(
       key: 'K',
       fullName: 'Potássio',
       unit: 'kg/t',
-      color: Color(0xFFFF9500),
+      color: 0xFFFF9500,
       isMacro: true),
   NutrientMeta(
       key: 'Ca',
       fullName: 'Cálcio',
       unit: 'kg/t',
-      color: Color(0xFFAF52DE),
+      color: 0xFFAF52DE,
       isMacro: true),
   NutrientMeta(
       key: 'Mg',
       fullName: 'Magnésio',
       unit: 'kg/t',
-      color: Color(0xFFFF2D55),
+      color: 0xFFFF2D55,
       isMacro: true),
   NutrientMeta(
       key: 'S',
       fullName: 'Enxofre',
       unit: 'kg/t',
-      color: Color(0xFF5AC8FA),
+      color: 0xFF5AC8FA,
       isMacro: true),
   NutrientMeta(
       key: 'Fe',
       fullName: 'Ferro',
       unit: 'g/t',
-      color: Color(0xFF8E6C3D),
+      color: 0xFF8E6C3D,
       isMacro: false),
   NutrientMeta(
       key: 'Zn',
       fullName: 'Zinco',
       unit: 'g/t',
-      color: Color(0xFF636366),
+      color: 0xFF636366,
       isMacro: false),
   NutrientMeta(
       key: 'Mn',
       fullName: 'Manganês',
       unit: 'g/t',
-      color: Color(0xFF1C7A4A),
+      color: 0xFF1C7A4A,
       isMacro: false),
   NutrientMeta(
       key: 'B',
       fullName: 'Boro',
       unit: 'g/t',
-      color: Color(0xFFC0392B),
+      color: 0xFFC0392B,
       isMacro: false),
   NutrientMeta(
       key: 'Cu',
       fullName: 'Cobre',
       unit: 'g/t',
-      color: Color(0xFFD4A017),
+      color: 0xFFD4A017,
       isMacro: false),
 ];
 

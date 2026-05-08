@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
 import 'package:soloforte/data/lab_templates/exata_brasil_import_service.dart';
 import 'package:soloforte/data/lab_templates/ibra_import_service.dart';
 import 'package:soloforte/data/lab_templates/lab_detector.dart';
@@ -10,6 +9,7 @@ import 'package:soloforte/data/lab_templates/lab_pdf_parser.dart';
 import 'package:soloforte/data/lab_templates/mb_import_service.dart';
 import 'package:soloforte/data/lab_templates/pdf_text_extractor.dart';
 import 'package:soloforte/data/lab_templates/sellar_import_service.dart';
+import 'package:soloforte/data/lab_templates/solum_import_service.dart';
 import 'package:soloforte/features/analise/application/observability/analise_telemetry.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 
@@ -77,8 +77,7 @@ class PdfImportService {
         _parser = parser,
         _telemetry = telemetry ?? AnaliseTelemetry();
 
-  Future<List<AnaliseSolo>?> importarDePdf(
-    BuildContext context, {
+  Future<List<AnaliseSolo>?> importarDePdf({
     String? forcedLabId,
     Uint8List? forcedFileBytes,
     String? forcedFileName,
@@ -460,6 +459,8 @@ class PdfImportService {
         return 'Exata Brasil';
       case 'sellar':
         return 'Sellar';
+      case 'solum':
+        return 'Solum Lab';
       case 'mb':
       case 'mb_agronegocios':
         return 'MB Agro';
@@ -472,6 +473,8 @@ class PdfImportService {
     switch (labId) {
       case 'sellar':
         return const SellarImportService();
+      case 'solum':
+        return const SolumImportService();
       case 'exata_brasil':
         return const ExataBrasilImportService();
       case 'ibra':

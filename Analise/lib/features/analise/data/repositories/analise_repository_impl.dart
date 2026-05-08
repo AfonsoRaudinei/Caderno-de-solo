@@ -16,8 +16,8 @@ class AnaliseRepositoryImpl implements AnaliseRepository {
   }
 
   @override
-  Stream<List<AnaliseSolo>> watchAnalises() {
-    return dataSource.watchAnalises();
+  Stream<List<AnaliseSolo>> watchAnalises({required String userId}) {
+    return dataSource.watchAnalises(userId: userId);
   }
 
   @override

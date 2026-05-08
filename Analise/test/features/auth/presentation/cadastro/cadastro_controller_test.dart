@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:soloforte/data/datasources/remote/auth_datasource.dart';
+import 'package:soloforte/features/auth/data/repositories/cadastro_repository_impl.dart';
 import 'package:soloforte/features/auth/presentation/cadastro/cadastro_controller.dart';
 
 class MockAuthDatasource extends Mock implements AuthDatasource {}
@@ -39,7 +40,12 @@ void main() {
     container = ProviderContainer(
       overrides: [
         authDatasourceProvider.overrideWithValue(authDatasource),
-        cadastroFirestoreProvider.overrideWithValue(firestore),
+        cadastroRepositoryProvider.overrideWithValue(
+          CadastroRepositoryImpl(
+            authDatasource: authDatasource,
+            firestore: firestore,
+          ),
+        ),
       ],
     );
   });

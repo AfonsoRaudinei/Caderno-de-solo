@@ -22,6 +22,7 @@ void main() {
 
   final analiseMock = AnaliseSoloModel(
     id: 'test-1',
+    userId: 'uid-test',
     fazenda: 'Fazenda X',
     produtor: 'Produtor X',
     talhao: 'T01',
@@ -157,7 +158,7 @@ void main() {
       );
 
       final values = <List<AnaliseSoloModel>>[];
-      final sub = ds.watchAnalises().listen(values.add);
+      final sub = ds.watchAnalises(userId: 'uid-watch-1').listen(values.add);
 
       authController.add(null);
       await Future<void>.delayed(const Duration(milliseconds: 25));
@@ -198,7 +199,7 @@ void main() {
       );
 
       final values = <List<AnaliseSoloModel>>[];
-      final sub = ds.watchAnalises().listen(values.add);
+      final sub = ds.watchAnalises(userId: 'uid-watch-2').listen(values.add);
 
       currentUser = user;
       authController.add(user);

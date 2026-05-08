@@ -4,7 +4,7 @@ import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 
 abstract class AnaliseDataSource {
   Future<List<AnaliseSoloModel>> getAnalises();
-  Stream<List<AnaliseSoloModel>> watchAnalises();
+  Stream<List<AnaliseSoloModel>> watchAnalises({required String userId});
   Future<void> saveAnalise(AnaliseSoloModel analise);
   Future<SaveBatchResult> saveAnalisesBatch(List<AnaliseSoloModel> analises);
   Future<void> recoverPendingBatches({Duration timeout});
