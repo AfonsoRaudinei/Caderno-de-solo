@@ -85,6 +85,7 @@ abstract final class AnaliseTelemetryEvents {
   static const String importDetectFinished = 'import_detect_finished';
   static const String importParseFinished = 'import_parse_finished';
   static const String importValidateFinished = 'import_validate_finished';
+  static const String importQualityBlocked = 'import_quality_blocked';
   static const String importFallbackOpened = 'import_fallback_opened';
   static const String importFallbackSelectedLab =
       'import_fallback_selected_lab';

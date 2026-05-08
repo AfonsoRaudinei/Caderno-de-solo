@@ -47,7 +47,8 @@ class ExataBrasilImportService {
 
     // ─── Conversões obrigatórias ─────────────────────────────────────
     // K: mg/dm³ → cmolc/dm³
-    final kCmolc = (toDouble(raw('k_mgdm3')) ?? 0.0) / 391.0;
+    final kMgDm3 = toDouble(raw('k_mgdm3'));
+    final kCmolc = kMgDm3 != null ? kMgDm3 / 391.0 : toDouble(raw('k'));
 
     // M.O. e C.O.: g/dm³ → dag/kg (÷ 10)
     final moRaw = toDouble(raw('materiaOrganica'));
@@ -55,12 +56,10 @@ class ExataBrasilImportService {
     final moDagKg = moRaw != null ? moRaw / 10.0 : null;
     final coDagKg = coRaw != null ? coRaw / 10.0 : null;
 
-    // Exata Brasil usa extrator Mehlich para micronutrientes
-    // cu_dtpa/fe_dtpa não existem neste lab — usar cu_meh/fe_meh
-    final cuPrincipal = toDouble(raw('cu_meh'));
-    final fePrincipal = toDouble(raw('fe_meh'));
-    final mnPrincipal = toDouble(raw('mn_meh'));
-    final znPrincipal = toDouble(raw('zn_meh'));
+    final cuPrincipal = toDouble(raw('cu_dtpa')) ?? toDouble(raw('cu_meh'));
+    final fePrincipal = toDouble(raw('fe_dtpa')) ?? toDouble(raw('fe_meh'));
+    final mnPrincipal = toDouble(raw('mn_dtpa')) ?? toDouble(raw('mn_meh'));
+    final znPrincipal = toDouble(raw('zn_dtpa')) ?? toDouble(raw('zn_meh'));
 
     final metadata = <String, dynamic>{
       'fonte': laudo['fonte'],
@@ -79,6 +78,10 @@ class ExataBrasilImportService {
       'fe_meh': toDouble(raw('fe_meh')),
       'mn_meh': toDouble(raw('mn_meh')),
       'zn_meh': toDouble(raw('zn_meh')),
+      'cu_dtpa': toDouble(raw('cu_dtpa')),
+      'fe_dtpa': toDouble(raw('fe_dtpa')),
+      'mn_dtpa': toDouble(raw('mn_dtpa')),
+      'zn_dtpa': toDouble(raw('zn_dtpa')),
     };
 
     final id =

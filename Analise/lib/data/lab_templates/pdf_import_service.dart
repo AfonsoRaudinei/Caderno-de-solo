@@ -64,6 +64,50 @@ class ImportacaoInvalidaException implements Exception {
   String toString() => message;
 }
 
+class ImportacaoQualidadeAmostra {
+  final String numeroAmostra;
+  final List<String> missingFields;
+
+  const ImportacaoQualidadeAmostra({
+    required this.numeroAmostra,
+    required this.missingFields,
+  });
+}
+
+class ImportacaoQualidadeBaixaException implements Exception {
+  final String operationId;
+  final String labId;
+  final String fileName;
+  final double essentialCoverage;
+  final double overallCoverage;
+  final List<ImportacaoQualidadeAmostra> sampleIssues;
+
+  const ImportacaoQualidadeBaixaException({
+    required this.operationId,
+    required this.labId,
+    required this.fileName,
+    required this.essentialCoverage,
+    required this.overallCoverage,
+    required this.sampleIssues,
+  });
+
+  String buildSummary({int maxSamples = 3}) {
+    final preview = sampleIssues.take(maxSamples).map((issue) {
+      final fields = issue.missingFields.join(', ');
+      return '${issue.numeroAmostra}: $fields';
+    }).join(' | ');
+    if (preview.isEmpty) {
+      return 'A importação foi bloqueada por baixa qualidade dos campos essenciais.';
+    }
+    final suffix =
+        sampleIssues.length > maxSamples ? ' | +${sampleIssues.length - maxSamples} amostra(s)' : '';
+    return 'Campos essenciais ausentes: $preview$suffix';
+  }
+
+  @override
+  String toString() => buildSummary();
+}
+
 class PdfImportService {
   final PdfTextExtractorService _extractor;
   final LabPdfParserService _parser;
@@ -279,6 +323,12 @@ class PdfImportService {
 
       currentStage = 'validate';
       final validateWatch = Stopwatch()..start();
+      final qualityReport = _evaluateImportQuality(
+        analises: analises,
+        labId: selectedLab,
+        operationId: opId,
+        fileName: fileName,
+      );
       _validateImportedAnalises(analises);
       _telemetry.emit(
         eventName: AnaliseTelemetryEvents.importValidateFinished,
@@ -287,6 +337,10 @@ class PdfImportService {
         status: 'ok',
         durationMs: validateWatch.elapsedMilliseconds,
         columnCount: analises.length,
+        context: <String, Object?>{
+          'essentialCoverage': qualityReport.essentialCoverage,
+          'overallCoverage': qualityReport.overallCoverage,
+        },
       );
       validateWatch.stop();
 
@@ -304,6 +358,8 @@ class PdfImportService {
       );
       return analises;
     } on LabConfiancaBaixaException {
+      rethrow;
+    } on ImportacaoQualidadeBaixaException {
       rethrow;
     } on Object catch (error) {
       _telemetry.emit(
@@ -372,6 +428,226 @@ class PdfImportService {
     }
   }
 
+  _ImportQualityReport _evaluateImportQuality({
+    required List<AnaliseSolo> analises,
+    required String labId,
+    required String operationId,
+    required String fileName,
+  }) {
+    final requiredFields = _requiredFieldsForLab(labId);
+    final monitoredFields = _monitoredFieldsForLab(labId);
+
+    if (analises.isEmpty || requiredFields.isEmpty) {
+      return const _ImportQualityReport(
+        essentialCoverage: 1,
+        overallCoverage: 1,
+        sampleIssues: <ImportacaoQualidadeAmostra>[],
+      );
+    }
+
+    final sampleIssues = <ImportacaoQualidadeAmostra>[];
+    var requiredTotal = 0;
+    var requiredFilled = 0;
+    var monitoredTotal = 0;
+    var monitoredFilled = 0;
+
+    for (var index = 0; index < analises.length; index++) {
+      final analise = analises[index];
+      final missingFields = <String>[];
+
+      for (final field in requiredFields) {
+        requiredTotal++;
+        if (_hasFieldValue(analise, field)) {
+          requiredFilled++;
+        } else {
+          missingFields.add(field);
+        }
+      }
+
+      for (final field in monitoredFields) {
+        monitoredTotal++;
+        if (_hasFieldValue(analise, field)) {
+          monitoredFilled++;
+        }
+      }
+
+      if (missingFields.isNotEmpty) {
+        final numeroAmostra = analise.numeroAmostra.trim().isEmpty
+            ? 'A${index + 1}'
+            : analise.numeroAmostra.trim();
+        sampleIssues.add(
+          ImportacaoQualidadeAmostra(
+            numeroAmostra: numeroAmostra,
+            missingFields: missingFields,
+          ),
+        );
+      }
+    }
+
+    final essentialCoverage =
+        requiredTotal == 0 ? 1.0 : requiredFilled / requiredTotal;
+    final overallCoverage =
+        monitoredTotal == 0 ? 1.0 : monitoredFilled / monitoredTotal;
+
+    if (sampleIssues.isNotEmpty) {
+      _telemetry.emit(
+        eventName: AnaliseTelemetryEvents.importQualityBlocked,
+        operationId: operationId,
+        labId: labId,
+        status: 'blocked',
+        columnCount: analises.length,
+        confidence: essentialCoverage,
+        errorCode: 'IMPORT_LOW_QUALITY',
+        context: <String, Object?>{
+          'fileName': fileName,
+          'essentialCoverage': essentialCoverage,
+          'overallCoverage': overallCoverage,
+          'sampleIssues': sampleIssues
+              .map((issue) => <String, Object?>{
+                    'numeroAmostra': issue.numeroAmostra,
+                    'missingFields': issue.missingFields,
+                  })
+              .toList(growable: false),
+        },
+      );
+      throw ImportacaoQualidadeBaixaException(
+        operationId: operationId,
+        labId: labId,
+        fileName: fileName,
+        essentialCoverage: essentialCoverage,
+        overallCoverage: overallCoverage,
+        sampleIssues: sampleIssues,
+      );
+    }
+
+    return _ImportQualityReport(
+      essentialCoverage: essentialCoverage,
+      overallCoverage: overallCoverage,
+      sampleIssues: sampleIssues,
+    );
+  }
+
+  Set<String> _requiredFieldsForLab(String labId) {
+    switch (labId) {
+      case 'ibra':
+        return const {'phCaCl2', 'pResina', 'k', 'ca', 'mg'};
+      case 'sellar':
+      case 'exata_brasil':
+      case 'mb':
+      case 'solum':
+        return const {'phCaCl2', 'k', 'ca', 'mg'};
+      default:
+        return const {'phCaCl2', 'k'};
+    }
+  }
+
+  Set<String> _monitoredFieldsForLab(String labId) {
+    switch (labId) {
+      case 'ibra':
+        return const {
+          'phCaCl2',
+          'phSmp',
+          'pResina',
+          'pRem',
+          'materiaOrganica',
+          'carbonoOrganico',
+          'k',
+          'ca',
+          'mg',
+          'al',
+          'hMaisAl',
+          's020',
+          'b',
+          'cu',
+          'fe',
+          'mn',
+          'zn',
+          'argila',
+        };
+      case 'exata_brasil':
+        return const {
+          'phCaCl2',
+          'phSmp',
+          'pMehlich',
+          'pResina',
+          'pRem',
+          'materiaOrganica',
+          'carbonoOrganico',
+          'k',
+          'ca',
+          'mg',
+          'al',
+          'hMaisAl',
+          'na',
+          's020',
+          'b',
+          'cu',
+          'fe',
+          'mn',
+          'zn',
+          'argila',
+          'silte',
+          'areiaTotal',
+        };
+      case 'mb':
+      case 'sellar':
+      case 'solum':
+      default:
+        return const {
+          'phCaCl2',
+          'phSmp',
+          'pMehlich',
+          'pResina',
+          'pRem',
+          'materiaOrganica',
+          'k',
+          'ca',
+          'mg',
+          'al',
+          'hMaisAl',
+          's020',
+          'b',
+          'cu',
+          'fe',
+          'mn',
+          'zn',
+          'argila',
+          'silte',
+          'areiaTotal',
+        };
+    }
+  }
+
+  bool _hasFieldValue(AnaliseSolo analise, String field) {
+    final value = switch (field) {
+      'phAgua' => analise.phAgua,
+      'phSmp' => analise.phSmp,
+      'phCaCl2' => analise.phCaCl2,
+      'materiaOrganica' => analise.materiaOrganica,
+      'carbonoOrganico' => analise.carbonoOrganico,
+      'pMehlich' => analise.pMehlich,
+      'pResina' => analise.pResina,
+      'pRem' => analise.pRem,
+      's020' => analise.s020,
+      'k' => analise.k,
+      'ca' => analise.ca,
+      'mg' => analise.mg,
+      'al' => analise.al,
+      'hMaisAl' => analise.hMaisAl,
+      'na' => analise.na,
+      'b' => analise.b,
+      'cu' => analise.cu,
+      'fe' => analise.fe,
+      'mn' => analise.mn,
+      'zn' => analise.zn,
+      'argila' => analise.argila,
+      'silte' => analise.silte,
+      'areiaTotal' => analise.areiaTotal,
+      _ => null,
+    };
+    return value != null;
+  }
+
   String _fileExtension(String fileName) {
     final idx = fileName.lastIndexOf('.');
     if (idx <= -1 || idx >= fileName.length - 1) return 'unknown';
@@ -387,6 +663,9 @@ class PdfImportService {
     }
     if (error is ImportacaoInvalidaException) {
       return 'IMPORT_INVALID_DATA';
+    }
+    if (error is ImportacaoQualidadeBaixaException) {
+      return 'IMPORT_LOW_QUALITY';
     }
     if (stage == 'parse') {
       return 'IMPORT_PARSE_FAILED';
@@ -486,4 +765,16 @@ class PdfImportService {
         throw const LabNaoReconhecidoException();
     }
   }
+}
+
+class _ImportQualityReport {
+  final double essentialCoverage;
+  final double overallCoverage;
+  final List<ImportacaoQualidadeAmostra> sampleIssues;
+
+  const _ImportQualityReport({
+    required this.essentialCoverage,
+    required this.overallCoverage,
+    required this.sampleIssues,
+  });
 }

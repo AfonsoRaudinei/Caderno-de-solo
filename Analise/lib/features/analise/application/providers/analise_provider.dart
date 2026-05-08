@@ -133,6 +133,26 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     await ref.read(deleteAnaliseUsecaseProvider).call(id);
   }
 
+  Future<void> atualizarAnalise(AnaliseSolo analiseAtualizada) async {
+    final estadoAnterior = state.valueOrNull ?? const <AnaliseSolo>[];
+    final index = estadoAnterior.indexWhere((a) => a.id == analiseAtualizada.id);
+    if (index == -1) {
+      await ref.read(saveAnaliseUsecaseProvider).call(analiseAtualizada);
+      return;
+    }
+
+    final atualizadas = [...estadoAnterior];
+    atualizadas[index] = analiseAtualizada;
+    state = AsyncData(atualizadas);
+
+    try {
+      await ref.read(saveAnaliseUsecaseProvider).call(analiseAtualizada);
+    } catch (e) {
+      state = AsyncData(estadoAnterior);
+      rethrow;
+    }
+  }
+
   Future<void> excluirAnalise(String analiseId) async {
     await ref.read(deleteAnaliseUsecaseProvider).call(analiseId);
   }

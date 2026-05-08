@@ -7,6 +7,7 @@ const _minTotalPdfs = 20;
 const _minByLab = 5;
 const _globalSuccessTarget = 0.95;
 const _labSuccessTarget = 0.90;
+const _essentialCoverageTarget = 1.0;
 
 const _supportedLabs = <String>{
   'sellar',
@@ -250,11 +251,15 @@ void main() {
           fileName: row.arquivoPdf,
           forcedLabId: row.labEsperado,
         );
-        if (analises.length >= row.amostrasEsperadas && analises.isNotEmpty) {
+        final essentialCoverage =
+            _essentialCoverage(analises, labId: row.labEsperado);
+        if (analises.length >= row.amostrasEsperadas &&
+            analises.isNotEmpty &&
+            essentialCoverage >= _essentialCoverageTarget) {
           labStats.ok++;
         } else {
           labStats.failures.add(
-            '${row.arquivoPdf} (linha ${row.lineNumber}) -> amostras obtidas ${analises.length}, esperado >= ${row.amostrasEsperadas}',
+            '${row.arquivoPdf} (linha ${row.lineNumber}) -> amostras obtidas ${analises.length}, esperado >= ${row.amostrasEsperadas}; cobertura essencial ${(essentialCoverage * 100).toStringAsFixed(2)}%',
           );
         }
       } catch (e) {
@@ -378,4 +383,39 @@ List<String> _parseCsvRow(String raw) {
 
   out.add(current);
   return out.map((e) => e.trim()).toList(growable: false);
+}
+
+double _essentialCoverage(
+  List<dynamic> analises, {
+  required String labId,
+}) {
+  final requiredFields = switch (labId) {
+    'ibra' => const {'phCaCl2', 'pResina', 'k', 'ca', 'mg'},
+    'sellar' || 'exata_brasil' || 'mb' => const {'phCaCl2', 'k', 'ca', 'mg'},
+    _ => const {'phCaCl2', 'k'},
+  };
+
+  if (analises.isEmpty || requiredFields.isEmpty) {
+    return 1.0;
+  }
+
+  var total = 0;
+  var filled = 0;
+  for (final analise in analises) {
+    for (final field in requiredFields) {
+      total++;
+      final value = switch (field) {
+        'phCaCl2' => analise.phCaCl2,
+        'pResina' => analise.pResina,
+        'k' => analise.k,
+        'ca' => analise.ca,
+        'mg' => analise.mg,
+        _ => null,
+      };
+      if (value != null) {
+        filled++;
+      }
+    }
+  }
+  return total == 0 ? 1.0 : filled / total;
 }

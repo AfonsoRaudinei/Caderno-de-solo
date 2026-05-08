@@ -553,6 +553,17 @@ class NovaAnaliseScreen extends ConsumerWidget {
           onDigitarManualmente: () => Navigator.of(context).pop(),
         ),
       );
+    } on ImportacaoQualidadeBaixaException catch (e) {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.qualidadeInsuficiente,
+          detalhe: e.buildSummary(),
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

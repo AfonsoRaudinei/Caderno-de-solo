@@ -4,6 +4,7 @@ import 'package:soloforte/core/theme/app_colors.dart';
 enum ImportacaoBottomSheetTipo {
   labNaoReconhecido,
   extracacaoIndisponivel,
+  qualidadeInsuficiente,
 }
 
 /// BottomSheet de erro para o fluxo de importação de PDF.
@@ -14,11 +15,13 @@ enum ImportacaoBottomSheetTipo {
 class ImportacaoBottomSheet extends StatelessWidget {
   final ImportacaoBottomSheetTipo tipo;
   final VoidCallback onDigitarManualmente;
+  final String? detalhe;
 
   const ImportacaoBottomSheet({
     super.key,
     required this.tipo,
     required this.onDigitarManualmente,
+    this.detalhe,
   });
 
   @override
@@ -121,6 +124,8 @@ class ImportacaoBottomSheet extends StatelessWidget {
         return 'Laboratório não reconhecido';
       case ImportacaoBottomSheetTipo.extracacaoIndisponivel:
         return 'Importação automática\nindisponível';
+      case ImportacaoBottomSheetTipo.qualidadeInsuficiente:
+        return 'Importação bloqueada';
     }
   }
 
@@ -132,6 +137,14 @@ class ImportacaoBottomSheet extends StatelessWidget {
       case ImportacaoBottomSheetTipo.extracacaoIndisponivel:
         return 'A leitura automática de PDF não está disponível no momento.\n'
             'Insira os dados manualmente ou tente novamente mais tarde.';
+      case ImportacaoBottomSheetTipo.qualidadeInsuficiente:
+        final detalheNormalizado = detalhe?.trim();
+        if (detalheNormalizado != null && detalheNormalizado.isNotEmpty) {
+          return 'O PDF foi reconhecido, mas os campos essenciais vieram incompletos.\n'
+              '$detalheNormalizado';
+        }
+        return 'O PDF foi reconhecido, mas os campos essenciais vieram incompletos.\n'
+            'Revise o laudo ou insira os dados manualmente.';
     }
   }
 }

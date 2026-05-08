@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/presentation/formatters/analise_number_formatter.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/map_preview_widget.dart';
 
 class AnaliseDetailScreen extends ConsumerWidget {
@@ -122,8 +124,10 @@ class AnaliseDetailScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Ações
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            Wrap(
+              alignment: WrapAlignment.spaceEvenly,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 _ActionButton(
                   icon: Icons.science,
@@ -156,6 +160,12 @@ class AnaliseDetailScreen extends ConsumerWidget {
                       '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
                     );
                   },
+                ),
+                _ActionButton(
+                  icon: Icons.upload_file,
+                  label: 'Reimportar',
+                  color: Colors.orange,
+                  onTap: () => _reimportarPdf(context, ref, analise),
                 ),
               ],
             ),
@@ -267,6 +277,180 @@ class AnaliseDetailScreen extends ConsumerWidget {
   }
 
   String _fmt(num? value) => AnaliseNumberFormatter.formatDecimal(value);
+
+  Future<void> _reimportarPdf(
+    BuildContext context,
+    WidgetRef ref,
+    AnaliseSolo analise,
+  ) async {
+    final forcedLabId = _forcedLabIdFor(analise.laboratorio);
+    if (forcedLabId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Laboratório atual não suporta reimportação guiada.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final importadas = await PdfImportService().importarDePdf(
+        forcedLabId: forcedLabId,
+      );
+      if (importadas == null || !context.mounted) return;
+
+      final numeroAtual = analise.numeroAmostra.trim().toLowerCase();
+      final matches = importadas
+          .where(
+            (item) => item.numeroAmostra.trim().toLowerCase() == numeroAtual,
+          )
+          .toList(growable: false);
+
+      if (matches.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'A amostra ${analise.numeroAmostra} não foi encontrada no PDF selecionado.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (matches.length > 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'A amostra ${analise.numeroAmostra} apareceu duplicada no PDF selecionado.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final atualizada = _mergeReimportedAnalise(
+        current: analise,
+        imported: matches.single,
+      );
+      await ref.read(analiseNotifierProvider.notifier).atualizarAnalise(
+            atualizada,
+          );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Análise ${analise.numeroAmostra} atualizada a partir do PDF.',
+          ),
+        ),
+      );
+    } on ImportacaoQualidadeBaixaException catch (e) {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.qualidadeInsuficiente,
+          detalhe: e.buildSummary(),
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } on LabNaoReconhecidoException {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.labNaoReconhecido,
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } on ExtracacaoIndisponivelException {
+      if (!context.mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ImportacaoBottomSheet(
+          tipo: ImportacaoBottomSheetTipo.extracacaoIndisponivel,
+          onDigitarManualmente: () => Navigator.of(context).pop(),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao reimportar PDF: $e')),
+      );
+    }
+  }
+
+  AnaliseSolo _mergeReimportedAnalise({
+    required AnaliseSolo current,
+    required AnaliseSolo imported,
+  }) {
+    final metadata = <String, dynamic>{
+      ...?current.laudoMetadata,
+      ...?imported.laudoMetadata,
+    };
+
+    String keepImported(String importedValue, String fallback) {
+      final normalized = importedValue.trim();
+      return normalized.isEmpty ? fallback : importedValue;
+    }
+
+    return AnaliseSolo(
+      id: current.id,
+      fazenda: keepImported(imported.fazenda, current.fazenda),
+      produtor: keepImported(imported.produtor, current.produtor),
+      talhao: keepImported(imported.talhao, current.talhao),
+      numeroAmostra: keepImported(imported.numeroAmostra, current.numeroAmostra),
+      cultura: current.cultura,
+      safra: keepImported(imported.safra, current.safra),
+      laboratorio: keepImported(imported.laboratorio, current.laboratorio),
+      dataCadastro: current.dataCadastro,
+      profundidade: keepImported(imported.profundidade, current.profundidade),
+      latitude: current.latitude,
+      longitude: current.longitude,
+      descricaoLocal: imported.descricaoLocal ?? current.descricaoLocal,
+      argila: imported.argila,
+      silte: imported.silte,
+      areiaTotal: imported.areiaTotal,
+      phAgua: imported.phAgua,
+      phSmp: imported.phSmp,
+      phCaCl2: imported.phCaCl2,
+      materiaOrganica: imported.materiaOrganica,
+      carbonoOrganico: imported.carbonoOrganico,
+      pMehlich: imported.pMehlich,
+      pResina: imported.pResina,
+      pRem: imported.pRem,
+      s020: imported.s020,
+      s2040: imported.s2040,
+      k: imported.k,
+      ca: imported.ca,
+      mg: imported.mg,
+      al: imported.al,
+      hMaisAl: imported.hMaisAl,
+      na: imported.na,
+      b: imported.b,
+      cu: imported.cu,
+      fe: imported.fe,
+      mn: imported.mn,
+      zn: imported.zn,
+      ni: imported.ni,
+      mo: imported.mo,
+      se: imported.se,
+      pdfUrl: current.pdfUrl,
+      laudoMetadata: metadata.isEmpty ? null : metadata,
+    );
+  }
+
+  String? _forcedLabIdFor(String laboratorio) {
+    final raw = laboratorio.trim().toLowerCase();
+    if (raw.contains('exata')) return 'exata_brasil';
+    if (raw.contains('sellar')) return 'sellar';
+    if (raw.contains('ibra')) return 'ibra';
+    if (raw.contains('solum')) return 'solum';
+    if (raw.contains('mb')) return 'mb';
+    return null;
+  }
 }
 
 class _ActionButton extends StatelessWidget {

@@ -164,5 +164,70 @@ void main() {
       expect(names, contains(AnaliseTelemetryEvents.importFallbackOpened));
       expect(names, isNot(contains(AnaliseTelemetryEvents.importFailed)));
     });
+
+    test('emite bloqueio de qualidade quando campos essenciais faltam', () async {
+      final sink = _MemorySink();
+      final telemetry = AnaliseTelemetry(
+        sink: sink,
+        operationIdFactory: () => 'op-import-quality-blocked',
+      );
+      const extractor = _FakeExtractor(
+        PdfTextExtractionResult(
+          text:
+              'Exata Brasil Relatório de Ensaio Nº 999.2026.V0.U sample_id_sba K (NH4Cl)',
+          route: PdfTextExtractionRoute.native,
+          qualityScore: 0.88,
+          nativeScore: 0.88,
+          ocrScore: null,
+        ),
+      );
+      const parser = _FakeParser(
+        LabPdfParseResult(
+          labId: 'exata_brasil',
+          warnings: <String>[],
+          laudo: <String, dynamic>{
+            'fonte': 'Exata Brasil',
+            'relatorio': '999.2026.V0.U',
+            'dataEmissao': '2026-04-06',
+            'proprietario': 'Produtor X',
+            'propriedade': 'Fazenda X',
+            'laboratorio': 'Exata Brasil',
+            'amostras': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'numeroAmostra': 'SBA26.000001',
+                'talhao': 'T-01',
+                'profundidade': '0-20',
+                'phCaCl2': 5.4,
+                'k_mgdm3': 70.0,
+              },
+            ],
+          },
+        ),
+      );
+      final service = PdfImportService(
+        extractor: extractor,
+        parser: parser,
+        telemetry: telemetry,
+      );
+
+      await expectLater(
+        () => service.importarArquivoPdf(
+          fileBytes: Uint8List.fromList(<int>[1, 2, 3]),
+          fileName: 'exata-incompleto.pdf',
+          forcedLabId: 'exata_brasil',
+        ),
+        throwsA(isA<ImportacaoQualidadeBaixaException>()),
+      );
+
+      final names = sink.events.map((e) => e['eventName']).toList();
+      expect(names, contains(AnaliseTelemetryEvents.importQualityBlocked));
+      expect(names, isNot(contains(AnaliseTelemetryEvents.importCompleted)));
+
+      final qualityEvent = sink.events.firstWhere(
+        (e) => e['eventName'] == AnaliseTelemetryEvents.importQualityBlocked,
+      );
+      expect(qualityEvent['errorCode'], 'IMPORT_LOW_QUALITY');
+      expect(qualityEvent['labId'], 'exata_brasil');
+    });
   });
 }
