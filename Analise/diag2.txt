@@ -1,0 +1,6 @@
+[PASSO 1]
+lib/features/analise/application/providers/analise_provider.g.dart:128:final currentUserIdProvider = AutoDisposeProvider<String?>.internal(
+lib/features/analise/application/providers/analise_provider.g.dart:130:  name: r'currentUserIdProvider',
+lib/features/analise/application/providers/analise_provider.dart:76:    final uid = ref.watch(currentUserIdProvider);
+lib/features/analise/application/providers/analise_provider.dart:80:      // Não retorna: mantém o gerador vivo para que ref.watch(currentUserIdProvider)
+File: 

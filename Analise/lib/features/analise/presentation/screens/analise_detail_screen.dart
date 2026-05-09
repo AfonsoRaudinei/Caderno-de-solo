@@ -115,6 +115,8 @@ class AnaliseDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text('Produtor: ${analise.produtor}'),
+                    Text('Fazenda: ${analise.fazenda}'),
+                    Text('Nº Amostra: ${analise.numeroAmostra}'),
                     Text('Safra: ${analise.safra}'),
                     Text('Laboratório: ${analise.laboratorio}'),
                   ],
@@ -186,8 +188,17 @@ class AnaliseDetailScreen extends ConsumerWidget {
                   );
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
+
+            // Localização
+            const Text('Localização',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _buildDataRow('Latitude', _fmt(analise.latitude)),
+            _buildDataRow('Longitude', _fmt(analise.longitude)),
+            _buildDataRow('Descrição', analise.descricaoLocal ?? '-'),
+            const Divider(),
 
             // Dados Físicos
             const Text('Composição Física',
@@ -208,34 +219,72 @@ class AnaliseDetailScreen extends ConsumerWidget {
             _buildDataRow('pH CaCl₂', _fmt(analise.phCaCl2)),
             const Divider(),
 
+            // Matéria orgânica
+            const Text('Matéria Orgânica',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _buildDataRow('M.O. (dag/kg)', _fmt(analise.materiaOrganica)),
+            _buildDataRow('C Orgânico (dag/kg)', _fmt(analise.carbonoOrganico)),
+            const Divider(),
+
+            // Fósforo
+            const Text('Fósforo',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich)),
+            _buildDataRow('P Resina (mg/dm³)', _fmt(analise.pResina)),
+            _buildDataRow('P-rem (mg/L)', _fmt(analise.pRem)),
+            const Divider(),
+
+            // Enxofre
+            const Text('Enxofre',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020)),
+            _buildDataRow('S 20-40 (mg/dm³)', _fmt(analise.s2040)),
+            const Divider(),
+
             // Macronutrientes
             const Text('Macronutrientes',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow(
-                analise.pResina != null && analise.pMehlich == null
-                    ? 'P Resina (mg/dm³)'
-                    : 'P Mehlich (mg/dm³)',
-                _fmt(analise.pResina ?? analise.pMehlich)),
             _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k)),
             _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca)),
             _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg)),
-            _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020)),
-            const Divider(),
-
-            // Acidez e CTC
-            const Text('Acidez',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
             _buildDataRow('Alumínio (cmolc/dm³)', _fmt(analise.al)),
             _buildDataRow('H+Al (cmolc/dm³)', _fmt(analise.hMaisAl)),
+            _buildDataRow('Sódio (cmolc/dm³)', _fmt(analise.na)),
             const Divider(),
 
-            const Text('Calculados Automáticos',
+            // Bases e CTC
+            const Text('Bases e CTC',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDataRow('CTC T', _fmt(derivados['ctcTotal'])),
-            _buildDataRow('V%', _fmt(derivados['vPct'])),
+            _buildDataRow('SB (cmolc/dm³)', _fmt(derivados['sb'])),
+            _buildDataRow('CTC(T) (cmolc/dm³)', _fmt(derivados['ctcTotal'])),
+            _buildDataRow('CTC(e) (cmolc/dm³)', _fmt(derivados['ctcEfetiva'])),
+            _buildDataRow('V% (%)', _fmt(derivados['vPct'])),
+            _buildDataRow('m% (%)', _fmt(derivados['mPct'])),
+            const Divider(),
+
+            // Saturação das bases
+            const Text('Saturação das Bases',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _buildDataRow('Ca/T (%)', _fmt(derivados['caPctT'])),
+            _buildDataRow('Mg/T (%)', _fmt(derivados['mgPctT'])),
+            _buildDataRow('K/T (%)', _fmt(derivados['kPctT'])),
+            _buildDataRow('H+Al/T (%)', _fmt(derivados['hAlPctT'])),
+            const Divider(),
+
+            // Relações entre bases
+            const Text('Relações entre Bases',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            _buildDataRow('Ca/Mg', _fmt(derivados['relCaMg'])),
+            _buildDataRow('Ca/K', _fmt(derivados['relCaK'])),
+            _buildDataRow('Mg/K', _fmt(derivados['relMgK'])),
+            _buildDataRow('(Ca+Mg)/T (%)', _fmt(derivados['relCaMgT'])),
             const Divider(),
 
             // Micronutrientes
@@ -247,6 +296,9 @@ class AnaliseDetailScreen extends ConsumerWidget {
             _buildDataRow('Ferro', _fmt(analise.fe)),
             _buildDataRow('Manganês', _fmt(analise.mn)),
             _buildDataRow('Zinco', _fmt(analise.zn)),
+            _buildDataRow('Níquel', _fmt(analise.ni)),
+            _buildDataRow('Molibdênio', _fmt(analise.mo)),
+            _buildDataRow('Selênio', _fmt(analise.se)),
 
             const SizedBox(height: 32),
           ],

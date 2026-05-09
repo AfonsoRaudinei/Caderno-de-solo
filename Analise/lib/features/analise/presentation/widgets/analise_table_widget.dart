@@ -93,8 +93,7 @@ const List<_SectionDef> _sections = [
   ]),
   _SectionDef('2. Localização', [
     _FieldDef('gps', 'GPS', isGps: true),
-    _FieldDef('latitude', 'Latitude'),
-    _FieldDef('longitude', 'Longitude'),
+    _FieldDef('latitude', 'Latitude, Longitude', isText: true),
     _FieldDef('descricaoLocal', 'Descrição', isText: true),
   ]),
   _SectionDef('3. Composição Física', [
@@ -553,11 +552,18 @@ class AnaliseTableWidget extends StatelessWidget {
 
     final issue = validation.issueForCell(index, field.key);
 
+    final initialValue = field.key == 'latitude'
+        ? _composeCoordinates(
+            analises[index]['latitude']?.toString(),
+            analises[index]['longitude']?.toString(),
+          )
+        : analises[index][field.key]?.toString() ?? '';
+
     return AnaliseInputCell(
       key: ValueKey('${field.key}_$index'),
       width: _colWidth,
       height: rowHeight,
-      initialValue: analises[index][field.key]?.toString() ?? '',
+      initialValue: initialValue,
       type: field.isText ? AnaliseCellType.text : AnaliseCellType.numeric,
       onChanged: (v) => onCampoChanged(index, field.key, v),
       hasError: issue?.severity == ValidationSeverity.error,
@@ -566,6 +572,14 @@ class AnaliseTableWidget extends StatelessWidget {
           issue == null ? null : '${issue.cellLabel}: ${issue.message}',
       highlightedByNavigator: highlightedCellKey == '$index:${field.key}',
     );
+  }
+
+  String _composeCoordinates(String? latRaw, String? lngRaw) {
+    final lat = (latRaw ?? '').trim();
+    final lng = (lngRaw ?? '').trim();
+    if (lat.isEmpty && lng.isEmpty) return '';
+    if (lat.isNotEmpty && lng.isNotEmpty) return '$lat, $lng';
+    return lat.isNotEmpty ? lat : lng;
   }
 
   List<_RenderedRow> _buildRowsForLaboratorio(String laboratorioAtual) {

@@ -1,0 +1,2024 @@
+[PASSO 1]
+lib/features/analise/application/providers/analise_provider.g.dart:15:    AutoDisposeProvider<AnaliseLocalDatasource>.internal(
+lib/features/analise/application/providers/analise_provider.g.dart:27:typedef AnaliseLocalDatasourceRef
+lib/features/analise/application/providers/analise_provider.g.dart:28:    = AutoDisposeProviderRef<AnaliseLocalDatasource>;
+lib/features/analise/application/providers/analise_provider.g.dart:29:String _$analiseRepositoryHash() => r'7ff7f6609e64b8fa480e7bc4c3e8d32a521fbc54';
+lib/features/analise/application/providers/analise_provider.g.dart:31:/// See also [analiseRepository].
+lib/features/analise/application/providers/analise_provider.g.dart:32:@ProviderFor(analiseRepository)
+lib/features/analise/application/providers/analise_provider.g.dart:33:final analiseRepositoryProvider =
+lib/features/analise/application/providers/analise_provider.g.dart:35:  analiseRepository,
+lib/features/analise/application/providers/analise_provider.g.dart:36:  name: r'analiseRepositoryProvider',
+lib/features/analise/application/providers/analise_provider.g.dart:39:      : _$analiseRepositoryHash,
+lib/features/analise/application/providers/analise_provider.dart:20:AnaliseLocalDatasource analiseLocalDatasource(AnaliseLocalDatasourceRef ref) {
+lib/features/analise/application/providers/analise_provider.dart:21:  return AnaliseLocalDatasource();
+lib/features/analise/application/providers/analise_provider.dart:25:    Provider<AnaliseFirestoreDatasource>((ref) {
+lib/features/analise/application/providers/analise_provider.dart:26:  return AnaliseFirestoreDatasource();
+lib/features/analise/application/providers/analise_provider.dart:34:AnaliseRepository analiseRepository(AnaliseRepositoryRef ref) {
+lib/features/analise/application/providers/analise_provider.dart:36:  return AnaliseRepositoryImpl(dataSource: dataSource);
+lib/features/analise/application/providers/analise_provider.dart:41:  final repository = ref.watch(analiseRepositoryProvider);
+lib/features/analise/application/providers/analise_provider.dart:47:  final repository = ref.watch(analiseRepositoryProvider);
+lib/features/analise/application/providers/analise_provider.dart:53:  final repository = ref.watch(analiseRepositoryProvider);
+lib/features/analise/application/providers/analise_provider.dart:107:    return ref.read(analiseRepositoryProvider).saveAnalisesBatch(analises);
+lib/features/analise/data/datasources/analise_local_datasource.dart:67:class AnaliseLocalDatasource implements AnaliseDataSource {
+lib/features/analise/data/datasources/analise_local_datasource.dart:81:  AnaliseLocalDatasource({
+lib/features/analise/data/repositories/analise_repository_impl.dart:8:class AnaliseRepositoryImpl implements AnaliseRepository {
+lib/features/analise/data/repositories/analise_repository_impl.dart:11:  AnaliseRepositoryImpl({required this.dataSource});
+lib/data/datasources/remote/analise_firestore_datasource.dart:12:class AnaliseFirestoreDatasource implements AnaliseDataSource {
+lib/data/datasources/remote/analise_firestore_datasource.dart:19:  AnaliseFirestoreDatasource({
+lib/data/datasources/remote/analise_firestore_datasource.dart:83:      debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
+[PASSO 2]
+File: lib/features/analise/application/providers/analise_provider.dart
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:soloforte/core/config/app_config.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:soloforte/data/datasources/remote/analise_firestore_datasource.dart';
+import 'package:soloforte/features/analise/data/datasources/analise_datasource.dart';
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/entities/produtor.dart';
+import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
+import 'package:soloforte/features/analise/domain/usecases/get_analises_usecase.dart';
+import 'package:soloforte/features/analise/domain/usecases/save_analise_usecase.dart';
+import 'package:soloforte/features/analise/domain/usecases/delete_analise_usecase.dart';
+import 'package:soloforte/features/analise/domain/repositories/analise_repository.dart';
+import 'package:soloforte/features/analise/data/repositories/analise_repository_impl.dart';
+import 'package:soloforte/features/analise/data/datasources/analise_local_datasource.dart';
+
+part 'analise_provider.g.dart';
+
+@riverpod
+AnaliseLocalDatasource analiseLocalDatasource(AnaliseLocalDatasourceRef ref) {
+  return AnaliseLocalDatasource();
+}
+
+final analiseFirestoreDatasourceProvider =
+    Provider<AnaliseFirestoreDatasource>((ref) {
+  return AnaliseFirestoreDatasource();
+});
+
+final analiseDataSourceProvider = Provider<AnaliseDataSource>((ref) {
+  return ref.watch(analiseFirestoreDatasourceProvider);
+});
+
+@riverpod
+AnaliseRepository analiseRepository(AnaliseRepositoryRef ref) {
+  final dataSource = ref.watch(analiseDataSourceProvider);
+  return AnaliseRepositoryImpl(dataSource: dataSource);
+}
+
+@riverpod
+GetAnalisesUsecase getAnalisesUsecase(GetAnalisesUsecaseRef ref) {
+  final repository = ref.watch(analiseRepositoryProvider);
+  return GetAnalisesUsecase(repository);
+}
+
+@riverpod
+SaveAnaliseUsecase saveAnaliseUsecase(SaveAnaliseUsecaseRef ref) {
+  final repository = ref.watch(analiseRepositoryProvider);
+  return SaveAnaliseUsecase(repository);
+}
+
+@riverpod
+DeleteAnaliseUsecase deleteAnaliseUsecase(DeleteAnaliseUsecaseRef ref) {
+  final repository = ref.watch(analiseRepositoryProvider);
+  return DeleteAnaliseUsecase(repository);
+}
+
+@riverpod
+Stream<User?> authState(AuthStateRef ref) {
+  return FirebaseAuth.instance.authStateChanges();
+}
+
+/// Expõe apenas o UID do usuário logado (ou null).
+/// Por ser String?, só muda em login/logout real — nunca em refresh de token.
+/// É seguro usar ref.watch neste provider dentro de um gerador async*.
+@riverpod
+String? currentUserId(CurrentUserIdRef ref) {
+  return ref.watch(authStateProvider).valueOrNull?.uid;
+}
+
+@Riverpod(keepAlive: true)
+class AnaliseNotifier extends _$AnaliseNotifier {
+  @override
+  Stream<List<AnaliseSolo>> build() async* {
+    // ✅ ref.watch em String? — reinicia o gerador APENAS em login/logout,
+    //    nunca em refresh silencioso de token do Firebase.
+    final uid = ref.watch(currentUserIdProvider);
+
+    if (uid == null) {
+      yield [];
+      // Não retorna: mantém o gerador vivo para que ref.watch(currentUserIdProvider)
+      // reative automaticamente quando o usuário fizer login.
+      return;
+    }
+
+    yield* ref.read(getAnalisesUsecaseProvider).stream().handleError(
+      (Object error, StackTrace stackTrace) {
+        debugPrint('Erro ao carregar análises do Firestore: $error');
+        throw error;
+      },
+    );
+  }
+
+  Future<void> salvar(AnaliseSolo analise) async {
+    if (AppConfig.useFirestore && FirebaseAuth.instance.currentUser == null) {
+      throw Exception('Sessão expirada. Faça login novamente para salvar.');
+    }
+    await ref.read(saveAnaliseUsecaseProvider).call(analise);
+  }
+
+  Future<SaveBatchResult> salvarLote(List<AnaliseSolo> analises) async {
+    if (AppConfig.useFirestore && FirebaseAuth.instance.currentUser == null) {
+      throw const SaveBatchException(
+        code: SaveBatchCode.saveAtomicFailed,
+        message: 'Sessão expirada. Faça login novamente para salvar.',
+      );
+    }
+    return ref.read(analiseRepositoryProvider).saveAnalisesBatch(analises);
+  }
+
+  Future<void> recarregar() async {
+    // O stream do Firestore já emite alterações após salvar/excluir/mover.
+    // Manter este método como no-op evita que o caminho de save force reload
+    // do StreamNotifier e volte para AsyncLoading na tela de Pastas.
+  }
+
+  Future<void> deletar(String id) async {
+    await ref.read(deleteAnaliseUsecaseProvider).call(id);
+  }
+
+  Future<void> excluirAnalise(String analiseId) async {
+    await ref.read(deleteAnaliseUsecaseProvider).call(analiseId);
+  }
+
+  Future<void> excluirPasta(List<String> analiseIds) async {
+    for (final analiseId in analiseIds) {
+      await ref.read(deleteAnaliseUsecaseProvider).call(analiseId);
+    }
+  }
+
+  Future<void> moverAnalise({
+    required String analiseId,
+    required String destinoLaboratorio,
+    required String destinoOs,
+    String destinoGroupId = '',
+    String destinoGroupTitle = '',
+  }) async {
+    final lista = state.valueOrNull ?? const <AnaliseSolo>[];
+    final index = lista.indexWhere((a) => a.id == analiseId);
+    if (index == -1) return;
+
+    final original = lista[index];
+    final metadataAtual =
+        Map<String, dynamic>.from(original.laudoMetadata ?? {});
+    if (destinoGroupId.isNotEmpty) {
+      metadataAtual['groupId'] = destinoGroupId;
+    } else {
+      metadataAtual.remove('groupId');
+    }
+    if (destinoGroupTitle.isNotEmpty) {
+      metadataAtual['groupTitle'] = destinoGroupTitle;
+    } else {
+      metadataAtual.remove('groupTitle');
+    }
+    if (destinoOs.isNotEmpty) {
+      metadataAtual['os'] = destinoOs;
+    } else {
+      metadataAtual.remove('os');
+      metadataAtual.remove('relatorio');
+      metadataAtual.remove('laudoNumero');
+      metadataAtual.remove('analise');
+    }
+
+    final analiseAtualizada = AnaliseSolo(
+      id: original.id,
+      fazenda: original.fazenda,
+      produtor: original.produtor,
+      talhao: original.talhao,
+      numeroAmostra: original.numeroAmostra,
+      cultura: original.cultura,
+      safra: original.safra,
+      laboratorio: destinoLaboratorio,
+      dataCadastro: original.dataCadastro,
+      profundidade: original.profundidade,
+      latitude: original.latitude,
+      longitude: original.longitude,
+      descricaoLocal: original.descricaoLocal,
+      argila: original.argila,
+      silte: original.silte,
+      areiaTotal: original.areiaTotal,
+      phAgua: original.phAgua,
+      phSmp: original.phSmp,
+      phCaCl2: original.phCaCl2,
+      materiaOrganica: original.materiaOrganica,
+      carbonoOrganico: original.carbonoOrganico,
+      pMehlich: original.pMehlich,
+      pResina: original.pResina,
+      pRem: original.pRem,
+      s020: original.s020,
+      s2040: original.s2040,
+      k: original.k,
+      ca: original.ca,
+      mg: original.mg,
+      al: original.al,
+      hMaisAl: original.hMaisAl,
+      na: original.na,
+      b: original.b,
+      cu: original.cu,
+      fe: original.fe,
+      mn: original.mn,
+      zn: original.zn,
+      ni: original.ni,
+      mo: original.mo,
+      se: original.se,
+      pdfUrl: original.pdfUrl,
+      laudoMetadata: metadataAtual.isEmpty ? null : metadataAtual,
+    );
+
+    final novaLista = List<AnaliseSolo>.from(lista);
+    novaLista[index] = analiseAtualizada;
+    state = AsyncData(novaLista);
+
+    try {
+      await ref.read(saveAnaliseUsecaseProvider).call(analiseAtualizada);
+    } catch (e) {
+      state = AsyncData(lista);
+      rethrow;
+    }
+  }
+
+  Future<void> renomearPasta({
+    required List<String> analiseIds,
+    required String novoNome,
+  }) async {
+    final estadoAnterior = state.valueOrNull ?? const <AnaliseSolo>[];
+    final ids = analiseIds.toSet();
+    if (ids.isEmpty) return;
+
+    final atualizadas = estadoAnterior.map((analise) {
+      if (!ids.contains(analise.id)) return analise;
+
+      final metadataAtual =
+          Map<String, dynamic>.from(analise.laudoMetadata ?? {});
+      if (metadataAtual.containsKey('groupTitle')) {
+        metadataAtual['groupTitle'] = novoNome;
+      }
+
+      return AnaliseSolo(
+        id: analise.id,
+        fazenda: analise.fazenda,
+        produtor: analise.produtor,
+        talhao: analise.talhao,
+        numeroAmostra: analise.numeroAmostra,
+        cultura: analise.cultura,
+        safra: analise.safra,
+        laboratorio: novoNome,
+        dataCadastro: analise.dataCadastro,
+        profundidade: analise.profundidade,
+        latitude: analise.latitude,
+        longitude: analise.longitude,
+        descricaoLocal: analise.descricaoLocal,
+        argila: analise.argila,
+        silte: analise.silte,
+        areiaTotal: analise.areiaTotal,
+        phAgua: analise.phAgua,
+        phSmp: analise.phSmp,
+        phCaCl2: analise.phCaCl2,
+        materiaOrganica: analise.materiaOrganica,
+        carbonoOrganico: analise.carbonoOrganico,
+        pMehlich: analise.pMehlich,
+        pResina: analise.pResina,
+        pRem: analise.pRem,
+        s020: analise.s020,
+        s2040: analise.s2040,
+        k: analise.k,
+        ca: analise.ca,
+        mg: analise.mg,
+        al: analise.al,
+        hMaisAl: analise.hMaisAl,
+        na: analise.na,
+        b: analise.b,
+        cu: analise.cu,
+        fe: analise.fe,
+        mn: analise.mn,
+        zn: analise.zn,
+        ni: analise.ni,
+        mo: analise.mo,
+        se: analise.se,
+        pdfUrl: analise.pdfUrl,
+        laudoMetadata: metadataAtual.isEmpty ? null : metadataAtual,
+      );
+    }).toList(growable: false);
+
+    state = AsyncData(atualizadas);
+
+    try {
+      for (final analise in atualizadas.where((a) => ids.contains(a.id))) {
+        await ref.read(saveAnaliseUsecaseProvider).call(analise);
+      }
+    } catch (e) {
+      state = AsyncData(estadoAnterior);
+      rethrow;
+    }
+  }
+}
+
+@riverpod
+List<AnaliseSolo> analisesFiltradas(
+  AnalisesFiltradasRef ref, {
+  Cultura? cultura,
+  String? produtorId,
+  String? safra,
+  String? busca,
+}) {
+  final lista = ref.watch(analiseNotifierProvider).valueOrNull ?? [];
+  return lista.where((a) {
+    if (cultura != null && a.cultura != cultura) return false;
+    if (produtorId != null && a.produtor != produtorId) return false;
+    if (safra != null && a.safra != safra) return false;
+    if (busca != null && busca.isNotEmpty) {
+      final q = busca.toLowerCase();
+      return a.talhao.toLowerCase().contains(q) ||
+          a.laboratorio.toLowerCase().contains(q) ||
+          a.produtor.toLowerCase().contains(q) ||
+          a.fazenda.toLowerCase().contains(q);
+    }
+    return true;
+  }).toList();
+}
+
+final produtoresAnaliseProvider = Provider<List<Produtor>>((ref) {
+  final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
+  final produtores = <String, Produtor>{};
+
+  for (final analise in analises) {
+    if (analise.produtor.isEmpty) continue;
+
+    final key = '${analise.produtor}_${analise.fazenda}';
+    final existente = produtores[key];
+
+    if (existente == null) {
+      produtores[key] = Produtor(
+        id: key,
+        nome: analise.produtor,
+        fazenda: analise.fazenda,
+        totalAnalises: 1,
+      );
+      continue;
+    }
+
+    produtores[key] = Produtor(
+      id: existente.id,
+      nome: existente.nome,
+      fazenda: existente.fazenda,
+      totalAnalises: existente.totalAnalises + 1,
+    );
+  }
+
+  final lista = produtores.values.toList()
+    ..sort((a, b) => a.nome.compareTo(b.nome));
+  return List.unmodifiable(lista);
+});
+[PASSO 3]
+File: lib/features/analise/presentation/screens/analise_list_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/presentation/widgets/produtor_row_widget.dart';
+import 'package:soloforte/features/analise/presentation/widgets/filter_chips_widget.dart';
+
+class AnaliseListScreen extends ConsumerStatefulWidget {
+  const AnaliseListScreen({super.key});
+
+  @override
+  ConsumerState<AnaliseListScreen> createState() => _AnaliseListScreenState();
+}
+
+class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String? _selectedCultura;
+  String? _selectedSafra;
+  String? _selectedFolderKey;
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Cultura? culturaEnum;
+    if (_selectedCultura != null) {
+      culturaEnum = Cultura.values.firstWhere(
+        (e) => e.label == _selectedCultura,
+        orElse: () => Cultura.soja,
+      );
+    }
+
+    final analiseState = ref.watch(analiseNotifierProvider);
+    final analisesRaw = analiseState.valueOrNull ?? const <AnaliseSolo>[];
+
+    final safras = analisesRaw
+        .map((e) => e.safra)
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    final produtores = ref.watch(produtoresAnaliseProvider);
+    final mostrandoAmostrasHeader = _selectedFolderKey != null;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgSecondary,
+      appBar: AppBar(
+        title: const Text('Análise de Solo'),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(safras.isNotEmpty ? 170 : 130),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar área, produtor, cultura...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilterChipsWidget(
+                labels: Cultura.values.map((e) => e.label).toList(),
+                selectedLabel: _selectedCultura,
+                onSelected: (label) {
+                  setState(() {
+                    _selectedCultura = _selectedCultura == label ? null : label;
+                  });
+                },
+              ),
+              if (safras.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                FilterChipsWidget(
+                  labels: safras,
+                  selectedLabel: _selectedSafra,
+                  onSelected: (label) {
+                    setState(() {
+                      _selectedSafra = _selectedSafra == label ? null : label;
+                    });
+                  },
+                ),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+      body: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        trackVisibility: true,
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverToBoxAdapter(
+              child: produtores.isEmpty
+                  ? const SizedBox.shrink()
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: Text(
+                            'Produtores',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: produtores.length,
+                          itemBuilder: (context, index) {
+                            return ProdutorRowWidget(
+                              produtor: produtores[index],
+                            );
+                          },
+                        ),
+                        const Divider(),
+                      ],
+                    ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mostrandoAmostrasHeader
+                          ? 'Amostras'
+                          : 'Pastas de Análises',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (mostrandoAmostrasHeader) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () =>
+                            setState(() => _selectedFolderKey = null),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          foregroundColor: const Color(0xFF007AFF),
+                        ),
+                        icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                        label: Text(
+                          'Voltar para pastas',
+                          style: AppTextStyles.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            analiseState.when(
+              skipLoadingOnRefresh: true,
+              skipLoadingOnReload: true,
+              loading: () => const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (err, stack) => SliverFillRemaining(
+                child: _AnaliseLoadError(
+                  error: err,
+                  onRetry: () => ref.invalidate(analiseNotifierProvider),
+                ),
+              ),
+              data: (listaCompleta) {
+                final analises = _filtrarAnalises(
+                  listaCompleta,
+                  cultura: culturaEnum,
+                  safra: _selectedSafra,
+                  busca: _searchQuery,
+                );
+                final pastas = _agruparPorPasta(analises);
+                _AnaliseFolderSummary? pastaSelecionada;
+                if (_selectedFolderKey != null) {
+                  for (final pasta in pastas) {
+                    if (pasta.key == _selectedFolderKey) {
+                      pastaSelecionada = pasta;
+                      break;
+                    }
+                  }
+                  if (pastaSelecionada == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      setState(() => _selectedFolderKey = null);
+                    });
+                  }
+                }
+                final mostrandoAmostras = pastaSelecionada != null;
+                final itensGrid =
+                    mostrandoAmostras ? pastaSelecionada.analises : pastas;
+
+                if (analises.isEmpty && !mostrandoAmostras) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.analytics_outlined,
+                                size: 64, color: AppColors.textTertiary),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Nenhuma análise encontrada',
+                              style: AppTextStyles.headline,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Você ainda não possui análises salvas na nuvem.',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.body
+                                  .copyWith(color: AppColors.textSecond),
+                            ),
+                            const SizedBox(height: 32),
+                            _NovaAnaliseCard(
+                              onTap: () => context.push(AppRoutes.analiseForm),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.0,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == itensGrid.length) {
+                          return _NovaAnaliseCard(
+                            onTap: () => context.push(AppRoutes.analiseForm),
+                          );
+                        }
+
+                        if (!mostrandoAmostras) {
+                          final pasta =
+                              itensGrid[index] as _AnaliseFolderSummary;
+                          return _PastaAnaliseCard(
+                            pasta: pasta,
+                            onTap: () {
+                              setState(() {
+                                _selectedFolderKey = pasta.key;
+                              });
+                            },
+                            onLongPress: () =>
+                                _showPastaOptionsSheet(context, pasta),
+                          );
+                        }
+
+                        final analise = itensGrid[index] as AnaliseSolo;
+                        return _AnaliseAmostraCard(
+                          analise: analise,
+                          onTap: () {
+                            context.push(
+                                '${AppRoutes.analise}/detalhe/${analise.id}');
+                          },
+                          onLongPress: () =>
+                              _showAnaliseOptionsSheet(context, analise),
+                        );
+                      },
+                      childCount: itensGrid.length + 1,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPastaOptionsSheet(
+    BuildContext context,
+    _AnaliseFolderSummary pasta,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                pasta.laboratorio,
+                style: AppTextStyles.body.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading:
+                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              title: Text(
+                'Renomear Pasta',
+                style: AppTextStyles.body.copyWith(color: AppColors.primary),
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _showRenomearPastaDialog(context, pasta);
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
+              title: Text(
+                'Excluir Pasta',
+                style: AppTextStyles.body.copyWith(color: AppColors.error),
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _confirmarExcluirPasta(context, pasta);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close, color: AppColors.textSecond),
+              title: Text(
+                'Cancelar',
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop(),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showRenomearPastaDialog(
+    BuildContext context,
+    _AnaliseFolderSummary pasta,
+  ) async {
+    final controller = TextEditingController(text: pasta.laboratorio);
+
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final nome = controller.text.trim();
+            final desabilitado = nome.isEmpty || nome == pasta.laboratorio;
+
+            return AlertDialog(
+              title: const Text('Renomear pasta'),
+              content: TextFormField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 60,
+                decoration: InputDecoration(
+                  hintText: 'Nome da pasta',
+                  counterText: '',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => setStateDialog(() {}),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: AppTextStyles.body
+                        .copyWith(color: AppColors.textSecond),
+                  ),
+                ),
+                TextButton(
+                  onPressed: desabilitado
+                      ? null
+                      : () async {
+                          Navigator.of(dialogContext).pop();
+                          await _executarRenomearPasta(pasta, nome);
+                        },
+                  style:
+                      TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Future<void> _executarRenomearPasta(
+    _AnaliseFolderSummary pasta,
+    String novoNome,
+  ) async {
+    try {
+      await ref.read(analiseNotifierProvider.notifier).renomearPasta(
+            analiseIds: pasta.analises.map((a) => a.id).toList(growable: false),
+            novoNome: novoNome,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pasta renomeada'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao renomear. Tente novamente.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmarExcluirPasta(
+    BuildContext context,
+    _AnaliseFolderSummary pasta,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir pasta?'),
+        content: Text(
+          'Esta ação não pode ser desfeita. '
+          'Todas as ${pasta.analises.length} análise(s) desta pasta também serão excluídas.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _excluirPasta(pasta);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _excluirPasta(_AnaliseFolderSummary pasta) async {
+    try {
+      final ids = pasta.analises.map((analise) => analise.id).toList();
+      await ref.read(analiseNotifierProvider.notifier).excluirPasta(ids);
+      if (!mounted) return;
+      if (_selectedFolderKey == pasta.key) {
+        setState(() => _selectedFolderKey = null);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pasta excluída'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao excluir pasta. Tente novamente.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showAnaliseOptionsSheet(
+    BuildContext context,
+    AnaliseSolo analise,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                analise.talhao.trim().isEmpty ? 'Análise' : analise.talhao,
+                style: AppTextStyles.body.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
+              title: Text(
+                'Excluir Análise',
+                style: AppTextStyles.body.copyWith(color: AppColors.error),
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _confirmarExcluirAnalise(context, analise);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.drive_file_move_outline,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                'Mover para outra pasta',
+                style: AppTextStyles.body,
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Em breve'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close, color: AppColors.textSecond),
+              title: Text(
+                'Cancelar',
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop(),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmarExcluirAnalise(
+    BuildContext context,
+    AnaliseSolo analise,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Excluir análise?'),
+        content: const Text('Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _excluirAnalise(analise);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _excluirAnalise(AnaliseSolo analise) async {
+    try {
+      await ref
+          .read(analiseNotifierProvider.notifier)
+          .excluirAnalise(analise.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Análise excluída'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao excluir. Tente novamente.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  List<_AnaliseFolderSummary> _agruparPorPasta(List<AnaliseSolo> analises) {
+    final map = <String, _AnaliseFolderSummary>{};
+    for (final analise in analises) {
+      final laboratorio = analise.laboratorio.trim().isEmpty
+          ? 'Laboratório não informado'
+          : analise.laboratorio.trim();
+      final groupId = _extrairGroupId(analise);
+      final groupTitle = _extrairGroupTitle(analise);
+      final os = _extrairOs(analise);
+      // Chave do produtor para agrupar análises do mesmo cliente
+      final produtor = analise.produtor.trim();
+      final fazenda = analise.fazenda.trim();
+      final produtorKey = produtor.isNotEmpty
+          ? produtor.toLowerCase()
+          : (fazenda.isNotEmpty ? fazenda.toLowerCase() : 'sem-produtor');
+
+      final folderKey = groupId.isNotEmpty
+          ? 'group:$groupId'
+          : (os.isNotEmpty
+              ? 'produtor:$produtorKey::os:$os'
+              : 'produtor:$produtorKey');
+
+      final folderOs = groupId.isNotEmpty
+          ? (os.isNotEmpty
+              ? os
+              : (groupTitle.isNotEmpty ? groupTitle : groupId))
+          : (os.isNotEmpty ? os : 'Importações antigas');
+
+      final current = map[folderKey];
+      if (current == null) {
+        map[folderKey] = _AnaliseFolderSummary(
+          key: folderKey,
+          laboratorio: produtor.isNotEmpty
+              ? produtor
+              : (fazenda.isNotEmpty ? fazenda : laboratorio),
+          os: folderOs,
+          analises: [analise],
+          dataMaisRecente: analise.dataCadastro,
+        );
+        continue;
+      }
+
+      final atualizadas = [...current.analises, analise];
+      final maisRecente = analise.dataCadastro.isAfter(current.dataMaisRecente)
+          ? analise.dataCadastro
+          : current.dataMaisRecente;
+      map[folderKey] = _AnaliseFolderSummary(
+        key: current.key,
+        laboratorio: current.laboratorio,
+        os: current.os,
+        analises: atualizadas,
+        dataMaisRecente: maisRecente,
+      );
+    }
+
+    final pastas = map.values.toList(growable: false);
+    pastas.sort((a, b) => b.dataMaisRecente.compareTo(a.dataMaisRecente));
+    return pastas;
+  }
+
+  List<AnaliseSolo> _filtrarAnalises(
+    List<AnaliseSolo> lista, {
+    Cultura? cultura,
+    String? produtorId,
+    String? safra,
+    String? busca,
+  }) {
+    return lista.where((analise) {
+      if (cultura != null && analise.cultura != cultura) return false;
+      if (produtorId != null && analise.produtor != produtorId) return false;
+      if (safra != null && analise.safra != safra) return false;
+      if (busca != null && busca.isNotEmpty) {
+        final query = busca.toLowerCase();
+        return analise.talhao.toLowerCase().contains(query) ||
+            analise.laboratorio.toLowerCase().contains(query) ||
+            analise.produtor.toLowerCase().contains(query) ||
+            analise.fazenda.toLowerCase().contains(query);
+      }
+      return true;
+    }).toList(growable: false);
+  }
+
+  String _extrairOs(AnaliseSolo analise) {
+    final metadata = analise.laudoMetadata;
+    if (metadata == null) return '';
+    for (final key in const ['os', 'relatorio', 'laudoNumero', 'analise']) {
+      final value = metadata[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '';
+  }
+
+  String _extrairGroupId(AnaliseSolo analise) {
+    final metadata = analise.laudoMetadata;
+    if (metadata == null) return '';
+    return metadata['groupId']?.toString().trim() ?? '';
+  }
+
+  String _extrairGroupTitle(AnaliseSolo analise) {
+    final metadata = analise.laudoMetadata;
+    if (metadata == null) return '';
+    return metadata['groupTitle']?.toString().trim() ?? '';
+  }
+}
+
+class _AnaliseLoadError extends StatefulWidget {
+  const _AnaliseLoadError({
+    required this.error,
+    required this.onRetry,
+  });
+
+  final Object error;
+  final VoidCallback onRetry;
+
+  @override
+  State<_AnaliseLoadError> createState() => _AnaliseLoadErrorState();
+}
+
+class _AnaliseLoadErrorState extends State<_AnaliseLoadError> {
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('Erro visível na tela de análise: ${widget.error}');
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnaliseLoadError oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.error != widget.error) {
+      debugPrint('Erro visível na tela de análise: ${widget.error}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(
+              'Erro ao carregar dados da nuvem',
+              style: AppTextStyles.headline.copyWith(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.error.toString(),
+              style: AppTextStyles.body,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: widget.onRetry,
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnaliseFolderSummary {
+  const _AnaliseFolderSummary({
+    required this.key,
+    required this.laboratorio,
+    required this.os,
+    required this.analises,
+    required this.dataMaisRecente,
+  });
+
+  final String key;
+  final String laboratorio;
+  final String os;
+  final List<AnaliseSolo> analises;
+  final DateTime dataMaisRecente;
+}
+
+class _PastaAnaliseCard extends StatelessWidget {
+  const _PastaAnaliseCard({
+    required this.pasta,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final _AnaliseFolderSummary pasta;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = pasta.analises.length;
+    final totalLabel = total == 1 ? '1 amostra' : '$total amostras';
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.folder_open_rounded,
+                  size: 42,
+                  color: Color(0xFF007AFF),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  pasta.laboratorio,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.label.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1D1D1F),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'O.S.: ${pasta.os}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    color: const Color(0xFF86868B),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  totalLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    color: const Color(0xFF34C759),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnaliseAmostraCard extends StatelessWidget {
+  const _AnaliseAmostraCard({
+    required this.analise,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final AnaliseSolo analise;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final titulo =
+        analise.talhao.trim().isEmpty ? 'Sem talhão' : analise.talhao;
+    final subtitulo = analise.safra.trim().isEmpty
+        ? analise.cultura.label
+        : '${analise.cultura.label} · ${analise.safra}';
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.science,
+                  size: 48,
+                  color: analise.cultura.color,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  titulo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.label.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitulo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    color: AppColors.textSecond,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NovaAnaliseCard extends StatelessWidget {
+  const _NovaAnaliseCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: CustomPaint(
+          painter: _DashedBorderPainter(
+            color: const Color(0xFFD1D1D6),
+            strokeWidth: 2,
+            dashWidth: 8,
+            dashSpace: 6,
+            radius: 12,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.add_circle,
+                    size: 48,
+                    color: Color(0xFF34C759),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Nova análise',
+                    style: AppTextStyles.label.copyWith(
+                      fontSize: 13,
+                      color: const Color(0xFF86868B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.dashWidth,
+    required this.dashSpace,
+    required this.radius,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double dashWidth;
+  final double dashSpace;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(strokeWidth / 2),
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = color;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + dashWidth;
+        final segment = metric.extractPath(distance, next);
+        canvas.drawPath(segment, paint);
+        distance = next + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.dashSpace != dashSpace ||
+        oldDelegate.radius != radius;
+  }
+}
+[PASSO 4]
+File: lib/features/analise/data/datasources/analise_local_datasource.dart
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/services.dart';
+import 'package:soloforte/features/analise/data/models/analise_solo_model.dart';
+import 'package:soloforte/features/analise/data/models/produtor_model.dart';
+import 'package:soloforte/features/analise/data/datasources/analise_datasource.dart';
+import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
+
+class BatchFaultInjection {
+  final int? failAfterPendingWrites;
+  final bool failBeforeFinalCommit;
+  final bool skipCompensationOnFailure;
+  final bool leaveBatchPersistingOnFailure;
+
+  const BatchFaultInjection({
+    this.failAfterPendingWrites,
+    this.failBeforeFinalCommit = false,
+    this.skipCompensationOnFailure = false,
+    this.leaveBatchPersistingOnFailure = false,
+  });
+}
+
+class _BatchRecord {
+  final String batchId;
+  final String idempotencyKey;
+  final SaveBatchStatus status;
+  final SaveStrategy strategy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int attempt;
+  final String? lastError;
+  final List<String> resultAnaliseIds;
+
+  const _BatchRecord({
+    required this.batchId,
+    required this.idempotencyKey,
+    required this.status,
+    required this.strategy,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.attempt,
+    this.lastError,
+    this.resultAnaliseIds = const <String>[],
+  });
+
+  _BatchRecord copyWith({
+    SaveBatchStatus? status,
+    DateTime? updatedAt,
+    int? attempt,
+    String? lastError,
+    List<String>? resultAnaliseIds,
+  }) {
+    return _BatchRecord(
+      batchId: batchId,
+      idempotencyKey: idempotencyKey,
+      status: status ?? this.status,
+      strategy: strategy,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      attempt: attempt ?? this.attempt,
+      lastError: lastError ?? this.lastError,
+      resultAnaliseIds: resultAnaliseIds ?? this.resultAnaliseIds,
+    );
+  }
+}
+
+class AnaliseLocalDatasource implements AnaliseDataSource {
+  final List<AnaliseSoloModel> _analisesMock = [];
+  final _streamController =
+      StreamController<List<AnaliseSoloModel>>.broadcast();
+  bool _mockLoaded = false;
+  final bool _useAssetSeed;
+  final BatchFaultInjection _faultInjection;
+
+  final Map<String, SaveBatchStatus> _persistStatusById = {};
+  final Map<String, String?> _saveBatchIdById = {};
+  final Map<String, _BatchRecord> _batchByKey = {};
+
+  int _batchCounter = 0;
+
+  AnaliseLocalDatasource({
+    bool useAssetSeed = true,
+    BatchFaultInjection faultInjection = const BatchFaultInjection(),
+  })  : _useAssetSeed = useAssetSeed,
+        _faultInjection = faultInjection;
+
+  static const List<String> _jsonFiles = [
+    'assets/lab_data/exata_brasil_16723_2024.json',
+    'assets/lab_data/exata_brasil_17259_2025.json',
+    'assets/lab_data/ibra_237526_2025.json',
+    'assets/lab_data/mb_78416_2025.json',
+    'assets/lab_data/sellar_6077_2025.json',
+    'assets/lab_data/ibra_235421_2025.json',
+    'assets/lab_data/mb_78418_2025.json',
+    'assets/lab_data/exata_brasil_16738_2025.json',
+    'assets/lab_data/exata_brasil_20573_2024.json',
+  ];
+
+  Future<void> _loadMockData() async {
+    if (_mockLoaded) return;
+    if (!_useAssetSeed) {
+      _mockLoaded = true;
+      return;
+    }
+    try {
+      for (final file in _jsonFiles) {
+        final jsonString = await rootBundle.loadString(file);
+        final data = jsonDecode(jsonString) as Map<String, dynamic>;
+
+        final relatorio = data['relatorio'] as String? ??
+            data['os'] as String? ??
+            data['laudoNumero'] as String? ??
+            'N/A';
+        final proprietario = data['proprietario'] as String? ??
+            data['solicitante'] as String? ??
+            'N/A';
+        final propriedade = data['propriedade'] as String? ?? 'N/A';
+        final dataEmissao = data['dataEmissao'] as String? ??
+            data['dataGeracao'] as String? ??
+            DateTime.now().toIso8601String();
+        final laboratorio =
+            data['laboratorio'] as String? ?? data['fonte'] as String? ?? 'N/A';
+
+        String safra = '2023/2024';
+        if (dataEmissao.length >= 4) {
+          final year = int.tryParse(dataEmissao.substring(0, 4));
+          if (year != null) {
+            safra = '${year - 1}/$year';
+          }
+        }
+
+        final amostras = data['amostras'] as List<dynamic>? ?? [];
+
+        double? asDouble(dynamic v) {
+          if (v == null) return null;
+          if (v is num) return v.toDouble();
+          if (v is String) return double.tryParse(v.replaceAll(',', '.'));
+          if (v is Map) return null; // Algumas amostras podem ter sub-objetos
+          return null;
+        }
+
+        for (var item in amostras) {
+          if (item is! Map<String, dynamic>) continue;
+
+          final numeroAmostra = (item['numeroAmostra'] ??
+                  item['numeroSellar'] ??
+                  item['amostra'] ??
+                  'N/A')
+              .toString();
+
+          // Tratamento para K (mg/dm3 para mmolc/dm3 se necessário)
+          dynamic kRaw = item['k_mgdm3'] ?? item['k'];
+          double? kVal = asDouble(kRaw);
+          if (kVal != null &&
+              kRaw != null &&
+              (item.containsKey('k_mgdm3') || (kVal > 10))) {
+            // Se for mg/dm3 (geralmente > 10), converte para mmolc/dm3
+            kVal = kVal / 391.0;
+          }
+
+          final mappedJson = <String, dynamic>{
+            ...item,
+            'id': '${relatorio}_$numeroAmostra',
+            'cultura': 'soja',
+            'safra': safra,
+            'dataCadastro': dataEmissao,
+            'fazenda': propriedade,
+            'produtor': proprietario,
+            'laboratorio': laboratorio,
+            'k': kVal,
+            'cu': asDouble(item['cu_meh'] ?? item['cu_dtpa'] ?? item['cu']),
+            'fe': asDouble(item['fe_meh'] ?? item['fe_dtpa'] ?? item['fe']),
+            'mn': asDouble(item['mn_meh'] ?? item['mn_dtpa'] ?? item['mn']),
+            'zn': asDouble(item['zn_meh'] ?? item['zn_dtpa'] ?? item['zn']),
+            'argila': asDouble(item['argila']),
+            'p': asDouble(item['pMehlich'] ?? item['pResina'] ?? item['P']),
+          };
+
+          _analisesMock.add(AnaliseSoloModel.fromJson(mappedJson));
+          _persistStatusById[mappedJson['id'] as String] =
+              SaveBatchStatus.committed;
+          _saveBatchIdById[mappedJson['id'] as String] = null;
+        }
+      }
+
+      _mockLoaded = true;
+    } catch (e) {
+      assert(false, 'Falha ao carregar mock data: $e');
+    }
+  }
+
+  @override
+  Future<List<AnaliseSoloModel>> getAnalises() async {
+    await _loadMockData();
+    await Future.delayed(const Duration(milliseconds: 300));
+    final visible = _analisesMock.where((a) {
+      final status = _persistStatusById[a.id] ?? SaveBatchStatus.committed;
+      return status == SaveBatchStatus.committed;
+    }).toList(growable: false);
+    return List.unmodifiable(visible);
+  }
+
+  @override
+  Future<void> saveAnalise(AnaliseSoloModel analise) async {
+    await saveAnalisesBatch([analise]);
+  }
+
+  @override
+  Stream<List<AnaliseSoloModel>> watchAnalises() async* {
+    yield await getAnalises();
+    yield* _streamController.stream;
+  }
+
+  Future<void> _notify() async {
+    _streamController.add(await getAnalises());
+  }
+
+  @override
+  Future<SaveBatchResult> saveAnalisesBatch(
+      List<AnaliseSoloModel> analises) async {
+    await _loadMockData();
+    if (analises.isEmpty) {
+      final emptyBatchId = _nextBatchId();
+      return SaveBatchResult(
+        batchId: emptyBatchId,
+        idempotencyKey: 'empty',
+        status: SaveBatchStatus.committed,
+        strategy: SaveStrategy.compensating,
+        savedCount: 0,
+        isReplay: false,
+      );
+    }
+
+    await Future.delayed(const Duration(milliseconds: 250));
+
+    final idempotencyKey = SaveBatchIdempotency.build(
+      userId: 'local',
+      payloads: analises.map((a) => a.toJson()).toList(growable: false),
+      context: 'analise_batch_save',
+    );
+    final now = DateTime.now();
+    final existing = _batchByKey[idempotencyKey];
+    if (existing != null) {
+      if (existing.status == SaveBatchStatus.committed) {
+        return SaveBatchResult(
+          batchId: existing.batchId,
+          idempotencyKey: idempotencyKey,
+          status: SaveBatchStatus.committed,
+          strategy: existing.strategy,
+          savedCount: existing.resultAnaliseIds.length,
+          isReplay: true,
+          code: SaveBatchCode.saveIdempotentReplay,
+        );
+      }
+      if (existing.status == SaveBatchStatus.persisting ||
+          existing.status == SaveBatchStatus.received ||
+          existing.status == SaveBatchStatus.validating) {
+        throw SaveBatchException(
+          code: SaveBatchCode.saveInProgress,
+          message: 'Há um lote ainda em processamento para esta operação.',
+          batchId: existing.batchId,
+          idempotencyKey: idempotencyKey,
+        );
+      }
+    }
+
+    final batchId = existing?.batchId ?? _nextBatchId();
+    final attempt = (existing?.attempt ?? 0) + 1;
+    _batchByKey[idempotencyKey] = _BatchRecord(
+      batchId: batchId,
+      idempotencyKey: idempotencyKey,
+      status: SaveBatchStatus.persisting,
+      strategy: SaveStrategy.compensating,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      attempt: attempt,
+    );
+
+    final previousById = <String, AnaliseSoloModel?>{};
+    final previousStatusById = <String, SaveBatchStatus>{};
+    final touchedIds = <String>[];
+
+    try {
+      var writes = 0;
+      for (var i = 0; i < analises.length; i++) {
+        final analise = analises[i];
+        final id = analise.id;
+        final oldIndex = _analisesMock.indexWhere((a) => a.id == id);
+        previousById[id] = oldIndex >= 0 ? _analisesMock[oldIndex] : null;
+        previousStatusById[id] =
+            _persistStatusById[id] ?? SaveBatchStatus.committed;
+
+        if (oldIndex >= 0) {
+          _analisesMock[oldIndex] = analise;
+        } else {
+          _analisesMock.add(analise);
+        }
+
+        _persistStatusById[id] = SaveBatchStatus.persisting;
+        _saveBatchIdById[id] = batchId;
+        touchedIds.add(id);
+        writes++;
+
+        if (_faultInjection.failAfterPendingWrites != null &&
+            writes >= _faultInjection.failAfterPendingWrites!) {
+          throw Exception(
+              'Falha simulada após gravação pendente de A${i + 1}.');
+        }
+      }
+
+      if (_faultInjection.failBeforeFinalCommit) {
+        throw Exception('Falha simulada antes do commit final.');
+      }
+
+      for (final id in touchedIds) {
+        _persistStatusById[id] = SaveBatchStatus.committed;
+      }
+
+      _batchByKey[idempotencyKey] = _batchByKey[idempotencyKey]!.copyWith(
+        status: SaveBatchStatus.committed,
+        updatedAt: DateTime.now(),
+        resultAnaliseIds: touchedIds,
+      );
+
+      await _notify();
+
+      return SaveBatchResult(
+        batchId: batchId,
+        idempotencyKey: idempotencyKey,
+        status: SaveBatchStatus.committed,
+        strategy: SaveStrategy.compensating,
+        savedCount: touchedIds.length,
+        isReplay: false,
+      );
+    } catch (e) {
+      if (!_faultInjection.skipCompensationOnFailure) {
+        for (final id in touchedIds) {
+          final old = previousById[id];
+          if (old == null) {
+            _analisesMock.removeWhere((a) => a.id == id);
+            _persistStatusById.remove(id);
+            _saveBatchIdById.remove(id);
+          } else {
+            final idx = _analisesMock.indexWhere((a) => a.id == id);
+            if (idx >= 0) {
+              _analisesMock[idx] = old;
+            } else {
+              _analisesMock.add(old);
+            }
+            _persistStatusById[id] =
+                previousStatusById[id] ?? SaveBatchStatus.committed;
+            _saveBatchIdById[id] = null;
+          }
+        }
+      }
+
+      _batchByKey[idempotencyKey] = _batchByKey[idempotencyKey]!.copyWith(
+        status: _faultInjection.leaveBatchPersistingOnFailure
+            ? SaveBatchStatus.persisting
+            : (_faultInjection.skipCompensationOnFailure
+                ? SaveBatchStatus.failed
+                : SaveBatchStatus.compensated),
+        updatedAt: DateTime.now(),
+        lastError: e.toString(),
+      );
+
+      throw SaveBatchException(
+        code: SaveBatchCode.saveCompensated,
+        message:
+            'Falha na persistência do lote; compensação aplicada para evitar estado parcial.',
+        batchId: batchId,
+        idempotencyKey: idempotencyKey,
+        cause: e,
+      );
+    }
+  }
+
+  @override
+  Future<void> recoverPendingBatches({
+    Duration timeout = const Duration(minutes: 10),
+  }) async {
+    await _loadMockData();
+    final now = DateTime.now();
+    final stale = _batchByKey.entries
+        .where(
+          (entry) =>
+              entry.value.status == SaveBatchStatus.persisting &&
+              now.difference(entry.value.updatedAt) >= timeout,
+        )
+        .toList(growable: false);
+
+    if (stale.isEmpty) return;
+    for (final entry in stale) {
+      final batchId = entry.value.batchId;
+      for (final idEntry in _saveBatchIdById.entries) {
+        if (idEntry.value == batchId &&
+            _persistStatusById[idEntry.key] == SaveBatchStatus.persisting) {
+          _persistStatusById[idEntry.key] = SaveBatchStatus.compensated;
+        }
+      }
+      _batchByKey[entry.key] = entry.value.copyWith(
+        status: SaveBatchStatus.compensated,
+        updatedAt: now,
+        lastError: 'Recovery converteu lote persisting órfão para compensated.',
+      );
+    }
+
+    if (stale.isNotEmpty) {
+      await _notify();
+    }
+  }
+
+  @override
+  Future<void> deleteAnalise(String id) async {
+    await _loadMockData();
+    await Future.delayed(const Duration(milliseconds: 300));
+    _analisesMock.removeWhere((element) => element.id == id);
+    _persistStatusById.remove(id);
+    _saveBatchIdById.remove(id);
+    await _notify();
+  }
+
+  @override
+  Future<List<ProdutorModel>> getProdutores() async {
+    await _loadMockData();
+    await Future.delayed(const Duration(milliseconds: 300));
+    final Map<String, ProdutorModel> map = {};
+    for (final a in _analisesMock) {
+      if (a.produtor.isEmpty) continue;
+      final key = '${a.produtor}_${a.fazenda}';
+      if (map.containsKey(key)) {
+        final existing = map[key]!;
+        map[key] = ProdutorModel(
+          id: existing.id,
+          nome: existing.nome,
+          fazenda: existing.fazenda,
+          totalAnalises: existing.totalAnalises + 1,
+        );
+      } else {
+        map[key] = ProdutorModel(
+          id: key,
+          nome: a.produtor,
+          fazenda: a.fazenda,
+          totalAnalises: 1,
+        );
+      }
+    }
+    final list = map.values.toList();
+    list.sort((a, b) => a.nome.compareTo(b.nome));
+    return list;
+  }
+
+  String _nextBatchId() {
+    _batchCounter++;
+    return 'local-batch-${DateTime.now().millisecondsSinceEpoch}-$_batchCounter';
+  }
+}
+[PASSO 5]
+lib/features/analise/application/providers/analise_provider.dart:25:    Provider<AnaliseFirestoreDatasource>((ref) {
+lib/features/analise/application/providers/analise_provider.dart:26:  return AnaliseFirestoreDatasource();
+lib/data/datasources/remote/analise_firestore_datasource.dart:12:class AnaliseFirestoreDatasource implements AnaliseDataSource {
+lib/data/datasources/remote/analise_firestore_datasource.dart:19:  AnaliseFirestoreDatasource({
+lib/data/datasources/remote/analise_firestore_datasource.dart:83:      debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
+[PASSO 6]
+lib/features/analise/application/providers/analise_provider.dart:70:@Riverpod(keepAlive: true)
+lib/features/analise/presentation/providers/location_provider.dart:31:    StateNotifierProvider.autoDispose<LocationNotifier, LocationState>((ref) {
+lib/features/analise/presentation/controllers/nova_analise_controller.dart:576:    .autoDispose<NovaAnaliseController, NovaAnaliseState, AnaliseSolo?>(
+[PASSO 7]
+File: lib/features/analise/data/repositories/analise_repository_impl.dart
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
+import 'package:soloforte/features/analise/domain/entities/produtor.dart';
+import 'package:soloforte/features/analise/domain/repositories/analise_repository.dart';
+import 'package:soloforte/features/analise/data/datasources/analise_datasource.dart';
+import 'package:soloforte/features/analise/data/models/analise_solo_model.dart';
+
+class AnaliseRepositoryImpl implements AnaliseRepository {
+  final AnaliseDataSource dataSource;
+
+  AnaliseRepositoryImpl({required this.dataSource});
+
+  @override
+  Future<List<AnaliseSolo>> getAnalises() async {
+    return await dataSource.getAnalises();
+  }
+
+  @override
+  Stream<List<AnaliseSolo>> watchAnalises() {
+    return dataSource.watchAnalises();
+  }
+
+  @override
+  Future<void> saveAnalise(AnaliseSolo analise) async {
+    final model = AnaliseSoloModel.fromEntity(analise);
+    await dataSource.saveAnalise(model);
+  }
+
+  @override
+  Future<SaveBatchResult> saveAnalisesBatch(List<AnaliseSolo> analises) async {
+    final models =
+        analises.map(AnaliseSoloModel.fromEntity).toList(growable: false);
+    return dataSource.saveAnalisesBatch(models);
+  }
+
+  @override
+  Future<void> recoverPendingBatches(
+      {Duration timeout = const Duration(minutes: 10)}) {
+    return dataSource.recoverPendingBatches(timeout: timeout);
+  }
+
+  @override
+  Future<void> deleteAnalise(String id) async {
+    await dataSource.deleteAnalise(id);
+  }
+
+  @override
+  Future<List<Produtor>> getProdutores() async {
+    return await dataSource.getProdutores();
+  }
+}

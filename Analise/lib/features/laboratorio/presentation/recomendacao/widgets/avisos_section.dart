@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
@@ -12,17 +11,15 @@ class RecomendacaoIdentificacaoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final perfil = resultado.calibracao;
+    final analise = resultado.analise;
     return AppCardSection(
       title: 'Identificação',
       child: Column(
         children: [
-          _buildInfoRow('Análise', resultado.labelAnalise ?? 'N/D'),
-          _buildInfoRow('Cultura', perfil.cultura),
-          _buildInfoRow('Safra', perfil.safra),
-          if (resultado.geradaEm != null)
-            _buildInfoRow('Data',
-                DateFormat('dd/MM/yyyy HH:mm').format(resultado.geradaEm!)),
+          _buildInfoRow('Identificação', analise.id),
+          _buildInfoRow('Nome do produtor', analise.nome),
+          _buildInfoRow('Fazenda', analise.fazenda),
+          _buildInfoRow('Cidade', analise.localizacao),
         ],
       ),
     );
