@@ -30,70 +30,6 @@ class RecomendacaoFosforoSection extends StatelessWidget {
     );
   }
 
-  Widget _buildExtratorRow({
-    required String label,
-    required double valor,
-    required double nc,
-    required double argila,
-    required Color cor,
-  }) {
-    final rotulo = ClassificacaoNivel.classificar(
-      nutriente: 'p',
-      valor: valor,
-      argila: argila,
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 72,
-                child: Text(label,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1D1D1F))),
-              ),
-              Text('${valor.toStringAsFixed(1)} mg/dm³',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: cor)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(rotulo,
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: cor,
-                        fontWeight: FontWeight.w500)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          NivelGradienteBar(
-            valor: valor,
-            min: NivelEscala.escala('p', argila: argila).$1,
-            max: NivelEscala.escala('p', argila: argila).$2,
-            rotulo: rotulo,
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 2, bottom: 4),
-            child: Text('NC: ${nc.toStringAsFixed(2)} mg/dm³',
-                style: const TextStyle(fontSize: 10, color: Color(0xFFC7C7CC))),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFosforo(ResultadoRecomendacao resultado) {
     final analise = resultado.analise;
     final p = analise.p;
@@ -108,13 +44,6 @@ class RecomendacaoFosforoSection extends StatelessWidget {
       valor: p,
       argila: argila,
     );
-
-    final temMehlich = analise.pMehlich != null && analise.pMehlich! > 0;
-    final temResina = analise.pResina != null && analise.pResina! > 0;
-    final temPRem = analise.pRem != null;
-
-    final ncMehlich = nc;
-    final ncResina = nc * 0.88;
 
     Color corP(double pVal, double ncVal) {
       final rel = ncVal > 0 ? (pVal / ncVal * 100) : 0.0;
@@ -131,8 +60,19 @@ class RecomendacaoFosforoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text(
+              'P Mehlich',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF86868B),
+              ),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -211,54 +151,6 @@ class RecomendacaoFosforoSection extends StatelessWidget {
               ],
             ),
           ),
-          if (temMehlich || temResina) ...[
-            const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text(
-                'EXTRATORES',
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF86868B),
-                    letterSpacing: 0.5),
-              ),
-            ),
-            if (temMehlich)
-              _buildExtratorRow(
-                label: 'P Mehlich',
-                valor: analise.pMehlich!,
-                nc: ncMehlich,
-                argila: argila,
-                cor: corP(analise.pMehlich!, ncMehlich),
-              ),
-            if (temResina)
-              _buildExtratorRow(
-                label: 'P Resina',
-                valor: analise.pResina!,
-                nc: ncResina,
-                argila: argila,
-                cor: corP(analise.pResina!, ncResina),
-              ),
-            if (temPRem)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Row(
-                  children: [
-                    const Text('P-rem',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF86868B))),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${analise.pRem!.toStringAsFixed(1)} mg/L',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1D1D1F)),
-                    ),
-                  ],
-                ),
-              ),
-          ],
           const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
