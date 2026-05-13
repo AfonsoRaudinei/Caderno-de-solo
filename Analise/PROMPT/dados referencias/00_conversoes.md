@@ -25,14 +25,19 @@ Este arquivo centraliza **todas as conversões de unidade, fatores e constantes*
 | Ca | Resina / KCl | mmolc/dm³ ou cmolc/dm³ | cmolc/dm³ |
 | Mg | Resina / KCl | mmolc/dm³ ou cmolc/dm³ | cmolc/dm³ |
 | Al | KCl 1 mol/L | mmolc/dm³ ou cmolc/dm³ | cmolc/dm³ |
-| H+Al | Tampão SMP | mmolc/dm³ ou cmolc/dm³ | cmolc/dm³ |
-| S | Fosfato de cálcio | mg/dm³ | mg/dm³ |
-| B | Água quente | mg/dm³ | mg/dm³ |
-| Cu | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
-| Fe | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
-| Mn | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
-| Zn | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
+| H+Al | Tampão SMP / Acetato | cmolc/dm³ ou mmolc/dm³ | cmolc/dm³ |
+| CTC (T)        | Calculado              | cmolc/dm³ ou mmolc/dm³ | cmolc/dm³ |
+| SB             | Calculado              | cmolc/dm³ ou mmolc/dm³ | cmolc/dm³ |
+| S (Enxofre)    | Fosfato monobásico     | mg/dm³             | mg/dm³      |
+| B  (Boro)      | Água quente / BaCl₂    | mg/dm³             | mg/dm³      |
+| Cu             | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
+| Fe             | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
+| Mn             | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
+| Zn             | DTPA-TEA / Mehlich-1 | mg/dm³ | mg/dm³ |
 | Mo | Oxalato de amônio | mg/dm³ | mg/dm³ |
+| Argila         | Pipeta / Densímetro    | % ou g/kg         | %           |
+| Silte          | Pipeta / Densímetro    | % ou g/kg         | %           |
+| Areia          | Peneiramento           | % ou g/kg         | %           |
 
 ---
 
@@ -305,3 +310,124 @@ Fator = 100 / 58 = 1,724
 ---
 
 *Documento: 00_conversoes.md · SoloForte v1 · Março 2026*
+
+---
+
+## 5. Regras de Normalização — UnidadeConverter (Implementado em Dart)
+
+> Classe: `Analise/lib/domain/utils/unidade_converter.dart`
+> Aplicação: `calcular_recomendacao_completa_usecase.dart`
+> Regra de ouro: **toda normalização ocorre no UseCase, antes do motor de cálculo.**
+
+### 5.1 — Cátions (K, Ca, Mg, Al, H+Al, CTC, SB)
+
+| Unidade recebida     | Fator         | Resultado       |
+|----------------------|---------------|-----------------|
+| `cmolc/dm³` ou `cmolc` | × 1,0       | cmolc/dm³ ✓     |
+| `mmolc/dm³` ou `mmolc` | ÷ 10,0      | cmolc/dm³ ✓     |
+| Qualquer outra       | —             | Erro lançado    |
+
+Método: `UnidadeConverter.normalizarCation(valor, unidade)`
+
+---
+
+### 5.2 — Fósforo, Enxofre e Micronutrientes (P, S, Zn, B, Cu, Fe, Mn)
+
+| Unidade recebida     | Fator         | Resultado       |
+|----------------------|---------------|-----------------|
+| `mg/dm³`             | × 1,0         | mg/dm³ ✓        |
+| `ppm`                | × 1,0         | mg/dm³ ✓        |
+| `mg/L`               | × 1,0         | mg/dm³ ✓        |
+| Qualquer outra       | —             | Erro lançado    |
+
+Nota: ppm e mg/dm³ são tratados como equivalentes (densidade bulk ≈ 1 g/cm³).
+
+Método: `UnidadeConverter.normalizarNutriente(valor, unidade)`
+
+---
+
+### 5.3 — Matéria Orgânica (MO)
+
+| Unidade recebida | Fator    | Resultado   | Exemplo             |
+|------------------|----------|-------------|---------------------|
+| `g/dm³`          | × 1,0    | g/dm³ ✓     | 28 → 28 g/dm³       |
+| `%`              | × 10,0   | g/dm³ ✓     | 3% → 30 g/dm³       |
+| `g/kg`           | ÷ 10,0   | g/dm³ ✓     | 30 g/kg → 3 g/dm³   |
+| `dag/kg`         | × 1,0    | g/dm³ ✓     | 3 dag/kg → 30 g/dm³ |
+| Qualquer outra   | —        | Erro lançado| —                   |
+
+**Exibição na UI:** valor em g/dm³ + classificação + percentual entre parênteses.
+Exemplo: `28 g/dm³ (Médio — 2,8%)`
+Conversão para exibição: `UnidadeConverter.moGdm3ParaPercentual(valor)` → divide por 10.
+
+Método: `UnidadeConverter.normalizarMO(valor, unidade)`
+
+---
+
+### 5.4 — Granulometria (Argila, Silte, Areia)
+
+| Unidade recebida | Fator    | Resultado | Exemplo          |
+|------------------|----------|-----------|------------------|
+| `%`              | × 1,0    | % ✓       | 60 → 60%         |
+| `g/kg`           | ÷ 10,0   | % ✓       | 600 → 60%        |
+| `dag/kg`         | × 1,0    | % ✓       | 60 → 60%         |
+| Qualquer outra   | —        | Erro lançado | —             |
+
+**Validação:** Argila% + Silte% + Areia% deve resultar em 100%.
+**Exibição na UI:** Barra segmentada única com os 3 componentes.
+
+Método: `UnidadeConverter.normalizarGranulometria(valor, unidade)`
+
+---
+
+### 5.5 — Inferência Inteligente de K (sem unidade declarada)
+
+Situação rara, mas tratada. Quando o laboratório não declara a unidade do K:
+
+| Condição      | Unidade inferida | Conversão  | Aviso gerado |
+|---------------|------------------|------------|--------------|
+| valor > 1,5   | mmolc/dm³        | ÷ 10,0     | ✅ Sim        |
+| valor ≤ 1,5   | cmolc/dm³        | × 1,0      | ✅ Sim        |
+
+**Justificativa agronômica:**
+- Solo fértil: K entre 0,15 e 0,80 cmolc/dm³
+- Solo muito fértil: K até 1,2 cmolc/dm³
+- K > 1,5 cmolc é agronomicamente impossível → indica mmolc
+
+**O aviso sempre é gerado**, mesmo quando o valor está na faixa do cmolc,
+pois a ausência de unidade no laudo deve ser reportada ao laboratório.
+
+Método: `UnidadeConverter.inferirEConverterK(valor)` → retorna `InferenciaUnidadeResult`
+
+---
+
+### 5.6 — Unidades Padrão Internas do Sistema
+
+| Grupo                    | Parâmetros                              | Unidade Padrão |
+|--------------------------|-----------------------------------------|----------------|
+| Cátions trocáveis        | K, Ca, Mg, Al, H+Al, CTC, SB           | cmolc/dm³      |
+| Nutrientes e fósforo     | P, S, Zn, B, Cu, Fe, Mn                | mg/dm³         |
+| Matéria orgânica         | MO                                      | g/dm³          |
+| Granulometria            | Argila, Silte, Areia                    | %              |
+| pH e saturações          | pH, V%, m%                              | adimensional   |
+
+---
+
+### 5.7 — Constantes a Migrar (TODO)
+
+As constantes abaixo existem em `conversoes.dart` e serão migradas
+para `UnidadeConverter` em uma próxima iteração:
+
+```dart
+// conversoes.dart — sinalizado com TODO: migrar para UnidadeConverter
+static const double cmolcToMmolc = 10.0;        // linha 63
+static const double mmolcToCmolc = 0.1;          // linha 66
+static double mmolcToCmolcFn(double mmolc) => mmolc / 10.0;  // linha 108
+```
+
+Até a migração, `UnidadeConverter` é a fonte de verdade para código novo.
+`conversoes.dart` permanece intacto para não quebrar código existente.
+
+---
+
+*Atualizado em 2026-05-13 — reflete a implementação de UnidadeConverter v1.0*

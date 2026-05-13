@@ -38,6 +38,16 @@ class AnaliseCompleta {
     required this.co,
     this.descricaoLocal,
     this.extratorP,
+    this.kUnidadeOriginal,
+    this.caUnidadeOriginal,
+    this.mgUnidadeOriginal,
+    this.alUnidadeOriginal,
+    this.hAlUnidadeOriginal,
+    this.ctcUnidadeOriginal,
+    this.sbUnidadeOriginal,
+    this.moUnidadeOriginal,
+    this.argilaUnidadeOriginal,
+    this.kUnidadeInferida,
   });
 
   final String id;
@@ -79,6 +89,17 @@ class AnaliseCompleta {
   final ValorNutriente mo;
   final ValorNutriente se;
   final ValorNutriente co;
+
+  final String? kUnidadeOriginal;
+  final String? caUnidadeOriginal;
+  final String? mgUnidadeOriginal;
+  final String? alUnidadeOriginal;
+  final String? hAlUnidadeOriginal;
+  final String? ctcUnidadeOriginal;
+  final String? sbUnidadeOriginal;
+  final String? moUnidadeOriginal;
+  final String? argilaUnidadeOriginal;
+  final bool? kUnidadeInferida;
 
   ValorNutriente get phPrincipal {
     if (phAgua.isValido) return phAgua;

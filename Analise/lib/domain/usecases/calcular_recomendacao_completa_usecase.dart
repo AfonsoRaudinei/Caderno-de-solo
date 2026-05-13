@@ -1,3 +1,5 @@
+import 'package:soloforte/domain/utils/unidade_converter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:soloforte/domain/entities/analise_completa.dart';
 import 'package:soloforte/domain/entities/analise_entity.dart';
 import 'package:soloforte/domain/formulas/enxofre_formula.dart';
@@ -46,12 +48,6 @@ class CalcularRecomendacaoCompletaUsecase {
     _validarCritico(nome: 'H+Al', valor: analise.hAl, erros: erros);
     _validarCritico(nome: 'S', valor: _preferirS(analise), erros: erros);
     // Micronutrientes — ausência gera aviso, não bloqueia recomendação
-    _validarNaoCritico(nome: 'B', valor: analise.b, avisos: avisos);
-    _validarNaoCritico(nome: 'Cu', valor: analise.cu, avisos: avisos);
-    _validarNaoCritico(nome: 'Fe', valor: analise.fe, avisos: avisos);
-    _validarNaoCritico(nome: 'Mn', valor: analise.mn, avisos: avisos);
-    _validarNaoCritico(nome: 'Zn', valor: analise.zn, avisos: avisos);
-
     if (erros.isNotEmpty) {
       return RecomendacaoResult(
         recomendacao: null,
@@ -106,13 +102,54 @@ class CalcularRecomendacaoCompletaUsecase {
       );
     }
 
+    final todosMicrosBase = <MicroResultado>[...base.micros];
+    final calibracaoMicros =
+        calibracao.parametrosCards['micros']?['elementos'] as Map?;
+    if (calibracaoMicros != null) {
+      for (final s in ['B', 'Cu', 'Fe', 'Mn', 'Zn']) {
+        final cfg = calibracaoMicros[s];
+        if (cfg is! Map) continue;
+
+        final valNullable = _valorNutrienteByName(analise, s);
+        if (!valNullable.analisado) {
+          final jaExiste = todosMicrosBase.any((m) => m.elemento == s);
+          if (!jaExiste) {
+            final via = _string(cfg['viaAplicacao'], 'Solo');
+            todosMicrosBase.add(MicroResultado(
+              elemento: s,
+              valorAtual: 0,
+              nc: _numNullable(cfg['ncSolo']) ?? 0,
+              dose: 0,
+              unidade: 'g/ha',
+              deficiente: false,
+              via: via,
+              fonte: '-',
+              doseProduto: 0,
+              doseProdutoLabel: 'Não analisado',
+              avisosNutriente: ['$s não analisado — dose não calculada.'],
+            ));
+          } else {
+            // Atualiza o existente que foi gerado com avisos
+            final i = todosMicrosBase.indexWhere((m) => m.elemento == s);
+            todosMicrosBase[i] = todosMicrosBase[i].copyWith(
+              avisosNutriente: [
+                ...todosMicrosBase[i].avisosNutriente,
+                '$s não analisado — dose não calculada.'
+              ],
+              doseProdutoLabel: 'Não analisado',
+            );
+          }
+        }
+      }
+    }
+
     final citacoes = <String, String>{
       ...?base.citacoes,
       'enxofre': '05 — Enxofre (S): Motor de Cálculo',
     };
 
     final recomendacao = base.copyWith(
-      micros: [...base.micros, ...microsExtrasResult.micros],
+      micros: [...todosMicrosBase, ...microsExtrasResult.micros],
       avisos: [...base.avisos, ...avisos, ...microsExtrasResult.avisos],
       citacoes: citacoes,
     );
@@ -149,13 +186,63 @@ class CalcularRecomendacaoCompletaUsecase {
     required AnaliseCompleta analise,
     required double pSelecionado,
   }) {
+    // --- NORMALIZAÇÃO DE CÁTIONS ---
+    final kNorm = (analise.kUnidadeOriginal != null &&
+            analise.kUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarCation(
+            analise.k.valor!, analise.kUnidadeOriginal!)
+        : (() {
+            final result =
+                UnidadeConverter.inferirEConverterK(analise.k.valor!);
+            debugPrint('[UnidadeConverter] AVISO: ${result.aviso}');
+            return result.valorNormalizado;
+          })();
+
+    final caNorm = (analise.caUnidadeOriginal != null &&
+            analise.caUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarCation(
+            analise.ca.valor!, analise.caUnidadeOriginal!)
+        : analise.ca.valor!; // assume cmolc se ausente
+
+    final mgNorm = (analise.mgUnidadeOriginal != null &&
+            analise.mgUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarCation(
+            analise.mg.valor!, analise.mgUnidadeOriginal!)
+        : analise.mg.valor!;
+
+    final alNorm = (analise.alUnidadeOriginal != null &&
+            analise.alUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarCation(
+            analise.al.valor!, analise.alUnidadeOriginal!)
+        : analise.al.valor!;
+
+    final hAlNorm = (analise.hAlUnidadeOriginal != null &&
+            analise.hAlUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarCation(
+            analise.hAl.valor!, analise.hAlUnidadeOriginal!)
+        : analise.hAl.valor!;
+
+    // --- NORMALIZAÇÃO DE MO ---
+    final moNorm = (analise.moUnidadeOriginal != null &&
+            analise.moUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarMO(
+            analise.materiaOrganica.valor!, analise.moUnidadeOriginal!)
+        : analise.materiaOrganica.valor!; // assume g/dm³ se ausente
+
+    // --- NORMALIZAÇÃO DE GRANULOMETRIA ---
+    final argilaNorm = (analise.argilaUnidadeOriginal != null &&
+            analise.argilaUnidadeOriginal!.isNotEmpty)
+        ? UnidadeConverter.normalizarGranulometria(
+            analise.argila.valor!, analise.argilaUnidadeOriginal!)
+        : analise.argila.valor!; // assume % se ausente
+
     double sb = 0;
-    if (analise.ca.isValido) sb += analise.ca.valor!;
-    if (analise.mg.isValido) sb += analise.mg.valor!;
-    if (analise.k.isValido) sb += analise.k.valor!;
+    if (analise.ca.isValido) sb += caNorm;
+    if (analise.mg.isValido) sb += mgNorm;
+    if (analise.k.isValido) sb += kNorm;
     if (analise.na.isValido) sb += analise.na.valor!;
 
-    final ctc = sb + analise.hAl.valor!;
+    final ctc = sb + hAlNorm;
     final vPercent = ctc > 0 ? (sb / ctc) * 100 : 0.0;
 
     return AnaliseEntity(
@@ -167,13 +254,13 @@ class CalcularRecomendacaoCompletaUsecase {
       localizacao: analise.descricaoLocal ?? '-',
       cultura: analise.cultura,
       ph: analise.phPrincipal.valor!,
-      mo: analise.materiaOrganica.valor!,
+      mo: moNorm,
       p: LimitesAgronomicos.limitarP(pSelecionado),
-      k: LimitesAgronomicos.limitarK(analise.k.valor!),
-      ca: analise.ca.valor!,
-      mg: analise.mg.valor!,
-      hAl: analise.hAl.valor!,
-      al: analise.al.valor!,
+      k: LimitesAgronomicos.limitarK(kNorm),
+      ca: caNorm,
+      mg: mgNorm,
+      hAl: hAlNorm,
+      al: alNorm,
       s: _preferirS(analise).valor!,
       b: analise.b.isValido ? analise.b.valor! : 0.0,
       cu: analise.cu.isValido ? analise.cu.valor! : 0.0,
@@ -183,7 +270,7 @@ class CalcularRecomendacaoCompletaUsecase {
       sb: sb,
       ctc: ctc,
       vPercent: vPercent,
-      argila: analise.argila.valor!,
+      argila: argilaNorm,
       // Extratores de P — nullable
       pMehlich: analise.pMehlich.isValido ? analise.pMehlich.valor : null,
       pResina: analise.pResina.isValido ? analise.pResina.valor : null,
@@ -348,6 +435,17 @@ class CalcularRecomendacaoCompletaUsecase {
     if (status == StatusNutriente.invalido) {
       avisos.add('$nome com valor inválido — ignorado no cálculo.');
     }
+  }
+
+  ValorNutriente _valorNutrienteByName(AnaliseCompleta analise, String nome) {
+    return switch (nome) {
+      'B' => analise.b,
+      'Cu' => analise.cu,
+      'Fe' => analise.fe,
+      'Mn' => analise.mn,
+      'Zn' => analise.zn,
+      _ => const ValorNutriente(valor: null, analisado: false)
+    };
   }
 
   ValorNutriente _preferirS(AnaliseCompleta analise) {

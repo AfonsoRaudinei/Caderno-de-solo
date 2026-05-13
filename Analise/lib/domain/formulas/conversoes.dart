@@ -59,9 +59,11 @@ class Conversoes {
   static const double sO4ToS = 0.334;
 
   // ─── Unidades gerais ─────────────────────────────────────────────────────
+  // TODO: migrar para UnidadeConverter
   /// cmolc/dm³ → mmolc/dm³
   static const double cmolcToMmolc = 10.0;
 
+  // TODO: migrar para UnidadeConverter
   /// mmolc/dm³ → cmolc/dm³
   static const double mmolcToCmolc = 0.1;
 
@@ -104,6 +106,7 @@ class Conversoes {
   /// Converte K de cmolc/dm³ para mg/dm³
   static double kCmolcToMgDm3(double kCmolc) => kCmolc * kMgDm3Factor;
 
+  // TODO: migrar para UnidadeConverter
   /// Converte Ca ou Mg de mmolc/dm³ para cmolc/dm³
   static double mmolcToCmolcFn(double mmolc) => mmolc / 10.0;
 
