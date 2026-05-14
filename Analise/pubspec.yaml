@@ -1,6 +1,6 @@
 name: soloforte
 description: App profissional de análise e recomendação de fertilidade de solo.
-version: 1.0.1+91
+version: 1.0.1+94
 publish_to: 'none'
 
 environment:
@@ -73,6 +73,7 @@ dependencies:
   latlong2: ^0.9.0
   flutter_localizations:
     sdk: flutter
+  printing: ^5.14.3
 
 dev_dependencies:
   flutter_test:

@@ -287,7 +287,101 @@ mixin _$AnaliseModel {
   @TimestampConverter()
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @TimestampConverter()
-  DateTime? get updatedAt => throw _privateConstructorUsedError;
+  DateTime? get updatedAt =>
+      throw _privateConstructorUsedError; // ── Acidez detalhada ───────────────────────────────────────────────────
+  double? get h =>
+      throw _privateConstructorUsedError; // Hidrogenio puro (separado de H+Al)
+  double? get ctcEfetiva =>
+      throw _privateConstructorUsedError; // CTC efetiva (t) = SB + Al
+// ── Valores entregues pelo lab (NAO recalcular) ────────────────────────
+  double? get ctc =>
+      throw _privateConstructorUsedError; // C.T.C. extraida do laudo
+  double? get sb =>
+      throw _privateConstructorUsedError; // Soma de Bases extraida do laudo
+  double? get vPercent =>
+      throw _privateConstructorUsedError; // Saturacao por Bases V% extraida do laudo
+  double? get mPercent =>
+      throw _privateConstructorUsedError; // Saturacao por Al m% extraida do laudo
+// ── Metadados do laudo ─────────────────────────────────────────────────
+  String? get osLaboratorio =>
+      throw _privateConstructorUsedError; // Numero da O.S. do laboratorio
+  String? get dataEmissao =>
+      throw _privateConstructorUsedError; // Data de emissao do laudo
+  String? get consultor =>
+      throw _privateConstructorUsedError; // Empresa consultora
+  String? get labTemplateId =>
+      throw _privateConstructorUsedError; // ID do template usado na importacao
+// ── Unidades (para exibicao e conversao) ──────────────────────────────
+  String? get unidadeNutrientes =>
+      throw _privateConstructorUsedError; // "mmolc/dm3" ou "cmolc/dm3"
+  String? get unidadeMO =>
+      throw _privateConstructorUsedError; // "g/dm3", "dag/kg" ou "%"
+  String? get unidadeTextura =>
+      throw _privateConstructorUsedError; // "g/kg", "g/dm3" ou "%"
+// ── Textura detalhada (MB separa areia grossa/fina) ───────────────────
+  double? get cascalho => throw _privateConstructorUsedError;
+  double? get areiaGrossa => throw _privateConstructorUsedError;
+  double? get areiaFina =>
+      throw _privateConstructorUsedError; // ── Micronutrientes adicionais ─────────────────────────────────────────
+  double? get co =>
+      throw _privateConstructorUsedError; // Cobalto (mg/dm3) -- MB
+// ── Metadados adicionais do laudo ──────────────────────────────────────
+  String? get municipio => throw _privateConstructorUsedError;
+  String? get responsavelTecnico => throw _privateConstructorUsedError;
+  String? get cnpjCliente =>
+      throw _privateConstructorUsedError; // ── Fosforo adicional ─────────────────────────────────────────────────
+  double? get pTotal =>
+      throw _privateConstructorUsedError; // P Total em % -- Sellar
+// ── Textura adicional ─────────────────────────────────────────────
+  String? get classificacaoTextura =>
+      throw _privateConstructorUsedError; // 'Media', 'Argilosa', 'Arenosa'
+  int? get tipoSoloMapa =>
+      throw _privateConstructorUsedError; // Tipo MAPA (1, 2, 3) -- IN02/2008
+// ── Metadados adicionais Sellar ───────────────────────────────────────
+  String? get solicitante => throw _privateConstructorUsedError;
+  String? get convenio => throw _privateConstructorUsedError;
+  String? get creaResponsavel => throw _privateConstructorUsedError;
+  String? get cnpjLaboratorio =>
+      throw _privateConstructorUsedError; // ── Campos Solum ──────────────────────────────────────────────────────
+  String? get dataInicioEnsaio =>
+      throw _privateConstructorUsedError; // Data de inicio dos ensaios
+  String? get dataFimEnsaio =>
+      throw _privateConstructorUsedError; // Data de fim dos ensaios
+  String? get matriculaImovel =>
+      throw _privateConstructorUsedError; // Matricula do imovel (SIGEF/SNCR)
+  String? get codigoInterno =>
+      throw _privateConstructorUsedError; // Codigo interno Solum
+  String? get codigoExternoAmostra =>
+      throw _privateConstructorUsedError; // Codigo externo da amostra
+// ── Campos Exata Brasil ───────────────────────────────────────────────
+  double? get caMaisMg =>
+      throw _privateConstructorUsedError; // Ca+Mg somado (campo separado Exata)
+  double? get kMgDm3 =>
+      throw _privateConstructorUsedError; // K em mg/dm3 por NH4Cl (Exata)
+// Micronutrientes por Mehlich I
+  double? get cuMehlich =>
+      throw _privateConstructorUsedError; // Cobre por Mehlich
+  double? get feMehlich =>
+      throw _privateConstructorUsedError; // Ferro por Mehlich
+  double? get mnMehlich =>
+      throw _privateConstructorUsedError; // Manganes por Mehlich
+  double? get znMehlich =>
+      throw _privateConstructorUsedError; // Zinco por Mehlich
+// Micronutrientes por DTPA
+  double? get cuDtpa => throw _privateConstructorUsedError; // Cobre por DTPA
+  double? get feDtpa => throw _privateConstructorUsedError; // Ferro por DTPA
+  double? get mnDtpa => throw _privateConstructorUsedError; // Manganes por DTPA
+  double? get znDtpa => throw _privateConstructorUsedError; // Zinco por DTPA
+// Metadados adicionais do laudo (Exata)
+  String? get dataRecebimento =>
+      throw _privateConstructorUsedError; // Data de recebimento da amostra no lab
+  String? get numeroRelatorio =>
+      throw _privateConstructorUsedError; // No do relatorio (ex: 16738.2025.V0.U)
+  String? get codigoVerificacao =>
+      throw _privateConstructorUsedError; // Codigo de verificacao do laudo digital
+  String? get codigoTalhao =>
+      throw _privateConstructorUsedError; // Codigo do talhao (T01, T02, 274)
+  int? get totalAmostras => throw _privateConstructorUsedError;
 
   /// Serializes this AnaliseModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -351,7 +445,54 @@ abstract class $AnaliseModelCopyWith<$Res> {
       double? se,
       FonteP fontePrincipalP,
       @TimestampConverter() DateTime? createdAt,
-      @TimestampConverter() DateTime? updatedAt});
+      @TimestampConverter() DateTime? updatedAt,
+      double? h,
+      double? ctcEfetiva,
+      double? ctc,
+      double? sb,
+      double? vPercent,
+      double? mPercent,
+      String? osLaboratorio,
+      String? dataEmissao,
+      String? consultor,
+      String? labTemplateId,
+      String? unidadeNutrientes,
+      String? unidadeMO,
+      String? unidadeTextura,
+      double? cascalho,
+      double? areiaGrossa,
+      double? areiaFina,
+      double? co,
+      String? municipio,
+      String? responsavelTecnico,
+      String? cnpjCliente,
+      double? pTotal,
+      String? classificacaoTextura,
+      int? tipoSoloMapa,
+      String? solicitante,
+      String? convenio,
+      String? creaResponsavel,
+      String? cnpjLaboratorio,
+      String? dataInicioEnsaio,
+      String? dataFimEnsaio,
+      String? matriculaImovel,
+      String? codigoInterno,
+      String? codigoExternoAmostra,
+      double? caMaisMg,
+      double? kMgDm3,
+      double? cuMehlich,
+      double? feMehlich,
+      double? mnMehlich,
+      double? znMehlich,
+      double? cuDtpa,
+      double? feDtpa,
+      double? mnDtpa,
+      double? znDtpa,
+      String? dataRecebimento,
+      String? numeroRelatorio,
+      String? codigoVerificacao,
+      String? codigoTalhao,
+      int? totalAmostras});
 }
 
 /// @nodoc
@@ -415,6 +556,53 @@ class _$AnaliseModelCopyWithImpl<$Res, $Val extends AnaliseModel>
     Object? fontePrincipalP = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
+    Object? h = freezed,
+    Object? ctcEfetiva = freezed,
+    Object? ctc = freezed,
+    Object? sb = freezed,
+    Object? vPercent = freezed,
+    Object? mPercent = freezed,
+    Object? osLaboratorio = freezed,
+    Object? dataEmissao = freezed,
+    Object? consultor = freezed,
+    Object? labTemplateId = freezed,
+    Object? unidadeNutrientes = freezed,
+    Object? unidadeMO = freezed,
+    Object? unidadeTextura = freezed,
+    Object? cascalho = freezed,
+    Object? areiaGrossa = freezed,
+    Object? areiaFina = freezed,
+    Object? co = freezed,
+    Object? municipio = freezed,
+    Object? responsavelTecnico = freezed,
+    Object? cnpjCliente = freezed,
+    Object? pTotal = freezed,
+    Object? classificacaoTextura = freezed,
+    Object? tipoSoloMapa = freezed,
+    Object? solicitante = freezed,
+    Object? convenio = freezed,
+    Object? creaResponsavel = freezed,
+    Object? cnpjLaboratorio = freezed,
+    Object? dataInicioEnsaio = freezed,
+    Object? dataFimEnsaio = freezed,
+    Object? matriculaImovel = freezed,
+    Object? codigoInterno = freezed,
+    Object? codigoExternoAmostra = freezed,
+    Object? caMaisMg = freezed,
+    Object? kMgDm3 = freezed,
+    Object? cuMehlich = freezed,
+    Object? feMehlich = freezed,
+    Object? mnMehlich = freezed,
+    Object? znMehlich = freezed,
+    Object? cuDtpa = freezed,
+    Object? feDtpa = freezed,
+    Object? mnDtpa = freezed,
+    Object? znDtpa = freezed,
+    Object? dataRecebimento = freezed,
+    Object? numeroRelatorio = freezed,
+    Object? codigoVerificacao = freezed,
+    Object? codigoTalhao = freezed,
+    Object? totalAmostras = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -601,6 +789,194 @@ class _$AnaliseModelCopyWithImpl<$Res, $Val extends AnaliseModel>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      h: freezed == h
+          ? _value.h
+          : h // ignore: cast_nullable_to_non_nullable
+              as double?,
+      ctcEfetiva: freezed == ctcEfetiva
+          ? _value.ctcEfetiva
+          : ctcEfetiva // ignore: cast_nullable_to_non_nullable
+              as double?,
+      ctc: freezed == ctc
+          ? _value.ctc
+          : ctc // ignore: cast_nullable_to_non_nullable
+              as double?,
+      sb: freezed == sb
+          ? _value.sb
+          : sb // ignore: cast_nullable_to_non_nullable
+              as double?,
+      vPercent: freezed == vPercent
+          ? _value.vPercent
+          : vPercent // ignore: cast_nullable_to_non_nullable
+              as double?,
+      mPercent: freezed == mPercent
+          ? _value.mPercent
+          : mPercent // ignore: cast_nullable_to_non_nullable
+              as double?,
+      osLaboratorio: freezed == osLaboratorio
+          ? _value.osLaboratorio
+          : osLaboratorio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dataEmissao: freezed == dataEmissao
+          ? _value.dataEmissao
+          : dataEmissao // ignore: cast_nullable_to_non_nullable
+              as String?,
+      consultor: freezed == consultor
+          ? _value.consultor
+          : consultor // ignore: cast_nullable_to_non_nullable
+              as String?,
+      labTemplateId: freezed == labTemplateId
+          ? _value.labTemplateId
+          : labTemplateId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      unidadeNutrientes: freezed == unidadeNutrientes
+          ? _value.unidadeNutrientes
+          : unidadeNutrientes // ignore: cast_nullable_to_non_nullable
+              as String?,
+      unidadeMO: freezed == unidadeMO
+          ? _value.unidadeMO
+          : unidadeMO // ignore: cast_nullable_to_non_nullable
+              as String?,
+      unidadeTextura: freezed == unidadeTextura
+          ? _value.unidadeTextura
+          : unidadeTextura // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cascalho: freezed == cascalho
+          ? _value.cascalho
+          : cascalho // ignore: cast_nullable_to_non_nullable
+              as double?,
+      areiaGrossa: freezed == areiaGrossa
+          ? _value.areiaGrossa
+          : areiaGrossa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      areiaFina: freezed == areiaFina
+          ? _value.areiaFina
+          : areiaFina // ignore: cast_nullable_to_non_nullable
+              as double?,
+      co: freezed == co
+          ? _value.co
+          : co // ignore: cast_nullable_to_non_nullable
+              as double?,
+      municipio: freezed == municipio
+          ? _value.municipio
+          : municipio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      responsavelTecnico: freezed == responsavelTecnico
+          ? _value.responsavelTecnico
+          : responsavelTecnico // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cnpjCliente: freezed == cnpjCliente
+          ? _value.cnpjCliente
+          : cnpjCliente // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pTotal: freezed == pTotal
+          ? _value.pTotal
+          : pTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      classificacaoTextura: freezed == classificacaoTextura
+          ? _value.classificacaoTextura
+          : classificacaoTextura // ignore: cast_nullable_to_non_nullable
+              as String?,
+      tipoSoloMapa: freezed == tipoSoloMapa
+          ? _value.tipoSoloMapa
+          : tipoSoloMapa // ignore: cast_nullable_to_non_nullable
+              as int?,
+      solicitante: freezed == solicitante
+          ? _value.solicitante
+          : solicitante // ignore: cast_nullable_to_non_nullable
+              as String?,
+      convenio: freezed == convenio
+          ? _value.convenio
+          : convenio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      creaResponsavel: freezed == creaResponsavel
+          ? _value.creaResponsavel
+          : creaResponsavel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cnpjLaboratorio: freezed == cnpjLaboratorio
+          ? _value.cnpjLaboratorio
+          : cnpjLaboratorio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dataInicioEnsaio: freezed == dataInicioEnsaio
+          ? _value.dataInicioEnsaio
+          : dataInicioEnsaio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dataFimEnsaio: freezed == dataFimEnsaio
+          ? _value.dataFimEnsaio
+          : dataFimEnsaio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      matriculaImovel: freezed == matriculaImovel
+          ? _value.matriculaImovel
+          : matriculaImovel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoInterno: freezed == codigoInterno
+          ? _value.codigoInterno
+          : codigoInterno // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoExternoAmostra: freezed == codigoExternoAmostra
+          ? _value.codigoExternoAmostra
+          : codigoExternoAmostra // ignore: cast_nullable_to_non_nullable
+              as String?,
+      caMaisMg: freezed == caMaisMg
+          ? _value.caMaisMg
+          : caMaisMg // ignore: cast_nullable_to_non_nullable
+              as double?,
+      kMgDm3: freezed == kMgDm3
+          ? _value.kMgDm3
+          : kMgDm3 // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cuMehlich: freezed == cuMehlich
+          ? _value.cuMehlich
+          : cuMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      feMehlich: freezed == feMehlich
+          ? _value.feMehlich
+          : feMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      mnMehlich: freezed == mnMehlich
+          ? _value.mnMehlich
+          : mnMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      znMehlich: freezed == znMehlich
+          ? _value.znMehlich
+          : znMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cuDtpa: freezed == cuDtpa
+          ? _value.cuDtpa
+          : cuDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      feDtpa: freezed == feDtpa
+          ? _value.feDtpa
+          : feDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      mnDtpa: freezed == mnDtpa
+          ? _value.mnDtpa
+          : mnDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      znDtpa: freezed == znDtpa
+          ? _value.znDtpa
+          : znDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      dataRecebimento: freezed == dataRecebimento
+          ? _value.dataRecebimento
+          : dataRecebimento // ignore: cast_nullable_to_non_nullable
+              as String?,
+      numeroRelatorio: freezed == numeroRelatorio
+          ? _value.numeroRelatorio
+          : numeroRelatorio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoVerificacao: freezed == codigoVerificacao
+          ? _value.codigoVerificacao
+          : codigoVerificacao // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoTalhao: freezed == codigoTalhao
+          ? _value.codigoTalhao
+          : codigoTalhao // ignore: cast_nullable_to_non_nullable
+              as String?,
+      totalAmostras: freezed == totalAmostras
+          ? _value.totalAmostras
+          : totalAmostras // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -659,7 +1035,54 @@ abstract class _$$AnaliseModelImplCopyWith<$Res>
       double? se,
       FonteP fontePrincipalP,
       @TimestampConverter() DateTime? createdAt,
-      @TimestampConverter() DateTime? updatedAt});
+      @TimestampConverter() DateTime? updatedAt,
+      double? h,
+      double? ctcEfetiva,
+      double? ctc,
+      double? sb,
+      double? vPercent,
+      double? mPercent,
+      String? osLaboratorio,
+      String? dataEmissao,
+      String? consultor,
+      String? labTemplateId,
+      String? unidadeNutrientes,
+      String? unidadeMO,
+      String? unidadeTextura,
+      double? cascalho,
+      double? areiaGrossa,
+      double? areiaFina,
+      double? co,
+      String? municipio,
+      String? responsavelTecnico,
+      String? cnpjCliente,
+      double? pTotal,
+      String? classificacaoTextura,
+      int? tipoSoloMapa,
+      String? solicitante,
+      String? convenio,
+      String? creaResponsavel,
+      String? cnpjLaboratorio,
+      String? dataInicioEnsaio,
+      String? dataFimEnsaio,
+      String? matriculaImovel,
+      String? codigoInterno,
+      String? codigoExternoAmostra,
+      double? caMaisMg,
+      double? kMgDm3,
+      double? cuMehlich,
+      double? feMehlich,
+      double? mnMehlich,
+      double? znMehlich,
+      double? cuDtpa,
+      double? feDtpa,
+      double? mnDtpa,
+      double? znDtpa,
+      String? dataRecebimento,
+      String? numeroRelatorio,
+      String? codigoVerificacao,
+      String? codigoTalhao,
+      int? totalAmostras});
 }
 
 /// @nodoc
@@ -721,6 +1144,53 @@ class __$$AnaliseModelImplCopyWithImpl<$Res>
     Object? fontePrincipalP = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
+    Object? h = freezed,
+    Object? ctcEfetiva = freezed,
+    Object? ctc = freezed,
+    Object? sb = freezed,
+    Object? vPercent = freezed,
+    Object? mPercent = freezed,
+    Object? osLaboratorio = freezed,
+    Object? dataEmissao = freezed,
+    Object? consultor = freezed,
+    Object? labTemplateId = freezed,
+    Object? unidadeNutrientes = freezed,
+    Object? unidadeMO = freezed,
+    Object? unidadeTextura = freezed,
+    Object? cascalho = freezed,
+    Object? areiaGrossa = freezed,
+    Object? areiaFina = freezed,
+    Object? co = freezed,
+    Object? municipio = freezed,
+    Object? responsavelTecnico = freezed,
+    Object? cnpjCliente = freezed,
+    Object? pTotal = freezed,
+    Object? classificacaoTextura = freezed,
+    Object? tipoSoloMapa = freezed,
+    Object? solicitante = freezed,
+    Object? convenio = freezed,
+    Object? creaResponsavel = freezed,
+    Object? cnpjLaboratorio = freezed,
+    Object? dataInicioEnsaio = freezed,
+    Object? dataFimEnsaio = freezed,
+    Object? matriculaImovel = freezed,
+    Object? codigoInterno = freezed,
+    Object? codigoExternoAmostra = freezed,
+    Object? caMaisMg = freezed,
+    Object? kMgDm3 = freezed,
+    Object? cuMehlich = freezed,
+    Object? feMehlich = freezed,
+    Object? mnMehlich = freezed,
+    Object? znMehlich = freezed,
+    Object? cuDtpa = freezed,
+    Object? feDtpa = freezed,
+    Object? mnDtpa = freezed,
+    Object? znDtpa = freezed,
+    Object? dataRecebimento = freezed,
+    Object? numeroRelatorio = freezed,
+    Object? codigoVerificacao = freezed,
+    Object? codigoTalhao = freezed,
+    Object? totalAmostras = freezed,
   }) {
     return _then(_$AnaliseModelImpl(
       id: null == id
@@ -907,6 +1377,194 @@ class __$$AnaliseModelImplCopyWithImpl<$Res>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      h: freezed == h
+          ? _value.h
+          : h // ignore: cast_nullable_to_non_nullable
+              as double?,
+      ctcEfetiva: freezed == ctcEfetiva
+          ? _value.ctcEfetiva
+          : ctcEfetiva // ignore: cast_nullable_to_non_nullable
+              as double?,
+      ctc: freezed == ctc
+          ? _value.ctc
+          : ctc // ignore: cast_nullable_to_non_nullable
+              as double?,
+      sb: freezed == sb
+          ? _value.sb
+          : sb // ignore: cast_nullable_to_non_nullable
+              as double?,
+      vPercent: freezed == vPercent
+          ? _value.vPercent
+          : vPercent // ignore: cast_nullable_to_non_nullable
+              as double?,
+      mPercent: freezed == mPercent
+          ? _value.mPercent
+          : mPercent // ignore: cast_nullable_to_non_nullable
+              as double?,
+      osLaboratorio: freezed == osLaboratorio
+          ? _value.osLaboratorio
+          : osLaboratorio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dataEmissao: freezed == dataEmissao
+          ? _value.dataEmissao
+          : dataEmissao // ignore: cast_nullable_to_non_nullable
+              as String?,
+      consultor: freezed == consultor
+          ? _value.consultor
+          : consultor // ignore: cast_nullable_to_non_nullable
+              as String?,
+      labTemplateId: freezed == labTemplateId
+          ? _value.labTemplateId
+          : labTemplateId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      unidadeNutrientes: freezed == unidadeNutrientes
+          ? _value.unidadeNutrientes
+          : unidadeNutrientes // ignore: cast_nullable_to_non_nullable
+              as String?,
+      unidadeMO: freezed == unidadeMO
+          ? _value.unidadeMO
+          : unidadeMO // ignore: cast_nullable_to_non_nullable
+              as String?,
+      unidadeTextura: freezed == unidadeTextura
+          ? _value.unidadeTextura
+          : unidadeTextura // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cascalho: freezed == cascalho
+          ? _value.cascalho
+          : cascalho // ignore: cast_nullable_to_non_nullable
+              as double?,
+      areiaGrossa: freezed == areiaGrossa
+          ? _value.areiaGrossa
+          : areiaGrossa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      areiaFina: freezed == areiaFina
+          ? _value.areiaFina
+          : areiaFina // ignore: cast_nullable_to_non_nullable
+              as double?,
+      co: freezed == co
+          ? _value.co
+          : co // ignore: cast_nullable_to_non_nullable
+              as double?,
+      municipio: freezed == municipio
+          ? _value.municipio
+          : municipio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      responsavelTecnico: freezed == responsavelTecnico
+          ? _value.responsavelTecnico
+          : responsavelTecnico // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cnpjCliente: freezed == cnpjCliente
+          ? _value.cnpjCliente
+          : cnpjCliente // ignore: cast_nullable_to_non_nullable
+              as String?,
+      pTotal: freezed == pTotal
+          ? _value.pTotal
+          : pTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
+      classificacaoTextura: freezed == classificacaoTextura
+          ? _value.classificacaoTextura
+          : classificacaoTextura // ignore: cast_nullable_to_non_nullable
+              as String?,
+      tipoSoloMapa: freezed == tipoSoloMapa
+          ? _value.tipoSoloMapa
+          : tipoSoloMapa // ignore: cast_nullable_to_non_nullable
+              as int?,
+      solicitante: freezed == solicitante
+          ? _value.solicitante
+          : solicitante // ignore: cast_nullable_to_non_nullable
+              as String?,
+      convenio: freezed == convenio
+          ? _value.convenio
+          : convenio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      creaResponsavel: freezed == creaResponsavel
+          ? _value.creaResponsavel
+          : creaResponsavel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cnpjLaboratorio: freezed == cnpjLaboratorio
+          ? _value.cnpjLaboratorio
+          : cnpjLaboratorio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dataInicioEnsaio: freezed == dataInicioEnsaio
+          ? _value.dataInicioEnsaio
+          : dataInicioEnsaio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dataFimEnsaio: freezed == dataFimEnsaio
+          ? _value.dataFimEnsaio
+          : dataFimEnsaio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      matriculaImovel: freezed == matriculaImovel
+          ? _value.matriculaImovel
+          : matriculaImovel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoInterno: freezed == codigoInterno
+          ? _value.codigoInterno
+          : codigoInterno // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoExternoAmostra: freezed == codigoExternoAmostra
+          ? _value.codigoExternoAmostra
+          : codigoExternoAmostra // ignore: cast_nullable_to_non_nullable
+              as String?,
+      caMaisMg: freezed == caMaisMg
+          ? _value.caMaisMg
+          : caMaisMg // ignore: cast_nullable_to_non_nullable
+              as double?,
+      kMgDm3: freezed == kMgDm3
+          ? _value.kMgDm3
+          : kMgDm3 // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cuMehlich: freezed == cuMehlich
+          ? _value.cuMehlich
+          : cuMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      feMehlich: freezed == feMehlich
+          ? _value.feMehlich
+          : feMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      mnMehlich: freezed == mnMehlich
+          ? _value.mnMehlich
+          : mnMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      znMehlich: freezed == znMehlich
+          ? _value.znMehlich
+          : znMehlich // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cuDtpa: freezed == cuDtpa
+          ? _value.cuDtpa
+          : cuDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      feDtpa: freezed == feDtpa
+          ? _value.feDtpa
+          : feDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      mnDtpa: freezed == mnDtpa
+          ? _value.mnDtpa
+          : mnDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      znDtpa: freezed == znDtpa
+          ? _value.znDtpa
+          : znDtpa // ignore: cast_nullable_to_non_nullable
+              as double?,
+      dataRecebimento: freezed == dataRecebimento
+          ? _value.dataRecebimento
+          : dataRecebimento // ignore: cast_nullable_to_non_nullable
+              as String?,
+      numeroRelatorio: freezed == numeroRelatorio
+          ? _value.numeroRelatorio
+          : numeroRelatorio // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoVerificacao: freezed == codigoVerificacao
+          ? _value.codigoVerificacao
+          : codigoVerificacao // ignore: cast_nullable_to_non_nullable
+              as String?,
+      codigoTalhao: freezed == codigoTalhao
+          ? _value.codigoTalhao
+          : codigoTalhao // ignore: cast_nullable_to_non_nullable
+              as String?,
+      totalAmostras: freezed == totalAmostras
+          ? _value.totalAmostras
+          : totalAmostras // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -960,7 +1618,54 @@ class _$AnaliseModelImpl extends _AnaliseModel {
       this.se,
       this.fontePrincipalP = FonteP.mehlich,
       @TimestampConverter() this.createdAt,
-      @TimestampConverter() this.updatedAt})
+      @TimestampConverter() this.updatedAt,
+      this.h,
+      this.ctcEfetiva,
+      this.ctc,
+      this.sb,
+      this.vPercent,
+      this.mPercent,
+      this.osLaboratorio,
+      this.dataEmissao,
+      this.consultor,
+      this.labTemplateId,
+      this.unidadeNutrientes,
+      this.unidadeMO,
+      this.unidadeTextura,
+      this.cascalho,
+      this.areiaGrossa,
+      this.areiaFina,
+      this.co,
+      this.municipio,
+      this.responsavelTecnico,
+      this.cnpjCliente,
+      this.pTotal,
+      this.classificacaoTextura,
+      this.tipoSoloMapa,
+      this.solicitante,
+      this.convenio,
+      this.creaResponsavel,
+      this.cnpjLaboratorio,
+      this.dataInicioEnsaio,
+      this.dataFimEnsaio,
+      this.matriculaImovel,
+      this.codigoInterno,
+      this.codigoExternoAmostra,
+      this.caMaisMg,
+      this.kMgDm3,
+      this.cuMehlich,
+      this.feMehlich,
+      this.mnMehlich,
+      this.znMehlich,
+      this.cuDtpa,
+      this.feDtpa,
+      this.mnDtpa,
+      this.znDtpa,
+      this.dataRecebimento,
+      this.numeroRelatorio,
+      this.codigoVerificacao,
+      this.codigoTalhao,
+      this.totalAmostras})
       : super._();
 
   factory _$AnaliseModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -1068,10 +1773,155 @@ class _$AnaliseModelImpl extends _AnaliseModel {
   @override
   @TimestampConverter()
   final DateTime? updatedAt;
+// ── Acidez detalhada ───────────────────────────────────────────────────
+  @override
+  final double? h;
+// Hidrogenio puro (separado de H+Al)
+  @override
+  final double? ctcEfetiva;
+// CTC efetiva (t) = SB + Al
+// ── Valores entregues pelo lab (NAO recalcular) ────────────────────────
+  @override
+  final double? ctc;
+// C.T.C. extraida do laudo
+  @override
+  final double? sb;
+// Soma de Bases extraida do laudo
+  @override
+  final double? vPercent;
+// Saturacao por Bases V% extraida do laudo
+  @override
+  final double? mPercent;
+// Saturacao por Al m% extraida do laudo
+// ── Metadados do laudo ─────────────────────────────────────────────────
+  @override
+  final String? osLaboratorio;
+// Numero da O.S. do laboratorio
+  @override
+  final String? dataEmissao;
+// Data de emissao do laudo
+  @override
+  final String? consultor;
+// Empresa consultora
+  @override
+  final String? labTemplateId;
+// ID do template usado na importacao
+// ── Unidades (para exibicao e conversao) ──────────────────────────────
+  @override
+  final String? unidadeNutrientes;
+// "mmolc/dm3" ou "cmolc/dm3"
+  @override
+  final String? unidadeMO;
+// "g/dm3", "dag/kg" ou "%"
+  @override
+  final String? unidadeTextura;
+// "g/kg", "g/dm3" ou "%"
+// ── Textura detalhada (MB separa areia grossa/fina) ───────────────────
+  @override
+  final double? cascalho;
+  @override
+  final double? areiaGrossa;
+  @override
+  final double? areiaFina;
+// ── Micronutrientes adicionais ─────────────────────────────────────────
+  @override
+  final double? co;
+// Cobalto (mg/dm3) -- MB
+// ── Metadados adicionais do laudo ──────────────────────────────────────
+  @override
+  final String? municipio;
+  @override
+  final String? responsavelTecnico;
+  @override
+  final String? cnpjCliente;
+// ── Fosforo adicional ─────────────────────────────────────────────────
+  @override
+  final double? pTotal;
+// P Total em % -- Sellar
+// ── Textura adicional ─────────────────────────────────────────────
+  @override
+  final String? classificacaoTextura;
+// 'Media', 'Argilosa', 'Arenosa'
+  @override
+  final int? tipoSoloMapa;
+// Tipo MAPA (1, 2, 3) -- IN02/2008
+// ── Metadados adicionais Sellar ───────────────────────────────────────
+  @override
+  final String? solicitante;
+  @override
+  final String? convenio;
+  @override
+  final String? creaResponsavel;
+  @override
+  final String? cnpjLaboratorio;
+// ── Campos Solum ──────────────────────────────────────────────────────
+  @override
+  final String? dataInicioEnsaio;
+// Data de inicio dos ensaios
+  @override
+  final String? dataFimEnsaio;
+// Data de fim dos ensaios
+  @override
+  final String? matriculaImovel;
+// Matricula do imovel (SIGEF/SNCR)
+  @override
+  final String? codigoInterno;
+// Codigo interno Solum
+  @override
+  final String? codigoExternoAmostra;
+// Codigo externo da amostra
+// ── Campos Exata Brasil ───────────────────────────────────────────────
+  @override
+  final double? caMaisMg;
+// Ca+Mg somado (campo separado Exata)
+  @override
+  final double? kMgDm3;
+// K em mg/dm3 por NH4Cl (Exata)
+// Micronutrientes por Mehlich I
+  @override
+  final double? cuMehlich;
+// Cobre por Mehlich
+  @override
+  final double? feMehlich;
+// Ferro por Mehlich
+  @override
+  final double? mnMehlich;
+// Manganes por Mehlich
+  @override
+  final double? znMehlich;
+// Zinco por Mehlich
+// Micronutrientes por DTPA
+  @override
+  final double? cuDtpa;
+// Cobre por DTPA
+  @override
+  final double? feDtpa;
+// Ferro por DTPA
+  @override
+  final double? mnDtpa;
+// Manganes por DTPA
+  @override
+  final double? znDtpa;
+// Zinco por DTPA
+// Metadados adicionais do laudo (Exata)
+  @override
+  final String? dataRecebimento;
+// Data de recebimento da amostra no lab
+  @override
+  final String? numeroRelatorio;
+// No do relatorio (ex: 16738.2025.V0.U)
+  @override
+  final String? codigoVerificacao;
+// Codigo de verificacao do laudo digital
+  @override
+  final String? codigoTalhao;
+// Codigo do talhao (T01, T02, 274)
+  @override
+  final int? totalAmostras;
 
   @override
   String toString() {
-    return 'AnaliseModel(id: $id, userId: $userId, fazenda: $fazenda, produtor: $produtor, talhao: $talhao, numeroAmostra: $numeroAmostra, laboratorio: $laboratorio, profundidade: $profundidade, dataColeta: $dataColeta, status: $status, cultura: $cultura, safra: $safra, latitude: $latitude, longitude: $longitude, descricaoLocal: $descricaoLocal, pdfUrl: $pdfUrl, argila: $argila, silte: $silte, areiaTotal: $areiaTotal, phAgua: $phAgua, phSmp: $phSmp, phCaCl2: $phCaCl2, materiaOrganica: $materiaOrganica, carbonoOrganico: $carbonoOrganico, pMehlich: $pMehlich, pResina: $pResina, pRem: $pRem, s020: $s020, s2040: $s2040, k: $k, ca: $ca, mg: $mg, al: $al, hMaisAl: $hMaisAl, na: $na, b: $b, cu: $cu, fe: $fe, mn: $mn, zn: $zn, ni: $ni, mo: $mo, se: $se, fontePrincipalP: $fontePrincipalP, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AnaliseModel(id: $id, userId: $userId, fazenda: $fazenda, produtor: $produtor, talhao: $talhao, numeroAmostra: $numeroAmostra, laboratorio: $laboratorio, profundidade: $profundidade, dataColeta: $dataColeta, status: $status, cultura: $cultura, safra: $safra, latitude: $latitude, longitude: $longitude, descricaoLocal: $descricaoLocal, pdfUrl: $pdfUrl, argila: $argila, silte: $silte, areiaTotal: $areiaTotal, phAgua: $phAgua, phSmp: $phSmp, phCaCl2: $phCaCl2, materiaOrganica: $materiaOrganica, carbonoOrganico: $carbonoOrganico, pMehlich: $pMehlich, pResina: $pResina, pRem: $pRem, s020: $s020, s2040: $s2040, k: $k, ca: $ca, mg: $mg, al: $al, hMaisAl: $hMaisAl, na: $na, b: $b, cu: $cu, fe: $fe, mn: $mn, zn: $zn, ni: $ni, mo: $mo, se: $se, fontePrincipalP: $fontePrincipalP, createdAt: $createdAt, updatedAt: $updatedAt, h: $h, ctcEfetiva: $ctcEfetiva, ctc: $ctc, sb: $sb, vPercent: $vPercent, mPercent: $mPercent, osLaboratorio: $osLaboratorio, dataEmissao: $dataEmissao, consultor: $consultor, labTemplateId: $labTemplateId, unidadeNutrientes: $unidadeNutrientes, unidadeMO: $unidadeMO, unidadeTextura: $unidadeTextura, cascalho: $cascalho, areiaGrossa: $areiaGrossa, areiaFina: $areiaFina, co: $co, municipio: $municipio, responsavelTecnico: $responsavelTecnico, cnpjCliente: $cnpjCliente, pTotal: $pTotal, classificacaoTextura: $classificacaoTextura, tipoSoloMapa: $tipoSoloMapa, solicitante: $solicitante, convenio: $convenio, creaResponsavel: $creaResponsavel, cnpjLaboratorio: $cnpjLaboratorio, dataInicioEnsaio: $dataInicioEnsaio, dataFimEnsaio: $dataFimEnsaio, matriculaImovel: $matriculaImovel, codigoInterno: $codigoInterno, codigoExternoAmostra: $codigoExternoAmostra, caMaisMg: $caMaisMg, kMgDm3: $kMgDm3, cuMehlich: $cuMehlich, feMehlich: $feMehlich, mnMehlich: $mnMehlich, znMehlich: $znMehlich, cuDtpa: $cuDtpa, feDtpa: $feDtpa, mnDtpa: $mnDtpa, znDtpa: $znDtpa, dataRecebimento: $dataRecebimento, numeroRelatorio: $numeroRelatorio, codigoVerificacao: $codigoVerificacao, codigoTalhao: $codigoTalhao, totalAmostras: $totalAmostras)';
   }
 
   @override
@@ -1139,7 +1989,82 @@ class _$AnaliseModelImpl extends _AnaliseModel {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            (identical(other.h, h) || other.h == h) &&
+            (identical(other.ctcEfetiva, ctcEfetiva) ||
+                other.ctcEfetiva == ctcEfetiva) &&
+            (identical(other.ctc, ctc) || other.ctc == ctc) &&
+            (identical(other.sb, sb) || other.sb == sb) &&
+            (identical(other.vPercent, vPercent) ||
+                other.vPercent == vPercent) &&
+            (identical(other.mPercent, mPercent) ||
+                other.mPercent == mPercent) &&
+            (identical(other.osLaboratorio, osLaboratorio) ||
+                other.osLaboratorio == osLaboratorio) &&
+            (identical(other.dataEmissao, dataEmissao) ||
+                other.dataEmissao == dataEmissao) &&
+            (identical(other.consultor, consultor) ||
+                other.consultor == consultor) &&
+            (identical(other.labTemplateId, labTemplateId) ||
+                other.labTemplateId == labTemplateId) &&
+            (identical(other.unidadeNutrientes, unidadeNutrientes) ||
+                other.unidadeNutrientes == unidadeNutrientes) &&
+            (identical(other.unidadeMO, unidadeMO) ||
+                other.unidadeMO == unidadeMO) &&
+            (identical(other.unidadeTextura, unidadeTextura) ||
+                other.unidadeTextura == unidadeTextura) &&
+            (identical(other.cascalho, cascalho) ||
+                other.cascalho == cascalho) &&
+            (identical(other.areiaGrossa, areiaGrossa) ||
+                other.areiaGrossa == areiaGrossa) &&
+            (identical(other.areiaFina, areiaFina) ||
+                other.areiaFina == areiaFina) &&
+            (identical(other.co, co) || other.co == co) &&
+            (identical(other.municipio, municipio) ||
+                other.municipio == municipio) &&
+            (identical(other.responsavelTecnico, responsavelTecnico) ||
+                other.responsavelTecnico == responsavelTecnico) &&
+            (identical(other.cnpjCliente, cnpjCliente) ||
+                other.cnpjCliente == cnpjCliente) &&
+            (identical(other.pTotal, pTotal) || other.pTotal == pTotal) &&
+            (identical(other.classificacaoTextura, classificacaoTextura) ||
+                other.classificacaoTextura == classificacaoTextura) &&
+            (identical(other.tipoSoloMapa, tipoSoloMapa) ||
+                other.tipoSoloMapa == tipoSoloMapa) &&
+            (identical(other.solicitante, solicitante) ||
+                other.solicitante == solicitante) &&
+            (identical(other.convenio, convenio) ||
+                other.convenio == convenio) &&
+            (identical(other.creaResponsavel, creaResponsavel) ||
+                other.creaResponsavel == creaResponsavel) &&
+            (identical(other.cnpjLaboratorio, cnpjLaboratorio) ||
+                other.cnpjLaboratorio == cnpjLaboratorio) &&
+            (identical(other.dataInicioEnsaio, dataInicioEnsaio) ||
+                other.dataInicioEnsaio == dataInicioEnsaio) &&
+            (identical(other.dataFimEnsaio, dataFimEnsaio) ||
+                other.dataFimEnsaio == dataFimEnsaio) &&
+            (identical(other.matriculaImovel, matriculaImovel) ||
+                other.matriculaImovel == matriculaImovel) &&
+            (identical(other.codigoInterno, codigoInterno) ||
+                other.codigoInterno == codigoInterno) &&
+            (identical(other.codigoExternoAmostra, codigoExternoAmostra) ||
+                other.codigoExternoAmostra == codigoExternoAmostra) &&
+            (identical(other.caMaisMg, caMaisMg) ||
+                other.caMaisMg == caMaisMg) &&
+            (identical(other.kMgDm3, kMgDm3) || other.kMgDm3 == kMgDm3) &&
+            (identical(other.cuMehlich, cuMehlich) || other.cuMehlich == cuMehlich) &&
+            (identical(other.feMehlich, feMehlich) || other.feMehlich == feMehlich) &&
+            (identical(other.mnMehlich, mnMehlich) || other.mnMehlich == mnMehlich) &&
+            (identical(other.znMehlich, znMehlich) || other.znMehlich == znMehlich) &&
+            (identical(other.cuDtpa, cuDtpa) || other.cuDtpa == cuDtpa) &&
+            (identical(other.feDtpa, feDtpa) || other.feDtpa == feDtpa) &&
+            (identical(other.mnDtpa, mnDtpa) || other.mnDtpa == mnDtpa) &&
+            (identical(other.znDtpa, znDtpa) || other.znDtpa == znDtpa) &&
+            (identical(other.dataRecebimento, dataRecebimento) || other.dataRecebimento == dataRecebimento) &&
+            (identical(other.numeroRelatorio, numeroRelatorio) || other.numeroRelatorio == numeroRelatorio) &&
+            (identical(other.codigoVerificacao, codigoVerificacao) || other.codigoVerificacao == codigoVerificacao) &&
+            (identical(other.codigoTalhao, codigoTalhao) || other.codigoTalhao == codigoTalhao) &&
+            (identical(other.totalAmostras, totalAmostras) || other.totalAmostras == totalAmostras));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1191,7 +2116,54 @@ class _$AnaliseModelImpl extends _AnaliseModel {
         se,
         fontePrincipalP,
         createdAt,
-        updatedAt
+        updatedAt,
+        h,
+        ctcEfetiva,
+        ctc,
+        sb,
+        vPercent,
+        mPercent,
+        osLaboratorio,
+        dataEmissao,
+        consultor,
+        labTemplateId,
+        unidadeNutrientes,
+        unidadeMO,
+        unidadeTextura,
+        cascalho,
+        areiaGrossa,
+        areiaFina,
+        co,
+        municipio,
+        responsavelTecnico,
+        cnpjCliente,
+        pTotal,
+        classificacaoTextura,
+        tipoSoloMapa,
+        solicitante,
+        convenio,
+        creaResponsavel,
+        cnpjLaboratorio,
+        dataInicioEnsaio,
+        dataFimEnsaio,
+        matriculaImovel,
+        codigoInterno,
+        codigoExternoAmostra,
+        caMaisMg,
+        kMgDm3,
+        cuMehlich,
+        feMehlich,
+        mnMehlich,
+        znMehlich,
+        cuDtpa,
+        feDtpa,
+        mnDtpa,
+        znDtpa,
+        dataRecebimento,
+        numeroRelatorio,
+        codigoVerificacao,
+        codigoTalhao,
+        totalAmostras
       ]);
 
   /// Create a copy of AnaliseModel
@@ -1257,7 +2229,54 @@ abstract class _AnaliseModel extends AnaliseModel {
       final double? se,
       final FonteP fontePrincipalP,
       @TimestampConverter() final DateTime? createdAt,
-      @TimestampConverter() final DateTime? updatedAt}) = _$AnaliseModelImpl;
+      @TimestampConverter() final DateTime? updatedAt,
+      final double? h,
+      final double? ctcEfetiva,
+      final double? ctc,
+      final double? sb,
+      final double? vPercent,
+      final double? mPercent,
+      final String? osLaboratorio,
+      final String? dataEmissao,
+      final String? consultor,
+      final String? labTemplateId,
+      final String? unidadeNutrientes,
+      final String? unidadeMO,
+      final String? unidadeTextura,
+      final double? cascalho,
+      final double? areiaGrossa,
+      final double? areiaFina,
+      final double? co,
+      final String? municipio,
+      final String? responsavelTecnico,
+      final String? cnpjCliente,
+      final double? pTotal,
+      final String? classificacaoTextura,
+      final int? tipoSoloMapa,
+      final String? solicitante,
+      final String? convenio,
+      final String? creaResponsavel,
+      final String? cnpjLaboratorio,
+      final String? dataInicioEnsaio,
+      final String? dataFimEnsaio,
+      final String? matriculaImovel,
+      final String? codigoInterno,
+      final String? codigoExternoAmostra,
+      final double? caMaisMg,
+      final double? kMgDm3,
+      final double? cuMehlich,
+      final double? feMehlich,
+      final double? mnMehlich,
+      final double? znMehlich,
+      final double? cuDtpa,
+      final double? feDtpa,
+      final double? mnDtpa,
+      final double? znDtpa,
+      final String? dataRecebimento,
+      final String? numeroRelatorio,
+      final String? codigoVerificacao,
+      final String? codigoTalhao,
+      final int? totalAmostras}) = _$AnaliseModelImpl;
   const _AnaliseModel._() : super._();
 
   factory _AnaliseModel.fromJson(Map<String, dynamic> json) =
@@ -1356,7 +2375,116 @@ abstract class _AnaliseModel extends AnaliseModel {
   DateTime? get createdAt;
   @override
   @TimestampConverter()
-  DateTime? get updatedAt;
+  DateTime?
+      get updatedAt; // ── Acidez detalhada ───────────────────────────────────────────────────
+  @override
+  double? get h; // Hidrogenio puro (separado de H+Al)
+  @override
+  double? get ctcEfetiva; // CTC efetiva (t) = SB + Al
+// ── Valores entregues pelo lab (NAO recalcular) ────────────────────────
+  @override
+  double? get ctc; // C.T.C. extraida do laudo
+  @override
+  double? get sb; // Soma de Bases extraida do laudo
+  @override
+  double? get vPercent; // Saturacao por Bases V% extraida do laudo
+  @override
+  double? get mPercent; // Saturacao por Al m% extraida do laudo
+// ── Metadados do laudo ─────────────────────────────────────────────────
+  @override
+  String? get osLaboratorio; // Numero da O.S. do laboratorio
+  @override
+  String? get dataEmissao; // Data de emissao do laudo
+  @override
+  String? get consultor; // Empresa consultora
+  @override
+  String? get labTemplateId; // ID do template usado na importacao
+// ── Unidades (para exibicao e conversao) ──────────────────────────────
+  @override
+  String? get unidadeNutrientes; // "mmolc/dm3" ou "cmolc/dm3"
+  @override
+  String? get unidadeMO; // "g/dm3", "dag/kg" ou "%"
+  @override
+  String? get unidadeTextura; // "g/kg", "g/dm3" ou "%"
+// ── Textura detalhada (MB separa areia grossa/fina) ───────────────────
+  @override
+  double? get cascalho;
+  @override
+  double? get areiaGrossa;
+  @override
+  double?
+      get areiaFina; // ── Micronutrientes adicionais ─────────────────────────────────────────
+  @override
+  double? get co; // Cobalto (mg/dm3) -- MB
+// ── Metadados adicionais do laudo ──────────────────────────────────────
+  @override
+  String? get municipio;
+  @override
+  String? get responsavelTecnico;
+  @override
+  String?
+      get cnpjCliente; // ── Fosforo adicional ─────────────────────────────────────────────────
+  @override
+  double? get pTotal; // P Total em % -- Sellar
+// ── Textura adicional ─────────────────────────────────────────────
+  @override
+  String? get classificacaoTextura; // 'Media', 'Argilosa', 'Arenosa'
+  @override
+  int? get tipoSoloMapa; // Tipo MAPA (1, 2, 3) -- IN02/2008
+// ── Metadados adicionais Sellar ───────────────────────────────────────
+  @override
+  String? get solicitante;
+  @override
+  String? get convenio;
+  @override
+  String? get creaResponsavel;
+  @override
+  String?
+      get cnpjLaboratorio; // ── Campos Solum ──────────────────────────────────────────────────────
+  @override
+  String? get dataInicioEnsaio; // Data de inicio dos ensaios
+  @override
+  String? get dataFimEnsaio; // Data de fim dos ensaios
+  @override
+  String? get matriculaImovel; // Matricula do imovel (SIGEF/SNCR)
+  @override
+  String? get codigoInterno; // Codigo interno Solum
+  @override
+  String? get codigoExternoAmostra; // Codigo externo da amostra
+// ── Campos Exata Brasil ───────────────────────────────────────────────
+  @override
+  double? get caMaisMg; // Ca+Mg somado (campo separado Exata)
+  @override
+  double? get kMgDm3; // K em mg/dm3 por NH4Cl (Exata)
+// Micronutrientes por Mehlich I
+  @override
+  double? get cuMehlich; // Cobre por Mehlich
+  @override
+  double? get feMehlich; // Ferro por Mehlich
+  @override
+  double? get mnMehlich; // Manganes por Mehlich
+  @override
+  double? get znMehlich; // Zinco por Mehlich
+// Micronutrientes por DTPA
+  @override
+  double? get cuDtpa; // Cobre por DTPA
+  @override
+  double? get feDtpa; // Ferro por DTPA
+  @override
+  double? get mnDtpa; // Manganes por DTPA
+  @override
+  double? get znDtpa; // Zinco por DTPA
+// Metadados adicionais do laudo (Exata)
+  @override
+  String? get dataRecebimento; // Data de recebimento da amostra no lab
+  @override
+  String? get numeroRelatorio; // No do relatorio (ex: 16738.2025.V0.U)
+  @override
+  String? get codigoVerificacao; // Codigo de verificacao do laudo digital
+  @override
+  String? get codigoTalhao; // Codigo do talhao (T01, T02, 274)
+  @override
+  int? get totalAmostras;
 
   /// Create a copy of AnaliseModel
   /// with the given fields replaced by the non-null parameter values.

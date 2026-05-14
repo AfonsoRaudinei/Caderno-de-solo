@@ -112,10 +112,75 @@ class AnaliseSolo {
   final double? ni;
   final double? mo;
   final double? se;
+  final double? co; // Cobalto -- MB
+
+  // Textura detalhada -- MB
+  final double? cascalho;
+  final double? areiaGrossa;
+  final double? areiaFina;
+
+  // Metadados adicionais
+  final String? municipio;
+  final String? responsavelTecnico;
+  final String? cnpjCliente;
+
+  // Campos Sellar
+  final double? pTotal;
+  final String? classificacaoTextura;
+  final int? tipoSoloMapa;
+  final String? solicitante;
+  final String? convenio;
+  final String? creaResponsavel;
+  final String? cnpjLaboratorio;
+
+  // Campos Solum
+  final String? dataInicioEnsaio;
+  final String? dataFimEnsaio;
+  final String? matriculaImovel;
+  final String? codigoInterno;
+  final String? codigoExternoAmostra;
+
+  // Campos Exata Brasil
+  final double? caMaisMg;
+  final double? kMgDm3;
+  final double? cuMehlich;
+  final double? feMehlich;
+  final double? mnMehlich;
+  final double? znMehlich;
+  final double? cuDtpa;
+  final double? feDtpa;
+  final double? mnDtpa;
+  final double? znDtpa;
+  final String? dataRecebimento;
+  final String? numeroRelatorio;
+  final String? codigoVerificacao;
+  final String? codigoTalhao;
+  final int? totalAmostras;
 
   // Infra
   final String? pdfUrl;
   final Map<String, dynamic>? laudoMetadata;
+
+  // Acidez detalhada
+  final double? h;          // Hidrogenio puro (separado de H+Al)
+  final double? ctcEfetiva; // CTC efetiva (t) = SB + Al
+
+  // Valores entregues pelo lab (extraidos, nao recalculados)
+  final double? ctc;
+  final double? sb;
+  final double? vPercent;
+  final double? mPercent;
+
+  // Metadados do laudo
+  final String? osLaboratorio;
+  final String? dataEmissao;
+  final String? consultor;
+  final String? labTemplateId;
+
+  // Unidades
+  final String? unidadeNutrientes;
+  final String? unidadeMO;
+  final String? unidadeTextura;
 
   const AnaliseSolo({
     required this.id,
@@ -158,7 +223,60 @@ class AnaliseSolo {
     this.ni,
     this.mo,
     this.se,
+    this.co,
+    this.cascalho,
+    this.areiaGrossa,
+    this.areiaFina,
+    this.municipio,
+    this.responsavelTecnico,
+    this.cnpjCliente,
+    this.pTotal,
+    this.classificacaoTextura,
+    this.tipoSoloMapa,
+    this.solicitante,
+    this.convenio,
+    this.creaResponsavel,
+    this.cnpjLaboratorio,
+    // Solum
+    this.dataInicioEnsaio,
+    this.dataFimEnsaio,
+    this.matriculaImovel,
+    this.codigoInterno,
+    this.codigoExternoAmostra,
+    // Exata Brasil
+    this.caMaisMg,
+    this.kMgDm3,
+    this.cuMehlich,
+    this.feMehlich,
+    this.mnMehlich,
+    this.znMehlich,
+    this.cuDtpa,
+    this.feDtpa,
+    this.mnDtpa,
+    this.znDtpa,
+    this.dataRecebimento,
+    this.numeroRelatorio,
+    this.codigoVerificacao,
+    this.codigoTalhao,
+    this.totalAmostras,
     this.pdfUrl,
     this.laudoMetadata,
+    // Acidez detalhada
+    this.h,
+    this.ctcEfetiva,
+    // Valores do laudo
+    this.ctc,
+    this.sb,
+    this.vPercent,
+    this.mPercent,
+    // Metadados do laudo
+    this.osLaboratorio,
+    this.dataEmissao,
+    this.consultor,
+    this.labTemplateId,
+    // Unidades
+    this.unidadeNutrientes,
+    this.unidadeMO,
+    this.unidadeTextura,
   });
 }

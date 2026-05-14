@@ -58,10 +58,11 @@ service cloud.firestore {
           keepsUserId(request.auth.uid);
     }
 
-    // Coleção legada de recomendações (caso em uso).
-    match /recomendacoes/{recomendacaoId} {
+    // Recomendações
+    match /recomendacoes/{docId} {
       allow create: if signedIn() && keepsUserId(request.auth.uid);
-      allow read, delete: if signedIn() && currentUserIdMatches(request.auth.uid);
+      allow read: if signedIn() && currentUserIdMatchesOrMissing(request.auth.uid);
+      allow delete: if signedIn() && currentUserIdMatches(request.auth.uid);
       allow update: if signedIn() &&
           currentUserIdMatches(request.auth.uid) &&
           keepsUserId(request.auth.uid);

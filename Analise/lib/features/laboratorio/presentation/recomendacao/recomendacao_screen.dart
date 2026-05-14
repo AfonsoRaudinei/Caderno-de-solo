@@ -1,3 +1,6 @@
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_pdf_helper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,13 +10,10 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
-import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
-import 'package:soloforte/features/auth/application/providers/auth_usecase_providers.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
-import 'package:soloforte/features/laboratorio/application/providers/laudo_provider.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/calcario_gesso_section.dart';
@@ -24,7 +24,6 @@ import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/avisos_section.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/qualidade_solo_section.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_header_footer.dart';
-import 'package:soloforte/features/laboratorio/services/laudo_pdf_generator.dart';
 import 'package:uuid/uuid.dart';
 
 class RecomendacaoScreen extends ConsumerStatefulWidget {
@@ -224,7 +223,6 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             // BLOCO 4 — Nutrientes
             RecomendacaoFosforoSection(resultado: resultado),
             RecomendacaoPotassioSection(resultado: resultado),
-            RecomendacaoMicrosSection(resultado: resultado),
             const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
             // BLOCO 5 — O Que Comprar
@@ -232,8 +230,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
             // BLOCO 6 — Micronutrientes por Aplicação
-            RecomendacaoMicrosSoloSection(resultado: resultado),
-            RecomendacaoMicrosFoliarSection(resultado: resultado),
+            RecomendacaoMicrosUnificadosSection(resultado: resultado),
+
             const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
             // Avisos e Argumentos (mantidos no final)
@@ -243,28 +241,50 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             const SizedBox(height: 12),
             AppCardSection(
               title: 'Ações',
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: AppButton(
-                      key: const Key('btn_salvar_recomendacao'),
-                      label: 'Salvar Recomendação',
-                      icon: Icons.save_alt_rounded,
-                      isLoading: _salvando,
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
                       onPressed: (_salvando || _exportando)
                           ? null
                           : () => _salvarResultado(resultado),
+                      icon: const Icon(Icons.bookmark, size: 18),
+                      label: const Text(
+                        'Salvar',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: AppButtonSecondary(
-                      key: const Key('btn_exportar_pdf'),
-                      label: _exportando ? 'Gerando...' : 'Exportar PDF',
-                      icon: Icons.picture_as_pdf_outlined,
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: (_salvando || _exportando)
                           ? null
                           : () => _exportarPdf(resultado),
+                      icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                      label: const Text('Exportar PDF'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF666666),
+                        side: const BorderSide(color: Color(0xFFD1D1D6)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -275,13 +295,6 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       ),
     );
   }
-
-
-
-
-
-
-
 
   _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
     final label =
@@ -301,25 +314,37 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   Future<void> _salvarResultado(ResultadoRecomendacao resultado) async {
     setState(() => _salvando = true);
     try {
-      final uid = ref.read(getCurrentUserIdUsecaseProvider)() ?? '';
-      await AppObservability.instance.trace(
-        'recomendacao_save_laudo',
-        () async {
-          final laudo = _toLaudo(resultado, uid);
-          await ref.read(laudoNotifierProvider.notifier).salvar(laudo);
-        },
-        attributes: {'flow': 'recomendacao', 'action': 'salvar'},
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      final model = RecomendacaoModel(
+        id: const Uuid().v4(),
+        analiseId: resultado.analise.id,
+        userId: uid,
+        cultura: resultado.calibracao.nome,
+        necessidadeCalagem: resultado.doseCalcarioTHa,
+        prnt: 100.0,
+        doseCalcario: resultado.doseCalcarioTHa,
+        p2o5: 0.0,
+        k2o: 0.0,
       );
 
+      await ref
+          .read(salvarRecomendacaoProvider.notifier)
+          .salvarRecomendacao(model);
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Recomendação salva no Histórico!'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: const Text('Recomendação salva com sucesso'),
+          backgroundColor: const Color(0xFF34C759),
           behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
         ),
       );
-      context.go(AppRoutes.labHistorico);
     } catch (e) {
       if (!mounted) return;
       _showMensagem('Erro ao salvar: $e');
@@ -331,23 +356,19 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   Future<void> _exportarPdf(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
-      final uid = ref.read(getCurrentUserIdUsecaseProvider)() ?? '';
-      await AppObservability.instance.trace(
-        'recomendacao_export_pdf',
-        () async {
-          final laudo = _toLaudo(resultado, uid);
-          await LaudoPdfGenerator.gerarECompartilhar(laudo);
-        },
-        attributes: {'flow': 'recomendacao', 'action': 'exportar_pdf'},
+      await RecomendacaoPdfHelper.exportar(
+        resultado: resultado,
+        context: context,
       );
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro ao gerar PDF: $e');
+      _showMensagem('Erro exportar PDF: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }
   }
 
+  // ignore: unused_element
   LaudoRecomendacao _toLaudo(ResultadoRecomendacao resultado, String uid) {
     return LaudoRecomendacao(
       id: _uuid.v4(),

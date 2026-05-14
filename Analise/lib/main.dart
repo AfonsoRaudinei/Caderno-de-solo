@@ -10,6 +10,9 @@ import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:soloforte/firebase_options.dart';
+import 'package:soloforte/core/constants/default_lab_templates.dart';
+import 'package:soloforte/data/datasources/lab_template_datasource.dart';
+import 'package:soloforte/domain/models/lab_template_model.dart';
 
 void main() {
   runZonedGuarded(
@@ -25,6 +28,8 @@ void main() {
       await _activateFirebaseAppCheck();
       await AppObservability.instance.initialize();
       AppObservability.instance.installGlobalHandlers();
+
+      await _initDefaultLabTemplates();
 
       runApp(
         const ProviderScope(
@@ -43,6 +48,20 @@ void main() {
       );
     },
   );
+}
+
+/// Inicializa os templates de laboratório padrão no Hive.
+/// Insere cada template padrão que ainda não existe (upsert por ID),
+/// garantindo que novos labs adicionados em updates sejam persistidos.
+Future<void> _initDefaultLabTemplates() async {
+  final datasource = LabTemplateDatasource();
+  for (final template in defaultLabTemplates) {
+    final existing = await datasource.getById(template.id);
+    if (existing == null) {
+      final model = LabTemplateModel.fromEntity(template);
+      await datasource.save(model);
+    }
+  }
 }
 
 Future<void> _activateFirebaseAppCheck() async {

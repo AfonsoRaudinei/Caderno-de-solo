@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:soloforte/domain/models/recomendacao_model.dart';
+import 'package:soloforte/data/datasources/remote/recomendacao_firestore_datasource.dart';
 import 'package:soloforte/domain/mappers/analise_mapper.dart';
 import 'package:soloforte/domain/usecases/calcular_recomendacao_completa_usecase.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
@@ -172,3 +176,31 @@ Map<String, dynamic> _asMap(dynamic v) => v is Map<String, dynamic> ? v : {};
 num _asNum(dynamic v, [num fb = 0]) => v is num ? v : fb;
 bool _asBool(dynamic v) => v is bool ? v : false;
 String _asStr(dynamic v, [String fb = '']) => v is String ? v : fb;
+
+class SalvarRecomendacaoNotifier extends AutoDisposeAsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<void> salvarRecomendacao(RecomendacaoModel recomendacao) async {
+    state = const AsyncValue.loading();
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('Usuário não autenticado');
+      
+      final model = recomendacao.copyWith(
+        userId: uid,
+        createdAt: DateTime.now(),
+      );
+      
+      final datasource = ref.read(recomendacaoDatasourceProvider);
+      await datasource.saveRecomendacao(model.toJson());
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+final salvarRecomendacaoProvider = AutoDisposeAsyncNotifierProvider<SalvarRecomendacaoNotifier, void>(() {
+  return SalvarRecomendacaoNotifier();
+});
