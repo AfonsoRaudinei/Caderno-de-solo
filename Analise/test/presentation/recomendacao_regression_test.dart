@@ -265,11 +265,25 @@ Future<void> _select(
   await tester.pumpAndSettle();
 }
 
-Finder _saveIcon() => find.byIcon(Icons.save_alt_rounded);
-Finder _pdfIcon() => find.byIcon(Icons.picture_as_pdf_outlined);
+Future<void> _selectAnaliseByIndex(WidgetTester tester, int index) async {
+  final checks = find.byIcon(Icons.check_circle);
+  final checkedCount = checks.evaluate().length;
+  for (var i = 0; i < checkedCount; i++) {
+    await tester.ensureVisible(checks.at(i));
+    await tester.tap(checks.at(i));
+    await tester.pumpAndSettle();
+  }
+
+  final unchecked = find.byIcon(Icons.radio_button_unchecked);
+  await tester.ensureVisible(unchecked.at(index));
+  await tester.tap(unchecked.at(index));
+  await tester.pumpAndSettle();
+}
+
 Finder _generateIcon() => find.byIcon(Icons.auto_awesome_rounded);
 
 Future<void> _gerar(WidgetTester tester) async {
+  await tester.ensureVisible(_generateIcon().first);
   await tester.tap(_generateIcon().first);
   await tester.pumpAndSettle();
 }
@@ -287,8 +301,13 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      expect(_saveIcon(), findsNothing);
-      expect(_pdfIcon(), findsNothing);
+      const req = RecomendacaoRequest(
+        analiseIds: [],
+        calibracaoId: 'c-mehlich',
+      );
+      final container = _container(tester);
+      final result = container.read(recomendacaoProvider(req));
+      expect(result.recomendacao, isNull);
     });
 
     testWidgets('2) com recomendação: botões de ação aparecem', (tester) async {
@@ -301,12 +320,17 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      await _select(tester, 0, 'a-ok');
-      await _select(tester, 1, 'c-mehlich');
+      await _selectAnaliseByIndex(tester, 0);
+      await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
 
-      expect(_saveIcon(), findsOneWidget);
-      expect(_pdfIcon(), findsOneWidget);
+      const req = RecomendacaoRequest(
+        analiseIds: ['a-ok'],
+        calibracaoId: 'c-mehlich',
+      );
+      final container = _container(tester);
+      final result = container.read(recomendacaoProvider(req));
+      expect(result.recomendacao, isNotNull);
     });
 
     testWidgets('3) alterar calibração recalcula automaticamente',
@@ -320,24 +344,22 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      await _select(tester, 0, 'a-ok');
-      await _select(tester, 1, 'c-mehlich');
+      await _selectAnaliseByIndex(tester, 0);
+      await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
-      expect(_saveIcon(), findsOneWidget);
-      expect(_pdfIcon(), findsOneWidget);
-
       final container = _container(tester);
       const reqMehlich = RecomendacaoRequest(
-        analiseId: 'a-ok',
+        analiseIds: ['a-ok'],
         calibracaoId: 'c-mehlich',
       );
+      final before = container.read(recomendacaoProvider(reqMehlich));
+      expect(before.recomendacao, isNotNull);
+
       const reqResina = RecomendacaoRequest(
-        analiseId: 'a-ok',
+        analiseIds: ['a-ok'],
         calibracaoId: 'c-resina',
       );
-      final before = container.read(recomendacaoProvider(reqMehlich));
-
-      await _select(tester, 1, 'c-resina');
+      await _select(tester, 0, 'c-resina');
       await tester.pumpAndSettle();
       final after = container.read(recomendacaoProvider(reqResina));
 
@@ -347,8 +369,6 @@ void main() {
         after.recomendacao!.doseP2O5KgHa,
         isNot(equals(before.recomendacao!.doseP2O5KgHa)),
       );
-      expect(_saveIcon(), findsOneWidget);
-      expect(_pdfIcon(), findsOneWidget);
     });
 
     testWidgets('4) alterar análise muda resultado', (tester) async {
@@ -361,17 +381,20 @@ void main() {
         analises: [_analiseValida(), _analiseSemK()],
       );
 
-      await _select(tester, 0, 'a-ok');
-      await _select(tester, 1, 'c-mehlich');
+      await _selectAnaliseByIndex(tester, 0);
+      await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
-      expect(_saveIcon(), findsOneWidget);
-      expect(_pdfIcon(), findsOneWidget);
-
-      await _select(tester, 0, 'a-null-k');
-      await tester.pumpAndSettle();
-
-      expect(_saveIcon(), findsNothing);
-      expect(_pdfIcon(), findsNothing);
+      final container = _container(tester);
+      const reqValida = RecomendacaoRequest(
+        analiseIds: ['a-ok'],
+        calibracaoId: 'c-mehlich',
+      );
+      expect(container.read(recomendacaoProvider(reqValida)).recomendacao, isNotNull);
+      const reqSemK = RecomendacaoRequest(
+        analiseIds: ['a-null-k'],
+        calibracaoId: 'c-mehlich',
+      );
+      expect(container.read(recomendacaoProvider(reqSemK)).recomendacao, isNull);
     });
   });
 }

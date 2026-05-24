@@ -35,18 +35,34 @@ class CalcularRecomendacaoCompletaUsecase {
     }
 
     _validarCritico(nome: 'pH', valor: analise.phPrincipal, erros: erros);
-    _validarCritico(
-      nome: 'Matéria Orgânica',
-      valor: analise.materiaOrganica,
-      erros: erros,
-    );
     _validarCritico(nome: 'Argila', valor: analise.argila, erros: erros);
     _validarCritico(nome: 'K', valor: analise.k, erros: erros);
     _validarCritico(nome: 'Ca', valor: analise.ca, erros: erros);
     _validarCritico(nome: 'Mg', valor: analise.mg, erros: erros);
     _validarCritico(nome: 'Al', valor: analise.al, erros: erros);
     _validarCritico(nome: 'H+Al', valor: analise.hAl, erros: erros);
-    _validarCritico(nome: 'S', valor: _preferirS(analise), erros: erros);
+    final sPreferido = _preferirS(analise);
+    final sParaCalculo = sPreferido.isValido ? sPreferido.valor! : 0.0;
+    if (!sPreferido.isValido) {
+      avisos.add(
+        'Enxofre (S) não analisado; cálculo seguirá com S=0,0 mg/dm³.',
+      );
+    }
+
+    final moParaCalculo = analise.materiaOrganica.isValido
+        ? analise.materiaOrganica.valor!
+        : 0.0;
+    if (!analise.materiaOrganica.isValido) {
+      avisos.add(
+        'Matéria orgânica não analisada; cálculo seguirá com M.O.=0,0.',
+      );
+    }
+
+    if (!analise.b.isValido) {
+      avisos.add(
+        'Boro não analisado; cálculo seguirá com B=0,0 mg/dm³.',
+      );
+    }
     // Micronutrientes — ausência gera aviso, não bloqueia recomendação
     if (erros.isNotEmpty) {
       return RecomendacaoResult(
@@ -62,6 +78,8 @@ class CalcularRecomendacaoCompletaUsecase {
     final analiseCompat = _toAnaliseEntity(
       analise: analise,
       pSelecionado: pSelecionado!,
+      moParaCalculo: moParaCalculo,
+      sParaCalculo: sParaCalculo,
     );
 
     ResultadoRecomendacao base;
@@ -185,6 +203,8 @@ class CalcularRecomendacaoCompletaUsecase {
   AnaliseEntity _toAnaliseEntity({
     required AnaliseCompleta analise,
     required double pSelecionado,
+    required double moParaCalculo,
+    required double sParaCalculo,
   }) {
     // --- NORMALIZAÇÃO DE CÁTIONS ---
     final kNorm = (analise.kUnidadeOriginal != null &&
@@ -226,8 +246,8 @@ class CalcularRecomendacaoCompletaUsecase {
     final moNorm = (analise.moUnidadeOriginal != null &&
             analise.moUnidadeOriginal!.isNotEmpty)
         ? UnidadeConverter.normalizarMO(
-            analise.materiaOrganica.valor!, analise.moUnidadeOriginal!)
-        : analise.materiaOrganica.valor!; // assume g/dm³ se ausente
+            moParaCalculo, analise.moUnidadeOriginal!)
+        : moParaCalculo; // assume g/dm³ se ausente
 
     // --- NORMALIZAÇÃO DE GRANULOMETRIA ---
     final argilaNorm = (analise.argilaUnidadeOriginal != null &&
@@ -261,7 +281,7 @@ class CalcularRecomendacaoCompletaUsecase {
       mg: mgNorm,
       hAl: hAlNorm,
       al: alNorm,
-      s: _preferirS(analise).valor!,
+      s: sParaCalculo,
       b: analise.b.isValido ? analise.b.valor! : 0.0,
       cu: analise.cu.isValido ? analise.cu.valor! : 0.0,
       fe: analise.fe.isValido ? analise.fe.valor! : 0.0,
@@ -317,54 +337,73 @@ class CalcularRecomendacaoCompletaUsecase {
 
       final via = _string(cfg['viaAplicacao'], 'Solo (correção)');
       final nc = _numNullable(cfg['ncSolo']);
+      
+      final avisosDoNutriente = <String>[];
+      
       if (!valorAtual.isValido) {
-        avisos.add('Micronutriente $simbolo sem teor na análise.');
-        continue;
+        avisosDoNutriente.add('Micronutriente $simbolo sem teor na análise.');
       }
       if (nc == null) {
-        avisos.add('Micronutriente $simbolo sem referência de NC.');
-        continue;
+        avisosDoNutriente.add('Micronutriente $simbolo sem referência de NC.');
       }
 
-      final resultado = via.contains('Solo')
-          ? MicronutrientesEngine.calcularViaSolo(
-              elemento: _toElemento(simbolo),
-              teorSolo: valorAtual.valor!,
-              percentualCorrecao: _num(cfg['percentualCorrecaoSolo'], 100),
-              teorFonte: _num(cfg['teorFonteSolo'], 0),
-              eficiencia: _num(cfg['eficienciaSolo'], 0),
-            )
-          : MicronutrientesEngine.calcularViaFoliar(
-              elemento: _toElemento(simbolo),
-              teorSolo: valorAtual.valor!,
-              doseElemento: _num(cfg['doseElementoFoliar'], 0),
-              teorFonte: _num(cfg['teorFonteFoliar'], 0),
-              eficienciaFoliar: _num(cfg['eficienciaFoliar'], 0),
-            );
+      double doseProdutoCalc = 0.0;
+      double doseElemento = 0.0;
+      String unidade = 'g/ha';
+      String refStr = '';
+      String lbl = 'Dose não calculada';
 
-      avisos.addAll(resultado.avisos);
-      if (resultado.doseElemento <= 0) continue;
+      if (valorAtual.isValido && nc != null) {
+        final resultado = via.contains('Solo')
+            ? MicronutrientesEngine.calcularViaSolo(
+                elemento: _toElemento(simbolo),
+                teorSolo: valorAtual.valor!,
+                percentualCorrecao: _num(cfg['percentualCorrecaoSolo'], 100),
+                teorFonte: _num(cfg['teorFonteSolo'], 0),
+                eficiencia: _num(cfg['eficienciaSolo'], 0),
+              )
+            : MicronutrientesEngine.calcularViaFoliar(
+                elemento: _toElemento(simbolo),
+                teorSolo: valorAtual.valor!,
+                doseElemento: _num(cfg['doseElementoFoliar'], 0),
+                teorFonte: _num(cfg['teorFonteFoliar'], 0),
+                eficienciaFoliar: _num(cfg['eficienciaFoliar'], 0),
+              );
 
-      final doseProdutoLabel = resultado.unidade == 'kg/ha'
-          ? '${resultado.doseProduto.toStringAsFixed(2)} kg/ha produto'
-          : '${resultado.doseProduto.toStringAsFixed(1)} g/ha produto';
+        doseProdutoCalc = resultado.doseProduto;
+        doseElemento = resultado.doseElemento;
+        unidade = resultado.unidade;
+
+        if (resultado.avisos.isNotEmpty) refStr = resultado.avisos.join(' ');
+
+        if (doseElemento > 0) {
+          lbl = unidade == 'kg/ha'
+              ? '${doseProdutoCalc.toStringAsFixed(2)} kg/ha produto'
+              : '${doseProdutoCalc.toStringAsFixed(1)} g/ha produto';
+        }
+      }
+
+      final addAny = doseElemento > 0 || avisosDoNutriente.isNotEmpty;
+      if (!addAny) continue;
 
       extras.add(
         MicroResultado(
           elemento: simbolo,
-          valorAtual: valorAtual.valor!,
-          nc: nc,
-          dose: resultado.doseElemento,
-          unidade: 'g/ha',
-          deficiente: valorAtual.valor! < nc,
+          valorAtual: valorAtual.isValido ? valorAtual.valor! : 0.0,
+          nc: nc ?? 0.0,
+          dose: doseElemento,
+          unidade: unidade,
+          deficiente: (nc != null && valorAtual.isValido)
+              ? valorAtual.valor! < nc
+              : false,
           via: via,
           fonte: via.contains('Solo')
               ? _string(cfg['fonteSolo'], 'Fonte solo')
               : _string(cfg['fonteFoliar'], 'Fonte foliar'),
-          doseProduto: resultado.doseProduto,
-          doseProdutoLabel: doseProdutoLabel,
-          referencia:
-              resultado.avisos.isEmpty ? null : resultado.avisos.join(' '),
+          doseProduto: doseProdutoCalc,
+          doseProdutoLabel: lbl,
+          referencia: refStr.isEmpty ? null : refStr,
+          avisosNutriente: avisosDoNutriente,
         ),
       );
     }
@@ -418,22 +457,6 @@ class CalcularRecomendacaoCompletaUsecase {
     }
     if (status == StatusNutriente.invalido) {
       erros.add('$nome inválido na análise.');
-    }
-  }
-
-  /// Valida nutriente não-crítico — ausência gera aviso, nunca bloqueia.
-  void _validarNaoCritico({
-    required String nome,
-    required ValorNutriente valor,
-    required List<String> avisos,
-  }) {
-    final status = _statusDoValor(valor);
-    if (status == StatusNutriente.ausente) {
-      avisos.add('$nome não analisado — dose não calculada.');
-      return;
-    }
-    if (status == StatusNutriente.invalido) {
-      avisos.add('$nome com valor inválido — ignorado no cálculo.');
     }
   }
 

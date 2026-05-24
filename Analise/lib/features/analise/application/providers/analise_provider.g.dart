@@ -101,7 +101,7 @@ final deleteAnaliseUsecaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DeleteAnaliseUsecaseRef = AutoDisposeProviderRef<DeleteAnaliseUsecase>;
-String _$authStateHash() => r'd8eb17123e8971f9b8086bb415a4b2bde52779e2';
+String _$authStateHash() => r'50cd644191ef3a44aab8fff0c7d1173296c4d911';
 
 /// See also [authState].
 @ProviderFor(authState)
@@ -339,7 +339,7 @@ class _AnalisesFiltradasProviderElement
   String? get busca => (origin as AnalisesFiltradasProvider).busca;
 }
 
-String _$analiseNotifierHash() => r'84fa9911e4b326637d9f5102d619e8aa410a19ee';
+String _$analiseNotifierHash() => r'b37944e20ab463b939db8426808ebe938822ade1';
 
 /// See also [AnaliseNotifier].
 @ProviderFor(AnaliseNotifier)

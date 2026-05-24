@@ -36,7 +36,7 @@ class RecomendacaoScreen extends ConsumerStatefulWidget {
 
 class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   final _uuid = const Uuid();
-  String? _analiseIdSelecionada;
+  List<String> _analiseIdsSelecionados = [];
   String? _calibracaoIdSelecionada;
   bool _salvando = false;
   bool _exportando = false;
@@ -44,7 +44,9 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   @override
   void initState() {
     super.initState();
-    _analiseIdSelecionada = widget.analiseId;
+    if (widget.analiseId != null && widget.analiseId!.isNotEmpty) {
+      _analiseIdsSelecionados = [widget.analiseId!];
+    }
   }
 
   @override
@@ -55,12 +57,11 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
     final opcoesAnalise =
         analisesAsync.valueOrNull?.map(_toAnaliseOption).toList() ?? [];
-    final analiseSelecionada =
-        opcoesAnalise.where((e) => e.id == _analiseIdSelecionada).firstOrNull;
-    final perfilSelecionado =
-        perfis.where((p) => p.id == _calibracaoIdSelecionada).firstOrNull;
+    final n = _analiseIdsSelecionados.length;
+    final labelBotao =
+        n > 1 ? '✦ Gerar Média de $n Amostras' : '✦ Gerar Recomendação';
     final request = RecomendacaoRequest(
-      analiseId: _analiseIdSelecionada,
+      analiseIds: _analiseIdsSelecionados,
       calibracaoId: _calibracaoIdSelecionada,
     );
     final result = ref.watch(recomendacaoProvider(request));
@@ -100,27 +101,14 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppDropdown<String>(
-                  label: 'Selecionar Análise de Solo',
-                  hint: analisesAsync.isLoading
-                      ? 'Carregando análises...'
-                      : 'Selecione',
-                  value: _analiseIdSelecionada,
-                  items: opcoesAnalise
-                      .map(
-                        (opcao) => AppDropdownItem<String>(
-                          value: opcao.id,
-                          label: opcao.label,
-                        ),
-                      )
-                      .toList(),
-                  onChanged: opcoesAnalise.isEmpty
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _analiseIdSelecionada = value;
-                          });
-                        },
+                _SeletorAmostras(
+                  analises: opcoesAnalise,
+                  selecionados: _analiseIdsSelecionados,
+                  onChanged: (ids) {
+                    setState(() {
+                      _analiseIdsSelecionados = ids;
+                    });
+                  },
                 ),
                 const SizedBox(height: 8),
                 AppDropdown<String>(
@@ -152,14 +140,14 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                 const SizedBox(height: 12),
                 AppButton(
                   key: const Key('btn_gerar_recomendacao'),
-                  label: 'Gerar Recomendação',
+                  label: labelBotao,
                   icon: Icons.auto_awesome_rounded,
-                  onPressed:
-                      (analiseSelecionada != null && perfilSelecionado != null)
-                          ? () {
-                              ref.invalidate(recomendacaoProvider(request));
-                            }
-                          : null,
+                  onPressed: (_analiseIdsSelecionados.isEmpty ||
+                          _calibracaoIdSelecionada == null)
+                      ? null
+                      : () {
+                          ref.invalidate(recomendacaoProvider(request));
+                        },
                 ),
                 if (analisesAsync.hasError) ...[
                   const SizedBox(height: 10),
@@ -225,11 +213,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             RecomendacaoPotassioSection(resultado: resultado),
             const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
 
-            // BLOCO 5 — O Que Comprar
-            RecomendacaoOQueComprarSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
-
-            // BLOCO 6 — Micronutrientes por Aplicação
+            // BLOCO 5 — Micronutrientes por Aplicação
             RecomendacaoMicrosUnificadosSection(resultado: resultado),
 
             const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
@@ -298,10 +282,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
   _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
     final label =
-        '${analise.talhao} · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analise.dataCadastro)}';
+        '${analise.talhao} · ${analise.numeroAmostra} · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analise.dataCadastro)}';
     return _AnaliseOption(
       id: analise.id,
       label: label,
+      profundidade: analise.profundidade,
+      laboratorio: analise.laboratorio,
     );
   }
 
@@ -457,16 +443,257 @@ class _Badge extends StatelessWidget {
   }
 }
 
+class _SeletorAmostras extends StatelessWidget {
+  const _SeletorAmostras({
+    required this.analises,
+    required this.selecionados,
+    required this.onChanged,
+  });
+
+  final List<_AnaliseOption> analises;
+  final List<String> selecionados;
+  final ValueChanged<List<String>> onChanged;
+
+  String _normalizarProfundidade(String raw) {
+    final s = raw.trim();
+    return s.isEmpty ? '0-20' : s;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String? profAtiva;
+    String? laboratorioAtivo;
+    if (selecionados.isNotEmpty) {
+      final primeira = analises.firstWhere(
+        (a) => a.id == selecionados.first,
+        orElse: () => const _AnaliseOption(id: '', label: ''),
+      );
+      if (primeira.id.isNotEmpty) {
+        profAtiva = _normalizarProfundidade(primeira.profundidade ?? '');
+        laboratorioAtivo = primeira.laboratorio;
+      }
+    }
+
+    final resumo = selecionados.isEmpty
+        ? 'Selecione as amostras'
+        : selecionados.length == 1
+            ? _labelSelecionado(selecionados.first)
+            : '${selecionados.length} amostras selecionadas';
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.bgPrimary,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: ExpansionTile(
+          key: const Key('seletor_amostras_dropdown'),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          iconColor: AppColors.textSecond,
+          collapsedIconColor: AppColors.textSecond,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Selecionar Amostras', style: AppTextStyles.label),
+              const SizedBox(height: 4),
+              Text(
+                resumo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body.copyWith(
+                  color: selecionados.isEmpty
+                      ? AppColors.textTertiary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          children: [
+            if (profAtiva != null || laboratorioAtivo != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  children: [
+                    if (profAtiva != null)
+                      _ContextLabel(
+                        icon: Icons.layers_outlined,
+                        label: 'Profundidade: $profAtiva',
+                      ),
+                    if (laboratorioAtivo != null)
+                      _ContextLabel(
+                        icon: Icons.science_outlined,
+                        label: 'Laboratório: $laboratorioAtivo',
+                      ),
+                  ],
+                ),
+              ),
+            ...analises.map((analise) {
+              final id = analise.id;
+              final label = analise.label;
+              final prof = _normalizarProfundidade(analise.profundidade ?? '');
+              final laboratorio = analise.laboratorio;
+
+              final isSelecionado = selecionados.contains(id);
+              final laboratorioDiferente = laboratorioAtivo != null &&
+                  !isSelecionado &&
+                  laboratorio != laboratorioAtivo;
+              final profundidadeDiferente =
+                  profAtiva != null && !isSelecionado && prof != profAtiva;
+              final isBloqueado = laboratorioDiferente || profundidadeDiferente;
+
+              return Opacity(
+                opacity: isBloqueado ? 0.35 : 1.0,
+                child: InkWell(
+                  key: Key('amostra_option_$id'),
+                  onTap: isBloqueado
+                      ? null
+                      : () {
+                          final novos = List<String>.from(selecionados);
+                          if (isSelecionado) {
+                            novos.remove(id);
+                          } else {
+                            novos.add(id);
+                          }
+                          onChanged(novos);
+                        },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelecionado
+                          ? const Color(0xFF007AFF).withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelecionado
+                            ? const Color(0xFF007AFF).withValues(alpha: 0.3)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelecionado
+                              ? Icons.check_circle
+                              : isBloqueado
+                                  ? Icons.remove_circle_outline
+                                  : Icons.radio_button_unchecked,
+                          size: 20,
+                          color: isSelecionado
+                              ? const Color(0xFF007AFF)
+                              : isBloqueado
+                                  ? const Color(0xFFC7C7CC)
+                                  : const Color(0xFF86868B),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isSelecionado
+                                  ? const Color(0xFF007AFF)
+                                  : const Color(0xFF1D1D1F),
+                              fontWeight: isSelecionado
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _DepthBadge(label: prof),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _labelSelecionado(String id) {
+    final selecionado = analises.firstWhere(
+      (a) => a.id == id,
+      orElse: () => const _AnaliseOption(id: '', label: ''),
+    );
+    return selecionado.id.isEmpty ? '1 amostra selecionada' : selecionado.label;
+  }
+}
+
+class _ContextLabel extends StatelessWidget {
+  const _ContextLabel({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFF86868B)),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF86868B),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DepthBadge extends StatelessWidget {
+  const _DepthBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5E5E7),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          color: Color(0xFF86868B),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
 class _AnaliseOption {
   const _AnaliseOption({
     required this.id,
     required this.label,
+    this.profundidade,
+    this.laboratorio,
   });
 
   final String id;
   final String label;
-}
-
-extension<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
+  final String? profundidade;
+  final String? laboratorio;
 }

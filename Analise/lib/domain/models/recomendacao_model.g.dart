@@ -11,6 +11,7 @@ _$RecomendacaoModelImpl _$$RecomendacaoModelImplFromJson(
     _$RecomendacaoModelImpl(
       id: json['id'] as String,
       analiseId: json['analiseId'] as String,
+      userId: json['userId'] as String?,
       cultura: json['cultura'] as String,
       necessidadeCalagem: (json['necessidadeCalagem'] as num).toDouble(),
       prnt: (json['prnt'] as num).toDouble(),
@@ -49,6 +50,7 @@ Map<String, dynamic> _$$RecomendacaoModelImplToJson(
     <String, dynamic>{
       'id': instance.id,
       'analiseId': instance.analiseId,
+      'userId': instance.userId,
       'cultura': instance.cultura,
       'necessidadeCalagem': instance.necessidadeCalagem,
       'prnt': instance.prnt,

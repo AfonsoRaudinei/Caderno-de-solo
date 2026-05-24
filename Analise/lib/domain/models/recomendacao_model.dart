@@ -10,6 +10,7 @@ class RecomendacaoModel with _$RecomendacaoModel {
   const factory RecomendacaoModel({
     required String id,
     required String analiseId,
+    String? userId,
     required String cultura,
     required double necessidadeCalagem,
     required double prnt,

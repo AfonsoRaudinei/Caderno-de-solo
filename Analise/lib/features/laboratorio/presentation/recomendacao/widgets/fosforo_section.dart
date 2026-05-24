@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
-import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/nivel_gradiente_bar.dart';
 import 'package:soloforte/domain/formulas/classificacao_nivel.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/recomendacao_badge.dart';
 
 class RecomendacaoFosforoSection extends StatelessWidget {
   const RecomendacaoFosforoSection({super.key, required this.resultado});
@@ -156,7 +156,11 @@ class RecomendacaoFosforoSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
             child: Text(
               resultado.modoFosforo,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF86868B)),
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecond.withValues(alpha: 0.6),
+              ),
             ),
           ),
           Padding(
@@ -219,7 +223,7 @@ class RecomendacaoFosforoSection extends StatelessWidget {
             const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: _Badge(
+              child: RecomendacaoBadge(
                 icon: Icons.info_outline,
                 color: AppColors.warning,
                 label: 'Solo acima do NC — dose mínima de manutenção aplicada.',
@@ -233,37 +237,4 @@ class RecomendacaoFosforoSection extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.icon,
-    required this.color,
-    required this.label,
-  });
 
-  final IconData icon;
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.caption.copyWith(color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

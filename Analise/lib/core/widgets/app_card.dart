@@ -90,31 +90,56 @@ class AppCardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentPadding = padding ?? const EdgeInsets.all(AppDimens.cardPadding);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(
-            left: AppDimens.lg,
-            right: AppDimens.lg,
-            bottom: AppDimens.sm,
-          ),
-          child: Row(
+        AppCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title.toUpperCase(),
-                style: AppTextStyles.sectionLabel,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimens.lg,
+                  AppDimens.md,
+                  AppDimens.lg,
+                  AppDimens.sm,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9FAFB),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.borderSoft,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      style: AppTextStyles.sectionLabel.copyWith(
+                        color: AppColors.textSecond,
+                        letterSpacing: 1.1,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (trailing != null) ...[
+                      const Spacer(),
+                      trailing!,
+                    ],
+                  ],
+                ),
               ),
-              if (trailing != null) ...[
-                const Spacer(),
-                trailing!,
-              ],
+              Padding(
+                padding: contentPadding,
+                child: child,
+              ),
             ],
           ),
-        ),
-        AppCard(
-          padding: padding,
-          child: child,
         ),
       ],
     );

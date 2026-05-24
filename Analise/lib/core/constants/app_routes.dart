@@ -40,6 +40,8 @@ class AppRoutes {
   static const String baseDadosDetalhe = '/config/base-dados/detalhe';
   static const String perfil = '/config/perfil';
   static const String feedback = '/config/feedback';
+  static const String configLabTemplates = '/config/lab-templates';
+  static const String configLabTemplateEdit = '/config/lab-templates/editar';
   @Deprecated('Use AppRoutes.labRefMetricas')
   static const String tabelaMetricas = '/config/metricas';
 }

@@ -311,9 +311,6 @@ class NovaAnaliseScreen extends ConsumerWidget {
     NovaAnaliseState state,
     NovaAnaliseController ctrl,
   ) {
-    final byColumn = state.validation.byColumn.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -386,46 +383,6 @@ class NovaAnaliseScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (byColumn.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: byColumn.map((entry) {
-                final summary = entry.value;
-                final text = summary.errorCount > 0
-                    ? '${summary.errorCount} erro(s) em A${entry.key + 1}'
-                    : '${summary.warningCount} aviso(s) em A${entry.key + 1}';
-                final hasError = summary.errorCount > 0;
-
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: hasError
-                        ? const Color(0xFFFEF2F2)
-                        : const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: hasError
-                          ? const Color(0xFFFCA5A5)
-                          : const Color(0xFFFDE68A),
-                    ),
-                  ),
-                  child: Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: hasError
-                          ? const Color(0xFFB91C1C)
-                          : const Color(0xFF92400E),
-                    ),
-                  ),
-                );
-              }).toList(growable: false),
-            ),
-          ],
         ],
       ),
     );

@@ -3,13 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:soloforte/domain/entities/analise_completa.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:soloforte/data/datasources/remote/recomendacao_firestore_datasource.dart';
 import 'package:soloforte/domain/mappers/analise_mapper.dart';
 import 'package:soloforte/domain/usecases/calcular_recomendacao_completa_usecase.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
+import 'package:soloforte/domain/value_objects/valor_nutriente.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/config/application/providers/tabela_metricas_provider.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 export 'package:soloforte/domain/usecases/recomendacao_engine.dart'
@@ -18,16 +21,23 @@ export 'package:soloforte/domain/usecases/recomendacao_engine.dart'
 @immutable
 class RecomendacaoRequest {
   const RecomendacaoRequest({
-    required this.analiseId,
+    this.analiseId,
+    this.analiseIds = const <String>[],
     required this.calibracaoId,
   });
 
   final String? analiseId;
+  final List<String> analiseIds;
   final String? calibracaoId;
 
+  List<String> get analiseIdsEfetivos {
+    if (analiseIds.isNotEmpty) return analiseIds;
+    if (analiseId != null && analiseId!.isNotEmpty) return <String>[analiseId!];
+    return const <String>[];
+  }
+
   bool get isSelecionado =>
-      analiseId != null &&
-      analiseId!.isNotEmpty &&
+      analiseIdsEfetivos.isNotEmpty &&
       calibracaoId != null &&
       calibracaoId!.isNotEmpty;
 
@@ -35,12 +45,13 @@ class RecomendacaoRequest {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is RecomendacaoRequest &&
-        other.analiseId == analiseId &&
+        listEquals(other.analiseIdsEfetivos, analiseIdsEfetivos) &&
         other.calibracaoId == calibracaoId;
   }
 
   @override
-  int get hashCode => Object.hash(analiseId, calibracaoId);
+  int get hashCode =>
+      Object.hash(Object.hashAll(analiseIdsEfetivos), calibracaoId);
 }
 
 final recomendacaoProvider =
@@ -66,8 +77,9 @@ final recomendacaoProvider =
       );
     }
 
-    final analiseMatches =
-        analises.where((item) => item.id == request.analiseId);
+    final analiseMatches = analises
+        .where((item) => request.analiseIdsEfetivos.contains(item.id))
+        .toList(growable: false);
     final calibracaoMatches = calibracaoState.profiles
         .where((item) => item.id == request.calibracaoId);
     final analise = analiseMatches.isEmpty ? null : analiseMatches.first;
@@ -81,9 +93,26 @@ final recomendacaoProvider =
       );
     }
 
-    final analiseCompleta = AnaliseMapper.fromSolo(analise);
-    final label =
-        '${analise.talhao} · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analise.dataCadastro)}';
+    final laboratorios =
+        analiseMatches.map((a) => a.laboratorio.trim()).toSet();
+    final profundidades = analiseMatches
+        .map((a) => _normalizarProfundidade(a.profundidade))
+        .toSet();
+    if (laboratorios.length > 1 || profundidades.length > 1) {
+      return const RecomendacaoResult(
+        recomendacao: null,
+        diagnostico: DiagnosticoRecomendacao(
+          erros: [
+            'Selecione apenas amostras do mesmo laboratório e profundidade.',
+          ],
+        ),
+      );
+    }
+
+    final analiseCompleta = _buildAnaliseParaRecomendacao(analiseMatches);
+    final label = analiseMatches.length > 1
+        ? 'Média de ${analiseMatches.length} amostras · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analiseCompleta.dataCadastro)}'
+        : '${analise.talhao} · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analise.dataCadastro)}';
     const usecase = CalcularRecomendacaoCompletaUsecase();
     final resultado = usecase.execute(
       analise: analiseCompleta,
@@ -94,6 +123,74 @@ final recomendacaoProvider =
     return resultado;
   },
 );
+
+String _normalizarProfundidade(String raw) {
+  final value = raw.trim();
+  return value.isEmpty ? '0-20' : value;
+}
+
+AnaliseCompleta _buildAnaliseParaRecomendacao(List<AnaliseSolo> analises) {
+  if (analises.length == 1) {
+    return AnaliseMapper.fromSolo(analises.first);
+  }
+
+  final completas =
+      analises.map(AnaliseMapper.fromSolo).toList(growable: false);
+  final first = completas.first;
+  final latest = completas
+      .map((a) => a.dataCadastro)
+      .reduce((a, b) => a.isAfter(b) ? a : b);
+  final extratores = completas.map((a) => a.extratorP).toSet();
+
+  return AnaliseCompleta(
+    id: completas.map((a) => a.id).join('+'),
+    fazenda: first.fazenda,
+    produtor: first.produtor,
+    talhao: 'Média de ${completas.length} amostras',
+    cultura: first.cultura,
+    laboratorio: first.laboratorio,
+    dataCadastro: latest,
+    descricaoLocal: first.descricaoLocal,
+    phAgua: _media(completas.map((a) => a.phAgua)),
+    phSmp: _media(completas.map((a) => a.phSmp)),
+    phCaCl2: _media(completas.map((a) => a.phCaCl2)),
+    materiaOrganica: _media(completas.map((a) => a.materiaOrganica)),
+    argila: _media(completas.map((a) => a.argila)),
+    pMehlich: _media(completas.map((a) => a.pMehlich)),
+    pResina: _media(completas.map((a) => a.pResina)),
+    pRem: _media(completas.map((a) => a.pRem)),
+    extratorP: extratores.length == 1 ? extratores.first : null,
+    k: _media(completas.map((a) => a.k)),
+    ca: _media(completas.map((a) => a.ca)),
+    mg: _media(completas.map((a) => a.mg)),
+    al: _media(completas.map((a) => a.al)),
+    hAl: _media(completas.map((a) => a.hAl)),
+    na: _media(completas.map((a) => a.na)),
+    s020: _media(completas.map((a) => a.s020)),
+    s2040: _media(completas.map((a) => a.s2040)),
+    b: _media(completas.map((a) => a.b)),
+    cu: _media(completas.map((a) => a.cu)),
+    fe: _media(completas.map((a) => a.fe)),
+    mn: _media(completas.map((a) => a.mn)),
+    zn: _media(completas.map((a) => a.zn)),
+    ni: _media(completas.map((a) => a.ni)),
+    mo: _media(completas.map((a) => a.mo)),
+    se: _media(completas.map((a) => a.se)),
+    co: _media(completas.map((a) => a.co)),
+  );
+}
+
+ValorNutriente _media(Iterable<ValorNutriente> valores) {
+  final analisados = valores.where((v) => v.isValido).toList(growable: false);
+  if (analisados.isEmpty) {
+    return const ValorNutriente(valor: null, analisado: false);
+  }
+  final soma = analisados.fold<double>(0, (total, v) => total + v.valor!);
+  return ValorNutriente(
+    valor: soma / analisados.length,
+    analisado: true,
+  );
+}
 
 CalcarioViewModel buildCalcarioViewModel(ResultadoRecomendacao resultado) {
   final corretivos = _asMap(resultado.calibracao.parametrosCards['corretivos']);
@@ -186,12 +283,12 @@ class SalvarRecomendacaoNotifier extends AutoDisposeAsyncNotifier<void> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Usuário não autenticado');
-      
+
       final model = recomendacao.copyWith(
         userId: uid,
         createdAt: DateTime.now(),
       );
-      
+
       final datasource = ref.read(recomendacaoDatasourceProvider);
       await datasource.saveRecomendacao(model.toJson());
       state = const AsyncValue.data(null);
@@ -201,6 +298,7 @@ class SalvarRecomendacaoNotifier extends AutoDisposeAsyncNotifier<void> {
   }
 }
 
-final salvarRecomendacaoProvider = AutoDisposeAsyncNotifierProvider<SalvarRecomendacaoNotifier, void>(() {
+final salvarRecomendacaoProvider =
+    AutoDisposeAsyncNotifierProvider<SalvarRecomendacaoNotifier, void>(() {
   return SalvarRecomendacaoNotifier();
 });

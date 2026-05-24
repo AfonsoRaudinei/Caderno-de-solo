@@ -13,6 +13,9 @@ class AppDropdown<T> extends StatelessWidget {
     this.hint,
     this.errorText,
     this.enabled = true,
+    this.borderRadius = 14,
+    this.contentPadding =
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
   });
 
   final List<AppDropdownItem<T>> items;
@@ -22,6 +25,8 @@ class AppDropdown<T> extends StatelessWidget {
   final String? hint;
   final String? errorText;
   final bool enabled;
+  final double borderRadius;
+  final EdgeInsetsGeometry contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -39,14 +44,19 @@ class AppDropdown<T> extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: enabled ? AppColors.bgPrimary : AppColors.bgSecondary,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: hasError
-                  ? AppColors.error
-                  : AppColors.border,
+              color: hasError ? AppColors.error : AppColors.borderSoft,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.025),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: contentPadding,
           child: DropdownButtonHideUnderline(
             child: DropdownButton<T>(
               value: value,

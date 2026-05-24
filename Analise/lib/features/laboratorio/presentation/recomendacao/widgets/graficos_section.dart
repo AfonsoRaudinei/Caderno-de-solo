@@ -289,9 +289,9 @@ class RecomendacaoGraficosSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _legendaPill('Antes', const Color(0xFF34C759)),
+                _legendaPill('Antes', const Color(0xFFFF9500)),
                 const SizedBox(width: 16),
-                _legendaPill('Depois', const Color(0xFF007AFF)),
+                _legendaPill('Depois', const Color(0xFF34C759)),
               ],
             ),
             const SizedBox(height: 16),
@@ -343,18 +343,17 @@ class RecomendacaoGraficosSection extends StatelessWidget {
     final propAntes = (g.antes / maxVal).clamp(0.0, 1.0);
     final propDepois = (g.depois / maxVal).clamp(0.0, 1.0);
 
-    final corAntes = g.antes < g.depois
-        ? const Color(0xFFFF3B30).withValues(alpha: 0.75)
-        : const Color(0xFF34C759).withValues(alpha: 0.85);
-    const corDepois = Color(0xFF007AFF);
+    const corAntes = Color(0xFFFF9500); // laranja iOS — série "Antes"
+    const corDepois = Color(0xFF34C759); // verde iOS — série "Depois"
 
-    Widget barra(double proporcao, Color cor, double valor, String unidade) {
+    Widget barra(
+        double proporcao, Color cor, double valor, String unidade, String label) {
       final altura = (alturaMax * proporcao).clamp(4.0, alturaMax);
       return Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            _fmtBar(valor, unidade),
+            _fmtBar(valor, unidade, label),
             style: const TextStyle(fontSize: 9, color: Color(0xFF1D1D1F)),
             textAlign: TextAlign.center,
           ),
@@ -378,9 +377,9 @@ class RecomendacaoGraficosSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          barra(propAntes, corAntes, g.antes, g.unidade),
+          barra(propAntes, corAntes, g.antes, g.unidade, g.label),
           const SizedBox(width: 3),
-          barra(propDepois, corDepois, g.depois, g.unidade),
+          barra(propDepois, corDepois, g.depois, g.unidade, g.label),
         ],
       ),
     );
@@ -400,8 +399,9 @@ class RecomendacaoGraficosSection extends StatelessWidget {
     );
   }
 
-  String _fmtBar(double v, String unidade) {
+  String _fmtBar(double v, String unidade, String label) {
     if (unidade == '%') return '${v.toStringAsFixed(0)}%';
+    if (unidade == 'cmolc' && label == 'K') return v.toStringAsFixed(2);
     return v.toStringAsFixed(1);
   }
 }

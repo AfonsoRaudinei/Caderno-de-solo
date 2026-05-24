@@ -22,6 +22,7 @@ RecomendacaoModel _$RecomendacaoModelFromJson(Map<String, dynamic> json) {
 mixin _$RecomendacaoModel {
   String get id => throw _privateConstructorUsedError;
   String get analiseId => throw _privateConstructorUsedError;
+  String? get userId => throw _privateConstructorUsedError;
   String get cultura => throw _privateConstructorUsedError;
   double get necessidadeCalagem => throw _privateConstructorUsedError;
   double get prnt => throw _privateConstructorUsedError;
@@ -61,6 +62,7 @@ abstract class $RecomendacaoModelCopyWith<$Res> {
   $Res call(
       {String id,
       String analiseId,
+      String? userId,
       String cultura,
       double necessidadeCalagem,
       double prnt,
@@ -93,6 +95,7 @@ class _$RecomendacaoModelCopyWithImpl<$Res, $Val extends RecomendacaoModel>
   $Res call({
     Object? id = null,
     Object? analiseId = null,
+    Object? userId = freezed,
     Object? cultura = null,
     Object? necessidadeCalagem = null,
     Object? prnt = null,
@@ -116,6 +119,10 @@ class _$RecomendacaoModelCopyWithImpl<$Res, $Val extends RecomendacaoModel>
           ? _value.analiseId
           : analiseId // ignore: cast_nullable_to_non_nullable
               as String,
+      userId: freezed == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String?,
       cultura: null == cultura
           ? _value.cultura
           : cultura // ignore: cast_nullable_to_non_nullable
@@ -183,6 +190,7 @@ abstract class _$$RecomendacaoModelImplCopyWith<$Res>
   $Res call(
       {String id,
       String analiseId,
+      String? userId,
       String cultura,
       double necessidadeCalagem,
       double prnt,
@@ -213,6 +221,7 @@ class __$$RecomendacaoModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? analiseId = null,
+    Object? userId = freezed,
     Object? cultura = null,
     Object? necessidadeCalagem = null,
     Object? prnt = null,
@@ -236,6 +245,10 @@ class __$$RecomendacaoModelImplCopyWithImpl<$Res>
           ? _value.analiseId
           : analiseId // ignore: cast_nullable_to_non_nullable
               as String,
+      userId: freezed == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String?,
       cultura: null == cultura
           ? _value.cultura
           : cultura // ignore: cast_nullable_to_non_nullable
@@ -298,6 +311,7 @@ class _$RecomendacaoModelImpl implements _RecomendacaoModel {
   const _$RecomendacaoModelImpl(
       {required this.id,
       required this.analiseId,
+      this.userId,
       required this.cultura,
       required this.necessidadeCalagem,
       required this.prnt,
@@ -319,6 +333,8 @@ class _$RecomendacaoModelImpl implements _RecomendacaoModel {
   final String id;
   @override
   final String analiseId;
+  @override
+  final String? userId;
   @override
   final String cultura;
   @override
@@ -355,7 +371,7 @@ class _$RecomendacaoModelImpl implements _RecomendacaoModel {
 
   @override
   String toString() {
-    return 'RecomendacaoModel(id: $id, analiseId: $analiseId, cultura: $cultura, necessidadeCalagem: $necessidadeCalagem, prnt: $prnt, doseCalcario: $doseCalcario, p2o5: $p2o5, k2o: $k2o, citacaoCalagem: $citacaoCalagem, citacaoGesso: $citacaoGesso, citacaoFosforo: $citacaoFosforo, citacaoPotassio: $citacaoPotassio, citacaoEnxofre: $citacaoEnxofre, citacaoMicronutrientes: $citacaoMicronutrientes, createdAt: $createdAt)';
+    return 'RecomendacaoModel(id: $id, analiseId: $analiseId, userId: $userId, cultura: $cultura, necessidadeCalagem: $necessidadeCalagem, prnt: $prnt, doseCalcario: $doseCalcario, p2o5: $p2o5, k2o: $k2o, citacaoCalagem: $citacaoCalagem, citacaoGesso: $citacaoGesso, citacaoFosforo: $citacaoFosforo, citacaoPotassio: $citacaoPotassio, citacaoEnxofre: $citacaoEnxofre, citacaoMicronutrientes: $citacaoMicronutrientes, createdAt: $createdAt)';
   }
 
   @override
@@ -366,6 +382,7 @@ class _$RecomendacaoModelImpl implements _RecomendacaoModel {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.analiseId, analiseId) ||
                 other.analiseId == analiseId) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.cultura, cultura) || other.cultura == cultura) &&
             (identical(other.necessidadeCalagem, necessidadeCalagem) ||
                 other.necessidadeCalagem == necessidadeCalagem) &&
@@ -396,6 +413,7 @@ class _$RecomendacaoModelImpl implements _RecomendacaoModel {
       runtimeType,
       id,
       analiseId,
+      userId,
       cultura,
       necessidadeCalagem,
       prnt,
@@ -431,6 +449,7 @@ abstract class _RecomendacaoModel implements RecomendacaoModel {
   const factory _RecomendacaoModel(
           {required final String id,
           required final String analiseId,
+          final String? userId,
           required final String cultura,
           required final double necessidadeCalagem,
           required final double prnt,
@@ -453,6 +472,8 @@ abstract class _RecomendacaoModel implements RecomendacaoModel {
   String get id;
   @override
   String get analiseId;
+  @override
+  String? get userId;
   @override
   String get cultura;
   @override

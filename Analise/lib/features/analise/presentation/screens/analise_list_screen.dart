@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/widgets/filter_chips_widget.dart';
 
 class AnaliseListScreen extends ConsumerStatefulWidget {
   const AnaliseListScreen({super.key});
@@ -16,6 +16,7 @@ class AnaliseListScreen extends ConsumerStatefulWidget {
 }
 
 class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
+  static const String _todasCulturasValue = '__todas_culturas__';
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String? _selectedCultura;
@@ -61,48 +62,32 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       appBar: AppBar(
         title: const Text('Análise de Solo'),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(safras.isNotEmpty ? 170 : 130),
+          preferredSize: Size.fromHeight(safras.isNotEmpty ? 148 : 140),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar área, produtor, cultura...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              FilterChipsWidget(
-                labels: Cultura.values.map((e) => e.label).toList(),
-                selectedLabel: _selectedCultura,
-                onSelected: (label) {
-                  setState(() {
-                    _selectedCultura = _selectedCultura == label ? null : label;
-                  });
-                },
-              ),
-              if (safras.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                FilterChipsWidget(
-                  labels: safras,
-                  selectedLabel: _selectedSafra,
-                  onSelected: (label) {
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _HeaderFilterPanel(
+                  searchController: _searchController,
+                  searchQuery: _searchQuery,
+                  onSearchChanged: (val) => setState(() => _searchQuery = val),
+                  selectedCultura: _selectedCultura,
+                  todasCulturasValue: _todasCulturasValue,
+                  safras: safras,
+                  selectedSafra: _selectedSafra,
+                  onCulturaChanged: (value) {
                     setState(() {
-                      _selectedSafra = _selectedSafra == label ? null : label;
+                      _selectedCultura =
+                          value == _todasCulturasValue ? null : value;
+                    });
+                  },
+                  onSafraChanged: (safra) {
+                    setState(() {
+                      _selectedSafra = _selectedSafra == safra ? null : safra;
                     });
                   },
                 ),
-              ],
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -1268,6 +1253,288 @@ class _AnaliseFolderSummary {
   final DateTime dataMaisRecente;
 }
 
+class _HeaderFilterPanel extends StatelessWidget {
+  const _HeaderFilterPanel({
+    required this.searchController,
+    required this.searchQuery,
+    required this.onSearchChanged,
+    required this.selectedCultura,
+    required this.todasCulturasValue,
+    required this.safras,
+    required this.selectedSafra,
+    required this.onCulturaChanged,
+    required this.onSafraChanged,
+  });
+
+  final TextEditingController searchController;
+  final String searchQuery;
+  final ValueChanged<String> onSearchChanged;
+  final String? selectedCultura;
+  final String todasCulturasValue;
+  final List<String> safras;
+  final String? selectedSafra;
+  final ValueChanged<String?> onCulturaChanged;
+  final ValueChanged<String> onSafraChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.borderSoft.withValues(alpha: 0.9),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: searchController,
+              onChanged: onSearchChanged,
+              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
+              decoration: InputDecoration(
+                hintText: 'Buscar área, produtor, cultura...',
+                hintStyle: AppTextStyles.body.copyWith(
+                  color: const Color(0xFFA1A1A6),
+                ),
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.search_rounded,
+                    size: 22,
+                    color: Color(0xFF6E6E73),
+                  ),
+                ),
+                prefixIconConstraints:
+                    const BoxConstraints(minWidth: 42, minHeight: 42),
+                suffixIcon: searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          searchController.clear();
+                          onSearchChanged('');
+                        },
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Color(0xFF8E8E93),
+                        ),
+                      ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: AppDropdown<String>(
+                  value: selectedCultura ?? todasCulturasValue,
+                  hint: 'Cultura',
+                  borderRadius: 14,
+                  items: [
+                    AppDropdownItem<String>(
+                      value: todasCulturasValue,
+                      label: 'Todas culturas',
+                    ),
+                    ...Cultura.values.map(
+                      (cultura) => AppDropdownItem<String>(
+                        value: cultura.label,
+                        label: cultura.label,
+                      ),
+                    ),
+                  ],
+                  onChanged: onCulturaChanged,
+                ),
+              ),
+              if (safras.isNotEmpty) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: safras
+                              .map(
+                                (safra) => Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: _SafraChip(
+                                    label: safra,
+                                    isSelected: selectedSafra == safra,
+                                    onTap: () => onSafraChanged(safra),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SafraChip extends StatelessWidget {
+  const _SafraChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.10)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.22)
+              : AppColors.borderSoft,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isSelected ? 0.03 : 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Text(
+              label,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 12,
+                color: isSelected ? AppColors.primary : AppColors.textSecond,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardSurface extends StatefulWidget {
+  const _CardSurface({
+    required this.child,
+    required this.onTap,
+    this.onLongPress,
+    this.isSelected = false,
+    this.selectionColor = AppColors.primary,
+    this.borderRadius = 20,
+  });
+
+  final Widget child;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool isSelected;
+  final Color selectionColor;
+  final double borderRadius;
+
+  @override
+  State<_CardSurface> createState() => _CardSurfaceState();
+}
+
+class _CardSurfaceState extends State<_CardSurface> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shadowColor = widget.isSelected
+        ? widget.selectionColor.withValues(alpha: 0.10)
+        : Colors.black.withValues(alpha: 0.04);
+
+    return AnimatedScale(
+      scale: _pressed ? 0.988 : 1,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOutCubic,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          border: Border.all(
+            color: widget.isSelected
+                ? widget.selectionColor.withValues(alpha: 0.30)
+                : AppColors.borderSoft.withValues(alpha: 0.95),
+            width: widget.isSelected ? 1.2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: widget.isSelected ? 12 : 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            splashColor: widget.selectionColor.withValues(alpha: 0.05),
+            highlightColor: Colors.transparent,
+            onTapDown: (_) => _setPressed(true),
+            onTapCancel: () => _setPressed(false),
+            onTapUp: (_) => _setPressed(false),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PastaAnaliseCard extends StatelessWidget {
   const _PastaAnaliseCard({
     required this.pasta,
@@ -1287,93 +1554,85 @@ class _PastaAnaliseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = pasta.analises.length;
     final totalLabel = total == 1 ? '1 amostra' : '$total amostras';
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected
-                ? Border.all(
-                    color: const Color(0xFF007AFF),
-                    width: 2,
-                  )
-                : null,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+    return _CardSurface(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      isSelected: isSelected,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isSelectionMode) ...[
+              Align(
+                alignment: Alignment.topRight,
+                child: Icon(
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textTertiary,
+                ),
               ),
+              const SizedBox(height: 6),
             ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isSelectionMode) ...[
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      color: isSelected
-                          ? const Color(0xFF007AFF)
-                          : AppColors.textTertiary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                ],
-                const Icon(
-                  Icons.folder_open_rounded,
-                  size: 42,
-                  color: Color(0xFF007AFF),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  pasta.laboratorio,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.label.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1D1D1F),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'O.S.: ${pasta.os}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 11,
-                    color: const Color(0xFF86868B),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  totalLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 11,
-                    color: const Color(0xFF34C759),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.folder_open_rounded,
+                size: 32,
+                color: AppColors.primary,
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              pasta.laboratorio,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.label.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1D1D1F),
+                letterSpacing: -0.1,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'O.S.: ${pasta.os}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 11,
+                color: const Color(0xFF8E8E93),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                totalLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 11,
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1403,81 +1662,67 @@ class _AnaliseAmostraCard extends StatelessWidget {
         ? analise.cultura.label
         : '${analise.cultura.label} · ${analise.safra}';
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected
-                ? Border.all(
-                    color: const Color(0xFF007AFF),
-                    width: 2,
-                  )
-                : null,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+    return _CardSurface(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      isSelected: isSelected,
+      selectionColor: analise.cultura.color,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isSelectionMode) ...[
+              Align(
+                alignment: Alignment.topRight,
+                child: Icon(
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: isSelected
+                      ? analise.cultura.color
+                      : AppColors.textTertiary,
+                ),
               ),
+              const SizedBox(height: 6),
             ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isSelectionMode) ...[
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      color: isSelected
-                          ? const Color(0xFF007AFF)
-                          : AppColors.textTertiary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                ],
-                Icon(
-                  Icons.science,
-                  size: 48,
-                  color: analise.cultura.color,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  titulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.label.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 11,
-                    color: AppColors.textSecond,
-                  ),
-                ),
-              ],
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: analise.cultura.color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.science_rounded,
+                size: 30,
+                color: analise.cultura.color,
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              titulo,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.label.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitulo,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 11,
+                color: AppColors.textSecond,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1491,45 +1736,44 @@ class _NovaAnaliseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: CustomPaint(
-          painter: _DashedBorderPainter(
-            color: const Color(0xFFD1D1D6),
-            strokeWidth: 2,
-            dashWidth: 8,
-            dashSpace: 6,
-            radius: 12,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.add_circle,
-                    size: 48,
-                    color: Color(0xFF34C759),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Nova análise',
-                    style: AppTextStyles.label.copyWith(
-                      fontSize: 13,
-                      color: const Color(0xFF86868B),
-                    ),
-                  ),
-                ],
+    return _CardSurface(
+      onTap: onTap,
+      borderRadius: 20,
+      child: CustomPaint(
+        painter: _DashedBorderPainter(
+          color: AppColors.border.withValues(alpha: 0.95),
+          strokeWidth: 1.4,
+          dashWidth: 8,
+          dashSpace: 6,
+          radius: 20,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 30,
+                  color: AppColors.success,
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              Text(
+                'Nova análise',
+                style: AppTextStyles.label.copyWith(
+                  fontSize: 13,
+                  color: const Color(0xFF6E6E73),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),

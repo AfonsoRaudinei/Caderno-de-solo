@@ -234,6 +234,7 @@ mixin _$MicroResultado {
 
   /// Citação científica da referência usada
   String? get referencia => throw _privateConstructorUsedError;
+  List<String> get avisosNutriente => throw _privateConstructorUsedError;
 
   /// Create a copy of MicroResultado
   /// with the given fields replaced by the non-null parameter values.
@@ -259,7 +260,8 @@ abstract class $MicroResultadoCopyWith<$Res> {
       String fonte,
       double doseProduto,
       String doseProdutoLabel,
-      String? referencia});
+      String? referencia,
+      List<String> avisosNutriente});
 }
 
 /// @nodoc
@@ -288,6 +290,7 @@ class _$MicroResultadoCopyWithImpl<$Res, $Val extends MicroResultado>
     Object? doseProduto = null,
     Object? doseProdutoLabel = null,
     Object? referencia = freezed,
+    Object? avisosNutriente = null,
   }) {
     return _then(_value.copyWith(
       elemento: null == elemento
@@ -334,6 +337,10 @@ class _$MicroResultadoCopyWithImpl<$Res, $Val extends MicroResultado>
           ? _value.referencia
           : referencia // ignore: cast_nullable_to_non_nullable
               as String?,
+      avisosNutriente: null == avisosNutriente
+          ? _value.avisosNutriente
+          : avisosNutriente // ignore: cast_nullable_to_non_nullable
+              as List<String>,
     ) as $Val);
   }
 }
@@ -357,7 +364,8 @@ abstract class _$$MicroResultadoImplCopyWith<$Res>
       String fonte,
       double doseProduto,
       String doseProdutoLabel,
-      String? referencia});
+      String? referencia,
+      List<String> avisosNutriente});
 }
 
 /// @nodoc
@@ -384,6 +392,7 @@ class __$$MicroResultadoImplCopyWithImpl<$Res>
     Object? doseProduto = null,
     Object? doseProdutoLabel = null,
     Object? referencia = freezed,
+    Object? avisosNutriente = null,
   }) {
     return _then(_$MicroResultadoImpl(
       elemento: null == elemento
@@ -430,6 +439,10 @@ class __$$MicroResultadoImplCopyWithImpl<$Res>
           ? _value.referencia
           : referencia // ignore: cast_nullable_to_non_nullable
               as String?,
+      avisosNutriente: null == avisosNutriente
+          ? _value._avisosNutriente
+          : avisosNutriente // ignore: cast_nullable_to_non_nullable
+              as List<String>,
     ));
   }
 }
@@ -448,7 +461,9 @@ class _$MicroResultadoImpl implements _MicroResultado {
       required this.fonte,
       required this.doseProduto,
       required this.doseProdutoLabel,
-      this.referencia});
+      this.referencia,
+      final List<String> avisosNutriente = const []})
+      : _avisosNutriente = avisosNutriente;
 
   /// Símbolo do elemento (ex: 'Zn', 'B', 'Cu')
   @override
@@ -486,10 +501,18 @@ class _$MicroResultadoImpl implements _MicroResultado {
   /// Citação científica da referência usada
   @override
   final String? referencia;
+  final List<String> _avisosNutriente;
+  @override
+  @JsonKey()
+  List<String> get avisosNutriente {
+    if (_avisosNutriente is EqualUnmodifiableListView) return _avisosNutriente;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_avisosNutriente);
+  }
 
   @override
   String toString() {
-    return 'MicroResultado(elemento: $elemento, valorAtual: $valorAtual, nc: $nc, dose: $dose, unidade: $unidade, deficiente: $deficiente, via: $via, fonte: $fonte, doseProduto: $doseProduto, doseProdutoLabel: $doseProdutoLabel, referencia: $referencia)';
+    return 'MicroResultado(elemento: $elemento, valorAtual: $valorAtual, nc: $nc, dose: $dose, unidade: $unidade, deficiente: $deficiente, via: $via, fonte: $fonte, doseProduto: $doseProduto, doseProdutoLabel: $doseProdutoLabel, referencia: $referencia, avisosNutriente: $avisosNutriente)';
   }
 
   @override
@@ -513,7 +536,9 @@ class _$MicroResultadoImpl implements _MicroResultado {
             (identical(other.doseProdutoLabel, doseProdutoLabel) ||
                 other.doseProdutoLabel == doseProdutoLabel) &&
             (identical(other.referencia, referencia) ||
-                other.referencia == referencia));
+                other.referencia == referencia) &&
+            const DeepCollectionEquality()
+                .equals(other._avisosNutriente, _avisosNutriente));
   }
 
   @override
@@ -529,7 +554,8 @@ class _$MicroResultadoImpl implements _MicroResultado {
       fonte,
       doseProduto,
       doseProdutoLabel,
-      referencia);
+      referencia,
+      const DeepCollectionEquality().hash(_avisosNutriente));
 
   /// Create a copy of MicroResultado
   /// with the given fields replaced by the non-null parameter values.
@@ -553,7 +579,8 @@ abstract class _MicroResultado implements MicroResultado {
       required final String fonte,
       required final double doseProduto,
       required final String doseProdutoLabel,
-      final String? referencia}) = _$MicroResultadoImpl;
+      final String? referencia,
+      final List<String> avisosNutriente}) = _$MicroResultadoImpl;
 
   /// Símbolo do elemento (ex: 'Zn', 'B', 'Cu')
   @override
@@ -590,6 +617,8 @@ abstract class _MicroResultado implements MicroResultado {
   /// Citação científica da referência usada
   @override
   String? get referencia;
+  @override
+  List<String> get avisosNutriente;
 
   /// Create a copy of MicroResultado
   /// with the given fields replaced by the non-null parameter values.

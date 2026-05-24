@@ -65,6 +65,8 @@ class MicroResultado with _$MicroResultado {
 
     /// Citação científica da referência usada
     String? referencia,
+
+    @Default([]) List<String> avisosNutriente,
   }) = _MicroResultado;
 }
 
@@ -270,9 +272,14 @@ class RecomendacaoEngine {
         grupos: gruposMicros, micros: microsResultado);
 
     final relacaoCaMg = analise.mg > 0 ? analise.ca / analise.mg : 0.0;
-    final vEsperado = _vEsperado(metodoCalagem, corretivos);
-    final caEsperado = analise.ca + (doseCalcario * (caO / 100) * 0.2);
-    final mgEsperado = analise.mg + (doseCalcario * (mgO / 100) * 0.12);
+    // Fórmula: CaO% × dose(t/ha) × 0.714(CaO→Ca) × (10/2) = cmolc/dm³ aportado
+    // Simplificado: fator Ca = 0.0357 | fator Mg = 0.02479
+    // Referência: Vale & Vitti (2015)
+    final caAportado = (caO / 100) * doseCalcario * 0.714 * (10 / 2);
+    final mgAportado = (mgO / 100) * doseCalcario * 0.603 * (10 / 2.43);
+    final caEsperado = analise.ca + caAportado;
+    final mgEsperado = analise.mg + mgAportado;
+    final vEsperado = _vEsperado(caEsperado, mgEsperado, analise.k, analise.ctc);
 
     final avisos = <String>[
       if (legacyP) 'Fósforo acima do NC: aplicado piso de manutenção.',
@@ -797,16 +804,13 @@ bool _bool(dynamic value) {
   return false;
 }
 
-double _vEsperado(String metodo, Map<String, dynamic> corretivos) {
-  if (metodo.startsWith('①')) return _num(corretivos['v2'], 70);
-  if (metodo.startsWith('②')) return 65;
-  if (metodo.startsWith('⑤') || metodo.startsWith('⑥')) {
-    final albrecht = _asMap(corretivos['albrecht']);
-    return _num(albrecht['caAlvo']) +
-        _num(albrecht['mgAlvo']) +
-        _num(albrecht['kAlvo']);
-  }
-  return 70;
+// V% calculado a partir dos novos teores estimados pós-calcário
+// caDepois e mgDepois já calculados na CORREÇÃO 3
+// kAtual = analise.k (sem alteração pelo calcário)
+// ctc = analise.ctc (campo já existente na AnaliseEntity)
+double _vEsperado(double caDepois, double mgDepois, double kAtual, double ctc) {
+  if (ctc <= 0) return 0;
+  return ((caDepois + mgDepois + kAtual) / ctc) * 100;
 }
 
 double _profundidade(Map<String, dynamic> corretivos) {

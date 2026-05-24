@@ -62,7 +62,6 @@ class RecomendacaoCalcarioGessoSection extends StatelessWidget {
 
   Widget _buildCalcario(ResultadoRecomendacao resultado) {
     final calcarioData = buildCalcarioViewModel(resultado);
-    final tipoCalcario = calcarioData.tipoCalcario;
     final usarC2 = calcarioData.usarSegundoCalcario;
     final prop1 = calcarioData.prop1;
     final prop2 = calcarioData.prop2;
@@ -81,25 +80,6 @@ class RecomendacaoCalcarioGessoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                _Badge(
-                  icon: Icons.science_outlined,
-                  color: AppColors.primary,
-                  label: resultado.metodoCalagem,
-                ),
-                _Badge(
-                  icon: Icons.grain,
-                  color: const Color(0xFF86868B),
-                  label: '${calcarioData.iconeCalcario} $tipoCalcario',
-                ),
-              ],
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Row(
@@ -189,6 +169,25 @@ class RecomendacaoCalcarioGessoSection extends StatelessWidget {
               ),
             ),
           ],
+          // Rodapé discreto — referência do método
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.science_outlined,
+                    size: 11, color: AppColors.textSecond.withValues(alpha: 0.6)),
+                const SizedBox(width: 4),
+                Text(
+                  resultado.metodoCalagem,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond.withValues(alpha: 0.6),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (resultado.parcelamento.isNotEmpty) ...[
             const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
             Padding(
@@ -219,25 +218,6 @@ class RecomendacaoCalcarioGessoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                _Badge(
-                  icon: Icons.layers_outlined,
-                  color: AppColors.primary,
-                  label: g.metodo.nome,
-                ),
-                _Badge(
-                  icon: g.indicado ? Icons.check_circle_outline : Icons.info_outline,
-                  color: g.indicado ? AppColors.success : AppColors.textSecond,
-                  label: g.indicado ? '🟡 Gessagem indicada' : '✅ Não indicada',
-                ),
-              ],
-            ),
-          ),
           if (g.indicado) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -273,6 +253,25 @@ class RecomendacaoCalcarioGessoSection extends StatelessWidget {
             ),
           ] else
             const SizedBox(height: 8),
+          // Rodapé discreto — referência do método
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.layers_outlined,
+                    size: 11, color: AppColors.textSecond.withValues(alpha: 0.6)),
+                const SizedBox(width: 4),
+                Text(
+                  g.metodo.nome,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond.withValues(alpha: 0.6),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (g.observacoes.isNotEmpty) ...[
             const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
             Padding(
@@ -292,37 +291,4 @@ class RecomendacaoCalcarioGessoSection extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.icon,
-    required this.color,
-    required this.label,
-  });
 
-  final IconData icon;
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTextStyles.caption.copyWith(color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

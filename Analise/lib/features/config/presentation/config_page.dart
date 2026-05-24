@@ -200,6 +200,11 @@ class ConfigPage extends ConsumerWidget {
                 _CardSection(
                   children: [
                     _ProfileChevronRow(
+                      label: 'Modelos de Laboratório',
+                      onTap: () => context.push(AppRoutes.configLabTemplates),
+                    ),
+                    const _Divider(),
+                    _ProfileChevronRow(
                       label: 'Enviar Feedback',
                       onTap: () => context.push(AppRoutes.feedback),
                     ),

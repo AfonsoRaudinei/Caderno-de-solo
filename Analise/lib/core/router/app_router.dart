@@ -29,6 +29,9 @@ import 'package:soloforte/features/historico/presentation/historico_page.dart';
 import 'package:soloforte/features/historico/presentation/historico_detalhe_screen.dart';
 import 'package:soloforte/features/mapa/presentation/mapa_page.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart';
+import 'package:soloforte/features/config/presentation/screens/lab_templates_list_screen.dart';
+import 'package:soloforte/features/config/presentation/screens/lab_template_edit_screen.dart';
+import 'package:soloforte/domain/entities/lab_template.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 
 import 'package:soloforte/features/config/presentation/feedback/feedback_page.dart';
@@ -389,6 +392,21 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'feedback',
                     builder: (context, state) => const FeedbackPage(),
+                  ),
+                  GoRoute(
+                    path: 'lab-templates',
+                    builder: (context, state) =>
+                        const LabTemplatesListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'editar',
+                        builder: (context, state) => LabTemplateEditScreen(
+                          template: state.extra is LabTemplate
+                              ? state.extra as LabTemplate
+                              : null,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

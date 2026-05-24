@@ -80,15 +80,30 @@ class LabPdfParserService {
     for (final section in sections) {
       if (section.rows.isEmpty) continue;
       final header = section.header.join(' ').toLowerCase();
+      final normalizedHeader = _normalizeHeader(header);
 
-      final isTablePhK = header.contains('k (nh4cl)');
-      final isTablePRem =
-          header.contains('p (rem)') || header.contains('p (res)');
-      final isTableMicrosA =
-          header.contains('fe (meh)') ||
-          (header.contains('cu (meh)') && header.contains('mn (meh)'));
-      final isTableSilteAreia =
-          header.contains('silte') && header.contains('areia');
+      final hasPMehCol = _hasPMehColumn(normalizedHeader);
+      final hasBoroCol = _hasHeaderToken(normalizedHeader, 'b') ||
+          normalizedHeader.contains('boro') ||
+          normalizedHeader.contains('b dtpa');
+      final isTablePhK = normalizedHeader.contains('k nh4cl');
+      final isTablePRem = normalizedHeader.contains('p rem') ||
+          normalizedHeader.contains('p res');
+      final isTableExataBaPMeh = hasPMehCol &&
+          !isTablePRem &&
+          (_hasHeaderToken(normalizedHeader, 'cu') ||
+              _hasHeaderToken(normalizedHeader, 'fe') ||
+              _hasHeaderToken(normalizedHeader, 'mn') ||
+              _hasHeaderToken(normalizedHeader, 'zn')) &&
+          (_hasHeaderToken(normalizedHeader, 'na') ||
+              normalizedHeader.contains('argila') ||
+              _hasHeaderToken(normalizedHeader, 's'));
+      final isTableMicrosA = isTableExataBaPMeh ||
+          normalizedHeader.contains('fe meh') ||
+          (normalizedHeader.contains('cu meh') &&
+              normalizedHeader.contains('mn meh'));
+      final isTableSilteAreia = normalizedHeader.contains('silte') &&
+          normalizedHeader.contains('areia');
 
       for (final row in section.rows) {
         final parsed = _parseRowWithTailValues(row, valueCount: 8);
@@ -115,16 +130,6 @@ class LabPdfParserService {
         }
 
         if (isTableMicrosA && !isTableSilteAreia) {
-          // Detectar variante por presença de colunas no header
-          final hasBoroCol = RegExp(
-            r'\bb\b|\bboro\b|\bb\s*\(|\bb\s+mg/dm\u00B3|\bb\s+dtpa',
-            caseSensitive: false,
-          ).hasMatch(header);
-          final hasPMehCol = RegExp(
-            r'p\s*\(\s*meh|\bp\b',
-            caseSensitive: false,
-          ).hasMatch(header);
-
           Map<String, dynamic> fields;
 
           if (hasPMehCol && !hasBoroCol) {
@@ -421,8 +426,8 @@ class LabPdfParserService {
       endMarker: 'REFERÊNCIAS TÉCNICAS PARA MÁXIMA PRODUTIVIDADE',
     );
     // Substituir 'nr' por '0' no bloco para evitar deslocamento de índices
-    final macroBlockClean = macroBlock.replaceAll(
-      RegExp(r'\bnr\b', caseSensitive: false), '0');
+    final macroBlockClean =
+        macroBlock.replaceAll(RegExp(r'\bnr\b', caseSensitive: false), '0');
     final macroValues = macroBlockClean
         .split(RegExp(r'\s+'))
         .where(_looksLikeValueToken)
@@ -474,11 +479,11 @@ class LabPdfParserService {
       's020': _toDouble(macroValues[5]),
       'hMaisAl': _toDouble(macroValues[6]),
       'al': _toDouble(macroValues[7]),
-      'b':   mbMicro('B'),
-      'cu':  mbMicro('Cu'),
-      'fe':  mbMicro('Fe'),
-      'mn':  mbMicro('Mn'),
-      'zn':  mbMicro('Zn'),
+      'b': mbMicro('B'),
+      'cu': mbMicro('Cu'),
+      'fe': mbMicro('Fe'),
+      'mn': mbMicro('Mn'),
+      'zn': mbMicro('Zn'),
       'pRem': _toDouble(_firstMatch(
         text,
         RegExp(r'P-REMANESCENTE\s+([0-9]+[,\.][0-9]+)', caseSensitive: false),
@@ -513,11 +518,13 @@ class LabPdfParserService {
         'proprietario': _firstMatch(
               text,
               RegExp(r'CLIENTE:\s*([^\n\r]+)', caseSensitive: false),
-            )?.replaceAll(RegExp(r'CNPJ.*', caseSensitive: false), '').trim() ?? '',
+            )?.replaceAll(RegExp(r'CNPJ.*', caseSensitive: false), '').trim() ??
+            '',
         'propriedade': _firstMatch(
               text,
               RegExp(r'FAZENDA:\s*([^\n\r]+)', caseSensitive: false),
-            )?.replaceAll(RegExp(r'TEL.*', caseSensitive: false), '').trim() ?? '',
+            )?.replaceAll(RegExp(r'TEL.*', caseSensitive: false), '').trim() ??
+            '',
         'municipio': _firstMatch(
               text,
               RegExp(r'CIDADE:\s*([^\n\r]+)', caseSensitive: false),
@@ -539,21 +546,33 @@ class LabPdfParserService {
     final warnings = <String>[];
 
     // ── Cabeçalho ────────────────────────────────────────────────────
-    final laudoNumero = _firstMatch(text, RegExp(r'LAUDO\s+N[ºO]\s*([0-9]+)', caseSensitive: false));
+    final laudoNumero = _firstMatch(
+        text, RegExp(r'LAUDO\s+N[ºO]\s*([0-9]+)', caseSensitive: false));
     final proprietario = _firstMatch(
-            text, RegExp(r'Propriet[aá]rio:\s*([^\n\r]+?)(?:\s{2,}|\t|Propriedade:|$)', caseSensitive: false))
+            text,
+            RegExp(
+                r'Propriet[aá]rio:\s*([^\n\r]+?)(?:\s{2,}|\t|Propriedade:|$)',
+                caseSensitive: false))
         ?.trim();
     final propriedade = _firstMatch(
-            text, RegExp(r'Propriedade:\s*([^\n\r]+?)(?:\s{2,}|\t|Matr[ií]cula:|$)', caseSensitive: false))
+            text,
+            RegExp(r'Propriedade:\s*([^\n\r]+?)(?:\s{2,}|\t|Matr[ií]cula:|$)',
+                caseSensitive: false))
         ?.trim();
     final cliente = _firstMatch(
-            text, RegExp(r'Cliente:\s*([^\n\r]+?)(?:\s{2,}|\t|Cidade:|CNPJ|$)', caseSensitive: false))
+            text,
+            RegExp(r'Cliente:\s*([^\n\r]+?)(?:\s{2,}|\t|Cidade:|CNPJ|$)',
+                caseSensitive: false))
         ?.trim();
     final municipio = _firstMatch(
-            text, RegExp(r'Cidade:\s*([^\n\r]+?)(?:\s{2,}|\t|UF:|$)', caseSensitive: false))
+            text,
+            RegExp(r'Cidade:\s*([^\n\r]+?)(?:\s{2,}|\t|UF:|$)',
+                caseSensitive: false))
         ?.trim();
     final dataEmissao = _dateBrToIso(_firstMatch(
-        text, RegExp(r'Fim Ensaio:\s*([0-9]{2}/[0-9]{2}/[0-9]{4})', caseSensitive: false)));
+        text,
+        RegExp(r'Fim Ensaio:\s*([0-9]{2}/[0-9]{2}/[0-9]{4})',
+            caseSensitive: false)));
 
     // ── IDs e identificações das amostras ────────────────────────────
     final sampleMeta = <String, Map<String, String>>{};
@@ -572,7 +591,8 @@ class LabPdfParserService {
     }
 
     // ── Extração de dados por campo ──────────────────────────────────
-    final tableHeaderMatch = RegExp(r'AMOSTRAS\s*((?:\d{5}\s*)+)').firstMatch(text);
+    final tableHeaderMatch =
+        RegExp(r'AMOSTRAS\s*((?:\d{5}\s*)+)').firstMatch(text);
     final orderedIds = tableHeaderMatch != null
         ? RegExp(r'\d{5}')
             .allMatches(tableHeaderMatch.group(1) ?? '')
@@ -592,7 +612,8 @@ class LabPdfParserService {
       );
       final match = pattern.firstMatch(text);
       if (match == null) return List.filled(n, null);
-      final tokens = match.group(1)!
+      final tokens = match
+          .group(1)!
           .split(RegExp(r'\s+'))
           .map((t) => t.trim())
           .where((t) => t.isNotEmpty)
@@ -754,7 +775,9 @@ class LabPdfParserService {
         'carbonoOrganico': coValues.length > i ? _toDouble(coValues[i]) : null,
         'b': bValues.length > i
             ? _toDouble(bValues[i])
-            : (microAndRatios.length > base ? _toDouble(microAndRatios[base]) : null),
+            : (microAndRatios.length > base
+                ? _toDouble(microAndRatios[base])
+                : null),
         'cu': microAndRatios.length > base + 1
             ? _toDouble(microAndRatios[base + 1])
             : null,
@@ -819,12 +842,10 @@ class LabPdfParserService {
 
     // Tentar ordem correta do PDF (identificacao antes de tipo de solo)
     int start, end;
-    if (idxIdentificacao >= 0 &&
-        idxTipoDeSolo > idxIdentificacao) {
+    if (idxIdentificacao >= 0 && idxTipoDeSolo > idxIdentificacao) {
       start = idxIdentificacao;
       end = idxTipoDeSolo;
-    } else if (idxTipoDeSolo >= 0 &&
-        idxIdentificacao > idxTipoDeSolo) {
+    } else if (idxTipoDeSolo >= 0 && idxIdentificacao > idxTipoDeSolo) {
       // Fallback: ordem inversa
       start = idxTipoDeSolo;
       end = idxIdentificacao;
@@ -886,9 +907,8 @@ class LabPdfParserService {
 
       final candidate = <String>[];
       var span = bestSpan;
-      final limit = (i + window + 1) < items.length
-          ? (i + window + 1)
-          : items.length;
+      final limit =
+          (i + window + 1) < items.length ? (i + window + 1) : items.length;
       for (var j = i + 1; j < limit && candidate.length < count; j++) {
         if (!_looksLikeValueToken(items[j])) continue;
         candidate.add(items[j]);
@@ -925,7 +945,7 @@ class LabPdfParserService {
 
       var startData = -1;
       for (var j = i + 1; j < lines.length; j++) {
-        if (sampleIdRegex.hasMatch(lines[j])) {
+        if (_sampleIdFromLine(lines[j], sampleIdRegex) != null) {
           startData = j;
           break;
         }
@@ -958,7 +978,7 @@ class LabPdfParserService {
 
       final rowStarts = <int>[];
       for (var j = 0; j < dataTokens.length; j++) {
-        if (sampleIdRegex.hasMatch(dataTokens[j])) {
+        if (_sampleIdFromLine(dataTokens[j], sampleIdRegex) != null) {
           rowStarts.add(j);
         }
       }
@@ -967,7 +987,10 @@ class LabPdfParserService {
         final rowStart = rowStarts[j];
         final rowEnd =
             j + 1 < rowStarts.length ? rowStarts[j + 1] : dataTokens.length;
-        final row = dataTokens.sublist(rowStart, rowEnd);
+        final row = dataTokens
+            .sublist(rowStart, rowEnd)
+            .expand(_splitTableLine)
+            .toList(growable: false);
         if (row.length >= 9) {
           rows.add(row);
         }
@@ -978,6 +1001,24 @@ class LabPdfParserService {
     }
 
     return sections;
+  }
+
+  String? _sampleIdFromLine(String line, RegExp sampleIdRegex) {
+    for (final token in _splitTableLine(line)) {
+      final normalized = token.replaceAll(RegExp(r'^[^\w]+|[^\w.]+$'), '');
+      if (sampleIdRegex.hasMatch(normalized)) {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  List<String> _splitTableLine(String line) {
+    return line
+        .split(RegExp(r'\s+'))
+        .map((token) => token.trim())
+        .where((token) => token.isNotEmpty)
+        .toList(growable: false);
   }
 
   _ParsedRow? _parseRowWithTailValues(List<String> row,
@@ -1091,6 +1132,25 @@ class LabPdfParserService {
     };
   }
 
+  String _normalizeHeader(String header) {
+    return header
+        .toLowerCase()
+        .replaceAll(RegExp(r'[()]'), ' ')
+        .replaceAll(RegExp(r'[º°]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  bool _hasPMehColumn(String normalizedHeader) {
+    return RegExp(r'(^|\s)p\s*(meh|mel|mehl|mehlich)(\s|$)')
+        .hasMatch(normalizedHeader);
+  }
+
+  bool _hasHeaderToken(String normalizedHeader, String token) {
+    return RegExp('(^|\\s)${RegExp.escape(token)}(\\s|\$)')
+        .hasMatch(normalizedHeader);
+  }
+
   double? _valueAt(List<String> values, int index) {
     if (index < 0 || index >= values.length) return null;
     return _toDouble(values[index]);
@@ -1183,7 +1243,14 @@ class LabPdfParserService {
   double? _toDouble(String? value) {
     if (value == null) return null;
     final raw = value.trim().toLowerCase();
-    if (raw.isEmpty || raw == '-' || raw == 'nr' || raw == 'ns' || raw == 'l.q' || raw == 'n.a.') return null;
+    if (raw.isEmpty ||
+        raw == '-' ||
+        raw == 'nr' ||
+        raw == 'ns' ||
+        raw == 'l.q' ||
+        raw == 'n.a.') {
+      return null;
+    }
 
     if (raw.contains(',')) {
       final normalized = raw.replaceAll('.', '').replaceAll(',', '.');

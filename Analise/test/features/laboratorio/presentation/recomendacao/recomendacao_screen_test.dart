@@ -12,6 +12,7 @@ import 'package:soloforte/features/config/presentation/providers/tabela_metricas
 import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
+import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
 
 class _FakeCalibracaoController extends CalibracaoController {
@@ -139,24 +140,32 @@ CalibracaoProfile _profile() {
   );
 }
 
-AnaliseSolo _analise() {
+AnaliseSolo _analise({
+  String id = 'a-1',
+  String talhao = 'Talhão A',
+  String numeroAmostra = '001',
+  String laboratorio = 'Lab A',
+  String profundidade = '0-20',
+  double? ca = 2.1,
+  double? k = 0.22,
+}) {
   return AnaliseSolo(
-    id: 'a-1',
+    id: id,
     fazenda: 'Fazenda A',
     produtor: 'Produtor A',
-    talhao: 'Talhão A',
-    numeroAmostra: '001',
+    talhao: talhao,
+    numeroAmostra: numeroAmostra,
     cultura: Cultura.soja,
     safra: '24/25',
-    laboratorio: 'Lab A',
+    laboratorio: laboratorio,
     dataCadastro: DateTime(2026, 4, 5),
-    profundidade: '0-20',
+    profundidade: profundidade,
     argila: 350,
     phAgua: 5.3,
     materiaOrganica: 3.0,
     pMehlich: 8.0,
-    k: 0.22,
-    ca: 2.1,
+    k: k,
+    ca: ca,
     mg: 0.9,
     hMaisAl: 4.6,
     al: 0.2,
@@ -245,6 +254,25 @@ Future<void> _setDropdownValue(
   await tester.pumpAndSettle();
 }
 
+Future<void> _selectAnaliseByIndex(WidgetTester tester, int index) async {
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+
+  final checks = find.byIcon(Icons.check_circle);
+  final checkedCount = checks.evaluate().length;
+  for (var i = 0; i < checkedCount; i++) {
+    await tester.tap(checks.at(i));
+    await tester.pumpAndSettle();
+  }
+
+  final unchecked = find.byIcon(Icons.radio_button_unchecked);
+  await tester.tap(unchecked.at(index));
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('mostra avisos quando não há análise e calibração salvas',
       (tester) async {
@@ -275,22 +303,94 @@ void main() {
       analises: [_analise()],
     );
 
+    await _selectAnaliseByIndex(tester, 0);
     await _setDropdownValue(
       tester,
       dropdownIndex: 0,
-      value: 'a-1',
-    );
-    await _setDropdownValue(
-      tester,
-      dropdownIndex: 1,
       value: 'c-1',
     );
 
-    await tester.tap(find.text('Gerar Recomendação'));
+    await tester.tap(
+      find.byKey(const Key('btn_gerar_recomendacao')),
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
 
     // expect(find.text('Salvar Recomendação'), findsOneWidget); // TODO: Fix test
     // expect(find.text('Exportar PDF'), findsOneWidget); // TODO: Fix test
+  });
+
+  testWidgets('dropdown expande e permite várias amostras do mesmo laboratório',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpRecomendacao(
+      tester,
+      profiles: [_profile()],
+      analises: [
+        _analise(id: 'a-1', numeroAmostra: '001', laboratorio: 'Lab A'),
+        _analise(id: 'a-2', numeroAmostra: '002', laboratorio: 'Lab A'),
+        _analise(id: 'a-3', numeroAmostra: '003', laboratorio: 'Lab B'),
+      ],
+    );
+
+    expect(find.textContaining('002'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('amostra_option_a-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('amostra_option_a-2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('amostra_option_a-3')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 amostras selecionadas'), findsOneWidget);
+    expect(find.text('Laboratório: Lab A'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+    expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
+  });
+
+  test('provider gera análise composta média para múltiplas amostras',
+      () async {
+    final container = ProviderContainer(
+      overrides: [
+        calibracaoControllerProvider.overrideWith(
+          (ref) => _FakeCalibracaoController(profiles: [_profile()]),
+        ),
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier([
+            _analise(id: 'a-1', ca: 2.0),
+            _analise(id: 'a-2', ca: 4.0),
+          ]),
+        ),
+        tabelaMetricasProvider.overrideWith(
+          () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
+        ),
+        perfilAssetsProvider.overrideWith(
+          (ref) => _FakePerfilAssetsNotifier(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(analiseNotifierProvider.future);
+    await container.read(tabelaMetricasProvider.future);
+
+    final result = container.read(
+      recomendacaoProvider(
+        const RecomendacaoRequest(
+          analiseIds: ['a-1', 'a-2'],
+          calibracaoId: 'c-1',
+        ),
+      ),
+    );
+
+    expect(result.recomendacao, isNotNull);
+    expect(result.recomendacao!.analise.nome, 'Média de 2 amostras');
+    expect(result.recomendacao!.analise.ca, 3.0);
   });
 
   testWidgets(
@@ -305,18 +405,17 @@ void main() {
       analises: [_analiseSemPotassio()],
     );
 
+    await _selectAnaliseByIndex(tester, 0);
     await _setDropdownValue(
       tester,
       dropdownIndex: 0,
-      value: 'a-2',
-    );
-    await _setDropdownValue(
-      tester,
-      dropdownIndex: 1,
       value: 'c-1',
     );
 
-    await tester.tap(find.text('Gerar Recomendação'));
+    await tester.tap(
+      find.byKey(const Key('btn_gerar_recomendacao')),
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('K não analisado'), findsWidgets);
