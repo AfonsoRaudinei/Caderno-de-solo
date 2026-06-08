@@ -136,7 +136,7 @@ class AnaliseDetailScreen extends ConsumerWidget {
                   label: 'Recomendar',
                   color: Colors.green,
                   onTap: () {
-                    context.push(
+                    context.go(
                       AppRoutes.labRecomendacao,
                       extra: analise.id,
                     );
@@ -453,7 +453,8 @@ class AnaliseDetailScreen extends ConsumerWidget {
       fazenda: keepImported(imported.fazenda, current.fazenda),
       produtor: keepImported(imported.produtor, current.produtor),
       talhao: keepImported(imported.talhao, current.talhao),
-      numeroAmostra: keepImported(imported.numeroAmostra, current.numeroAmostra),
+      numeroAmostra:
+          keepImported(imported.numeroAmostra, current.numeroAmostra),
       cultura: current.cultura,
       safra: keepImported(imported.safra, current.safra),
       laboratorio: keepImported(imported.laboratorio, current.laboratorio),
