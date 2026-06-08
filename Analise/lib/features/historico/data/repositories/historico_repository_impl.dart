@@ -22,12 +22,17 @@ class HistoricoRepositoryImpl implements HistoricoRepository {
   final FirebaseFirestore _firestore;
 
   @override
-  Future<List<RecomendacaoModel>> listarPorAnaliseIds(
-      Set<String> analiseIds) async {
+  Future<List<RecomendacaoModel>> listarPorAnaliseIds({
+    required Set<String> analiseIds,
+    required String userId,
+  }) async {
     final recomendacoes = <RecomendacaoModel>[];
 
     for (final analiseId in analiseIds) {
-      final itens = await _datasource.getRecomendacoesByAnalise(analiseId);
+      final itens = await _datasource.getRecomendacoesByAnalise(
+        analiseId: analiseId,
+        userId: userId,
+      );
       for (final item in itens) {
         final model = _toModel(item);
         if (model != null) {

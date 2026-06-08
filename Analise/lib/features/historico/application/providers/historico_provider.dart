@@ -35,7 +35,10 @@ class HistoricoNotifier extends AsyncNotifier<List<RecomendacaoModel>> {
     final analises = await ref.watch(analiseNotifierProvider.future);
 
     final ids = analises.map((a) => a.id).where((id) => id.isNotEmpty).toSet();
-    return carregarHistorico(ids);
+    return carregarHistorico(
+      analiseIds: ids,
+      userId: uid,
+    );
   }
 
   Future<void> deletar(String id) async {

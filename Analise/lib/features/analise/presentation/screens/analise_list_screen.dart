@@ -269,32 +269,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 if (analises.isEmpty && !mostrandoAmostras) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.analytics_outlined,
-                                size: 64, color: AppColors.textTertiary),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Nenhuma análise encontrada',
-                              style: AppTextStyles.headline,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Você ainda não possui análises salvas na nuvem.',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.body
-                                  .copyWith(color: AppColors.textSecond),
-                            ),
-                            const SizedBox(height: 32),
-                            _NovaAnaliseCard(
-                              onTap: () => context.push(AppRoutes.analiseForm),
-                            ),
-                          ],
-                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                      child: _AnaliseEmptyState(
+                        onCreate: () => context.push(AppRoutes.analiseForm),
                       ),
                     ),
                   );
@@ -1724,6 +1702,214 @@ class _AnaliseAmostraCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AnaliseEmptyState extends StatelessWidget {
+  const _AnaliseEmptyState({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: AppColors.borderSoft.withValues(alpha: 0.92),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 24,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 86,
+                  height: 86,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFEAF4FF),
+                        Color(0xFFF0FAF3),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: AppColors.borderSoft.withValues(alpha: 0.85),
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        right: 18,
+                        top: 18,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.insights_rounded,
+                        size: 38,
+                        color: AppColors.primaryDark,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'Comece sua primeira análise',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.headline.copyWith(
+                    fontSize: 26,
+                    height: 1.08,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Salve amostras, organize por área e monte um histórico técnico com padrão de consultoria desde o primeiro uso.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecond,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _AnaliseEmptyPill(
+                      icon: Icons.cloud_done_outlined,
+                      label: 'Sincronizado',
+                    ),
+                    _AnaliseEmptyPill(
+                      icon: Icons.folder_open_rounded,
+                      label: 'Pastas por talhão',
+                    ),
+                    _AnaliseEmptyPill(
+                      icon: Icons.description_outlined,
+                      label: 'Base para recomendação',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onCreate,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: const Icon(Icons.add_rounded, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Nova análise',
+                          style: AppTextStyles.button.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Importe o PDF do laboratório ou cadastre manualmente.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 12,
+                    color: AppColors.textSecond,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnaliseEmptyPill extends StatelessWidget {
+  const _AnaliseEmptyPill({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.borderSoft.withValues(alpha: 0.9),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 15,
+            color: AppColors.primaryDark,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 12,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

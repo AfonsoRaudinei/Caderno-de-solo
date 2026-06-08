@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/features/config/application/providers/config_providers.dart';
 import 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
@@ -6,10 +9,17 @@ export 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
 
 class PerfilAssetsNotifier extends StateNotifier<PerfilAssets> {
   PerfilAssetsNotifier(this._ref) : super(const PerfilAssets()) {
-    _load();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user == null) {
+        state = const PerfilAssets();
+        return;
+      }
+      _load();
+    });
   }
 
   final Ref _ref;
+  late final StreamSubscription<User?> _authSubscription;
 
   Future<void> _load() async {
     state = await _ref.read(getPerfilAssetsUsecaseProvider).call();
@@ -59,6 +69,12 @@ class PerfilAssetsNotifier extends StateNotifier<PerfilAssets> {
       isUploadingAssinatura: state.isUploadingAssinatura,
     );
     return true;
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 }
 

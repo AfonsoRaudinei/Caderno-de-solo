@@ -294,6 +294,7 @@ class SalvarRecomendacaoNotifier extends AutoDisposeAsyncNotifier<void> {
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+      Error.throwWithStackTrace(e, st);
     }
   }
 }

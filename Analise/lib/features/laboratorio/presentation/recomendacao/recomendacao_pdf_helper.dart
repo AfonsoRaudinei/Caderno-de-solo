@@ -4,19 +4,26 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
+import 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
 
 class RecomendacaoPdfHelper {
   static Future<void> exportar({
     required ResultadoRecomendacao resultado,
     required BuildContext context,
+    required PerfilAssets perfilAssets,
   }) async {
     final pdf = pw.Document();
+    final pdfAssets = await _loadPdfAssets(perfilAssets);
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.symmetric(horizontal: 36, vertical: 40),
-        header: (ctx) => _buildHeader(resultado, ctx.pageNumber),
+        header: (ctx) => _buildHeader(
+          resultado,
+          ctx.pageNumber,
+          pdfAssets.logo,
+        ),
         footer: (ctx) => _buildFooter(ctx),
         build: (ctx) => [
           _secao('IDENTIFICAÇÃO', _buildIdentificacao(resultado)),
@@ -48,6 +55,10 @@ class RecomendacaoPdfHelper {
           _secao('ARGUMENTOS TÉCNICOS', _buildArgumentos(resultado)),
           pw.SizedBox(height: 16),
           _secao('CITAÇÕES', _buildCitacoes(resultado)),
+          if (pdfAssets.assinatura != null) ...[
+            pw.SizedBox(height: 20),
+            _buildAssinatura(pdfAssets.assinatura!),
+          ],
         ],
       ),
     );
@@ -61,7 +72,26 @@ class RecomendacaoPdfHelper {
 
   // ─── HEADER ────────────────────────────────────────────────────────────────
 
-  static pw.Widget _buildHeader(ResultadoRecomendacao r, int pageNumber) {
+  static Future<_PdfAssets> _loadPdfAssets(PerfilAssets perfilAssets) async {
+    final logo = await _loadNetworkImage(perfilAssets.logoUrl);
+    final assinatura = await _loadNetworkImage(perfilAssets.assinaturaUrl);
+    return _PdfAssets(logo: logo, assinatura: assinatura);
+  }
+
+  static Future<pw.ImageProvider?> _loadNetworkImage(String? url) async {
+    if (url == null || url.trim().isEmpty) return null;
+    try {
+      return await networkImage(url);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static pw.Widget _buildHeader(
+    ResultadoRecomendacao r,
+    int pageNumber,
+    pw.ImageProvider? logo,
+  ) {
     return pw.Container(
       decoration: const pw.BoxDecoration(
         border: pw.Border(
@@ -73,22 +103,34 @@ class RecomendacaoPdfHelper {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+          pw.Row(
             children: [
-              pw.Text(
-                'Caderno de Solo — Recomendação de Adubação',
-                style: pw.TextStyle(
-                  fontSize: 13,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.blue800,
+              if (logo != null) ...[
+                pw.Container(
+                  width: 86,
+                  height: 42,
+                  margin: const pw.EdgeInsets.only(right: 10),
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
                 ),
-              ),
-              pw.SizedBox(height: 2),
-              pw.Text(
-                r.calibracao.nome,
-                style: const pw.TextStyle(
-                    fontSize: 10, color: PdfColors.grey700),
+              ],
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Caderno de Solo — Recomendação de Adubação',
+                    style: pw.TextStyle(
+                      fontSize: 13,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue800,
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    r.calibracao.nome,
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey700),
+                  ),
+                ],
               ),
             ],
           ),
@@ -98,6 +140,34 @@ class RecomendacaoPdfHelper {
           ),
         ],
       ),
+    );
+  }
+
+  static pw.Widget _buildAssinatura(pw.ImageProvider assinatura) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        pw.Container(
+          width: 180,
+          height: 64,
+          child: pw.Image(assinatura, fit: pw.BoxFit.contain),
+        ),
+        pw.Container(
+          width: 220,
+          margin: const pw.EdgeInsets.only(top: 2),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(
+              top: pw.BorderSide(color: PdfColors.grey600, width: 0.6),
+            ),
+          ),
+          padding: const pw.EdgeInsets.only(top: 4),
+          child: pw.Text(
+            'Responsável técnico',
+            textAlign: pw.TextAlign.center,
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+          ),
+        ),
+      ],
     );
   }
 
@@ -174,19 +244,23 @@ class RecomendacaoPdfHelper {
 
   static pw.Widget _buildAnalise(ResultadoRecomendacao r) {
     final a = r.analise;
-    final f = _f;
     return pw.Column(
       children: [
         _tabela([
-          ['pH', f(a.ph, 1), 'M.O. (g/dm³)', f(a.mo, 1)],
-          ['V% atual', '${f(a.vPercent, 1)}%', 'Argila (%)', '${f(a.argila, 0)}%'],
-          ['CTC (mmolc/dm³)', f(a.ctc, 1), 'H+Al', f(a.hAl, 1)],
-          ['Ca (mmolc/dm³)', f(a.ca, 1), 'Mg (mmolc/dm³)', f(a.mg, 1)],
-          ['K (mmolc/dm³)', f(a.k, 3), 'Al (mmolc/dm³)', f(a.al, 1)],
-          ['P (mg/dm³)', f(a.p, 1), 'S (mg/dm³)', f(a.s, 1)],
-          ['B (mg/dm³)', f(a.b, 2), 'Cu (mg/dm³)', f(a.cu, 2)],
-          ['Fe (mg/dm³)', f(a.fe, 1), 'Mn (mg/dm³)', f(a.mn, 2)],
-          ['Zn (mg/dm³)', f(a.zn, 2), 'SB (mmolc/dm³)', f(a.sb, 1)],
+          ['pH', _f(a.ph, 1), 'M.O. (g/dm³)', _f(a.mo, 1)],
+          [
+            'V% atual',
+            '${_f(a.vPercent, 1)}%',
+            'Argila (%)',
+            '${_f(a.argila, 0)}%'
+          ],
+          ['CTC (mmolc/dm³)', _f(a.ctc, 1), 'H+Al', _f(a.hAl, 1)],
+          ['Ca (mmolc/dm³)', _f(a.ca, 1), 'Mg (mmolc/dm³)', _f(a.mg, 1)],
+          ['K (mmolc/dm³)', _f(a.k, 3), 'Al (mmolc/dm³)', _f(a.al, 1)],
+          ['P (mg/dm³)', _f(a.p, 1), 'S (mg/dm³)', _f(a.s, 1)],
+          ['B (mg/dm³)', _f(a.b, 2), 'Cu (mg/dm³)', _f(a.cu, 2)],
+          ['Fe (mg/dm³)', _f(a.fe, 1), 'Mn (mg/dm³)', _f(a.mn, 2)],
+          ['Zn (mg/dm³)', _f(a.zn, 2), 'SB (mmolc/dm³)', _f(a.sb, 1)],
         ]),
       ],
     );
@@ -196,8 +270,18 @@ class RecomendacaoPdfHelper {
     final rows = <pw.Widget>[
       _tabela([
         ['Método', r.metodoCalagem, 'Dose', '${_f(r.doseCalcarioTHa, 2)} t/ha'],
-        ['V% alvo', '${_f(r.vEsperado, 1)}%', 'V% atual', '${_f(r.analise.vPercent, 1)}%'],
-        ['Ca esperado', '${_f(r.caEsperado, 2)} mmolc/dm³', 'Mg esperado', '${_f(r.mgEsperado, 2)} mmolc/dm³'],
+        [
+          'V% alvo',
+          '${_f(r.vEsperado, 1)}%',
+          'V% atual',
+          '${_f(r.analise.vPercent, 1)}%'
+        ],
+        [
+          'Ca esperado',
+          '${_f(r.caEsperado, 2)} mmolc/dm³',
+          'Mg esperado',
+          '${_f(r.mgEsperado, 2)} mmolc/dm³'
+        ],
         ['Relação Ca:Mg', _f(r.relacaoCaMg, 2), '', ''],
       ]),
     ];
@@ -219,9 +303,24 @@ class RecomendacaoPdfHelper {
   static pw.Widget _buildGessagem(ResultadoRecomendacao r) {
     final g = r.gesso;
     return _tabela([
-      ['Indicado', g.indicado ? 'Sim' : 'Não', 'Dose', '${_f(g.doseKgHa, 0)} kg/ha'],
-      ['Dose (t/ha)', '${_f(g.doseTHa, 2)} t/ha', 'S fornecido', '${_f(g.sFornecidoKgHa, 1)} kg/ha'],
-      ['Ca fornecido', '${_f(g.caFornecidoKgHa, 1)} kg/ha', 'Ca aumento', '${_f(g.caAumentoCmolcDm3, 2)} mmolc/dm³'],
+      [
+        'Indicado',
+        g.indicado ? 'Sim' : 'Não',
+        'Dose',
+        '${_f(g.doseKgHa, 0)} kg/ha'
+      ],
+      [
+        'Dose (t/ha)',
+        '${_f(g.doseTHa, 2)} t/ha',
+        'S fornecido',
+        '${_f(g.sFornecidoKgHa, 1)} kg/ha'
+      ],
+      [
+        'Ca fornecido',
+        '${_f(g.caFornecidoKgHa, 1)} kg/ha',
+        'Ca aumento',
+        '${_f(g.caAumentoCmolcDm3, 2)} mmolc/dm³'
+      ],
     ]);
   }
 
@@ -229,14 +328,20 @@ class RecomendacaoPdfHelper {
     final rows = <pw.Widget>[
       _tabela([
         ['Modo', r.modoFosforo, 'P atual', '${_f(r.analise.p, 1)} mg/dm³'],
-        ['NC fósforo', '${_f(r.ncFosforo, 1)} mg/dm³', 'Dose P₂O₅', '${_f(r.doseP2O5KgHa, 1)} kg/ha'],
+        [
+          'NC fósforo',
+          '${_f(r.ncFosforo, 1)} mg/dm³',
+          'Dose P₂O₅',
+          '${_f(r.doseP2O5KgHa, 1)} kg/ha'
+        ],
         ['Legacy P', r.legacyP ? 'Sim — piso de manutenção' : 'Não', '', ''],
       ]),
     ];
 
     if (r.doseAbsorcaoP != null) {
       rows.add(pw.SizedBox(height: 4));
-      rows.add(_infoLine('Absorção/Exportação (informativo):', '${_f(r.doseAbsorcaoP!, 1)} kg/ha P₂O₅'));
+      rows.add(_infoLine('Absorção/Exportação (informativo):',
+          '${_f(r.doseAbsorcaoP!, 1)} kg/ha P₂O₅'));
     }
 
     return pw.Column(
@@ -248,8 +353,18 @@ class RecomendacaoPdfHelper {
   static pw.Widget _buildPotassio(ResultadoRecomendacao r) {
     final rows = <pw.Widget>[
       _tabela([
-        ['Critério', r.criterioPotassio, 'K atual', '${_f(r.analise.k, 3)} mmolc/dm³'],
-        ['NC potássio', '${_f(r.ncPotassio, 1)}', 'Dose K₂O', '${_f(r.doseK2OKgHa, 1)} kg/ha'],
+        [
+          'Critério',
+          r.criterioPotassio,
+          'K atual',
+          '${_f(r.analise.k, 3)} mmolc/dm³'
+        ],
+        [
+          'NC potássio',
+          _f(r.ncPotassio, 1),
+          'Dose K₂O',
+          '${_f(r.doseK2OKgHa, 1)} kg/ha'
+        ],
         ['K% na CTC', '${_f(r.relacoesK.kNaCTC, 2)}%', '', ''],
       ]),
     ];
@@ -265,7 +380,8 @@ class RecomendacaoPdfHelper {
 
     if (r.doseAbsorcaoK != null) {
       rows.add(pw.SizedBox(height: 4));
-      rows.add(_infoLine('Absorção/Exportação (informativo):', '${_f(r.doseAbsorcaoK!, 1)} kg/ha K₂O'));
+      rows.add(_infoLine('Absorção/Exportação (informativo):',
+          '${_f(r.doseAbsorcaoK!, 1)} kg/ha K₂O'));
     }
 
     return pw.Column(
@@ -326,8 +442,8 @@ class RecomendacaoPdfHelper {
             children: [
               pw.Text(
                 g.nomeGrupo,
-                style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 10),
+                style:
+                    pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
               ),
               pw.SizedBox(height: 4),
               _infoLine('Via:', g.via),
@@ -347,8 +463,8 @@ class RecomendacaoPdfHelper {
       children: r.avisos
           .map((a) => pw.Container(
                 margin: const pw.EdgeInsets.only(bottom: 4),
-                padding: const pw.EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 5),
+                padding:
+                    const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: pw.BoxDecoration(
                   color: PdfColors.orange50,
                   border: pw.Border.all(color: PdfColors.orange200, width: 0.5),
@@ -466,8 +582,7 @@ class RecomendacaoPdfHelper {
           children: [
             pw.Text('• ', style: const pw.TextStyle(fontSize: 9)),
             pw.Expanded(
-              child: pw.Text(text,
-                  style: const pw.TextStyle(fontSize: 9)),
+              child: pw.Text(text, style: const pw.TextStyle(fontSize: 9)),
             ),
           ],
         ),
@@ -496,4 +611,14 @@ class RecomendacaoPdfHelper {
   static String _f(double value, int decimals) {
     return value.toStringAsFixed(decimals).replaceAll('.', ',');
   }
+}
+
+class _PdfAssets {
+  const _PdfAssets({
+    required this.logo,
+    required this.assinatura,
+  });
+
+  final pw.ImageProvider? logo;
+  final pw.ImageProvider? assinatura;
 }

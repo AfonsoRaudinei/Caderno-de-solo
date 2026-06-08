@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-final recomendacaoDatasourceProvider = Provider<RecomendacaoFirestoreDatasource>((ref) {
+final recomendacaoDatasourceProvider =
+    Provider<RecomendacaoFirestoreDatasource>((ref) {
   return RecomendacaoFirestoreDatasource(FirebaseFirestore.instance);
 });
 
@@ -22,11 +23,14 @@ class RecomendacaoFirestoreDatasource {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getRecomendacoesByAnalise(String analiseId) async {
+  Future<List<Map<String, dynamic>>> getRecomendacoesByAnalise({
+    required String analiseId,
+    required String userId,
+  }) async {
     try {
       final querySnapshot = await _collection
+          .where('userId', isEqualTo: userId)
           .where('analiseId', isEqualTo: analiseId)
-          .orderBy('createdAt', descending: true)
           .get();
 
       return querySnapshot.docs.map((doc) {

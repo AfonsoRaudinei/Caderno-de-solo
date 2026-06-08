@@ -11,6 +11,7 @@ import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
@@ -345,6 +346,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       await RecomendacaoPdfHelper.exportar(
         resultado: resultado,
         context: context,
+        perfilAssets: ref.read(perfilAssetsProvider),
       );
     } catch (e) {
       if (!mounted) return;

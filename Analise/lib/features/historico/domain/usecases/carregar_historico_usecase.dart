@@ -6,8 +6,14 @@ class CarregarHistoricoUseCase {
 
   final HistoricoRepository _repository;
 
-  Future<List<RecomendacaoModel>> call(Set<String> analiseIds) {
+  Future<List<RecomendacaoModel>> call({
+    required Set<String> analiseIds,
+    required String userId,
+  }) {
     if (analiseIds.isEmpty) return Future.value(const []);
-    return _repository.listarPorAnaliseIds(analiseIds);
+    return _repository.listarPorAnaliseIds(
+      analiseIds: analiseIds,
+      userId: userId,
+    );
   }
 }
