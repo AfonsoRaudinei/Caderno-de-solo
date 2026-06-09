@@ -289,5 +289,121 @@ SBA25.147298 5 0 - 20 T01 75,00 585,0 8,13 73,06 1,7 43,67 23,80 2,75
       expect(byId('SBA25.147298')['pMehlich'], 31.41);
       expect(byId('SBA25.147298')['s020'], isNull);
     });
+
+    test('mapeia P meh e P rem no bloco Exata com materia organica', () {
+      const text = '''
+Relatório de Ensaio Nº20573.2024.V0.U
+Data Emissão: 20/09/2024
+Razão Social: EDUARDO JOSE BRUXEL DE SA
+Propriedade/Município/Proprietário: SERROTE - NOVA ROSALANDIA/TO - EDUARDO JOSE BRUXEL DE SÁ
+Amostra
+Descrição da Amostra
+Profundidade
+Talhão
+pH
+(CaCl2)
+Ca
++
+Mg
+Ca
+Mg
+Al
+H + Al
+K
+K
+(NH4Cl)
+Un
+cmolc/dm³
+mg/dm³
+SBA24.124624
+TALHÃO 1
+5,74
+4,15
+2,94
+1,21
+0,0
+1,73
+0,17
+67,94
+SBA24.124625
+TALHÃO 2
+6,14
+5,65
+4,10
+1,55
+0,0
+1,42
+0,15
+59,97
+Amostra
+Descrição da Amostra
+Profundidade
+Talhão
+P
+(meh)
+P (rem)
+S
+M.O.
+C.O.
+B
+Cu (meh)
+Fe (meh)
+Un
+mg/dm³
+g/dm³
+mg/dm³
+SBA24.124624
+TALHÃO 1
+5,68
+29,19
+3,40
+20,78
+12,05
+0,34
+1,99
+46,37
+SBA24.124625
+TALHÃO 2
+10,75
+29,97
+3,25
+20,30
+11,77
+0,58
+1,80
+42,65
+''';
+
+      final parsed = const LabPdfParserService().parse(
+        labId: 'exata_brasil',
+        text: text,
+        sourceName: 'exata-20573.pdf',
+      );
+
+      final amostras =
+          (parsed.laudo['amostras'] as List).cast<Map<String, dynamic>>();
+      expect(amostras, hasLength(2));
+
+      Map<String, dynamic> byId(String id) =>
+          amostras.firstWhere((sample) => sample['numeroAmostra'] == id);
+
+      final talhao1 = byId('SBA24.124624');
+      expect(talhao1['pMehlich'], 5.68);
+      expect(talhao1['pRem'], 29.19);
+      expect(talhao1['s020'], 3.40);
+      expect(talhao1['materiaOrganica'], 20.78);
+      expect(talhao1['carbonoOrganico'], 12.05);
+      expect(talhao1['b'], 0.34);
+      expect(talhao1['cu_meh'], 1.99);
+
+      final talhao2 = byId('SBA24.124625');
+      expect(talhao2['pMehlich'], 10.75);
+      expect(talhao2['pRem'], 29.97);
+      expect(talhao2['s020'], 3.25);
+      expect(talhao2['materiaOrganica'], 20.30);
+      expect(talhao2['carbonoOrganico'], 11.77);
+      expect(talhao2['b'], 0.58);
+      expect(talhao2['cu_meh'], 1.80);
+    });
   });
 }

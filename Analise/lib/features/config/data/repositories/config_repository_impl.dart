@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/data/datasources/remote/auth_datasource.dart';
 import 'package:soloforte/features/config/data/datasources/config_local_datasource.dart';
 import 'package:soloforte/features/config/data/datasources/config_remote_datasource.dart';
+import 'package:soloforte/features/config/domain/entities/app_theme_mode.dart';
 import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
 import 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
 import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
@@ -83,6 +84,14 @@ class ConfigRepositoryImpl implements ConfigRepository {
 
   @override
   Future<void> limparDadosLocais() => _localDatasource.limparDadosLocais();
+
+  @override
+  Future<AppThemeMode> getThemeMode() => _localDatasource.getThemeMode();
+
+  @override
+  Future<void> setThemeMode(AppThemeMode mode) {
+    return _localDatasource.setThemeMode(mode);
+  }
 
   @override
   Future<PerfilAssets> getPerfilAssets() async {

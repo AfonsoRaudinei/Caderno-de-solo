@@ -6,6 +6,69 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 class AppTheme {
   AppTheme._();
 
+  static ThemeData get black {
+    return light.copyWith(
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primary,
+        onPrimary: Colors.white,
+        secondary: AppColors.primary,
+        onSecondary: Colors.white,
+        surface: Color(0xFF1C1C1E),
+        onSurface: Color(0xFFF2F2F7),
+        error: AppColors.error,
+        onError: Colors.white,
+      ),
+      scaffoldBackgroundColor: Colors.black,
+      appBarTheme: light.appBarTheme.copyWith(
+        backgroundColor: Colors.black,
+        foregroundColor: const Color(0xFFF2F2F7),
+        shadowColor: const Color(0xFF2C2C2E),
+        titleTextStyle: AppTextStyles.value.copyWith(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFF2F2F7),
+        ),
+      ),
+      navigationBarTheme: light.navigationBarTheme.copyWith(
+        backgroundColor: const Color(0xFF1C1C1E),
+        shadowColor: const Color(0xFF2C2C2E),
+        indicatorColor: AppColors.primary.withValues(alpha: 0.18),
+      ),
+      cardTheme: light.cardTheme.copyWith(
+        color: const Color(0xFF1C1C1E),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFF2C2C2E)),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF2C2C2E),
+        thickness: 0.5,
+        space: 0,
+      ),
+      inputDecorationTheme: light.inputDecorationTheme.copyWith(
+        fillColor: const Color(0xFF1C1C1E),
+      ),
+      snackBarTheme: light.snackBarTheme.copyWith(
+        backgroundColor: const Color(0xFF2C2C2E),
+        contentTextStyle: AppTextStyles.body.copyWith(
+          color: const Color(0xFFF2F2F7),
+        ),
+      ),
+      dialogTheme: light.dialogTheme.copyWith(
+        backgroundColor: const Color(0xFF1C1C1E),
+        titleTextStyle: AppTextStyles.headline.copyWith(
+          fontSize: 18,
+          color: const Color(0xFFF2F2F7),
+        ),
+        contentTextStyle: AppTextStyles.body.copyWith(
+          color: const Color(0xFFF2F2F7),
+        ),
+      ),
+    );
+  }
+
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,

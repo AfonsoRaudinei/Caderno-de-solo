@@ -12,25 +12,28 @@ class MainPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = navigationShell.currentIndex;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: navigationShell,
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
         child: Container(
           height: 64,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.10),
+                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -104,6 +107,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -116,7 +121,8 @@ class _NavItem extends StatelessWidget {
             child: Icon(
               selected ? selectedIcon : icon,
               key: ValueKey(selected),
-              color: selected ? AppColors.primary : AppColors.textSecond,
+              color:
+                  selected ? AppColors.primary : colorScheme.onSurfaceVariant,
               size: 26,
             ),
           ),

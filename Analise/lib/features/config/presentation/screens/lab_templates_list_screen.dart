@@ -40,8 +40,7 @@ class LabTemplatesListScreen extends ConsumerWidget {
             ),
             actions: [
               TextButton.icon(
-                onPressed: () =>
-                    context.push(AppRoutes.configLabTemplateEdit),
+                onPressed: () => context.push(AppRoutes.configLabTemplateEdit),
                 icon: const Icon(CupertinoIcons.add, size: 16),
                 label: const Text('Novo'),
                 style: TextButton.styleFrom(
@@ -91,12 +90,13 @@ class LabTemplatesListScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.08),
+          color: AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(
           children: [
-            Icon(CupertinoIcons.info_circle, size: 18, color: AppColors.primary),
+            Icon(CupertinoIcons.info_circle,
+                size: 18, color: AppColors.primary),
             SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -222,7 +222,7 @@ class _TemplateCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.10),
+                  color: AppColors.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -280,7 +280,8 @@ class _TemplateCard extends StatelessWidget {
                   if (onDelete != null && !template.isDefault)
                     CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: onDelete, minimumSize: const Size(32, 32),
+                      onPressed: onDelete,
+                      minimumSize: const Size(32, 32),
                       child: const Icon(
                         CupertinoIcons.delete,
                         color: Color(0xFFFF3B30),
@@ -320,7 +321,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.10),
+        color: c.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -347,7 +348,7 @@ class _BotaoNovoTemplate extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.30),
+            color: AppColors.primary.withValues(alpha: 0.30),
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -355,7 +356,8 @@ class _BotaoNovoTemplate extends StatelessWidget {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(CupertinoIcons.add_circled, color: AppColors.primary, size: 20),
+            Icon(CupertinoIcons.add_circled,
+                color: AppColors.primary, size: 20),
             SizedBox(width: 8),
             Text(
               'Adicionar Modelo Personalizado',

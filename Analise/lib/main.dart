@@ -8,6 +8,7 @@ import 'package:soloforte/core/config/app_config.dart';
 import 'package:soloforte/core/router/app_router.dart';
 import 'package:soloforte/core/services/app_observability.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/features/config/application/providers/app_theme_mode_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:soloforte/firebase_options.dart';
 import 'package:soloforte/core/constants/default_lab_templates.dart';
@@ -81,11 +82,14 @@ class AnaliseApp extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(appThemeModeProvider).valueOrNull;
 
     return MaterialApp.router(
       title: 'Analise',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.black,
+      themeMode: themeMode?.materialThemeMode ?? ThemeMode.system,
       locale: const Locale('pt', 'BR'),
       routerConfig: router,
     );

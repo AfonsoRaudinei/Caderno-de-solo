@@ -3,10 +3,9 @@
 /// Unidades padrão internas:
 ///   - Cátions (K, Ca, Mg, Al, H+Al, CTC, SB) → cmolc/dm³
 ///   - Nutrientes (P, S, Zn, B, Cu, Fe, Mn)   → mg/dm³
-///   - Matéria Orgânica (MO)                   → g/dm³
+///   - Matéria Orgânica (MO)                   → %/dag/kg
 ///   - Granulometria (Argila, Silte, Areia)    → %
 class UnidadeConverter {
-
   // ═══════════════════════════════════════════════════════
   // CÁTIONS — normalizar para cmolc/dm³
   // ═══════════════════════════════════════════════════════
@@ -89,6 +88,31 @@ class UnidadeConverter {
     }
   }
 
+  /// Normaliza Matéria Orgânica (MO) para %/dag/kg.
+  ///
+  /// Conversões:
+  ///   %      → sem conversão
+  ///   dag/kg → sem conversão
+  ///   g/dm³  → % = valor ÷ 10
+  ///   g/kg   → % = valor ÷ 10
+  static double normalizarMOPercent(double valor, String unidade) {
+    final u = unidade.trim().toLowerCase();
+    switch (u) {
+      case '%':
+      case 'dag/kg':
+        return valor;
+      case 'g/dm3':
+      case 'g/dm³':
+      case 'g/kg':
+        return valor / 10.0;
+      default:
+        throw ArgumentError(
+          'UnidadeConverter: unidade de MO desconhecida → "$unidade". '
+          'Esperado: %, dag/kg, g/dm³ ou g/kg.',
+        );
+    }
+  }
+
   // ═══════════════════════════════════════════════════════
   // GRANULOMETRIA — normalizar para %
   // ═══════════════════════════════════════════════════════
@@ -136,8 +160,7 @@ class UnidadeConverter {
         valorNormalizado: valor / 10.0,
         unidadeInferida: true,
         unidadeDetectada: 'mmolc/dm³',
-        aviso:
-            'K = $valor recebido sem unidade declarada. '
+        aviso: 'K = $valor recebido sem unidade declarada. '
             'Valor acima de 1,5 indica mmolc/dm³. '
             'Convertido automaticamente para ${valor / 10.0} cmolc/dm³. '
             'Verifique o laudo do laboratório.',
@@ -147,8 +170,7 @@ class UnidadeConverter {
       valorNormalizado: valor,
       unidadeInferida: true,
       unidadeDetectada: 'cmolc/dm³',
-      aviso:
-          'K = $valor recebido sem unidade declarada. '
+      aviso: 'K = $valor recebido sem unidade declarada. '
           'Valor dentro da faixa cmolc/dm³ (≤ 1,5). '
           'Usado diretamente. Verifique o laudo do laboratório.',
     );

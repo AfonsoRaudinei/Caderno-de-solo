@@ -38,6 +38,10 @@ class AnaliseCompleta {
     required this.co,
     this.descricaoLocal,
     this.extratorP,
+    this.sb,
+    this.ctc,
+    this.vPercent,
+    this.mPercent,
     this.kUnidadeOriginal,
     this.caUnidadeOriginal,
     this.mgUnidadeOriginal,
@@ -89,6 +93,11 @@ class AnaliseCompleta {
   final ValorNutriente mo;
   final ValorNutriente se;
   final ValorNutriente co;
+
+  final ValorNutriente? sb;
+  final ValorNutriente? ctc;
+  final ValorNutriente? vPercent;
+  final ValorNutriente? mPercent;
 
   final String? kUnidadeOriginal;
   final String? caUnidadeOriginal;

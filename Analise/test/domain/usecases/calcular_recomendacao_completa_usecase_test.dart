@@ -61,6 +61,24 @@ void main() {
       expect(diagnostico.recomendacao, contains('Aplicar K2O'));
       expect(result.recomendacao!.doseK2OKgHa, greaterThan(0));
     });
+
+    test('fosforo ausente nao bloqueia recomendacao inteira', () {
+      final result = usecase.execute(
+        analise: _analise(pResina: null, k: 0.25),
+        calibracao: _calibracao(),
+        tabelas: _tabelas(),
+      );
+
+      expect(result.recomendacao, isNotNull);
+      expect(result.diagnostico.erros, isEmpty);
+      expect(result.diagnostico.statusNutrientes['P'], StatusNutriente.ausente);
+      expect(result.recomendacao!.doseP2O5KgHa, 0);
+      expect(result.recomendacao!.doseK2OKgHa, greaterThanOrEqualTo(0));
+      expect(
+        result.diagnostico.diagnosticos['fosforo']!.mensagemTecnica,
+        contains('não calculado'),
+      );
+    });
   });
 }
 
@@ -105,7 +123,7 @@ CalibracaoProfile _calibracao() {
 }
 
 AnaliseCompleta _analise({
-  required double pResina,
+  required double? pResina,
   required double k,
 }) {
   return AnaliseCompleta(
@@ -123,7 +141,7 @@ AnaliseCompleta _analise({
     materiaOrganica: _v(3.0),
     argila: _v(35.0),
     pMehlich: _na(),
-    pResina: _v(pResina),
+    pResina: pResina == null ? _na() : _v(pResina),
     pRem: _na(),
     k: _v(k),
     ca: _v(2.3),

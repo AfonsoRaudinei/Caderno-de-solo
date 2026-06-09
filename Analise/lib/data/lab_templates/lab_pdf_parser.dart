@@ -87,8 +87,11 @@ class LabPdfParserService {
           normalizedHeader.contains('boro') ||
           normalizedHeader.contains('b dtpa');
       final isTablePhK = normalizedHeader.contains('k nh4cl');
-      final isTablePRem = normalizedHeader.contains('p rem') ||
-          normalizedHeader.contains('p res');
+      final hasPRemCol = normalizedHeader.contains('p rem');
+      final hasPResCol = normalizedHeader.contains('p res') ||
+          normalizedHeader.contains('p resina') ||
+          normalizedHeader.contains('resina');
+      final isTablePRem = hasPRemCol || hasPResCol;
       final isTableExataBaPMeh = hasPMehCol &&
           !isTablePRem &&
           (_hasHeaderToken(normalizedHeader, 'cu') ||
@@ -122,7 +125,9 @@ class LabPdfParserService {
         if (isTablePRem) {
           mergeSample(
             parsed.sampleId,
-            _exataPRemFields(parsed.values),
+            hasPResCol
+                ? _exataPRemFields(parsed.values)
+                : _exataPRemSemResinaFields(parsed.values),
             talhao: parsed.talhao,
             profundidade: parsed.profundidade,
           );
@@ -636,6 +641,10 @@ class LabPdfParserService {
     final halRow = solumRow(r'H[°o]\s*\+\s*Al');
     final phRow = solumRow(r'pH\s+pH CaCl');
     final phSmpRow = solumRow(r'pH SMP');
+    final vPercentRow = solumRow(r'V\s*%|Satura[çc][ãa]o\s+de\s+Bases');
+    final ctcRow = solumRow(r'CTC');
+    final sbRow = solumRow(r'SB|Soma\s+de\s+Bases');
+    final mPercentRow = solumRow(r'm\s*%|Satura[çc][ãa]o\s+por\s+Al');
     final sRow = solumRow(r'S(?:[\s]+Enxofre)?|Enxofre');
     final bRow = solumRow(r'B(?:[a-zA-Z\s/()]+)?|Boro');
     final cuRow = solumRow(r'Cu(?:[\s]+Cobre)?|Cobre');
@@ -660,6 +669,10 @@ class LabPdfParserService {
         'hMaisAl_mmolc': halRow[i],
         'phCaCl2': phRow[i],
         'phSmp': phSmpRow[i],
+        'vPercent': vPercentRow[i],
+        'ctc_mmolc': ctcRow[i],
+        'sb_mmolc': sbRow[i],
+        'mPercent': mPercentRow[i],
         's020': sRow[i],
         'b': bRow[i],
         'cu': cuRow[i],
@@ -1072,6 +1085,19 @@ class LabPdfParserService {
       'carbonoOrganico': _valueAt(values, 5),
       'b': _valueAt(values, 6),
       'cu_meh': _valueAt(values, 7),
+    };
+  }
+
+  Map<String, dynamic> _exataPRemSemResinaFields(List<String> values) {
+    return <String, dynamic>{
+      'pMehlich': _valueAt(values, 0),
+      'pRem': _valueAt(values, 1),
+      's020': _valueAt(values, 2),
+      'materiaOrganica': _valueAt(values, 3),
+      'carbonoOrganico': _valueAt(values, 4),
+      'b': _valueAt(values, 5),
+      'cu_meh': _valueAt(values, 6),
+      'fe_meh': _valueAt(values, 7),
     };
   }
 

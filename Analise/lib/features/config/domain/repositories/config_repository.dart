@@ -1,3 +1,4 @@
+import 'package:soloforte/features/config/domain/entities/app_theme_mode.dart';
 import 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
 import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
 
@@ -11,6 +12,10 @@ abstract class ConfigRepository {
   Future<void> excluirConta({required String password});
 
   Future<void> limparDadosLocais();
+
+  Future<AppThemeMode> getThemeMode();
+
+  Future<void> setThemeMode(AppThemeMode mode);
 
   Future<PerfilAssets> getPerfilAssets();
 

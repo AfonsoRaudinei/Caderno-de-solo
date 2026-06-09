@@ -44,6 +44,14 @@ final limparDadosLocaisUsecaseProvider =
   return LimparDadosLocaisUsecase(ref.watch(configRepositoryProvider));
 });
 
+final getThemeModeUsecaseProvider = Provider<GetThemeModeUsecase>((ref) {
+  return GetThemeModeUsecase(ref.watch(configRepositoryProvider));
+});
+
+final setThemeModeUsecaseProvider = Provider<SetThemeModeUsecase>((ref) {
+  return SetThemeModeUsecase(ref.watch(configRepositoryProvider));
+});
+
 final getPerfilAssetsUsecaseProvider = Provider<GetPerfilAssetsUsecase>((ref) {
   return GetPerfilAssetsUsecase(ref.watch(configRepositoryProvider));
 });

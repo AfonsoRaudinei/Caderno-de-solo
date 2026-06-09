@@ -39,7 +39,7 @@ class RecomendacaoMicrosUnificadosSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -87,8 +87,10 @@ class _MicroNutrienteItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final temSolo = (micro.via == 'Solo' || micro.via == 'Ambas') && micro.dose > 0;
-    final temFoliar = (micro.via == 'Foliar' || micro.via == 'Ambas') && micro.dose > 0;
+    final temSolo =
+        (micro.via == 'Solo' || micro.via == 'Ambas') && micro.dose > 0;
+    final temFoliar =
+        (micro.via == 'Foliar' || micro.via == 'Ambas') && micro.dose > 0;
 
     return Column(
       children: [
@@ -204,9 +206,7 @@ class _ClassificacaoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: deficiente
-            ? const Color(0xFFFFEBEE)
-            : const Color(0xFFE8F5E9),
+        color: deficiente ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -214,9 +214,7 @@ class _ClassificacaoBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
-          color: deficiente
-              ? const Color(0xFFC62828)
-              : const Color(0xFF2E7D32),
+          color: deficiente ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
         ),
       ),
     );

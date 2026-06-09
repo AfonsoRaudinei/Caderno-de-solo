@@ -43,11 +43,20 @@ class SolumImportService {
     }
 
     // mmolc/dm³ → cmolc/dm³ (÷ 10)
-    final kCmolc   = (toDouble(raw('k_mmolc'))     ?? 0.0) / 10.0;
-    final caCmolc  = (toDouble(raw('ca_mmolc'))    ?? 0.0) / 10.0;
-    final mgCmolc  = (toDouble(raw('mg_mmolc'))    ?? 0.0) / 10.0;
-    final alCmolc  = (toDouble(raw('al_mmolc'))    ?? 0.0) / 10.0;
-    final halCmolc = (toDouble(raw('hMaisAl_mmolc')) ?? 0.0) / 10.0;
+    final kMmolc = toDouble(raw('k_mmolc'));
+    final caMmolc = toDouble(raw('ca_mmolc'));
+    final mgMmolc = toDouble(raw('mg_mmolc'));
+    final alMmolc = toDouble(raw('al_mmolc'));
+    final halMmolc = toDouble(raw('hMaisAl_mmolc'));
+    final ctcMmolc = toDouble(raw('ctc_mmolc'));
+    final sbMmolc = toDouble(raw('sb_mmolc'));
+    final kCmolc = kMmolc != null ? kMmolc / 10.0 : null;
+    final caCmolc = caMmolc != null ? caMmolc / 10.0 : null;
+    final mgCmolc = mgMmolc != null ? mgMmolc / 10.0 : null;
+    final alCmolc = alMmolc != null ? alMmolc / 10.0 : null;
+    final halCmolc = halMmolc != null ? halMmolc / 10.0 : null;
+    final ctcCmolc = ctcMmolc != null ? ctcMmolc / 10.0 : null;
+    final sbCmolc = sbMmolc != null ? sbMmolc / 10.0 : null;
 
     // MO: g/dm³ → dag/kg (÷ 10)
     final moDagKg = toDouble(raw('mo_gdm3')) != null
@@ -103,6 +112,10 @@ class SolumImportService {
       al: alCmolc,
       hMaisAl: halCmolc,
       na: null,
+      ctc: ctcCmolc,
+      sb: sbCmolc,
+      vPercent: toDouble(raw('vPercent')),
+      mPercent: toDouble(raw('mPercent')),
       b: toDouble(raw('b')),
       cu: toDouble(raw('cu')),
       fe: toDouble(raw('fe')),

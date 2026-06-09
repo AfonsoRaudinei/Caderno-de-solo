@@ -313,6 +313,58 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
 
   // ── Persistência ───────────────────────────────────────────────────────
 
+  Future<SaveBatchResult> salvarImportadas(List<AnaliseSolo> analises) async {
+    if (state.isSaving) {
+      throw const SaveBatchException(
+        code: SaveBatchCode.saveInProgress,
+        message: 'Ainda processando o último envio. Aguarde e tente novamente.',
+      );
+    }
+
+    if (analises.isEmpty) {
+      throw const SaveBatchException(
+        code: SaveBatchCode.saveAtomicFailed,
+        message: 'Nenhuma análise válida foi encontrada para salvar.',
+      );
+    }
+
+    state = state.copyWith(
+      isSaving: true,
+      clearError: true,
+    );
+
+    try {
+      final persistence = _ref.read(analisePersistenceGatewayProvider);
+      final result = await persistence.salvarLote(analises);
+
+      if (result.status != SaveBatchStatus.committed ||
+          result.savedCount != analises.length) {
+        throw SaveBatchException(
+          code: SaveBatchCode.saveAtomicFailed,
+          message:
+              'Importação parcial bloqueada: ${result.savedCount} de ${analises.length} amostras foram confirmadas.',
+          batchId: result.batchId,
+          idempotencyKey: result.idempotencyKey,
+        );
+      }
+
+      await persistence.recarregar();
+      state = state.copyWith(
+        isSaving: false,
+        clearError: true,
+      );
+      return result;
+    } catch (e, st) {
+      debugPrint('Falha ao salvar importação: $e');
+      debugPrintStack(stackTrace: st);
+      state = state.copyWith(
+        isSaving: false,
+        error: _mapearErroSalvar(e),
+      );
+      rethrow;
+    }
+  }
+
   Future<bool> salvar() async {
     if (state.isSaving) return false;
     final telemetry = _ref.read(analiseTelemetryProvider);
@@ -434,6 +486,7 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
           'replay': result.isReplay,
         },
       );
+      await persistence.recarregar();
       state = state.copyWith(
         isSaving: false,
         clearError: true,

@@ -5,12 +5,66 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/features/config/application/providers/app_theme_mode_provider.dart';
 import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 
 export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
+
+class _ConfigPalette {
+  const _ConfigPalette({
+    required this.background,
+    required this.card,
+    required this.cardStrong,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textTertiary,
+    required this.border,
+    required this.borderStrong,
+    required this.shadow,
+  });
+
+  final Color background;
+  final Color card;
+  final Color cardStrong;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textTertiary;
+  final Color border;
+  final Color borderStrong;
+  final Color shadow;
+
+  static _ConfigPalette of(BuildContext context) {
+    final isBlack = Theme.of(context).brightness == Brightness.dark;
+    if (isBlack) {
+      return _ConfigPalette(
+        background: Colors.black,
+        card: const Color(0xFF1C1C1E),
+        cardStrong: const Color(0xFF2C2C2E),
+        textPrimary: const Color(0xFFF2F2F7),
+        textSecondary: const Color(0xFFAEAEB2),
+        textTertiary: const Color(0xFF636366),
+        border: const Color(0xFF2C2C2E),
+        borderStrong: const Color(0xFF3A3A3C),
+        shadow: Colors.black.withValues(alpha: 0.45),
+      );
+    }
+
+    return _ConfigPalette(
+      background: const Color(0xFFF5F5F7),
+      card: Colors.white.withValues(alpha: 0.95),
+      cardStrong: Colors.white,
+      textPrimary: const Color(0xFF1D1D1F),
+      textSecondary: const Color(0xFF86868B),
+      textTertiary: const Color(0xFFC7C7CC),
+      border: const Color(0xFFE5E5E7),
+      borderStrong: const Color(0xFFD1D1D6),
+      shadow: Colors.black.withValues(alpha: 0.06),
+    );
+  }
+}
 
 /// Bottom sheet iOS para edição de campo de texto.
 Future<void> _showEditSheet(
@@ -21,15 +75,16 @@ Future<void> _showEditSheet(
   required String firestoreField,
   String? placeholder,
 }) async {
+  final palette = _ConfigPalette.of(context);
   final controller =
       TextEditingController(text: currentValue == '—' ? '' : currentValue);
 
   await showCupertinoModalPopup<void>(
     context: context,
     builder: (sheetContext) => Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF5F5F7),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: palette.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -48,8 +103,7 @@ Future<void> _showEditSheet(
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1D1D1F),
-                ),
+                ).copyWith(color: palette.textPrimary),
               ),
               const Spacer(),
               CupertinoButton(
@@ -69,9 +123,9 @@ Future<void> _showEditSheet(
             placeholder: placeholder ?? 'Digite $title',
             clearButtonMode: OverlayVisibilityMode.editing,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: palette.card,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFD1D1D6)),
+              border: Border.all(color: palette.borderStrong),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             onSubmitted: (_) async {
@@ -139,29 +193,29 @@ class ConfigPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(configControllerProvider);
+    final palette = _ConfigPalette.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: palette.background,
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar(
+          SliverAppBar(
             pinned: true,
-            backgroundColor: Color(0xFFF5F5F7),
+            backgroundColor: palette.background,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             expandedHeight: 96,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: EdgeInsets.only(left: 20, bottom: 14),
+              titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
               title: Text(
                 'Configurações',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1D1D1F),
-                  letterSpacing: -0.3,
+                  color: palette.textPrimary,
                 ),
               ),
-              background: ColoredBox(color: Color(0xFFF5F5F7)),
+              background: ColoredBox(color: palette.background),
             ),
           ),
           SliverPadding(
@@ -199,6 +253,8 @@ class ConfigPage extends ConsumerWidget {
                 const _SectionLabel('GERENCIAMENTO'),
                 _CardSection(
                   children: [
+                    const _ThemeModeRow(),
+                    const _Divider(),
                     _ProfileChevronRow(
                       label: 'Modelos de Laboratório',
                       onTap: () => context.push(AppRoutes.configLabTemplates),
@@ -481,15 +537,16 @@ class _IdentidadeVisualCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(perfilAssetsProvider);
     final notifier = ref.read(perfilAssetsProvider.notifier);
+    final palette = _ConfigPalette.of(context);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: palette.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E5E7), width: 0.5),
+        border: Border.all(color: palette.border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: palette.shadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -507,9 +564,9 @@ class _IdentidadeVisualCard extends ConsumerWidget {
             onRemove: notifier.removeLogo,
             shape: _ImageShape.rectangle,
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Divider(height: 1, color: Color(0xFFE5E5E7)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(height: 1, color: palette.border),
           ),
           _ImageUploadRow(
             title: 'Assinatura',
@@ -582,6 +639,7 @@ class _ImageUploadRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
+    final palette = _ConfigPalette.of(context);
 
     final double thumbW = shape == _ImageShape.wide ? 80 : 52;
     final double thumbH = shape == _ImageShape.wide ? 40 : 52;
@@ -604,12 +662,12 @@ class _ImageUploadRow extends StatelessWidget {
               width: thumbW,
               height: thumbH,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F7),
+                color: palette.cardStrong,
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
                   color: hasImage
                       ? const Color(0xFF007AFF).withValues(alpha: 0.3)
-                      : const Color(0xFFD1D1D6),
+                      : palette.borderStrong,
                   width: hasImage ? 1.5 : 1,
                 ),
               ),
@@ -635,13 +693,13 @@ class _ImageUploadRow extends StatelessWidget {
                             errorBuilder: (_, __, ___) => Icon(
                               icon,
                               size: 22,
-                              color: const Color(0xFFC7C7CC),
+                              color: palette.textTertiary,
                             ),
                           )
                         : Icon(
                             icon,
                             size: 22,
-                            color: const Color(0xFFC7C7CC),
+                            color: palette.textTertiary,
                           ),
               ),
             ),
@@ -653,18 +711,18 @@ class _ImageUploadRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1D1D1F),
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF86868B),
+                    color: palette.textSecondary,
                   ),
                 ),
               ],
@@ -752,14 +810,16 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ConfigPalette.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6, top: 2),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF86868B),
+          color: palette.textSecondary,
           letterSpacing: 0.5,
         ),
       ),
@@ -774,14 +834,16 @@ class _CardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ConfigPalette.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: palette.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E5E7), width: 0.5),
+        border: Border.all(color: palette.border, width: 0.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: palette.shadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -869,6 +931,47 @@ class _ProfileSkeleton extends StatelessWidget {
   }
 }
 
+class _ThemeModeRow extends ConsumerWidget {
+  const _ThemeModeRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = _ConfigPalette.of(context);
+    final themeMode = ref.watch(appThemeModeProvider).valueOrNull;
+    final isBlack = themeMode?.isBlack ?? false;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(
+            CupertinoIcons.moon_fill,
+            size: 20,
+            color: isBlack ? AppColors.primary : palette.textSecondary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Modo Black',
+              style: TextStyle(
+                fontSize: 15,
+                color: palette.textPrimary,
+              ),
+            ),
+          ),
+          CupertinoSwitch(
+            value: isBlack,
+            activeTrackColor: AppColors.primary,
+            onChanged: (value) {
+              ref.read(appThemeModeProvider.notifier).setBlackMode(value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileRow extends StatelessWidget {
   final String label;
   final String value;
@@ -882,6 +985,8 @@ class _ProfileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ConfigPalette.of(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -891,25 +996,25 @@ class _ProfileRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
             ),
             const Spacer(),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF86868B),
+                color: palette.textSecondary,
               ),
             ),
             if (onTap != null) ...[
               const SizedBox(width: 6),
-              const Icon(
+              Icon(
                 CupertinoIcons.chevron_right,
                 size: 14,
-                color: Color(0xFFC7C7CC),
+                color: palette.textTertiary,
               ),
             ],
           ],
@@ -930,6 +1035,8 @@ class _ProfileChevronRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ConfigPalette.of(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -939,16 +1046,16 @@ class _ProfileChevronRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
             ),
             const Spacer(),
-            const Icon(
+            Icon(
               CupertinoIcons.chevron_right,
               size: 16,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
           ],
         ),
@@ -962,9 +1069,11 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(left: 16),
-      child: Divider(height: 1, color: Color(0xFFE5E5E7)),
+    final palette = _ConfigPalette.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 16),
+      child: Divider(height: 1, color: palette.border),
     );
   }
 }

@@ -1,12 +1,11 @@
-import 'package:soloforte/domain/utils/unidade_converter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:soloforte/domain/entities/analise_completa.dart';
 import 'package:soloforte/domain/entities/analise_entity.dart';
+import 'package:soloforte/domain/entities/resultado_gesso.dart';
 import 'package:soloforte/domain/formulas/enxofre_formula.dart';
 import 'package:soloforte/domain/formulas/micronutrientes_engine.dart';
-import 'package:soloforte/domain/guards/limites_agronomicos.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
+import 'package:soloforte/domain/services/recommendation_input_normalizer.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/domain/value_objects/valor_nutriente.dart';
 
@@ -19,68 +18,14 @@ class CalcularRecomendacaoCompletaUsecase {
     required List<Map<String, dynamic>> tabelas,
     String? labelAnalise,
   }) {
-    final erros = <String>[];
     final avisos = <String>[];
-    final status = _statusBase(analise);
-
-    final pSelecionado = obterFosforo(
-      analise,
-      preferencia: _preferenciaExtrator(calibracao),
-    );
-    if (pSelecionado == null) {
-      erros.add('Fósforo indisponível: Mehlich/Resina não analisado.');
-      status['P'] = StatusNutriente.ausente;
-    } else {
-      status['P'] = StatusNutriente.ok;
-    }
-
-    _validarCritico(nome: 'pH', valor: analise.phPrincipal, erros: erros);
-    _validarCritico(nome: 'Argila', valor: analise.argila, erros: erros);
-    _validarCritico(nome: 'K', valor: analise.k, erros: erros);
-    _validarCritico(nome: 'Ca', valor: analise.ca, erros: erros);
-    _validarCritico(nome: 'Mg', valor: analise.mg, erros: erros);
-    _validarCritico(nome: 'Al', valor: analise.al, erros: erros);
-    _validarCritico(nome: 'H+Al', valor: analise.hAl, erros: erros);
-    final sPreferido = _preferirS(analise);
-    final sParaCalculo = sPreferido.isValido ? sPreferido.valor! : 0.0;
-    if (!sPreferido.isValido) {
-      avisos.add(
-        'Enxofre (S) não analisado; cálculo seguirá com S=0,0 mg/dm³.',
-      );
-    }
-
-    final moParaCalculo = analise.materiaOrganica.isValido
-        ? analise.materiaOrganica.valor!
-        : 0.0;
-    if (!analise.materiaOrganica.isValido) {
-      avisos.add(
-        'Matéria orgânica não analisada; cálculo seguirá com M.O.=0,0.',
-      );
-    }
-
-    if (!analise.b.isValido) {
-      avisos.add(
-        'Boro não analisado; cálculo seguirá com B=0,0 mg/dm³.',
-      );
-    }
-    // Micronutrientes — ausência gera aviso, não bloqueia recomendação
-    if (erros.isNotEmpty) {
-      return RecomendacaoResult(
-        recomendacao: null,
-        diagnostico: DiagnosticoRecomendacao(
-          erros: erros,
-          avisos: avisos,
-          statusNutrientes: status,
-        ),
-      );
-    }
-
-    final analiseCompat = _toAnaliseEntity(
+    final input = const RecommendationInputNormalizer().normalize(
       analise: analise,
-      pSelecionado: pSelecionado!,
-      moParaCalculo: moParaCalculo,
-      sParaCalculo: sParaCalculo,
+      preferenciaP: _preferenciaExtrator(calibracao),
     );
+    avisos.addAll(input.avisos);
+    final status = <String, StatusNutriente>{...input.status};
+    final analiseCompat = input.entity;
 
     ResultadoRecomendacao base;
     try {
@@ -166,21 +111,30 @@ class CalcularRecomendacaoCompletaUsecase {
       'enxofre': '05 — Enxofre (S): Motor de Cálculo',
     };
 
-    final recomendacao = base.copyWith(
-      micros: [...todosMicrosBase, ...microsExtrasResult.micros],
-      avisos: [...base.avisos, ...avisos, ...microsExtrasResult.avisos],
-      citacoes: citacoes,
+    final avisosFinal = <String>[
+      ...base.avisos,
+      ...avisos,
+      ...microsExtrasResult.avisos,
+      ..._avisosModulosBloqueados(input.blockedModules),
+    ];
+    final recomendacao = _aplicarBloqueios(
+      base.copyWith(
+        micros: [...todosMicrosBase, ...microsExtrasResult.micros],
+        avisos: avisosFinal,
+        citacoes: citacoes,
+      ),
+      input.blockedModules,
     );
     final diagnosticosAgronomicos = _diagnosticosAgronomicos(
       analise: analiseCompat,
       recomendacao: recomendacao,
+      blockedModules: input.blockedModules,
     );
 
     return RecomendacaoResult(
       recomendacao: recomendacao,
       diagnostico: DiagnosticoRecomendacao(
-        erros: erros,
-        avisos: [...avisos, ...microsExtrasResult.avisos],
+        avisos: avisosFinal,
         statusNutrientes: status,
         diagnosticos: diagnosticosAgronomicos,
       ),
@@ -200,104 +154,71 @@ class CalcularRecomendacaoCompletaUsecase {
     return null;
   }
 
-  AnaliseEntity _toAnaliseEntity({
-    required AnaliseCompleta analise,
-    required double pSelecionado,
-    required double moParaCalculo,
-    required double sParaCalculo,
-  }) {
-    // --- NORMALIZAÇÃO DE CÁTIONS ---
-    final kNorm = (analise.kUnidadeOriginal != null &&
-            analise.kUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarCation(
-            analise.k.valor!, analise.kUnidadeOriginal!)
-        : (() {
-            final result =
-                UnidadeConverter.inferirEConverterK(analise.k.valor!);
-            debugPrint('[UnidadeConverter] AVISO: ${result.aviso}');
-            return result.valorNormalizado;
-          })();
-
-    final caNorm = (analise.caUnidadeOriginal != null &&
-            analise.caUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarCation(
-            analise.ca.valor!, analise.caUnidadeOriginal!)
-        : analise.ca.valor!; // assume cmolc se ausente
-
-    final mgNorm = (analise.mgUnidadeOriginal != null &&
-            analise.mgUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarCation(
-            analise.mg.valor!, analise.mgUnidadeOriginal!)
-        : analise.mg.valor!;
-
-    final alNorm = (analise.alUnidadeOriginal != null &&
-            analise.alUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarCation(
-            analise.al.valor!, analise.alUnidadeOriginal!)
-        : analise.al.valor!;
-
-    final hAlNorm = (analise.hAlUnidadeOriginal != null &&
-            analise.hAlUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarCation(
-            analise.hAl.valor!, analise.hAlUnidadeOriginal!)
-        : analise.hAl.valor!;
-
-    // --- NORMALIZAÇÃO DE MO ---
-    final moNorm = (analise.moUnidadeOriginal != null &&
-            analise.moUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarMO(
-            moParaCalculo, analise.moUnidadeOriginal!)
-        : moParaCalculo; // assume g/dm³ se ausente
-
-    // --- NORMALIZAÇÃO DE GRANULOMETRIA ---
-    final argilaNorm = (analise.argilaUnidadeOriginal != null &&
-            analise.argilaUnidadeOriginal!.isNotEmpty)
-        ? UnidadeConverter.normalizarGranulometria(
-            analise.argila.valor!, analise.argilaUnidadeOriginal!)
-        : analise.argila.valor!; // assume % se ausente
-
-    double sb = 0;
-    if (analise.ca.isValido) sb += caNorm;
-    if (analise.mg.isValido) sb += mgNorm;
-    if (analise.k.isValido) sb += kNorm;
-    if (analise.na.isValido) sb += analise.na.valor!;
-
-    final ctc = sb + hAlNorm;
-    final vPercent = ctc > 0 ? (sb / ctc) * 100 : 0.0;
-
-    return AnaliseEntity(
-      id: analise.id,
-      nome: analise.talhao,
-      consultor: 'Consultor',
-      fazenda: analise.fazenda,
-      talhao: analise.talhao,
-      localizacao: analise.descricaoLocal ?? '-',
-      cultura: analise.cultura,
-      ph: analise.phPrincipal.valor!,
-      mo: moNorm,
-      p: LimitesAgronomicos.limitarP(pSelecionado),
-      k: LimitesAgronomicos.limitarK(kNorm),
-      ca: caNorm,
-      mg: mgNorm,
-      hAl: hAlNorm,
-      al: alNorm,
-      s: sParaCalculo,
-      b: analise.b.isValido ? analise.b.valor! : 0.0,
-      cu: analise.cu.isValido ? analise.cu.valor! : 0.0,
-      fe: analise.fe.isValido ? analise.fe.valor! : 0.0,
-      mn: analise.mn.isValido ? analise.mn.valor! : 0.0,
-      zn: analise.zn.isValido ? analise.zn.valor! : 0.0,
-      sb: sb,
-      ctc: ctc,
-      vPercent: vPercent,
-      argila: argilaNorm,
-      // Extratores de P — nullable
-      pMehlich: analise.pMehlich.isValido ? analise.pMehlich.valor : null,
-      pResina: analise.pResina.isValido ? analise.pResina.valor : null,
-      pRem: analise.pRem.isValido ? analise.pRem.valor : null,
-      // Enxofre 20–40 cm
-      s2040: analise.s2040.isValido ? analise.s2040.valor : null,
+  ResultadoGesso _gessoBloqueadoPorArgilaAusente() {
+    return const ResultadoGesso(
+      metodo: MetodoGesso.argilaEmbrapa,
+      indicado: false,
+      doseKgHa: 0,
+      doseTHa: 0,
+      sFornecidoKgHa: 0,
+      caFornecidoKgHa: 0,
+      caAumentoCmolcDm3: 0,
+      observacoes: [
+        'Textura não informada pelo laboratório Solum. Cálculo de gessagem indisponível. Informe argila (%) manualmente.',
+      ],
     );
+  }
+
+  ResultadoRecomendacao _aplicarBloqueios(
+    ResultadoRecomendacao recomendacao,
+    Set<RecommendationModule> blockedModules,
+  ) {
+    var result = recomendacao;
+    if (blockedModules.contains(RecommendationModule.calagem)) {
+      result = result.copyWith(
+        doseCalcarioTHa: 0,
+        vEsperado: recomendacao.analise.vPercent,
+        caEsperado: recomendacao.analise.ca,
+        mgEsperado: recomendacao.analise.mg,
+        parcelamento: const <String>[],
+      );
+    }
+    if (blockedModules.contains(RecommendationModule.fosforo)) {
+      result = result.copyWith(
+        doseP2O5KgHa: 0,
+        legacyP: false,
+      );
+    }
+    if (blockedModules.contains(RecommendationModule.potassio)) {
+      result = result.copyWith(
+        doseK2OKgHa: 0,
+        relacoesK: const RelacoesK(
+          relKMg: 0,
+          relKCa: 0,
+          alertas: <String>[],
+          kNaCTC: 0,
+        ),
+      );
+    }
+    if (blockedModules.contains(RecommendationModule.gesso)) {
+      result = result.copyWith(gesso: _gessoBloqueadoPorArgilaAusente());
+    }
+    return result;
+  }
+
+  List<String> _avisosModulosBloqueados(
+    Set<RecommendationModule> blockedModules,
+  ) {
+    return <String>[
+      if (blockedModules.contains(RecommendationModule.calagem))
+        'Calagem bloqueada por ausência de dados canônicos suficientes.',
+      if (blockedModules.contains(RecommendationModule.fosforo))
+        'Fósforo bloqueado por ausência de P Mehlich/Resina.',
+      if (blockedModules.contains(RecommendationModule.potassio))
+        'Potássio bloqueado por ausência de K/CTC canônicos suficientes.',
+      if (blockedModules.contains(RecommendationModule.gesso))
+        'Gessagem bloqueada por ausência de argila/textura.',
+    ];
   }
 
   ExtratorP? _preferenciaExtrator(CalibracaoProfile calibracao) {
@@ -337,9 +258,9 @@ class CalcularRecomendacaoCompletaUsecase {
 
       final via = _string(cfg['viaAplicacao'], 'Solo (correção)');
       final nc = _numNullable(cfg['ncSolo']);
-      
+
       final avisosDoNutriente = <String>[];
-      
+
       if (!valorAtual.isValido) {
         avisosDoNutriente.add('Micronutriente $simbolo sem teor na análise.');
       }
@@ -411,53 +332,10 @@ class CalcularRecomendacaoCompletaUsecase {
     return (micros: extras, avisos: avisos);
   }
 
-  Map<String, StatusNutriente> _statusBase(AnaliseCompleta analise) {
-    return <String, StatusNutriente>{
-      'PMehlich': _statusDoValor(analise.pMehlich),
-      'PResina': _statusDoValor(analise.pResina),
-      'PRem': _statusDoValor(analise.pRem),
-      'K': _statusDoValor(analise.k),
-      'Ca': _statusDoValor(analise.ca),
-      'Mg': _statusDoValor(analise.mg),
-      'Al': _statusDoValor(analise.al),
-      'H+Al': _statusDoValor(analise.hAl),
-      'Na': _statusDoValor(analise.na),
-      'S020': _statusDoValor(analise.s020),
-      'S2040': _statusDoValor(analise.s2040),
-      'B': _statusDoValor(analise.b),
-      'Cu': _statusDoValor(analise.cu),
-      'Fe': _statusDoValor(analise.fe),
-      'Mn': _statusDoValor(analise.mn),
-      'Zn': _statusDoValor(analise.zn),
-      'Ni': _statusDoValor(analise.ni),
-      'Mo': _statusDoValor(analise.mo),
-      'Se': _statusDoValor(analise.se),
-      'Co': _statusDoValor(analise.co),
-      'pH': _statusDoValor(analise.phPrincipal),
-      'MO': _statusDoValor(analise.materiaOrganica),
-      'Argila': _statusDoValor(analise.argila),
-    };
-  }
-
   StatusNutriente _statusDoValor(ValorNutriente valor) {
     if (!valor.analisado || valor.valor == null) return StatusNutriente.ausente;
     if (valor.valor!.isNaN || valor.valor! < 0) return StatusNutriente.invalido;
     return StatusNutriente.ok;
-  }
-
-  void _validarCritico({
-    required String nome,
-    required ValorNutriente valor,
-    required List<String> erros,
-  }) {
-    final status = _statusDoValor(valor);
-    if (status == StatusNutriente.ausente) {
-      erros.add('$nome não analisado.');
-      return;
-    }
-    if (status == StatusNutriente.invalido) {
-      erros.add('$nome inválido na análise.');
-    }
   }
 
   ValorNutriente _valorNutrienteByName(AnaliseCompleta analise, String nome) {
@@ -469,12 +347,6 @@ class CalcularRecomendacaoCompletaUsecase {
       'Zn' => analise.zn,
       _ => const ValorNutriente(valor: null, analisado: false)
     };
-  }
-
-  ValorNutriente _preferirS(AnaliseCompleta analise) {
-    if (analise.s020.isValido) return analise.s020;
-    if (analise.s2040.isValido) return analise.s2040;
-    return const ValorNutriente(valor: null, analisado: false);
   }
 
   ElementoMicro _toElemento(String simbolo) {
@@ -498,11 +370,24 @@ class CalcularRecomendacaoCompletaUsecase {
   Map<String, DiagnosticoNutriente> _diagnosticosAgronomicos({
     required AnaliseEntity analise,
     required ResultadoRecomendacao recomendacao,
+    required Set<RecommendationModule> blockedModules,
   }) {
     return <String, DiagnosticoNutriente>{
-      'calagem': _diagnosticoCalagem(analise, recomendacao),
-      'fosforo': _diagnosticoFosforo(analise, recomendacao),
-      'potassio': _diagnosticoPotassio(analise, recomendacao),
+      'calagem': blockedModules.contains(RecommendationModule.calagem)
+          ? _diagnosticoBloqueado(
+              'Calagem não calculada por ausência de dados de acidez/CTC.',
+            )
+          : _diagnosticoCalagem(analise, recomendacao),
+      'fosforo': blockedModules.contains(RecommendationModule.fosforo)
+          ? _diagnosticoBloqueado(
+              'Fósforo não calculado por ausência de P Mehlich/Resina.',
+            )
+          : _diagnosticoFosforo(analise, recomendacao),
+      'potassio': blockedModules.contains(RecommendationModule.potassio)
+          ? _diagnosticoBloqueado(
+              'Potássio não calculado por ausência de K/CTC.',
+            )
+          : _diagnosticoPotassio(analise, recomendacao),
       if (recomendacao.gesso.indicado)
         'gesso': DiagnosticoNutriente(
           status: DiagnosticoStatus.baixo,
@@ -521,6 +406,14 @@ class CalcularRecomendacaoCompletaUsecase {
       for (final micro in recomendacao.micros)
         micro.elemento.toLowerCase(): _diagnosticoMicro(micro),
     };
+  }
+
+  DiagnosticoNutriente _diagnosticoBloqueado(String mensagem) {
+    return DiagnosticoNutriente(
+      status: DiagnosticoStatus.adequado,
+      mensagemTecnica: mensagem,
+      recomendacao: 'Informe o dado ausente para habilitar este módulo.',
+    );
   }
 
   DiagnosticoNutriente _diagnosticoCalagem(

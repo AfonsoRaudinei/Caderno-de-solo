@@ -68,6 +68,21 @@ void main() {
     notifier.atualizarCampo(index, 'mg', '1.2');
   }
 
+  AnaliseSolo analiseImportada(String id, String numeroAmostra) {
+    return AnaliseSolo(
+      id: id,
+      fazenda: 'Fazenda Importada',
+      produtor: 'Produtor Importado',
+      talhao: 'T-Importado',
+      numeroAmostra: numeroAmostra,
+      cultura: Cultura.soja,
+      safra: '2025/2026',
+      laboratorio: 'Exata Brasil',
+      dataCadastro: DateTime(2026, 5, 27),
+      profundidade: '0-20',
+    );
+  }
+
   group('NovaAnaliseController', () {
     test(
         'bloqueia salvar quando dados globais obrigatórios não foram preenchidos',
@@ -106,7 +121,8 @@ void main() {
           ]));
     });
 
-    test('permite salvar com aviso quando uma amostra não tem talhão nem número',
+    test(
+        'permite salvar com aviso quando uma amostra não tem talhão nem número',
         () async {
       final fake = _FakeAnalisePersistenceGateway();
       final container = ProviderContainer(
@@ -168,6 +184,64 @@ void main() {
             AnaliseTelemetryEvents.savePersisting,
             AnaliseTelemetryEvents.saveCommitted,
           ]));
+    });
+
+    test('salvarImportadas persiste lote completo e dispara recarga', () async {
+      final fake = _FakeAnalisePersistenceGateway();
+      final container = ProviderContainer(
+        overrides: [
+          analisePersistenceGatewayProvider.overrideWithValue(fake),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final provider = novaAnaliseControllerProvider(null);
+      final notifier = container.read(provider.notifier);
+      final importadas = [
+        analiseImportada('imp-1', '1'),
+        analiseImportada('imp-2', '2'),
+      ];
+
+      final result = await notifier.salvarImportadas(importadas);
+      final state = container.read(provider);
+
+      expect(result.status, SaveBatchStatus.committed);
+      expect(result.savedCount, 2);
+      expect(fake.saveCalls, 1);
+      expect(fake.salvas, importadas);
+      expect(fake.recarregou, isTrue);
+      expect(state.isSaving, isFalse);
+      expect(state.error, isNull);
+    });
+
+    test('salvarImportadas mantém tela em caso de falha de persistência',
+        () async {
+      final fake = _FakeAnalisePersistenceGateway()
+        ..saveBatchException = const SaveBatchException(
+          code: SaveBatchCode.saveAtomicFailed,
+          message: 'Falha simulada ao persistir lote importado.',
+        );
+      final container = ProviderContainer(
+        overrides: [
+          analisePersistenceGatewayProvider.overrideWithValue(fake),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final provider = novaAnaliseControllerProvider(null);
+      final notifier = container.read(provider.notifier);
+
+      await expectLater(
+        notifier.salvarImportadas([analiseImportada('imp-1', '1')]),
+        throwsA(isA<SaveBatchException>()),
+      );
+      final state = container.read(provider);
+
+      expect(fake.saveCalls, 1);
+      expect(fake.salvas, isEmpty);
+      expect(fake.recarregou, isFalse);
+      expect(state.isSaving, isFalse);
+      expect(state.error, 'Falha ao persistir o lote. Tente novamente.');
     });
 
     test('preserva id e dataCadastro ao editar', () async {

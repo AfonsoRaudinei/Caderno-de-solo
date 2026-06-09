@@ -12,15 +12,18 @@ void main() {
     });
 
     test('mmolc/dm³ → divide por 10', () {
-      expect(UnidadeConverter.normalizarCation(0.8, 'mmolc/dm³'), closeTo(0.08, 0.0001));
+      expect(UnidadeConverter.normalizarCation(0.8, 'mmolc/dm³'),
+          closeTo(0.08, 0.0001));
     });
 
     test('mmolc (abreviado) → divide por 10', () {
-      expect(UnidadeConverter.normalizarCation(8.0, 'mmolc'), closeTo(0.8, 0.0001));
+      expect(UnidadeConverter.normalizarCation(8.0, 'mmolc'),
+          closeTo(0.8, 0.0001));
     });
 
     test('Case-insensitive: MMOLC', () {
-      expect(UnidadeConverter.normalizarCation(8.0, 'MMOLC'), closeTo(0.8, 0.0001));
+      expect(UnidadeConverter.normalizarCation(8.0, 'MMOLC'),
+          closeTo(0.8, 0.0001));
     });
 
     test('Unidade desconhecida lança ArgumentError', () {
@@ -47,6 +50,17 @@ void main() {
     test('g/dm³ → sem conversão', () {
       expect(UnidadeConverter.normalizarMO(28.0, 'g/dm³'), 28.0);
     });
+
+    test('MO canônica: g/dm³ → %/dag/kg (divide por 10)', () {
+      expect(
+        UnidadeConverter.normalizarMOPercent(28.0, 'g/dm³'),
+        closeTo(2.8, 0.001),
+      );
+    });
+
+    test('MO canônica: dag/kg → %/dag/kg direto', () {
+      expect(UnidadeConverter.normalizarMOPercent(2.8, 'dag/kg'), 2.8);
+    });
   });
 
   group('UnidadeConverter — Granulometria', () {
@@ -55,7 +69,8 @@ void main() {
     });
 
     test('g/kg → % (divide por 10)', () {
-      expect(UnidadeConverter.normalizarGranulometria(600.0, 'g/kg'), closeTo(60.0, 0.001));
+      expect(UnidadeConverter.normalizarGranulometria(600.0, 'g/kg'),
+          closeTo(60.0, 0.001));
     });
 
     test('dag/kg → % (direto)', () {

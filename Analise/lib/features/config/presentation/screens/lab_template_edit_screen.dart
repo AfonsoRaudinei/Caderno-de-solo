@@ -19,8 +19,7 @@ class LabTemplateEditScreen extends ConsumerStatefulWidget {
       _LabTemplateEditScreenState();
 }
 
-class _LabTemplateEditScreenState
-    extends ConsumerState<LabTemplateEditScreen> {
+class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
   late TextEditingController _nomeCtrl;
   late TextEditingController _keywordsCtrl;
 
@@ -96,8 +95,7 @@ class _LabTemplateEditScreenState
     _entregaPTotal = t?.entregaPTotal ?? false;
     _entregaClassificacaoTextura = t?.entregaClassificacaoTextura ?? false;
     _entregaTipoSoloMapa = t?.entregaTipoSoloMapa ?? false;
-    _separaSolicitanteProprietario =
-        t?.separaSolicitanteProprietario ?? false;
+    _separaSolicitanteProprietario = t?.separaSolicitanteProprietario ?? false;
     _entregaAreiasDetalhadas = t?.entregaAreiasDetalhadas ?? false;
     _entregaCascalho = t?.entregaCascalho ?? false;
     _micronutrientesPorAmostra = t?.micronutrientesPorAmostra ?? false;
@@ -200,8 +198,8 @@ class _LabTemplateEditScreenState
               const SizedBox(height: 8),
               AppCard(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     children: [
                       _DropdownRow<UnidadeNutriente>(
@@ -215,8 +213,7 @@ class _LabTemplateEditScreenState
                             .toList(),
                         onChanged: _isDefault
                             ? null
-                            : (v) =>
-                                setState(() => _unidadeNutrientes = v!),
+                            : (v) => setState(() => _unidadeNutrientes = v!),
                       ),
                       const Divider(height: 1),
                       _DropdownRow<UnidadeMO>(
@@ -244,8 +241,7 @@ class _LabTemplateEditScreenState
                             .toList(),
                         onChanged: _isDefault
                             ? null
-                            : (v) =>
-                                setState(() => _unidadeTextura = v!),
+                            : (v) => setState(() => _unidadeTextura = v!),
                       ),
                     ],
                   ),
@@ -287,24 +283,21 @@ class _LabTemplateEditScreenState
                       label: 'V% (Saturação por Bases)',
                       value: _entregaVPercent,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaVPercent = v),
+                      onChanged: (v) => setState(() => _entregaVPercent = v),
                     ),
                     _Divider(),
                     _ToggleRow(
                       label: 'm% (Saturação por Alumínio)',
                       value: _entregaMPercent,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaMPercent = v),
+                      onChanged: (v) => setState(() => _entregaMPercent = v),
                     ),
                     _Divider(),
                     _ToggleRow(
                       label: 'CTC Efetiva (t = SB + Al)',
                       value: _entregaCtcEfetiva,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaCtcEfetiva = v),
+                      onChanged: (v) => setState(() => _entregaCtcEfetiva = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -331,16 +324,14 @@ class _LabTemplateEditScreenState
                       label: 'pH em Água',
                       value: _entregaPhAgua,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaPhAgua = v),
+                      onChanged: (v) => setState(() => _entregaPhAgua = v),
                     ),
                     _Divider(),
                     _ToggleRow(
                       label: 'pH SMP',
                       value: _entregaPhSMP,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaPhSMP = v),
+                      onChanged: (v) => setState(() => _entregaPhSMP = v),
                     ),
                   ],
                 ),
@@ -358,8 +349,7 @@ class _LabTemplateEditScreenState
                       label: 'Cu, Fe, Mn, Zn por DTPA',
                       value: _entregaMicroDtpa,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaMicroDtpa = v),
+                      onChanged: (v) => setState(() => _entregaMicroDtpa = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -409,8 +399,7 @@ class _LabTemplateEditScreenState
                       subtitle: 'Argila, Silte, Areia',
                       value: _entregaTextura,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaTextura = v),
+                      onChanged: (v) => setState(() => _entregaTextura = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -425,8 +414,7 @@ class _LabTemplateEditScreenState
                       label: 'Cascalho',
                       value: _entregaCascalho,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaCascalho = v),
+                      onChanged: (v) => setState(() => _entregaCascalho = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -434,8 +422,7 @@ class _LabTemplateEditScreenState
                       subtitle: 'Sellar entrega P Total em porcentagem',
                       value: _entregaPTotal,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaPTotal = v),
+                      onChanged: (v) => setState(() => _entregaPTotal = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -460,16 +447,14 @@ class _LabTemplateEditScreenState
                       subtitle: 'Além do K em cmolc/mmolc',
                       value: _entregaKNH4Cl,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaKNH4Cl = v),
+                      onChanged: (v) => setState(() => _entregaKNH4Cl = v),
                     ),
                     _Divider(),
                     _ToggleRow(
                       label: 'Ca+Mg somado (campo separado)',
                       value: _entregaCaMaisMg,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _entregaCaMaisMg = v),
+                      onChanged: (v) => setState(() => _entregaCaMaisMg = v),
                     ),
                   ],
                 ),
@@ -488,8 +473,7 @@ class _LabTemplateEditScreenState
                       subtitle: 'Desative se o laudo tem múltiplas amostras',
                       value: _umAmostraPorLaudo,
                       enabled: !_isDefault,
-                      onChanged: (v) =>
-                          setState(() => _umAmostraPorLaudo = v),
+                      onChanged: (v) => setState(() => _umAmostraPorLaudo = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -497,8 +481,8 @@ class _LabTemplateEditScreenState
                       subtitle: 'Separar campos solicitante e proprietário',
                       value: _separaSolicitanteProprietario,
                       enabled: !_isDefault,
-                      onChanged: (v) => setState(
-                          () => _separaSolicitanteProprietario = v),
+                      onChanged: (v) =>
+                          setState(() => _separaSolicitanteProprietario = v),
                     ),
                     _Divider(),
                     _ToggleRow(
@@ -521,8 +505,7 @@ class _LabTemplateEditScreenState
                 AppCard(
                   child: _ToggleRow(
                     label: 'Template ativo',
-                    subtitle:
-                        'Templates inativos não são detectados no upload',
+                    subtitle: 'Templates inativos não são detectados no upload',
                     value: _ativo,
                     enabled: true,
                     onChanged: (v) => setState(() => _ativo = v),
@@ -543,7 +526,7 @@ class _LabTemplateEditScreenState
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),

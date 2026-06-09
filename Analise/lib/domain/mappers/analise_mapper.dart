@@ -41,6 +41,10 @@ class AnaliseMapper {
       mo: _valor(analise.mo),
       se: _valor(analise.se),
       co: _valor(_parseDouble(analise.laudoMetadata?['co'])),
+      sb: _valor(analise.sb),
+      ctc: _valor(analise.ctc),
+      vPercent: _valor(analise.vPercent),
+      mPercent: _valor(analise.mPercent),
     );
   }
 

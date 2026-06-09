@@ -1,3 +1,4 @@
+import 'package:soloforte/features/config/domain/entities/app_theme_mode.dart';
 import 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
 import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
 import 'package:soloforte/features/config/domain/repositories/config_repository.dart';
@@ -44,6 +45,22 @@ class LimparDadosLocaisUsecase {
   final ConfigRepository _repository;
 
   Future<void> call() => _repository.limparDadosLocais();
+}
+
+class GetThemeModeUsecase {
+  const GetThemeModeUsecase(this._repository);
+
+  final ConfigRepository _repository;
+
+  Future<AppThemeMode> call() => _repository.getThemeMode();
+}
+
+class SetThemeModeUsecase {
+  const SetThemeModeUsecase(this._repository);
+
+  final ConfigRepository _repository;
+
+  Future<void> call(AppThemeMode mode) => _repository.setThemeMode(mode);
 }
 
 class GetPerfilAssetsUsecase {

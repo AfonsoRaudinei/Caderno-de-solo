@@ -1,0 +1,38 @@
+{
+  "lab": "solum",
+  "laudoNumero": "8827",
+  "dataEmissao": "2026-03-02",
+  "cliente": "ELO AGRONEGOCIOS LTDA",
+  "proprietario": "ISAQUE SILVA",
+  "propriedade": "IDABJ",
+  "municipio": "Aparecida de Goiania",
+  "uf": "GO",
+  "amostras": [
+    {
+      "numeroAmostra": "23137",
+      "profundidade": "00-20",
+      "k_mmolc": 0.99,
+      "ca_mmolc": 28.6,
+      "mg_mmolc": 15.7,
+      "al_mmolc": 0.1,
+      "hMaisAl_mmolc": 20.14,
+      "p_mgdm3": 24.5,
+      "mo_gdm3": 20,
+      "phCaCl2": 5.8,
+      "phSmp": 6.7,
+      "vPercent": 69.23,
+      "ctc_mmolc": 65.47,
+      "sb_mmolc": 45.33,
+      "mPercent": 0.22,
+      "s020": 6.73,
+      "b": 0.28,
+      "cu": 0.23,
+      "fe": 14.9,
+      "mn": 3.78,
+      "zn": 0.53,
+      "argila": null,
+      "silte": null,
+      "areiaTotal": null
+    }
+  ]
+}
