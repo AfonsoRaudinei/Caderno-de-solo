@@ -1,6 +1,5 @@
+import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
-import 'package:soloforte/domain/export/recomendacao_export_context.dart';
-import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
+import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
@@ -233,6 +233,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
+                      key: const Key('btn_salvar_recomendacao'),
                       onPressed: (_salvando || _exportando)
                           ? null
                           : () => _salvarResultado(resultado),
@@ -356,39 +357,14 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       }
 
       final perfilAssets = ref.read(perfilAssetsProvider);
-      final logoDataUri =
-          await RecomendacaoHtmlExporter.logoToDataUri(perfilAssets.logoUrl);
-
       final perfil = ref.read(configControllerProvider).valueOrNull;
-      final credencial = perfil != null
-          ? '${perfil.tipoPerfil}${perfil.empresa.isNotEmpty ? ' · ${perfil.empresa}' : ''}'
-          : null;
 
-      DateTime? dataLaudo;
-      final emissao = analiseSolo?.dataEmissao;
-      if (emissao != null && emissao.isNotEmpty) {
-        dataLaudo = DateTime.tryParse(emissao);
-        if (dataLaudo == null) {
-          final br = RegExp(r'^(\d{2})/(\d{2})/(\d{4})').firstMatch(emissao);
-          if (br != null) {
-            dataLaudo = DateTime.tryParse(
-              '${br.group(3)}-${br.group(2)}-${br.group(1)}',
-            );
-          }
-        }
-      }
-      dataLaudo ??= analiseSolo?.dataCadastro;
-
-      final exportContext = RecomendacaoExportContext(
+      final exportContext =
+          await const RecomendacaoExportContextBuilder().build(
         resultado: resultado,
-        geradaEm: DateTime.now(),
-        metadata: RecomendacaoExportMetadata(
-          consultorNome: perfil?.nome ?? resultado.analise.consultor,
-          consultorCredencial: credencial,
-          laboratorio: analiseSolo?.laboratorio,
-          dataLaudo: dataLaudo,
-          logoDataUri: logoDataUri,
-        ),
+        analiseSolo: analiseSolo,
+        perfil: perfil,
+        logoUrl: perfilAssets.logoUrl,
       );
 
       await const RecomendacaoHtmlExporter().exportar(exportContext);

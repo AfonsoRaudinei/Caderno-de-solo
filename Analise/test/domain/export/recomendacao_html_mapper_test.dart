@@ -80,7 +80,7 @@ void main() {
         observacoes: [],
       );
 
-      final micro = MicroResultado(
+      final micro = const MicroResultado(
         elemento: 'Zn',
         valorAtual: 0.56,
         nc: 0.91,

@@ -39,22 +39,21 @@ class RecomendacaoHtmlExporter {
   /// Baixa logo remoto e retorna data URI, ou null se indisponível.
   static Future<String?> logoToDataUri(String? url) async {
     if (url == null || url.trim().isEmpty) return null;
+    final client = HttpClient();
     try {
-      final client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
       final response = await request.close();
-      if (response.statusCode != 200) {
-        client.close();
-        return null;
-      }
+      if (response.statusCode != 200) return null;
       final bytes = await consolidateHttpClientResponseBytes(response);
-      client.close();
-      final mime = _mimeFromBytes(response.headers.contentType?.mimeType, bytes);
+      final mime =
+          _mimeFromBytes(response.headers.contentType?.mimeType, bytes);
       final b64 = base64Encode(bytes);
       return 'data:$mime;base64,$b64';
     } catch (e) {
       debugPrint('Logo download failed: $e');
       return null;
+    } finally {
+      client.close(force: true);
     }
   }
 

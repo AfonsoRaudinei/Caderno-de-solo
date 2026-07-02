@@ -94,9 +94,7 @@ class RecomendacaoHtmlMapper {
       '<span class="pill ${_pillClass(rotulo)}">${_esc(rotulo)}</span>';
 
   static String _gradBar(double leftPct, List<String> labels) {
-    final scale = labels
-        .map((l) => '<span>${_esc(l)}</span>')
-        .join();
+    final scale = labels.map((l) => '<span>${_esc(l)}</span>').join();
     return '''
 <div class="grad-wrap">
   <div class="grad-bar"><div class="grad-marker" style="left:${leftPct.toStringAsFixed(1)}%;"></div></div>
@@ -104,7 +102,8 @@ class RecomendacaoHtmlMapper {
 </div>''';
   }
 
-  static String _doseBlock(String label, String num, String unit, String color) =>
+  static String _doseBlock(
+          String label, String num, String unit, String color) =>
       '''
 <div class="dose-block">
   <span class="dose-lbl">${_esc(label)}</span>
@@ -112,15 +111,15 @@ class RecomendacaoHtmlMapper {
   <span class="dose-unit">${_esc(unit)}</span>
 </div>''';
 
-  static String _warn(String html) =>
-      '<div class="warn">$html</div>';
+  static String _warn(String html) => '<div class="warn">$html</div>';
 
   static Map<String, dynamic> _corretivos(ResultadoRecomendacao r) {
     final raw = r.calibracao.parametrosCards['corretivos'];
     return raw is Map<String, dynamic> ? raw : <String, dynamic>{};
   }
 
-  static double _num(dynamic v, [double fb = 0]) => v is num ? v.toDouble() : fb;
+  static double _num(dynamic v, [double fb = 0]) =>
+      v is num ? v.toDouble() : fb;
 
   static String _referenciaFosforo(ResultadoRecomendacao r) {
     final fos = r.calibracao.parametrosCards['fosforo'];
@@ -234,9 +233,7 @@ class RecomendacaoHtmlMapper {
 
       final lx = (maxR + 12) * math.cos(angle);
       final ly = (maxR + 12) * math.sin(angle);
-      final anchor = lx.abs() < 8
-          ? 'middle'
-          : (lx > 0 ? 'start' : 'end');
+      final anchor = lx.abs() < 8 ? 'middle' : (lx > 0 ? 'start' : 'end');
       final tx = lx + (lx > 0 ? 4 : (lx < 0 ? -4 : 0));
       labels.add('''
 <text x="${tx.toStringAsFixed(1)}" y="${(ly - 6).toStringAsFixed(1)}" text-anchor="$anchor" font-size="11" font-weight="700" fill="${eixos[i].color}">${_esc(eixos[i].label)} ${_fmt(eixos[i].value, 0)}</text>
@@ -347,7 +344,8 @@ class RecomendacaoHtmlMapper {
     }
 
     final vCor = vColor(a.vPercent);
-    final alColor = alPct < 5 ? '#34C759' : (alPct < 15 ? '#FF9500' : '#FF3B30');
+    final alColor =
+        alPct < 5 ? '#34C759' : (alPct < 15 ? '#FF9500' : '#FF3B30');
 
     return '''
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:24px;">
@@ -529,11 +527,11 @@ class RecomendacaoHtmlMapper {
     final pRelNc = nc > 0 ? (p / nc * 100).clamp(0.0, 150.0) : 0.0;
     final gradPct = _gradPct('p', p, argila: a.argila);
     final cor = _nutrientColor(p, nc);
-    final pillText = nc > 0 && p >= nc
-        ? '$rotulo · ${_fmt(pRelNc, 0)}% NC'
-        : rotulo;
+    final pillText =
+        nc > 0 && p >= nc ? '$rotulo · ${_fmt(pRelNc, 0)}% NC' : rotulo;
     final warn = r.legacyP
-        ? _warn('Fosforo acima do NC — aplicado <strong>piso de manutencao</strong>.')
+        ? _warn(
+            'Fosforo acima do NC — aplicado <strong>piso de manutencao</strong>.')
         : '';
 
     return '''
@@ -547,7 +545,13 @@ class RecomendacaoHtmlMapper {
       <span class="metric-unit">mg/dm3</span>
       <span style="margin-left:auto;padding-bottom:8px;">${_pill(pillText)}</span>
     </div>
-    ${_gradBar(gradPct, ['Muito Baixo', 'Baixo', 'Medio', 'Alto', 'Muito Alto'])}
+    ${_gradBar(gradPct, [
+          'Muito Baixo',
+          'Baixo',
+          'Medio',
+          'Alto',
+          'Muito Alto'
+        ])}
     <div class="kv-list" style="margin-top:18px;">
       <div class="kv"><span class="kv-l">Nivel Critico (NC)</span><span class="kv-v">${_fmt(nc, 2)} mg/dm3</span></div>
       <div class="kv"><span class="kv-l">Modo de calculo</span><span class="kv-v">${_esc(r.modoFosforo)}</span></div>
@@ -580,7 +584,13 @@ class RecomendacaoHtmlMapper {
       <span style="margin-left:auto;padding-bottom:8px;">${_pill(rotulo)}</span>
     </div>
     <div style="font-size:13px;color:var(--ink3);margin-bottom:4px;">${_fmt(kMg, 0)} mg/dm3</div>
-    ${_gradBar(gradPct, ['Muito Baixo', 'Baixo', 'Medio', 'Alto', 'Muito Alto'])}
+    ${_gradBar(gradPct, [
+          'Muito Baixo',
+          'Baixo',
+          'Medio',
+          'Alto',
+          'Muito Alto'
+        ])}
     <div class="kv-list" style="margin-top:18px;">
       <div class="kv"><span class="kv-l">Nivel Critico (NC)</span><span class="kv-v">${_fmt(nc, 2)} cmolc/dm3</span></div>
       <div class="kv"><span class="kv-l">Criterio</span><span class="kv-v">${_esc(r.criterioPotassio)}</span></div>
@@ -624,7 +634,13 @@ class RecomendacaoHtmlMapper {
       <span class="metric-unit">mg/dm3</span>
       <span style="margin-left:auto;padding-bottom:8px;">${_pill(rotulo)}</span>
     </div>
-    ${_gradBar(gradPct, ['Muito Baixo', 'Baixo', 'Medio', 'Alto', 'Muito Alto'])}
+    ${_gradBar(gradPct, [
+          'Muito Baixo',
+          'Baixo',
+          'Medio',
+          'Alto',
+          'Muito Alto'
+        ])}
     ${_doseBlock('Dose recomendada', _fmt(dose, 0), 'kg S / ha', 'var(--red)')}
     ${warnText.isNotEmpty ? '<div style="margin-top:14px;">${_warn(warnText)}</div>' : ''}
   </div>
@@ -694,7 +710,8 @@ class RecomendacaoHtmlMapper {
   static (String, String) _microColuna(MicroResultado m, bool solo) {
     final via = m.via.toLowerCase();
     final naoAnalisado = m.avisosNutriente.any(
-      (a) => a.toLowerCase().contains('nao analisado') ||
+      (a) =>
+          a.toLowerCase().contains('nao analisado') ||
           a.toLowerCase().contains('não analisado') ||
           a.toLowerCase().contains('sem teor'),
     );
