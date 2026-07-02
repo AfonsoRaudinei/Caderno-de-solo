@@ -261,7 +261,8 @@ class _AbsorcaoNutrientesReferenciaPageState
 
     return Container(
       decoration: BoxDecoration(
-        color: AbsorcaoNutrientesCores.sectionSwitcherBg(isDark: palette.isDark),
+        color:
+            AbsorcaoNutrientesCores.sectionSwitcherBg(isDark: palette.isDark),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AbsorcaoNutrientesCores.sectionSwitcherBorder(
@@ -315,9 +316,7 @@ class _AbsorcaoNutrientesReferenciaPageState
             label,
             style: AppTextStyles.label.copyWith(
               fontSize: 13,
-              color: isSelected
-                  ? palette.textPrimary
-                  : palette.textSecondary,
+              color: isSelected ? palette.textPrimary : palette.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -589,8 +588,7 @@ class _AbsorcaoNutrientesReferenciaPageState
                 dividerColor: palette.border,
               ),
               child: DataTable(
-                headingRowColor:
-                    WidgetStateProperty.all(Colors.transparent),
+                headingRowColor: WidgetStateProperty.all(Colors.transparent),
                 dataRowColor: WidgetStateProperty.all(Colors.transparent),
                 headingTextStyle: AppTextStyles.label.copyWith(
                   color: palette.textSecondary,
