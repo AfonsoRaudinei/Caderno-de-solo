@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/presentation/providers/tabela_metricas_provider.dart';
@@ -18,7 +19,6 @@ class TabelaMetricasPage extends ConsumerWidget {
     final tabelasAsync = ref.watch(tabelaMetricasProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Tabelas de Métricas'),
         actions: [
@@ -191,7 +191,6 @@ class _TabelaEditorPageState extends State<_TabelaEditorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: Text(widget.tabela.nome, style: const TextStyle(fontSize: 15)),
         actions: [

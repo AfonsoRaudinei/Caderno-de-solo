@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_state.dart';
@@ -23,9 +24,7 @@ class CalibracaoSeletorPage extends ConsumerWidget {
     final state = ref.watch(calibracaoControllerProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgSecondary,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
@@ -148,6 +147,7 @@ class _CalibracaoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final nome = profile.nome.isEmpty ? 'Sem nome' : profile.nome;
     final cultura = profile.cultura;
 
@@ -156,11 +156,11 @@ class _CalibracaoCard extends StatelessWidget {
       onLongPress: () => _showContextMenu(context),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: palette.shadow,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -182,6 +182,7 @@ class _CalibracaoCard extends StatelessWidget {
                 style: AppTextStyles.label.copyWith(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
+                  color: palette.textPrimary,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -191,7 +192,10 @@ class _CalibracaoCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   cultura,
-                  style: AppTextStyles.caption.copyWith(fontSize: 11),
+                  style: AppTextStyles.caption.copyWith(
+                    fontSize: 11,
+                    color: palette.textSecondary,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -247,20 +251,22 @@ class _NovaCalibracaoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFD1D1D6),
+            color: palette.borderStrong,
             width: 2,
             style: BorderStyle.solid,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: palette.shadow,
               blurRadius: 4,
               offset: const Offset(0, 1),
             ),
@@ -281,7 +287,7 @@ class _NovaCalibracaoCard extends StatelessWidget {
                 'Nova calibragem',
                 style: AppTextStyles.caption.copyWith(
                   fontSize: 13,
-                  color: const Color(0xFF86868B),
+                  color: palette.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),

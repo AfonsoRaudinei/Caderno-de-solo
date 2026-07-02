@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// Tela principal do Laboratório com abas internas.
 class LabPage extends StatelessWidget {
@@ -9,8 +10,9 @@ class LabPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
       appBar: AppBar(
         title: const Text('Laboratório'),
       ),
@@ -18,50 +20,62 @@ class LabPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           ListTile(
-            title: const Text('Calibração'),
-            trailing: const Icon(
+            title: Text(
+              'Calibração',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labCalibracao),
           ),
-          const Divider(
+          Divider(
             height: 0.5,
-            color: Color(0xFFE5E5E7),
+            color: palette.border,
           ),
           ListTile(
-            title: const Text('Recomendação'),
-            trailing: const Icon(
+            title: Text(
+              'Recomendação',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labRecomendacao),
           ),
-          const Divider(
+          Divider(
             height: 0.5,
-            color: Color(0xFFE5E5E7),
+            color: palette.border,
           ),
           ListTile(
-            title: const Text('Referências'),
-            trailing: const Icon(
+            title: Text(
+              'Referências',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labReferencias),
           ),
-          const Divider(
+          Divider(
             height: 0.5,
-            color: Color(0xFFE5E5E7),
+            color: palette.border,
           ),
           ListTile(
             leading: const Icon(
               Icons.history_rounded,
               color: AppColors.primary,
             ),
-            title: const Text('Histórico'),
-            trailing: const Icon(
+            title: Text(
+              'Histórico',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labHistorico),
           ),

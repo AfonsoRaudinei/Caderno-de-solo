@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 
 /// Campo dropdown padronizado da tela de absorção de nutrientes.
@@ -22,6 +23,8 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -29,19 +32,27 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
           label,
           style: AppTextStyles.label.copyWith(
             fontSize: 13,
-            color: AbsorcaoNutrientesCores.textMuted,
+            color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
           ),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           initialValue: value,
+          dropdownColor: palette.cardStrong,
+          style: AppTextStyles.body.copyWith(
+            fontSize: 14,
+            color: palette.textPrimary,
+          ),
           items: items
               .map(
                 (item) => DropdownMenuItem<T>(
                   value: item,
                   child: Text(
                     labelBuilder?.call(item) ?? item.toString(),
-                    style: AppTextStyles.body.copyWith(fontSize: 14),
+                    style: AppTextStyles.body.copyWith(
+                      fontSize: 14,
+                      color: palette.textPrimary,
+                    ),
                   ),
                 ),
               )
@@ -49,7 +60,7 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: AbsorcaoNutrientesCores.greenPale,
+            fillColor: AbsorcaoNutrientesCores.inputFill(isDark: palette.isDark),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,

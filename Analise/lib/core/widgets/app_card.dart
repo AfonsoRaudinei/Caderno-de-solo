@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// Card padrão do SoloForte com sombra iOS sutil
 class AppCard extends StatelessWidget {
@@ -28,27 +29,23 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final radius = borderRadius ?? AppDimens.radiusMd;
 
     final container = Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: color ?? Colors.white.withValues(alpha: 0.95),
+        color: color ?? palette.card,
         borderRadius: BorderRadius.circular(radius),
         border: borderColor != null
             ? Border.all(color: borderColor!, width: 1)
-            : Border.all(color: AppColors.borderSoft, width: 0.5),
+            : Border.all(color: palette.border, width: 0.5),
         boxShadow: showShadow
-            ? const [
+            ? [
                 BoxShadow(
-                  color: Color(0x14000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-                BoxShadow(
-                  color: Color(0x0A000000),
+                  color: palette.shadow,
                   blurRadius: 8,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ]
             : null,
@@ -90,6 +87,7 @@ class AppCardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final contentPadding = padding ?? const EdgeInsets.all(AppDimens.cardPadding);
 
     return Column(
@@ -108,11 +106,11 @@ class AppCardSection extends StatelessWidget {
                   AppDimens.lg,
                   AppDimens.sm,
                 ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF9FAFB),
+                decoration: BoxDecoration(
+                  color: palette.sectionHeader,
                   border: Border(
                     bottom: BorderSide(
-                      color: AppColors.borderSoft,
+                      color: palette.border,
                       width: 0.5,
                     ),
                   ),
@@ -122,7 +120,7 @@ class AppCardSection extends StatelessWidget {
                     Text(
                       title.toUpperCase(),
                       style: AppTextStyles.sectionLabel.copyWith(
-                        color: AppColors.textSecond,
+                        color: palette.textSecondary,
                         letterSpacing: 1.1,
                         fontWeight: FontWeight.w700,
                       ),
@@ -163,6 +161,8 @@ class AppCardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Column(
       children: [
         Padding(
@@ -170,21 +170,24 @@ class AppCardRow extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: AppTextStyles.label),
+              Text(
+                label,
+                style: AppTextStyles.label.copyWith(color: palette.textPrimary),
+              ),
               Text(
                 value,
                 style: AppTextStyles.value.copyWith(
-                  color: valueColor ?? AppColors.textPrimary,
+                  color: valueColor ?? palette.textPrimary,
                 ),
               ),
             ],
           ),
         ),
         if (showDivider)
-          const Divider(
+          Divider(
             height: 1,
             thickness: 0.5,
-            color: AppColors.borderSoft,
+            color: palette.border,
           ),
       ],
     );

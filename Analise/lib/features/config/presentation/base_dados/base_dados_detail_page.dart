@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/data/base_dados/referencias_tecnicas_data.dart';
 
 class BaseDadosDetailPage extends StatelessWidget {
@@ -11,10 +12,75 @@ class BaseDadosDetailPage extends StatelessWidget {
 
   final ReferenciaTecnica referencia;
 
+  MarkdownStyleSheet _markdownStyle(AppThemePalette palette) {
+    return MarkdownStyleSheet(
+      h1: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: palette.textPrimary,
+        letterSpacing: -0.3,
+      ),
+      h2: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: palette.textPrimary,
+        letterSpacing: -0.2,
+      ),
+      p: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: palette.textPrimary,
+        height: 1.6,
+      ),
+      strong: TextStyle(
+        fontWeight: FontWeight.w600,
+        color: palette.textPrimary,
+      ),
+      code: TextStyle(
+        fontSize: 12,
+        fontFamily: 'Courier',
+        backgroundColor: palette.cardStrong,
+        color: AppColors.primary,
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: palette.cardStrong,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: palette.border,
+          width: 0.5,
+        ),
+      ),
+      blockquoteDecoration: const BoxDecoration(
+        border: Border(
+          left: BorderSide(color: AppColors.primary, width: 3),
+        ),
+      ),
+      blockquotePadding: const EdgeInsets.only(left: 12),
+      tableHead: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+        color: palette.textPrimary,
+      ),
+      tableBody: TextStyle(
+        fontSize: 13,
+        color: palette.textPrimary,
+      ),
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: palette.border,
+            width: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Detalhe da Referência'),
         leading: IconButton(
@@ -35,7 +101,7 @@ class BaseDadosDetailPage extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 child: Text(
                   'Não foi possível carregar o arquivo:\n${referencia.arquivoMarkdown}',
-                  style: AppTextStyles.body,
+                  style: AppTextStyles.body.copyWith(color: palette.textPrimary),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -53,23 +119,34 @@ class BaseDadosDetailPage extends StatelessWidget {
                   children: [
                     Text(
                       referencia.nome,
-                      style: AppTextStyles.headline.copyWith(fontSize: 18),
+                      style: AppTextStyles.headline.copyWith(
+                        fontSize: 18,
+                        color: palette.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '${referencia.autor} · ${referencia.anoPublicacao} · ${referencia.instituicao}',
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF86868B)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: palette.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '${referencia.tipo} • Ano: ${referencia.ano} • Fórmula: ${referencia.formulaAssociada}',
-                      style: AppTextStyles.caption.copyWith(fontSize: 13),
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 13,
+                        color: palette.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       referencia.arquivoMarkdown,
-                      style: AppTextStyles.caption.copyWith(fontSize: 12),
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 12,
+                        color: palette.textTertiary,
+                      ),
                     ),
                   ],
                 ),
@@ -79,61 +156,7 @@ class BaseDadosDetailPage extends StatelessWidget {
                 child: Markdown(
                   data: conteudo,
                   selectable: true,
-                  styleSheet: MarkdownStyleSheet(
-                    h1: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1D1D1F),
-                      letterSpacing: -0.3,
-                    ),
-                    h2: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D1D1F),
-                      letterSpacing: -0.2,
-                    ),
-                    p: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF1D1D1F),
-                      height: 1.6,
-                    ),
-                    strong: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D1D1F),
-                    ),
-                    code: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Courier',
-                      backgroundColor: Color(0xFFF5F5F7),
-                      color: Color(0xFF007AFF),
-                    ),
-                    codeblockDecoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F7),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFE5E5E7),
-                        width: 0.5,
-                      ),
-                    ),
-                    blockquoteDecoration: const BoxDecoration(
-                      border: Border(
-                        left: BorderSide(color: Color(0xFF007AFF), width: 3),
-                      ),
-                    ),
-                    blockquotePadding: const EdgeInsets.only(left: 12),
-                    tableHead: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13),
-                    tableBody: const TextStyle(fontSize: 13),
-                    horizontalRuleDecoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Color(0xFFE5E5E7),
-                          width: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
+                  styleSheet: _markdownStyle(palette),
                   padding: const EdgeInsets.all(16),
                 ),
               ),
