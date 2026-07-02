@@ -112,6 +112,7 @@ class CalcularRecomendacaoCompletaUsecase {
     };
 
     final avisosFinal = <String>[
+      ...input.erros,
       ...base.avisos,
       ...avisos,
       ...microsExtrasResult.avisos,

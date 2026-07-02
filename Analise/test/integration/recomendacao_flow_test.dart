@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
-import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
@@ -14,6 +12,7 @@ import 'package:soloforte/features/config/presentation/providers/tabela_metricas
 import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
+import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
 
@@ -220,30 +219,34 @@ Future<void> _pump(
     ),
   );
   await tester.pumpAndSettle();
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(RecomendacaoScreen)),
+  );
+  await container.read(analiseNotifierProvider.future);
+  await container.read(tabelaMetricasProvider.future);
 }
 
-Future<void> _select(WidgetTester tester, int index, String value) async {
+Future<void> _selectCalibracao(WidgetTester tester, String value) async {
   final dropdown = tester.widget<DropdownButton<String>>(
-    find.byType(DropdownButton<String>).at(index),
+    find.byType(DropdownButton<String>).first,
   );
-  final onChanged = dropdown.onChanged;
-  expect(onChanged, isNotNull);
-  onChanged?.call(value);
+  expect(dropdown.onChanged, isNotNull);
+  dropdown.onChanged?.call(value);
   await tester.pumpAndSettle();
 }
 
-Future<void> _generate(WidgetTester tester) async {
-  final button = tester.widget<AppButton>(
-    find.byKey(const Key('btn_gerar_recomendacao')),
-  );
-  expect(button.onPressed, isNotNull);
-  button.onPressed?.call();
+Future<void> _selectAnalise(WidgetTester tester, String analiseId) async {
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
   await tester.pumpAndSettle();
 }
 
 RecomendacaoResult _readResult(
   WidgetTester tester, {
-  required String analiseId,
+  required List<String> analiseIds,
   required String calibracaoId,
 }) {
   final container = ProviderScope.containerOf(
@@ -252,7 +255,7 @@ RecomendacaoResult _readResult(
   return container.read(
     recomendacaoProvider(
       RecomendacaoRequest(
-        analiseId: analiseId,
+        analiseIds: analiseIds,
         calibracaoId: calibracaoId,
       ),
     ),
@@ -268,42 +271,49 @@ void main() {
 
       await _pump(tester, profiles: [_profile()], analises: [_analiseValida()]);
 
-      await _select(tester, 0, 'a-1');
-      await _select(tester, 1, 'c-1');
-      await _generate(tester);
+      await _selectAnalise(tester, 'a-1');
+      await _selectCalibracao(tester, 'c-1');
+      await tester.pumpAndSettle();
 
       final result = _readResult(
         tester,
-        analiseId: 'a-1',
+        analiseIds: const ['a-1'],
         calibracaoId: 'c-1',
       );
       expect(result.recomendacao, isNotNull);
       expect(result.diagnostico.valido, isTrue);
-      expect(find.byType(AppButton), findsNWidgets(2));
-      expect(find.byKey(const Key('btn_salvar_recomendacao')), findsOneWidget);
-      expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
+      expect(result.recomendacao!.doseK2OKgHa, greaterThan(0));
     });
 
-    testWidgets('erro: K null exibe diagnóstico e sem ações', (tester) async {
+    testWidgets('K ausente: recomendação parcial com avisos e dose K zerada',
+        (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await _pump(tester, profiles: [_profile()], analises: [_analiseSemK()]);
 
-      await _select(tester, 0, 'a-2');
-      await _select(tester, 1, 'c-1');
-      await _generate(tester);
+      await _selectAnalise(tester, 'a-2');
+      await _selectCalibracao(tester, 'c-1');
+      await tester.pumpAndSettle();
 
       final result = _readResult(
         tester,
-        analiseId: 'a-2',
+        analiseIds: const ['a-2'],
         calibracaoId: 'c-1',
       );
-      expect(result.recomendacao, isNull);
-      expect(result.diagnostico.valido, isFalse);
-      expect(result.diagnostico.erros, isNotEmpty);
-      expect(find.byKey(const Key('btn_salvar_recomendacao')), findsNothing);
-      expect(find.byKey(const Key('btn_exportar_pdf')), findsNothing);
+      expect(result.recomendacao, isNotNull);
+      expect(result.recomendacao!.doseK2OKgHa, 0);
+      expect(result.diagnostico.valido, isTrue);
+      expect(
+        result.diagnostico.avisos
+            .any((aviso) => aviso.contains('K não analisado')),
+        isTrue,
+      );
+      expect(
+        result.diagnostico.avisos
+            .any((aviso) => aviso.contains('Potássio bloqueado')),
+        isTrue,
+      );
     });
   });
 }
