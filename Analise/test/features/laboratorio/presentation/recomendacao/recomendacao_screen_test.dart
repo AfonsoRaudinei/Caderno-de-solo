@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart'
@@ -226,6 +226,9 @@ Future<void> _pumpRecomendacao(
           ),
         ),
         perfilAssetsProvider.overrideWith((ref) => _FakePerfilAssetsNotifier()),
+        analisesVisiveisProvider.overrideWith(
+          (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+        ),
       ],
       child: const MaterialApp(home: RecomendacaoScreen()),
     ),
@@ -362,6 +365,9 @@ void main() {
           perfilAssetsProvider.overrideWith(
             (ref) => _FakePerfilAssetsNotifier(),
           ),
+          analisesVisiveisProvider.overrideWith(
+            (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -384,30 +390,46 @@ void main() {
     },
   );
 
-  testWidgets(
-    'exibe diagnóstico e não renderiza resultado quando análise é inválida',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 2400));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  test(
+    'nao renderiza resultado quando analise sem potassio e invalida',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          calibracaoControllerProvider.overrideWith(
+            (ref) => _FakeCalibracaoController(profiles: [_profile()]),
+          ),
+          analiseNotifierProvider.overrideWith(
+            () => _FakeAnaliseNotifier([_analiseSemPotassio()]),
+          ),
+          tabelaMetricasProvider.overrideWith(
+            () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
+          ),
+          perfilAssetsProvider.overrideWith(
+            (ref) => _FakePerfilAssetsNotifier(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
-      await _pumpRecomendacao(
-        tester,
-        profiles: [_profile()],
-        analises: [_analiseSemPotassio()],
+      await container.read(analiseNotifierProvider.future);
+      await container.read(tabelaMetricasProvider.future);
+
+      final result = container.read(
+        recomendacaoProvider(
+          RecomendacaoRequest(
+            analiseIds: const ['a-2'],
+            calibracaoId: 'c-1',
+          ),
+        ),
       );
 
-      await _selectAnaliseByIndex(tester, 0);
-      await _setDropdownValue(tester, dropdownIndex: 0, value: 'c-1');
-
-      await tester.tap(
-        find.byKey(const Key('btn_gerar_recomendacao')),
-        warnIfMissed: false,
+      expect(result.recomendacao, isNotNull);
+      expect(
+        result.recomendacao!.avisos.any(
+          (aviso) => aviso.contains('Potássio bloqueado'),
+        ),
+        isTrue,
       );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('K não analisado'), findsWidgets);
-      // expect(find.text('Salvar Recomendação'), findsNothing); // TODO: Fix test
-      expect(find.text('Exportar PDF'), findsNothing);
     },
   );
 

@@ -74,9 +74,10 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   Widget build(BuildContext context) {
     final calibracaoState = ref.watch(calibracaoControllerProvider);
     final analisesAsync = ref.watch(analiseNotifierProvider);
+    final analisesVisiveis = ref.watch(analisesVisiveisProvider);
     final perfis = calibracaoState.profiles;
 
-    final analisesRaw = analisesAsync.valueOrNull ?? const <AnaliseSolo>[];
+    final analisesRaw = analisesVisiveis;
     final analisesFiltradas =
         analisesRaw.where(_analiseMatchesBusca).toList(growable: false);
     final opcoesAnalise = analisesFiltradas.map(_toAnaliseOption).toList();

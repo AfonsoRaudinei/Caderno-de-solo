@@ -28,6 +28,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   bool _isSelectingAnalises = false;
   final Set<String> _selectedAnaliseIds = <String>{};
   String _searchQuery = '';
+  bool _reparoProdutorExecutado = false;
 
   void _abrirOpcoesNovaAnalise(BuildContext context) {
     showNovaAnaliseOpcoesSheet(
@@ -55,7 +56,14 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     }
 
     final analiseState = ref.watch(analiseNotifierProvider);
-    final analisesRaw = analiseState.valueOrNull ?? const <AnaliseSolo>[];
+    final analisesRaw = ref.watch(analisesVisiveisProvider);
+
+    if (!_reparoProdutorExecutado) {
+      _reparoProdutorExecutado = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(analiseNotifierProvider.notifier).repararProdutoresLegados();
+      });
+    }
 
     final safras = analisesRaw
         .map((e) => e.safra)

@@ -3,11 +3,18 @@ import 'dart:developer';
 import 'package:soloforte/core/utils/safra_utils.dart';
 import 'package:soloforte/data/lab_templates/ibra_template.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 
 String _firstNonEmptyString(List<dynamic> values) {
-  for (final value in values) {
-    final text = value?.toString().trim() ?? '';
-    if (text.isNotEmpty) return text;
+  return ProdutorResolucaoService.firstNonEmpty(
+    values.map((value) => value?.toString()),
+  );
+}
+
+String _resolverProdutorIbra(Map<String, dynamic> laudo) {
+  final proprietario = _firstNonEmptyString([laudo['proprietario']]);
+  if (!ProdutorResolucaoService.isProdutorInvalido(proprietario)) {
+    return proprietario;
   }
   return '';
 }
@@ -107,14 +114,12 @@ class IbraImportService {
     final dataCadastro =
         DateTime.tryParse((laudo['dataEmissao'] ?? '').toString()) ??
             DateTime.now();
+    final consultor = _firstNonEmptyString([laudo['responsavel']]);
 
     return AnaliseSolo(
       id: id,
       fazenda: _firstNonEmptyString([laudo['propriedade']]),
-      produtor: _firstNonEmptyString([
-        laudo['proprietario'],
-        laudo['responsavel'],
-      ]),
+      produtor: _resolverProdutorIbra(laudo),
       talhao: (raw('talhao') ?? '') as String,
       numeroAmostra: (raw('numeroAmostra') ?? '') as String,
       cultura: parseCultura((laudo['cultura'] ?? raw('cultura'))?.toString()),
@@ -150,6 +155,9 @@ class IbraImportService {
       ni: null,
       mo: null,
       se: null,
+      osLaboratorio: laudo['os']?.toString(),
+      dataEmissao: laudo['dataEmissao']?.toString(),
+      consultor: consultor.isEmpty ? null : consultor,
       laudoMetadata: metadata,
     );
   }

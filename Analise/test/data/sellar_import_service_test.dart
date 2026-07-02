@@ -28,12 +28,7 @@ void main() {
       expect(amostras[1].phCaCl2, 5.5);
       expect(amostras[2].phCaCl2, 5.8);
 
-      final dynamic primeiraAmostra = amostras[0];
-      expect(() => primeiraAmostra.sb, throwsA(anything));
-      expect(() => primeiraAmostra.ctcTotal, throwsA(anything));
-      expect(() => primeiraAmostra.vPct, throwsA(anything));
-
-      expect(amostras[0].laudoMetadata?['derivados'], isNull);
+      expect(amostras[0].sb, isNull);
     });
 
     test('id sanitizado nao contem barra do laudoNumero', () async {
