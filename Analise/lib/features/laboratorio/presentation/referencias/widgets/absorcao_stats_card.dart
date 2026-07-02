@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/widgets/absorcao_card_wrapper.dart';
@@ -24,6 +25,7 @@ class AbsorcaoStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final cards = <SummaryCardData>[
       SummaryCardData(
         title: 'Total',
@@ -62,14 +64,14 @@ class AbsorcaoStatsCard extends StatelessWidget {
                 width: 156,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: palette.cardStrong,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE5E5E7)),
-                    boxShadow: const [
+                    border: Border.all(color: palette.border),
+                    boxShadow: [
                       BoxShadow(
-                        color: Color(0x080D2818),
+                        color: palette.shadow,
                         blurRadius: 12,
-                        offset: Offset(0, 4),
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
@@ -89,7 +91,7 @@ class AbsorcaoStatsCard extends StatelessWidget {
                       Text(
                         card.title,
                         style: AppTextStyles.caption.copyWith(
-                          color: AbsorcaoNutrientesCores.textMuted,
+                          color: palette.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -97,14 +99,17 @@ class AbsorcaoStatsCard extends StatelessWidget {
                       Text(
                         card.value,
                         style: AppTextStyles.value.copyWith(
-                          color: AbsorcaoNutrientesCores.greenDark,
+                          color: palette.textPrimary,
                           fontSize: 18,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         card.subtitle,
-                        style: AppTextStyles.caption.copyWith(fontSize: 11),
+                        style: AppTextStyles.caption.copyWith(
+                          fontSize: 11,
+                          color: palette.textSecondary,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),

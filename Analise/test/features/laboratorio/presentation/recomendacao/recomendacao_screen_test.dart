@@ -394,7 +394,7 @@ void main() {
   });
 
   testWidgets(
-      'exibe diagnóstico e não renderiza resultado quando análise é inválida',
+      'com K ausente gera recomendação parcial e avisos de potássio bloqueado',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -405,21 +405,42 @@ void main() {
       analises: [_analiseSemPotassio()],
     );
 
-    await _selectAnaliseByIndex(tester, 0);
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('amostra_option_a-2')));
+    await tester.pumpAndSettle();
     await _setDropdownValue(
       tester,
       dropdownIndex: 0,
       value: 'c-1',
     );
-
-    await tester.tap(
-      find.byKey(const Key('btn_gerar_recomendacao')),
-      warnIfMissed: false,
-    );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('K não analisado'), findsWidgets);
-    // expect(find.text('Salvar Recomendação'), findsNothing); // TODO: Fix test
-    expect(find.text('Exportar PDF'), findsNothing);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RecomendacaoScreen)),
+    );
+    await container.read(analiseNotifierProvider.future);
+    await container.read(tabelaMetricasProvider.future);
+    final result = container.read(
+      recomendacaoProvider(
+        const RecomendacaoRequest(
+          analiseIds: ['a-2'],
+          calibracaoId: 'c-1',
+        ),
+      ),
+    );
+
+    expect(result.recomendacao, isNotNull);
+    expect(result.recomendacao!.doseK2OKgHa, 0);
+    expect(
+      result.diagnostico.avisos
+          .any((aviso) => aviso.contains('K não analisado')),
+      isTrue,
+    );
+    expect(
+      result.diagnostico.avisos
+          .any((aviso) => aviso.contains('Potássio bloqueado')),
+      isTrue,
+    );
   });
 }

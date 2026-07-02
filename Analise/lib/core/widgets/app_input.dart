@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// TextField estilizado iOS do SoloForte
 class AppInput extends StatefulWidget {
@@ -117,6 +118,7 @@ class _AppInputState extends State<AppInput> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
 
     return Column(
@@ -124,7 +126,10 @@ class _AppInputState extends State<AppInput> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.label != null) ...[
-          Text(widget.label!, style: AppTextStyles.label),
+          Text(
+            widget.label!,
+            style: AppTextStyles.label.copyWith(color: palette.textSecondary),
+          ),
           const SizedBox(height: 6),
         ],
         AnimatedContainer(
@@ -156,8 +161,9 @@ class _AppInputState extends State<AppInput> {
             autofillHints: widget.autofillHints,
             inputFormatters: _buildFormatters(),
             style: AppTextStyles.input.copyWith(
-              color:
-                  widget.enabled ? AppColors.textPrimary : AppColors.textSecond,
+              color: widget.enabled
+                  ? palette.textPrimary
+                  : palette.textSecondary,
             ),
             onChanged: widget.onChanged,
             onFieldSubmitted: widget.onSubmitted,
@@ -165,18 +171,18 @@ class _AppInputState extends State<AppInput> {
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: AppTextStyles.input.copyWith(
-                color: AppColors.textTertiary,
+                color: palette.textTertiary,
               ),
               counterText: '',
               filled: true,
-              fillColor:
-                  widget.enabled ? AppColors.bgPrimary : AppColors.bgSecondary,
+              fillColor: widget.enabled ? palette.inputFill : palette.cardStrong,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 12,
               ),
               suffixText: widget.suffixText,
-              suffixStyle: AppTextStyles.caption,
+              suffixStyle:
+                  AppTextStyles.caption.copyWith(color: palette.textSecondary),
               prefixIcon: widget.prefixIcon,
               suffixIcon: widget.obscureText
                   ? IconButton(
@@ -186,7 +192,7 @@ class _AppInputState extends State<AppInput> {
                         _isObscured
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: AppColors.textSecond,
+                        color: palette.textSecondary,
                         size: 20,
                       ),
                     )
@@ -194,7 +200,7 @@ class _AppInputState extends State<AppInput> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: hasError ? AppColors.error : AppColors.border,
+                  color: hasError ? AppColors.error : palette.borderStrong,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -206,7 +212,7 @@ class _AppInputState extends State<AppInput> {
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.borderSoft),
+                borderSide: BorderSide(color: palette.border),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),

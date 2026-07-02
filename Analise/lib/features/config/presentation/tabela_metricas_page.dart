@@ -18,7 +18,6 @@ class TabelaMetricasPage extends ConsumerWidget {
     final tabelasAsync = ref.watch(tabelaMetricasProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Tabelas de Métricas'),
         actions: [
@@ -191,7 +190,6 @@ class _TabelaEditorPageState extends State<_TabelaEditorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: Text(widget.tabela.nome, style: const TextStyle(fontSize: 15)),
         actions: [

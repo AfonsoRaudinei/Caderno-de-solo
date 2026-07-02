@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/core/widgets/nutriente_card.dart';
@@ -216,17 +217,23 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgSecondary,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: context.appPalette.textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Calibração', style: AppTextStyles.label),
+        title: Text(
+          'Calibração',
+          style: AppTextStyles.label.copyWith(
+            color: context.appPalette.textPrimary,
+          ),
+        ),
         centerTitle: false,
       ),
       body: ListView(
@@ -1346,8 +1353,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
-                border: Border.all(color: AppColors.borderSoft),
+                color: context.appPalette.card,
+                border: Border.all(color: context.appPalette.border),
               ),
               child: Column(
                 children: [
@@ -1365,10 +1372,18 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
                         ),
                       ),
                     ),
-                    title:
-                        Text(_nomeMicro(simbolo), style: AppTextStyles.label),
-                    subtitle:
-                        Text('Classe: $classe', style: AppTextStyles.caption),
+                    title: Text(
+                      _nomeMicro(simbolo),
+                      style: AppTextStyles.label.copyWith(
+                        color: context.appPalette.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Classe: $classe',
+                      style: AppTextStyles.caption.copyWith(
+                        color: context.appPalette.textSecondary,
+                      ),
+                    ),
                     trailing:
                         Icon(aberto ? Icons.expand_less : Icons.expand_more),
                     onTap: () =>
@@ -1840,6 +1855,8 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
     required VoidCallback onFinalizar,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    final palette = context.appPalette;
+
     return Focus(
       onFocusChange: (hasFocus) {
         if (!hasFocus) {
@@ -1850,17 +1867,17 @@ class _CalibracaoPageState extends ConsumerState<CalibracaoPage> {
         initialValue: initialValue,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
-        style: AppTextStyles.input.copyWith(color: AppColors.textPrimary),
+        style: AppTextStyles.input.copyWith(color: palette.textPrimary),
         onChanged: onChanged,
         onEditingComplete: onFinalizar,
         decoration: InputDecoration(
           filled: true,
-          fillColor: AppColors.bgPrimary,
+          fillColor: palette.inputFill,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border),
+            borderSide: BorderSide(color: palette.borderStrong),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
@@ -69,15 +70,13 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     final resultado = result.recomendacao;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgSecondary,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textPrimary,
+            color: context.appPalette.textPrimary,
             size: 20,
           ),
           onPressed: () {
@@ -484,36 +483,44 @@ class _SeletorAmostras extends StatelessWidget {
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bgPrimary,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: ExpansionTile(
-          key: const Key('seletor_amostras_dropdown'),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-          iconColor: AppColors.textSecond,
-          collapsedIconColor: AppColors.textSecond,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Selecionar Amostras', style: AppTextStyles.label),
-              const SizedBox(height: 4),
-              Text(
-                resumo,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.body.copyWith(
-                  color: selecionados.isEmpty
-                      ? AppColors.textTertiary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ],
+      child: Material(
+        color: context.appPalette.inputFill,
+        borderRadius: BorderRadius.circular(8),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: context.appPalette.borderStrong),
+            borderRadius: BorderRadius.circular(8),
           ),
-          children: [
+          child: ExpansionTile(
+            key: const Key('seletor_amostras_dropdown'),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+            iconColor: context.appPalette.textSecondary,
+            collapsedIconColor: context.appPalette.textSecondary,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selecionar Amostras',
+                  style: AppTextStyles.label.copyWith(
+                    color: context.appPalette.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  resumo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body.copyWith(
+                    color: selecionados.isEmpty
+                        ? context.appPalette.textTertiary
+                        : context.appPalette.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            children: [
             if (profAtiva != null || laboratorioAtivo != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -602,7 +609,7 @@ class _SeletorAmostras extends StatelessWidget {
                               fontSize: 14,
                               color: isSelecionado
                                   ? const Color(0xFF007AFF)
-                                  : const Color(0xFF1D1D1F),
+                                  : context.appPalette.textPrimary,
                               fontWeight: isSelecionado
                                   ? FontWeight.w500
                                   : FontWeight.w400,
@@ -621,6 +628,7 @@ class _SeletorAmostras extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

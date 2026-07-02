@@ -79,6 +79,29 @@ void main() {
         contains('não calculado'),
       );
     });
+
+    test('potassio ausente nao bloqueia recomendacao inteira', () {
+      final result = usecase.execute(
+        analise: _analise(pResina: 32, k: null),
+        calibracao: _calibracao(),
+        tabelas: _tabelas(),
+      );
+
+      expect(result.recomendacao, isNotNull);
+      expect(result.diagnostico.erros, isEmpty);
+      expect(result.diagnostico.statusNutrientes['K'], StatusNutriente.ausente);
+      expect(result.recomendacao!.doseK2OKgHa, 0);
+      expect(
+        result.diagnostico.avisos
+            .any((aviso) => aviso.contains('K não analisado')),
+        isTrue,
+      );
+      expect(
+        result.diagnostico.avisos
+            .any((aviso) => aviso.contains('Potássio bloqueado')),
+        isTrue,
+      );
+    });
   });
 }
 
@@ -124,7 +147,7 @@ CalibracaoProfile _calibracao() {
 
 AnaliseCompleta _analise({
   required double? pResina,
-  required double k,
+  required double? k,
 }) {
   return AnaliseCompleta(
     id: 'a-1',
@@ -143,7 +166,7 @@ AnaliseCompleta _analise({
     pMehlich: _na(),
     pResina: pResina == null ? _na() : _v(pResina),
     pRem: _na(),
-    k: _v(k),
+    k: k == null ? _na() : _v(k),
     ca: _v(2.3),
     mg: _v(0.9),
     al: _v(0.1),

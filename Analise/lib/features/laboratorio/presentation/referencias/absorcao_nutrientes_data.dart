@@ -11,6 +11,36 @@ abstract class AbsorcaoNutrientesCores {
   static const Color greenAccent = Color(0xFF3DD68C);
   static const Color greenPale = Color(0xFFF0F7F2);
   static const Color textMuted = Color(0xFF8FA89A);
+
+  static Color titleColor({required bool isDark}) =>
+      isDark ? greenAccent : greenDark;
+
+  static Color valueColor({required bool isDark}) =>
+      isDark ? const Color(0xFFF2F2F7) : greenDark;
+
+  static Color mutedText({required bool isDark}) =>
+      isDark ? const Color(0xFFAEAEB2) : textMuted;
+
+  static Color inputFill({required bool isDark}) =>
+      isDark ? const Color(0xFF2C2C2E) : greenPale;
+
+  static Color sectionSwitcherBg({required bool isDark}) =>
+      isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE9ECEA);
+
+  static Color sectionSwitcherBorder({required bool isDark}) =>
+      isDark ? const Color(0xFF3A3A3C) : const Color(0xFFDCE8E0);
+
+  /// Rótulos de estádio, chips e textos de apoio agronômico.
+  static Color accentText({required bool isDark}) =>
+      isDark ? greenAccent : greenMid;
+
+  /// Trilha vazia das barras de progresso.
+  static Color progressTrack({required bool isDark}) =>
+      isDark ? const Color(0xFF3A3A3C) : greenPale;
+
+  /// Texto de chips/índices sobre fundo escuro.
+  static Color chipText({required bool isDark}) =>
+      isDark ? const Color(0xFFF2F2F7) : greenMid;
 }
 
 /// Dados agronômicos de absorção e exportação de nutrientes.

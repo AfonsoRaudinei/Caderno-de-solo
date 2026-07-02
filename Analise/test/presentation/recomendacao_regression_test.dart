@@ -12,6 +12,7 @@ import 'package:soloforte/features/config/presentation/providers/tabela_metricas
 import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
+import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
 
@@ -265,26 +266,21 @@ Future<void> _select(
   await tester.pumpAndSettle();
 }
 
-Future<void> _selectAnaliseByIndex(WidgetTester tester, int index) async {
-  final checks = find.byIcon(Icons.check_circle);
-  final checkedCount = checks.evaluate().length;
-  for (var i = 0; i < checkedCount; i++) {
-    await tester.ensureVisible(checks.at(i));
-    await tester.tap(checks.at(i));
-    await tester.pumpAndSettle();
-  }
-
-  final unchecked = find.byIcon(Icons.radio_button_unchecked);
-  await tester.ensureVisible(unchecked.at(index));
-  await tester.tap(unchecked.at(index));
+Future<void> _selectAnalise(WidgetTester tester, String analiseId) async {
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
   await tester.pumpAndSettle();
 }
 
-Finder _generateIcon() => find.byIcon(Icons.auto_awesome_rounded);
+Finder _generateButton() => find.byKey(const Key('btn_gerar_recomendacao'));
 
 Future<void> _gerar(WidgetTester tester) async {
-  await tester.ensureVisible(_generateIcon().first);
-  await tester.tap(_generateIcon().first);
+  final button = tester.widget<AppButton>(_generateButton());
+  expect(button.onPressed, isNotNull);
+  button.onPressed?.call();
   await tester.pumpAndSettle();
 }
 
@@ -320,7 +316,7 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      await _selectAnaliseByIndex(tester, 0);
+      await _selectAnalise(tester, 'a-ok');
       await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
 
@@ -344,7 +340,7 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      await _selectAnaliseByIndex(tester, 0);
+      await _selectAnalise(tester, 'a-ok');
       await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
       final container = _container(tester);
@@ -381,20 +377,31 @@ void main() {
         analises: [_analiseValida(), _analiseSemK()],
       );
 
-      await _selectAnaliseByIndex(tester, 0);
-      await _select(tester, 0, 'c-mehlich');
-      await _gerar(tester);
       final container = _container(tester);
+      await container.read(analiseNotifierProvider.future);
+      await container.read(tabelaMetricasProvider.future);
+
       const reqValida = RecomendacaoRequest(
         analiseIds: ['a-ok'],
         calibracaoId: 'c-mehlich',
       );
-      expect(container.read(recomendacaoProvider(reqValida)).recomendacao, isNotNull);
       const reqSemK = RecomendacaoRequest(
         analiseIds: ['a-null-k'],
         calibracaoId: 'c-mehlich',
       );
-      expect(container.read(recomendacaoProvider(reqSemK)).recomendacao, isNull);
+
+      final valida = container.read(recomendacaoProvider(reqValida));
+      final semK = container.read(recomendacaoProvider(reqSemK));
+
+      expect(valida.recomendacao, isNotNull);
+      expect(semK.recomendacao, isNotNull);
+      expect(valida.recomendacao!.doseK2OKgHa, greaterThan(0));
+      expect(semK.recomendacao!.doseK2OKgHa, 0);
+      expect(
+        semK.diagnostico.avisos
+            .any((aviso) => aviso.contains('Potássio bloqueado')),
+        isTrue,
+      );
     });
   });
 }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/data/base_dados/referencias_tecnicas_data.dart';
 
@@ -14,7 +15,6 @@ class BaseDadosPage extends StatelessWidget {
     const referencias = referenciasTecnicasPadrao;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Referências Técnicas'),
         leading: IconButton(
@@ -28,7 +28,14 @@ class BaseDadosPage extends StatelessWidget {
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: referencias.isEmpty
-          ? const Center(child: Text('Nenhuma referência.'))
+          ? Center(
+              child: Text(
+                'Nenhuma referência.',
+                style: AppTextStyles.body.copyWith(
+                  color: context.appPalette.textSecondary,
+                ),
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: referencias.length,
@@ -48,19 +55,33 @@ class BaseDadosPage extends StatelessWidget {
                         children: [
                           Text(
                             ref.nome,
-                            style: AppTextStyles.label.copyWith(fontSize: 16),
+                            style: AppTextStyles.label.copyWith(
+                              fontSize: 16,
+                              color: context.appPalette.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${ref.tipo} • Ano: ${ref.ano} • Fórmula: ${ref.formulaAssociada}',
-                            style: AppTextStyles.caption.copyWith(fontSize: 14),
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 14,
+                              color: context.appPalette.textSecondary,
+                            ),
                           ),
                           const SizedBox(height: 8),
-                          Text(ref.resumo, style: AppTextStyles.body),
+                          Text(
+                            ref.resumo,
+                            style: AppTextStyles.body.copyWith(
+                              color: context.appPalette.textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           Text(
                             'Toque para abrir o conteúdo completo',
-                            style: AppTextStyles.caption.copyWith(fontSize: 12),
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 12,
+                              color: context.appPalette.textSecondary,
+                            ),
                           ),
                         ],
                       ),

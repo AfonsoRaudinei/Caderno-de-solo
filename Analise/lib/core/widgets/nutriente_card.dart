@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// Card expansível (accordion) para cada nutriente na tela de Calibração
 class NutrienteCard extends StatefulWidget {
@@ -104,17 +104,19 @@ class _NutrienteCardState extends State<NutrienteCard>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppDimens.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        border: Border.all(color: AppColors.borderSoft, width: 0.5),
-        boxShadow: const [
+        border: Border.all(color: palette.border, width: 0.5),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A000000),
+            color: palette.shadow,
             blurRadius: 4,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -135,7 +137,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                 decoration: BoxDecoration(
                   color: _isExpanded
                       ? widget.cor.withValues(alpha: 0.06)
-                      : Colors.white,
+                      : palette.card,
                 ),
                 child: Row(
                   children: [
@@ -160,7 +162,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                           letterSpacing: 0.1,
                           color: _isExpanded
                               ? widget.cor.withValues(alpha: 0.85)
-                              : AppColors.textPrimary,
+                              : palette.textPrimary,
                         ),
                       ),
                     ),
@@ -176,7 +178,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                       turns: _rotateAnimation,
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: _isExpanded ? widget.cor : AppColors.textSecond,
+                        color: _isExpanded ? widget.cor : palette.textSecondary,
                         size: 22,
                       ),
                     ),
@@ -202,7 +204,7 @@ class _NutrienteCardState extends State<NutrienteCard>
                   AppDimens.sm,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: palette.card,
                   border: Border(
                     top: BorderSide(
                       color: widget.cor.withValues(alpha: 0.2),
