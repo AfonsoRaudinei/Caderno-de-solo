@@ -71,5 +71,16 @@ void main() {
     test('última amostra deve ser 257069', () {
       expect(amostras.last.numeroAmostra, '257069');
     });
+
+    test('produtor usa responsavel quando proprietario vem vazio', () {
+      final jsonIbra = loadJson('assets/lab_data/ibra_237526_2025.json');
+      jsonIbra['proprietario'] = '';
+      jsonIbra['responsavel'] = 'Agrofarm';
+
+      final importadas = service.fromJson(jsonIbra);
+
+      expect(importadas, isNotEmpty);
+      expect(importadas.first.produtor, 'Agrofarm');
+    });
   });
 }

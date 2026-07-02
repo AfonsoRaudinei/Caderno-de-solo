@@ -4,6 +4,14 @@ import 'package:soloforte/core/utils/safra_utils.dart';
 import 'package:soloforte/data/lab_templates/ibra_template.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 
+String _firstNonEmptyString(List<dynamic> values) {
+  for (final value in values) {
+    final text = value?.toString().trim() ?? '';
+    if (text.isNotEmpty) return text;
+  }
+  return '';
+}
+
 class IbraImportService {
   const IbraImportService();
 
@@ -102,8 +110,11 @@ class IbraImportService {
 
     return AnaliseSolo(
       id: id,
-      fazenda: (laudo['propriedade'] ?? '') as String,
-      produtor: (laudo['proprietario'] ?? laudo['responsavel'] ?? '') as String,
+      fazenda: _firstNonEmptyString([laudo['propriedade']]),
+      produtor: _firstNonEmptyString([
+        laudo['proprietario'],
+        laudo['responsavel'],
+      ]),
       talhao: (raw('talhao') ?? '') as String,
       numeroAmostra: (raw('numeroAmostra') ?? '') as String,
       cultura: parseCultura((laudo['cultura'] ?? raw('cultura'))?.toString()),
@@ -152,8 +163,9 @@ class IbraImportService {
     cleaned = cleaned.replaceAll(RegExp(r'[–—−]'), '-');
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    final rangeMatch =
-        RegExp(r'(\d{1,3})\s*[-/]\s*(\d{1,3})').firstMatch(cleaned);
+    final rangeMatch = RegExp(
+      r'(\d{1,3})\s*[-/]\s*(\d{1,3})',
+    ).firstMatch(cleaned);
     if (rangeMatch != null) {
       return '${rangeMatch.group(1)}-${rangeMatch.group(2)}';
     }

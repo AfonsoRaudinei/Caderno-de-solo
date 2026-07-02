@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:soloforte/core/utils/firestore_doc_id.dart';
 import 'package:soloforte/domain/formulas/conversoes.dart';
 import 'package:soloforte/core/utils/safra_utils.dart';
 import 'package:soloforte/data/lab_templates/sellar_template.dart';
@@ -83,8 +84,11 @@ class SellarImportService {
     final kCmolc = kDireto ??
         (kRawMgDm3 != null ? Conversoes.kMgDm3ToCmolc(kRawMgDm3) : null);
 
+    final rawId =
+        '${laudo['laudoNumero'] ?? 'sellar'}-${value('numeroSellar') ?? value('identificacao') ?? DateTime.now().millisecondsSinceEpoch}';
+
     return AnaliseSolo(
-      id: '${laudo['laudoNumero'] ?? 'sellar'}-${value('numeroSellar') ?? value('identificacao') ?? DateTime.now().millisecondsSinceEpoch}',
+      id: sanitizeFirestoreDocId(rawId),
       fazenda: (laudo['propriedade'] ?? '') as String,
       produtor: (laudo['solicitante'] ?? laudo['proprietario'] ?? '') as String,
       talhao: (value('identificacao') ?? '') as String,
@@ -135,8 +139,9 @@ class SellarImportService {
     cleaned = cleaned.replaceAll(RegExp(r'[–—−]'), '-');
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    final rangeMatch =
-        RegExp(r'(\d{1,3})\s*[-/]\s*(\d{1,3})').firstMatch(cleaned);
+    final rangeMatch = RegExp(
+      r'(\d{1,3})\s*[-/]\s*(\d{1,3})',
+    ).firstMatch(cleaned);
     if (rangeMatch != null) {
       return '${rangeMatch.group(1)}-${rangeMatch.group(2)}';
     }

@@ -9,8 +9,9 @@ void main() {
 
   group('SellarImportService', () {
     test('importa 3 amostras e ignora derivados do JSON', () async {
-      final jsonString =
-          await rootBundle.loadString('assets/lab_data/sellar_6077_2025.json');
+      final jsonString = await rootBundle.loadString(
+        'assets/lab_data/sellar_6077_2025.json',
+      );
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
 
       final amostras = const SellarImportService().fromJson(json);
@@ -33,6 +34,18 @@ void main() {
       expect(() => primeiraAmostra.vPct, throwsA(anything));
 
       expect(amostras[0].laudoMetadata?['derivados'], isNull);
+    });
+
+    test('id sanitizado nao contem barra do laudoNumero', () async {
+      final jsonString = await rootBundle.loadString(
+        'assets/lab_data/sellar_6077_2025.json',
+      );
+      final json = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      final amostras = const SellarImportService().fromJson(json);
+
+      expect(amostras[0].id, '6077_2025-54215');
+      expect(amostras[0].id.contains('/'), isFalse);
     });
   });
 }

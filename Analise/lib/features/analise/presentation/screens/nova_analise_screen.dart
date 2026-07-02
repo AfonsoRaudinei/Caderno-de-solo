@@ -6,14 +6,10 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
-import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
-import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_table_widget.dart';
-import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 
 const _brandGreen = Color(0xFF4ADE80);
 const _darkGreen = Color(0xFF1E3A2F);
@@ -55,20 +51,6 @@ class NovaAnaliseScreen extends ConsumerWidget {
           ),
         ),
         iconTheme: const IconThemeData(color: _darkGreen),
-        actions: [
-          TextButton.icon(
-            onPressed:
-                state.isSaving ? null : () => _importarPdf(context, ctrl),
-            icon: const Icon(Icons.upload_file, size: 18),
-            label: const Text('Importar'),
-            style: TextButton.styleFrom(
-              foregroundColor: _darkGreen,
-              textStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(0.7),
           child: SizedBox(height: 0.7, child: ColoredBox(color: _line)),
@@ -97,8 +79,9 @@ class NovaAnaliseScreen extends ConsumerWidget {
                     if (erro == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content:
-                              const Text('Localização capturada com sucesso'),
+                          content: const Text(
+                            'Localização capturada com sucesso',
+                          ),
                           behavior: SnackBarBehavior.floating,
                           backgroundColor: _darkGreen,
                           margin: EdgeInsets.fromLTRB(
@@ -116,8 +99,12 @@ class NovaAnaliseScreen extends ConsumerWidget {
                         content: Text(erro),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.error,
-                        margin:
-                            EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
+                        margin: EdgeInsets.fromLTRB(
+                          16,
+                          0,
+                          16,
+                          snackBottomMargin,
+                        ),
                       ),
                     );
                   },
@@ -200,7 +187,9 @@ class NovaAnaliseScreen extends ConsumerWidget {
   }
 
   Widget _buildHeaderGlobal(
-      NovaAnaliseState state, NovaAnaliseController ctrl) {
+    NovaAnaliseState state,
+    NovaAnaliseController ctrl,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -290,7 +279,9 @@ class NovaAnaliseScreen extends ConsumerWidget {
               AppDropdownItem(value: 'Exata Brasil', label: 'Exata Brasil'),
               AppDropdownItem(value: 'IBRA', label: 'IBRA'),
               AppDropdownItem(
-                  value: 'MB Agronegócios', label: 'MB Agronegócios'),
+                value: 'MB Agronegócios',
+                label: 'MB Agronegócios',
+              ),
             ],
             onChanged: (val) => ctrl.atualizarLaudoLaboratorio(val ?? ''),
           ),
@@ -426,139 +417,5 @@ class NovaAnaliseScreen extends ConsumerWidget {
         margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
       ),
     );
-  }
-
-  Future<void> _importarPdf(
-    BuildContext context,
-    NovaAnaliseController ctrl,
-  ) async {
-    try {
-      final analises = await PdfImportService().importarDePdf();
-      if (analises == null) return;
-      if (!context.mounted) return;
-
-      await _salvarImportadas(context, ctrl, analises);
-    } on LabConfiancaBaixaException catch (e) {
-      if (!context.mounted) return;
-      final selectedLabId = await showModalBottomSheet<String>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (_) => ImportacaoConfiancaSheet(
-          ranking: e.ranking,
-          suggestedLabId: e.suggestedLabId,
-          confidence: e.confidence,
-          sampleHints: e.sampleHints,
-          onConfirm: (labId) => Navigator.of(context).pop(labId),
-        ),
-      );
-
-      if (selectedLabId == null || !context.mounted) return;
-
-      final analises = await PdfImportService().importarArquivoPdf(
-        fileBytes: e.fileBytes,
-        fileName: e.fileName,
-        forcedLabId: selectedLabId,
-        operationId: e.operationId,
-      );
-
-      if (!context.mounted) return;
-      await _salvarImportadas(context, ctrl, analises);
-    } on LabNaoReconhecidoException {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.labNaoReconhecido,
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } on ExtracacaoIndisponivelException {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.extracacaoIndisponivel,
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } on ImportacaoQualidadeBaixaException catch (e) {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.qualidadeInsuficiente,
-          detalhe: e.buildSummary(),
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao importar: $e')),
-      );
-    }
-  }
-
-  Future<void> _salvarImportadas(
-    BuildContext context,
-    NovaAnaliseController ctrl,
-    List<AnaliseSolo> analises,
-  ) async {
-    try {
-      final result = await ctrl.salvarImportadas(analises);
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_mensagemSucessoImportacao(result.savedCount)),
-          backgroundColor: const Color(0xFF34C759),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-
-      if (context.canPop()) {
-        context.pop();
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_mensagemErroImportacao(e)),
-          backgroundColor: const Color(0xFFFF3B30),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
-  }
-
-  String _mensagemSucessoImportacao(int total) {
-    final label = total == 1 ? 'análise' : 'análises';
-    return '$total $label importada${total == 1 ? '' : 's'} e salva${total == 1 ? '' : 's'}.';
-  }
-
-  String _mensagemErroImportacao(Object erro) {
-    if (erro is SaveBatchException) {
-      if (erro.code == SaveBatchCode.saveAtomicFailed &&
-          erro.message.toLowerCase().contains('parcial')) {
-        return 'Importação parcial bloqueada. Nenhuma lista foi atualizada parcialmente; tente novamente.';
-      }
-      if (erro.code == SaveBatchCode.saveInProgress) {
-        return 'Ainda salvando a importação anterior. Aguarde e tente novamente.';
-      }
-      return 'Falha ao salvar a importação: ${erro.message}';
-    }
-
-    final raw = erro.toString().replaceFirst('Exception: ', '').trim();
-    return 'Falha ao salvar a importação: $raw';
   }
 }

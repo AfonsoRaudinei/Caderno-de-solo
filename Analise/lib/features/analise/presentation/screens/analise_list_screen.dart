@@ -6,6 +6,7 @@ import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/presentation/flows/importar_analise_pdf_flow.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 
 class AnaliseListScreen extends ConsumerStatefulWidget {
@@ -27,6 +28,14 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   bool _isSelectingAnalises = false;
   final Set<String> _selectedAnaliseIds = <String>{};
   String _searchQuery = '';
+
+  void _abrirOpcoesNovaAnalise(BuildContext context) {
+    showNovaAnaliseOpcoesSheet(
+      context,
+      ref,
+      onCadastrarManualmente: () => context.push(AppRoutes.analiseForm),
+    );
+  }
 
   @override
   void dispose() {
@@ -272,7 +281,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                       child: _AnaliseEmptyState(
-                        onCreate: () => context.push(AppRoutes.analiseForm),
+                        onCreate: () => _abrirOpcoesNovaAnalise(context),
                       ),
                     ),
                   );
@@ -292,7 +301,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                       (context, index) {
                         if (showNovaAnaliseCard && index == itensGrid.length) {
                           return _NovaAnaliseCard(
-                            onTap: () => context.push(AppRoutes.analiseForm),
+                            onTap: () => _abrirOpcoesNovaAnalise(context),
                           );
                         }
 
@@ -333,7 +342,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               return;
                             }
                             context.push(
-                                '${AppRoutes.analise}/detalhe/${analise.id}');
+                              '${AppRoutes.analise}/detalhe/${analise.id}',
+                            );
                           },
                           onLongPress: () {
                             if (_isSelectingAnalises) {
@@ -408,7 +418,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   }
 
   void _sincronizarSelecaoComPastasVisiveis(
-      List<_AnaliseFolderSummary> pastas) {
+    List<_AnaliseFolderSummary> pastas,
+  ) {
     if (_selectedFolderKeys.isEmpty && !_isSelectingFolders) return;
     final chavesVisiveis = pastas.map((pasta) => pasta.key).toSet();
     final selecionadasAtualizadas =
@@ -501,8 +512,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading:
-                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              leading: const Icon(
+                Icons.edit_outlined,
+                color: AppColors.primary,
+              ),
               title: Text(
                 'Renomear Pasta',
                 style: AppTextStyles.body.copyWith(color: AppColors.primary),
@@ -573,8 +586,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                       width: 2,
                     ),
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
                 onChanged: (_) => setStateDialog(() {}),
               ),
@@ -583,8 +598,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: Text(
                     'Cancelar',
-                    style: AppTextStyles.body
-                        .copyWith(color: AppColors.textSecond),
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecond,
+                    ),
                   ),
                 ),
                 TextButton(
@@ -594,8 +610,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                           Navigator.of(dialogContext).pop();
                           await _executarRenomearPasta(pasta, nome);
                         },
-                  style:
-                      TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                  ),
                   child: const Text('Salvar'),
                 ),
               ],
@@ -714,9 +731,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         safra: _selectedSafra,
         busca: _searchQuery,
       ),
-    ).where((pasta) => _selectedFolderKeys.contains(pasta.key)).toList(
-          growable: false,
-        );
+    )
+        .where((pasta) => _selectedFolderKeys.contains(pasta.key))
+        .toList(growable: false);
 
     if (pastasSelecionadas.isEmpty) {
       if (!mounted) return;
@@ -762,7 +779,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   }
 
   Future<void> _confirmarExcluirAnalisesSelecionadas(
-      BuildContext context) async {
+    BuildContext context,
+  ) async {
     final analises =
         ref.read(analiseNotifierProvider).valueOrNull ?? const <AnaliseSolo>[];
     final Cultura? culturaSelecionada = _selectedCultura == null
@@ -780,8 +798,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         busca: _searchQuery,
       ),
     );
-    final pastaAtual =
-        pastasFiltradas.where((p) => p.key == _selectedFolderKey);
+    final pastaAtual = pastasFiltradas.where(
+      (p) => p.key == _selectedFolderKey,
+    );
     if (pastaAtual.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -858,10 +877,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       final label =
           total == 1 ? '1 amostra excluída' : '$total amostras excluídas';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(label),
-          duration: const Duration(seconds: 2),
-        ),
+        SnackBar(content: Text(label), duration: const Duration(seconds: 2)),
       );
     } catch (_) {
       if (!mounted) return;
@@ -969,10 +985,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 Icons.drive_file_move_outline,
                 color: AppColors.primary,
               ),
-              title: Text(
-                'Mover para outra pasta',
-                style: AppTextStyles.body,
-              ),
+              title: Text('Mover para outra pasta', style: AppTextStyles.body),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1155,10 +1168,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
 }
 
 class _AnaliseLoadError extends StatefulWidget {
-  const _AnaliseLoadError({
-    required this.error,
-    required this.onRetry,
-  });
+  const _AnaliseLoadError({required this.error, required this.onRetry});
 
   final Object error;
   final VoidCallback onRetry;
@@ -1260,9 +1270,7 @@ class _HeaderFilterPanel extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           Container(
@@ -1298,8 +1306,10 @@ class _HeaderFilterPanel extends StatelessWidget {
                     color: Color(0xFF6E6E73),
                   ),
                 ),
-                prefixIconConstraints:
-                    const BoxConstraints(minWidth: 42, minHeight: 42),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 42,
+                  minHeight: 42,
+                ),
                 suffixIcon: searchQuery.isEmpty
                     ? null
                     : IconButton(
@@ -1745,10 +1755,7 @@ class _AnaliseEmptyState extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFEAF4FF),
-                        Color(0xFFF0FAF3),
-                      ],
+                      colors: [Color(0xFFEAF4FF), Color(0xFFF0FAF3)],
                     ),
                     border: Border.all(
                       color: AppColors.borderSoft.withValues(alpha: 0.85),
@@ -1873,10 +1880,7 @@ class _AnaliseEmptyState extends StatelessWidget {
 }
 
 class _AnaliseEmptyPill extends StatelessWidget {
-  const _AnaliseEmptyPill({
-    required this.icon,
-    required this.label,
-  });
+  const _AnaliseEmptyPill({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1888,18 +1892,12 @@ class _AnaliseEmptyPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF7F8FA),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.borderSoft.withValues(alpha: 0.9),
-        ),
+        border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.9)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 15,
-            color: AppColors.primaryDark,
-          ),
+          Icon(icon, size: 15, color: AppColors.primaryDark),
           const SizedBox(width: 6),
           Text(
             label,
