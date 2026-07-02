@@ -98,4 +98,5 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/lab_data/
+    - assets/templates/
     - "PROMPT/dados referencias/"

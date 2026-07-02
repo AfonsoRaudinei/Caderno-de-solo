@@ -1,4 +1,6 @@
-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_pdf_helper.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
+import 'package:soloforte/domain/export/recomendacao_export_context.dart';
+import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
@@ -257,11 +259,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
+                      key: const Key('btn_exportar_pdf'),
                       onPressed: (_salvando || _exportando)
                           ? null
                           : () => _exportarPdf(resultado),
-                      icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                      label: const Text('Exportar PDF'),
+                      icon: const Icon(Icons.share_outlined, size: 18),
+                      label: const Text('Exportar relatorio'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF666666),
                         side: const BorderSide(color: Color(0xFFD1D1D6)),
@@ -343,14 +346,55 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   Future<void> _exportarPdf(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
-      await RecomendacaoPdfHelper.exportar(
+      final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
+      AnaliseSolo? analiseSolo;
+      for (final a in analises) {
+        if (a.id == resultado.analise.id) {
+          analiseSolo = a;
+          break;
+        }
+      }
+
+      final perfilAssets = ref.read(perfilAssetsProvider);
+      final logoDataUri =
+          await RecomendacaoHtmlExporter.logoToDataUri(perfilAssets.logoUrl);
+
+      final perfil = ref.read(configControllerProvider).valueOrNull;
+      final credencial = perfil != null
+          ? '${perfil.tipoPerfil}${perfil.empresa.isNotEmpty ? ' · ${perfil.empresa}' : ''}'
+          : null;
+
+      DateTime? dataLaudo;
+      final emissao = analiseSolo?.dataEmissao;
+      if (emissao != null && emissao.isNotEmpty) {
+        dataLaudo = DateTime.tryParse(emissao);
+        if (dataLaudo == null) {
+          final br = RegExp(r'^(\d{2})/(\d{2})/(\d{4})').firstMatch(emissao);
+          if (br != null) {
+            dataLaudo = DateTime.tryParse(
+              '${br.group(3)}-${br.group(2)}-${br.group(1)}',
+            );
+          }
+        }
+      }
+      dataLaudo ??= analiseSolo?.dataCadastro;
+
+      final exportContext = RecomendacaoExportContext(
         resultado: resultado,
-        context: context,
-        perfilAssets: ref.read(perfilAssetsProvider),
+        geradaEm: DateTime.now(),
+        metadata: RecomendacaoExportMetadata(
+          consultorNome: perfil?.nome ?? resultado.analise.consultor,
+          consultorCredencial: credencial,
+          laboratorio: analiseSolo?.laboratorio,
+          dataLaudo: dataLaudo,
+          logoDataUri: logoDataUri,
+        ),
       );
+
+      await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro exportar PDF: $e');
+      _showMensagem('Erro exportar relatorio: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }
