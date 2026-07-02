@@ -3,7 +3,7 @@
 class DisponibilidadeNutrientesCalculator {
   const DisponibilidadeNutrientesCalculator._();
 
-  static const _groups = <_NutrientGroup>[
+  static final _groups = <_NutrientGroup>[
     _NutrientGroup(
       id: 'micros',
       label: 'Micros',
@@ -177,7 +177,7 @@ class DisponibilidadeEixo {
 }
 
 class _NutrientGroup {
-  const _NutrientGroup({
+  _NutrientGroup({
     required this.id,
     required this.label,
     required this.sublabel,
