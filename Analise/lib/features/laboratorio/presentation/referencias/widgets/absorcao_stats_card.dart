@@ -91,9 +91,7 @@ class AbsorcaoStatsCard extends StatelessWidget {
                       Text(
                         card.title,
                         style: AppTextStyles.caption.copyWith(
-                          color: AbsorcaoNutrientesCores.mutedText(
-                            isDark: palette.isDark,
-                          ),
+                          color: palette.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -101,9 +99,7 @@ class AbsorcaoStatsCard extends StatelessWidget {
                       Text(
                         card.value,
                         style: AppTextStyles.value.copyWith(
-                          color: AbsorcaoNutrientesCores.valueColor(
-                            isDark: palette.isDark,
-                          ),
+                          color: palette.textPrimary,
                           fontSize: 18,
                         ),
                       ),

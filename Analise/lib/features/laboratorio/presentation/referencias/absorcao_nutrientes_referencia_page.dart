@@ -157,6 +157,7 @@ class _AbsorcaoNutrientesReferenciaPageState
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final stageData = computeStageData();
     final resolved = resolveDataValue();
     final unit = displayUnit;
@@ -169,7 +170,10 @@ class _AbsorcaoNutrientesReferenciaPageState
         _viewMode == ViewMode.accumulated ? 'Acumulado' : 'Por Estádio';
 
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(
+        backgroundColor: palette.background,
+        foregroundColor: palette.textPrimary,
         title: const Text('Absorção de Nutrientes'),
       ),
       body: SafeArea(
@@ -312,8 +316,8 @@ class _AbsorcaoNutrientesReferenciaPageState
             style: AppTextStyles.label.copyWith(
               fontSize: 13,
               color: isSelected
-                  ? AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark)
-                  : AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+                  ? palette.textPrimary
+                  : palette.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -332,7 +336,7 @@ class _AbsorcaoNutrientesReferenciaPageState
           Text(
             'Filtros de análise',
             style: AppTextStyles.sectionLabel.copyWith(
-              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+              color: palette.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -417,7 +421,7 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Produtividade esperada (t/ha)',
             style: AppTextStyles.label.copyWith(
               fontSize: 13,
-              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+              color: palette.textSecondary,
             ),
           ),
           const SizedBox(height: 6),
@@ -430,11 +434,21 @@ class _AbsorcaoNutrientesReferenciaPageState
             style: AppTextStyles.body.copyWith(color: palette.textPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor:
-                  AbsorcaoNutrientesCores.inputFill(isDark: palette.isDark),
+              fillColor: palette.inputFill,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: palette.borderStrong),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AbsorcaoNutrientesCores.greenAccent,
+                  width: 1.5,
+                ),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(color: palette.borderStrong),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -466,14 +480,14 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Curva de absorção ($modeText)',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
+              color: palette.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             '$_sourceType · $_selectedSource',
             style: AppTextStyles.caption.copyWith(
-              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+              color: palette.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -492,7 +506,9 @@ class _AbsorcaoNutrientesReferenciaPageState
                           row.stage,
                           style: AppTextStyles.label.copyWith(
                             fontSize: 12,
-                            color: AbsorcaoNutrientesCores.greenMid,
+                            color: AbsorcaoNutrientesCores.accentText(
+                              isDark: palette.isDark,
+                            ),
                           ),
                         ),
                       ),
@@ -503,7 +519,9 @@ class _AbsorcaoNutrientesReferenciaPageState
                             children: [
                               Container(
                                 height: 12,
-                                color: AbsorcaoNutrientesCores.greenPale,
+                                color: AbsorcaoNutrientesCores.progressTrack(
+                                  isDark: palette.isDark,
+                                ),
                               ),
                               FractionallySizedBox(
                                 widthFactor: widthFactor,
@@ -532,7 +550,7 @@ class _AbsorcaoNutrientesReferenciaPageState
                       '${row.value.toStringAsFixed(2)} $unit · ${row.percentage.toStringAsFixed(1)}%',
                       style: AppTextStyles.caption.copyWith(
                         fontSize: 11,
-                        color: palette.textSecondary,
+                        color: palette.textPrimary,
                       ),
                     ),
                   ),
@@ -560,37 +578,97 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Dados por estádio',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
+              color: palette.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingTextStyle: AppTextStyles.label.copyWith(
-                color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
-                fontSize: 12,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                dividerColor: palette.border,
               ),
-              dataTextStyle: AppTextStyles.body.copyWith(
-                fontSize: 13,
-                color: AbsorcaoNutrientesCores.valueColor(isDark: palette.isDark),
-              ),
-              columns: [
-                const DataColumn(label: Text('Estádio')),
-                DataColumn(label: Text(pctHeader)),
-                DataColumn(label: Text('$valueHeader ($unit)')),
-              ],
-              rows: stageData
-                  .map(
-                    (row) => DataRow(
-                      cells: [
-                        DataCell(Text(row.stage)),
-                        DataCell(Text('${row.percentage.toStringAsFixed(1)}%')),
-                        DataCell(Text(row.value.toStringAsFixed(2))),
-                      ],
+              child: DataTable(
+                headingRowColor:
+                    WidgetStateProperty.all(Colors.transparent),
+                dataRowColor: WidgetStateProperty.all(Colors.transparent),
+                headingTextStyle: AppTextStyles.label.copyWith(
+                  color: palette.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                dataTextStyle: AppTextStyles.body.copyWith(
+                  fontSize: 13,
+                  color: palette.textPrimary,
+                ),
+                columns: [
+                  DataColumn(
+                    label: Text(
+                      'Estádio',
+                      style: AppTextStyles.label.copyWith(
+                        color: palette.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  )
-                  .toList(),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      pctHeader,
+                      style: AppTextStyles.label.copyWith(
+                        color: palette.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      '$valueHeader ($unit)',
+                      style: AppTextStyles.label.copyWith(
+                        color: palette.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+                rows: stageData
+                    .map(
+                      (row) => DataRow(
+                        cells: [
+                          DataCell(
+                            Text(
+                              row.stage,
+                              style: AppTextStyles.body.copyWith(
+                                fontSize: 13,
+                                color: palette.textPrimary,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              '${row.percentage.toStringAsFixed(1)}%',
+                              style: AppTextStyles.body.copyWith(
+                                fontSize: 13,
+                                color: palette.textPrimary,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              row.value.toStringAsFixed(2),
+                              style: AppTextStyles.body.copyWith(
+                                fontSize: 13,
+                                color: palette.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
           ),
         ],
@@ -611,7 +689,7 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Índices médios de exportação',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
+              color: palette.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -627,19 +705,15 @@ class _AbsorcaoNutrientesReferenciaPageState
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: AbsorcaoNutrientesCores.inputFill(
-                        isDark: palette.isDark,
-                      ),
-                      border: Border.all(
-                        color: AbsorcaoNutrientesCores.sectionSwitcherBorder(
-                          isDark: palette.isDark,
-                        ),
-                      ),
+                      color: palette.cardStrong,
+                      border: Border.all(color: palette.borderStrong),
                     ),
                     child: Text(
                       '${entry.key}: ${(entry.value * 100).toStringAsFixed(1)}%',
                       style: AppTextStyles.caption.copyWith(
-                        color: AbsorcaoNutrientesCores.greenMid,
+                        color: AbsorcaoNutrientesCores.chipText(
+                          isDark: palette.isDark,
+                        ),
                         fontWeight: FontWeight.w600,
                       ),
                     ),

@@ -29,6 +29,18 @@ abstract class AbsorcaoNutrientesCores {
 
   static Color sectionSwitcherBorder({required bool isDark}) =>
       isDark ? const Color(0xFF3A3A3C) : const Color(0xFFDCE8E0);
+
+  /// Rótulos de estádio, chips e textos de apoio agronômico.
+  static Color accentText({required bool isDark}) =>
+      isDark ? greenAccent : greenMid;
+
+  /// Trilha vazia das barras de progresso.
+  static Color progressTrack({required bool isDark}) =>
+      isDark ? const Color(0xFF3A3A3C) : greenPale;
+
+  /// Texto de chips/índices sobre fundo escuro.
+  static Color chipText({required bool isDark}) =>
+      isDark ? const Color(0xFFF2F2F7) : greenMid;
 }
 
 /// Dados agronômicos de absorção e exportação de nutrientes.

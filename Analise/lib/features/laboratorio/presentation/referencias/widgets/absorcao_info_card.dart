@@ -41,7 +41,7 @@ class AbsorcaoInfoCard extends StatelessWidget {
             'Leitura da análise',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
+              color: palette.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -67,6 +67,7 @@ class AbsorcaoInfoCard extends StatelessWidget {
                       style: AppTextStyles.body.copyWith(
                         fontSize: 13,
                         color: palette.textPrimary,
+                        height: 1.45,
                       ),
                     ),
                   ),
@@ -78,7 +79,7 @@ class AbsorcaoInfoCard extends StatelessWidget {
           Text(
             'Visualização atual: $modeText',
             style: AppTextStyles.caption.copyWith(
-              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+              color: palette.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),

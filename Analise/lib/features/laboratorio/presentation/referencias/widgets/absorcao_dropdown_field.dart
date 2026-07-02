@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
-import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 
 /// Campo dropdown padronizado da tela de absorção de nutrientes.
 /// Extraído de absorcao_nutrientes_referencia_page.dart (_buildDropdownField) — FASE 3.
@@ -32,7 +31,8 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
           label,
           style: AppTextStyles.label.copyWith(
             fontSize: 13,
-            color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+            color: palette.textSecondary,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 6),
@@ -42,6 +42,11 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
           style: AppTextStyles.body.copyWith(
             fontSize: 14,
             color: palette.textPrimary,
+          ),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: palette.textSecondary,
+            size: 20,
           ),
           items: items
               .map(
@@ -60,10 +65,21 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: AbsorcaoNutrientesCores.inputFill(isDark: palette.isDark),
+            fillColor: palette.inputFill,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: palette.borderStrong),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF3DD68C),
+                width: 1.5,
+              ),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: palette.borderStrong),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
