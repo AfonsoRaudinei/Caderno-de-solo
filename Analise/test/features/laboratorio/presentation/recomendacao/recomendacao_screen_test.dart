@@ -286,7 +286,7 @@ void main() {
     );
   });
 
-  testWidgets('gera resultado e exibe acao de exportar html', (
+  testWidgets('gera resultado e exibe acao de compartilhar', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 2400));
@@ -328,13 +328,14 @@ void main() {
     expect(result.diagnostico.valido, isTrue);
 
     await tester.scrollUntilVisible(
-      find.byKey(const Key('btn_exportar_html')),
+      find.byKey(const Key('btn_compartilhar_recomendacao')),
       500,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Exportar HTML'), findsOneWidget);
+    expect(find.text('Compartilhar'), findsOneWidget);
+    expect(find.text('Exportar HTML'), findsNothing);
     expect(find.text('Exportar PDF'), findsNothing);
   });
 

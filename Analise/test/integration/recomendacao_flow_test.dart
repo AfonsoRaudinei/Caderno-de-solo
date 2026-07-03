@@ -313,6 +313,8 @@ void main() {
       );
       expect(result.recomendacao, isNotNull);
       expect(result.diagnostico.valido, isTrue);
+      expect(find.text('Compartilhar'), findsNothing);
+      expect(find.text('Exportar HTML'), findsNothing);
       expect(find.text('Exportar PDF'), findsNothing);
     });
 
@@ -339,6 +341,8 @@ void main() {
         ),
         isTrue,
       );
+      expect(find.text('Compartilhar'), findsNothing);
+      expect(find.text('Exportar HTML'), findsNothing);
       expect(find.text('Exportar PDF'), findsNothing);
     });
   });
