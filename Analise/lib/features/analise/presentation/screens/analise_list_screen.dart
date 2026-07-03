@@ -8,6 +8,7 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/flows/importar_analise_pdf_flow.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/presentation/utils/analise_card_labels.dart';
 
 class AnaliseListScreen extends ConsumerStatefulWidget {
   const AnaliseListScreen({super.key});
@@ -29,6 +30,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   final Set<String> _selectedAnaliseIds = <String>{};
   String _searchQuery = '';
   bool _reparoProdutorExecutado = false;
+  String? _selectedFolderHeaderTitle;
 
   void _importarPdf(BuildContext context) {
     iniciarImportacaoPdf(context, ref);
@@ -121,7 +123,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   children: [
                     Text(
                       mostrandoAmostrasHeader
-                          ? 'Amostras'
+                          ? (_selectedFolderHeaderTitle ?? 'Amostras')
                           : 'Pastas de Análises',
                       style: const TextStyle(
                         fontSize: 18,
@@ -134,6 +136,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         onPressed: () {
                           setState(() {
                             _selectedFolderKey = null;
+                            _selectedFolderHeaderTitle = null;
                             _isSelectingAnalises = false;
                             _selectedAnaliseIds.clear();
                           });
@@ -323,6 +326,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               }
                               setState(() {
                                 _selectedFolderKey = pasta.key;
+                                _selectedFolderHeaderTitle =
+                                    pasta.cardLabels.titulo;
                               });
                             },
                             onLongPress: () {
@@ -506,7 +511,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                pasta.laboratorio,
+                pasta.cardLabels.titulo,
                 style: AppTextStyles.body.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -560,7 +565,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     BuildContext context,
     _AnaliseFolderSummary pasta,
   ) async {
-    final controller = TextEditingController(text: pasta.laboratorio);
+    final controller = TextEditingController(text: pasta.cardLabels.titulo);
 
     try {
       await showDialog<void>(
@@ -568,7 +573,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setStateDialog) {
             final nome = controller.text.trim();
-            final desabilitado = nome.isEmpty || nome == pasta.laboratorio;
+            final desabilitado =
+                nome.isEmpty || nome == pasta.cardLabels.titulo;
 
             return AlertDialog(
               title: const Text('Renomear pasta'),
@@ -1098,10 +1104,11 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       if (current == null) {
         map[folderKey] = _AnaliseFolderSummary(
           key: folderKey,
-          laboratorio: produtor.isNotEmpty
-              ? produtor
-              : (fazenda.isNotEmpty ? fazenda : laboratorio),
+          produtor: produtor,
+          fazenda: fazenda,
+          laboratorio: laboratorio,
           os: folderOs,
+          nomeExibicao: groupTitle,
           analises: [analise],
           dataMaisRecente: analise.dataCadastro,
         );
@@ -1114,8 +1121,11 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
           : current.dataMaisRecente;
       map[folderKey] = _AnaliseFolderSummary(
         key: current.key,
+        produtor: current.produtor,
+        fazenda: current.fazenda,
         laboratorio: current.laboratorio,
         os: current.os,
+        nomeExibicao: current.nomeExibicao,
         analises: atualizadas,
         dataMaisRecente: maisRecente,
       );
@@ -1232,17 +1242,48 @@ class _AnaliseLoadErrorState extends State<_AnaliseLoadError> {
 class _AnaliseFolderSummary {
   const _AnaliseFolderSummary({
     required this.key,
+    required this.produtor,
+    required this.fazenda,
     required this.laboratorio,
     required this.os,
+    required this.nomeExibicao,
     required this.analises,
     required this.dataMaisRecente,
   });
 
   final String key;
+  final String produtor;
+  final String fazenda;
   final String laboratorio;
   final String os;
+  final String nomeExibicao;
   final List<AnaliseSolo> analises;
   final DateTime dataMaisRecente;
+
+  AnalisePastaCardLabels get cardLabels {
+    if (nomeExibicao.trim().isNotEmpty) {
+      final detalhePartes = <String>[
+        if (laboratorio.trim().isNotEmpty &&
+            laboratorio.trim().toLowerCase() !=
+                nomeExibicao.trim().toLowerCase())
+          laboratorio.trim(),
+        if (os.trim().isNotEmpty) 'O.S. ${os.trim()}',
+      ];
+      return AnalisePastaCardLabels(
+        titulo: nomeExibicao.trim(),
+        subtitulo: produtor.trim().isNotEmpty
+            ? produtor.trim()
+            : (fazenda.trim().isNotEmpty ? fazenda.trim() : ''),
+        detalhe: detalhePartes.join(' · '),
+      );
+    }
+    return buildPastaCardLabels(
+      produtor: produtor,
+      fazenda: fazenda,
+      laboratorio: laboratorio,
+      os: os,
+    );
+  }
 }
 
 class _HeaderFilterPanel extends StatelessWidget {
@@ -1546,6 +1587,7 @@ class _PastaAnaliseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = pasta.analises.length;
     final totalLabel = total == 1 ? '1 amostra' : '$total amostras';
+    final labels = pasta.cardLabels;
     return _CardSurface(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -1583,7 +1625,7 @@ class _PastaAnaliseCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              pasta.laboratorio,
+              labels.titulo,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -1594,17 +1636,32 @@ class _PastaAnaliseCard extends StatelessWidget {
                 letterSpacing: -0.1,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'O.S.: ${pasta.os}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.caption.copyWith(
-                fontSize: 11,
-                color: const Color(0xFF8E8E93),
+            if (labels.subtitulo.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                labels.subtitulo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textSecond,
+                ),
               ),
-            ),
+            ],
+            if (labels.detalhe.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                labels.detalhe,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 11,
+                  color: const Color(0xFF8E8E93),
+                ),
+              ),
+            ],
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1648,11 +1705,7 @@ class _AnaliseAmostraCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titulo =
-        analise.talhao.trim().isEmpty ? 'Sem talhão' : analise.talhao;
-    final subtitulo = analise.safra.trim().isEmpty
-        ? analise.cultura.label
-        : '${analise.cultura.label} · ${analise.safra}';
+    final labels = buildAmostraCardLabels(analise);
 
     return _CardSurface(
       onTap: onTap,
@@ -1685,15 +1738,16 @@ class _AnaliseAmostraCard extends StatelessWidget {
                 color: analise.cultura.color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                Icons.science_rounded,
-                size: 30,
-                color: analise.cultura.color,
+              child: Center(
+                child: Text(
+                  analise.cultura.emoji,
+                  style: const TextStyle(fontSize: 26),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              titulo,
+              labels.titulo,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -1703,17 +1757,31 @@ class _AnaliseAmostraCard extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
-              subtitulo,
+              labels.subtitulo,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: AppTextStyles.caption.copyWith(
                 fontSize: 11,
-                color: AppColors.textSecond,
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            if (labels.detalhe.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                labels.detalhe,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 10,
+                  color: AppColors.textSecond,
+                ),
+              ),
+            ],
           ],
         ),
       ),
