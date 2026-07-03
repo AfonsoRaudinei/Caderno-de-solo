@@ -32,6 +32,7 @@ class RecomendacaoHtmlMapper {
       ..writeln(_sectionEnxofre(r))
       ..writeln(_sectionMicros(r))
       ..writeln(_sectionAvisos(r))
+      ..writeln(_sectionArgumentos(r))
       ..writeln('</div>')
       ..writeln(_footer(gerada, meta.consultorNome ?? a.consultor));
 
@@ -767,6 +768,34 @@ class RecomendacaoHtmlMapper {
       'Mo': '#5856D6',
     };
     return cores[el] ?? '#8E8E93';
+  }
+
+  static String _sectionArgumentos(ResultadoRecomendacao r) {
+    final texto = r.argumentos.trim();
+    if (texto.isEmpty && (r.citacoes == null || r.citacoes!.isEmpty)) {
+      return '';
+    }
+
+    String cit(String key, String fallback) =>
+        _esc(r.citacoes?[key] ?? fallback);
+
+    return '''
+<div class="section">
+  <div class="section-num">09 · Fundamentacao</div>
+  <div class="section-title">Argumentos Tecnicos</div>
+  <div class="section-desc">Criterios e referencias utilizados na recomendacao.</div>
+  <div class="big-card">
+    ${texto.isNotEmpty ? '<p style="font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:16px;">${_esc(texto)}</p>' : ''}
+    <div class="kv-list">
+      <div class="kv"><span class="kv-l">Calcario</span><span class="kv-v">${cit('calagem', '01 — Calagem: Motor de Calculo')}</span></div>
+      <div class="kv"><span class="kv-l">Gesso</span><span class="kv-v">${cit('gesso', '01 — Calagem: Motor de Calculo')}</span></div>
+      <div class="kv"><span class="kv-l">Fosforo</span><span class="kv-v">${cit('fosforo', _referenciaFosforo(r))}</span></div>
+      <div class="kv"><span class="kv-l">Potassio</span><span class="kv-v">${cit('potassio', 'Embrapa Cerrado')}</span></div>
+      <div class="kv"><span class="kv-l">Micronutrientes</span><span class="kv-v">${cit('micronutrientes', '06 — Micronutrientes: Motor de Calculo')}</span></div>
+      <div class="kv"><span class="kv-l">Enxofre</span><span class="kv-v">${cit('enxofre', '05 — Enxofre (S): Motor de Calculo')}</span></div>
+    </div>
+  </div>
+</div>''';
   }
 
   static String _sectionAvisos(ResultadoRecomendacao r) {

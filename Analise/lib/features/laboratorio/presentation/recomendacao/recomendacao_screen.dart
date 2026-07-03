@@ -260,12 +260,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      key: const Key('btn_exportar_pdf'),
+                      key: const Key('btn_exportar_html'),
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _exportarPdf(resultado),
-                      icon: const Icon(Icons.share_outlined, size: 18),
-                      label: const Text('Exportar relatorio'),
+                          : () => _exportarHtml(resultado),
+                      icon: const Icon(Icons.code_outlined, size: 18),
+                      label: const Text('Exportar HTML'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF666666),
                         side: const BorderSide(color: Color(0xFFD1D1D6)),
@@ -344,7 +344,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     }
   }
 
-  Future<void> _exportarPdf(ResultadoRecomendacao resultado) async {
+  Future<void> _exportarHtml(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
       final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
@@ -370,7 +370,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro exportar relatorio: $e');
+      _showMensagem('Erro exportar HTML: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }

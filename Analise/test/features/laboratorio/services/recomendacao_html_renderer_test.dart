@@ -118,9 +118,12 @@ void main() {
       expect(html, startsWith('<!DOCTYPE html>'));
       expect(html, contains('<title>Recomendacao · SoloForte</title>'));
       expect(html, contains('Qualidade do Solo'));
+      expect(html, contains('<svg class="radar"'));
+      expect(html, contains('pH do solo'));
       expect(html, contains('Calcario'));
       expect(html, contains('SoloForte · Caderno de Solo'));
       expect(html, isNot(contains('{{BODY}}')));
+      expect(html, isNot(contains('radar demonstrativo foi omitido')));
     });
   });
 }

@@ -15,6 +15,18 @@ void main() {
       expect(eixos.first.id, 'bases');
       expect(eixos.last.id, 'nsb');
     });
+
+    test('interpola valores de pH 5,8 conforme referencia agronomica', () {
+      final eixos = DisponibilidadeNutrientesCalculator.calcular(5.8);
+      final byId = {for (final e in eixos) e.id: e.value};
+
+      expect(byId['bases'], closeTo(100, 1));
+      expect(byId['p'], closeTo(82, 2));
+      expect(byId['micros'], closeTo(71, 2));
+      expect(byId['al'], closeTo(18, 2));
+      expect(byId['moCl'], closeTo(57, 2));
+      expect(byId['nsb'], closeTo(91, 2));
+    });
   });
 
   group('RecomendacaoHtmlMapper', () {
@@ -123,7 +135,16 @@ void main() {
         micros: [micro],
         grupos: const [],
         avisos: const ['Fosforo acima do NC: aplicado piso de manutencao.'],
-        argumentos: 'Teste',
+        argumentos:
+            'A recomendacao cruza a analise selecionada com as regras da calibracao.',
+        citacoes: const {
+          'calagem': '01 — Calagem: Motor de Calculo',
+          'gesso': '01 — Calagem: Motor de Calculo',
+          'fosforo': 'Embrapa Cerrado',
+          'potassio': 'Embrapa Cerrado',
+          'micronutrientes': '06 — Micronutrientes: Motor de Calculo',
+          'enxofre': '05 — Enxofre (S): Motor de Calculo',
+        },
       );
 
       ctx = RecomendacaoExportContext(
@@ -143,16 +164,26 @@ void main() {
       final html = mapper.buildBody(ctx);
 
       expect(html, contains('Qualidade do Solo'));
+      expect(html, contains('Disponibilidade de Nutrientes'));
+      expect(html, contains('pH do solo'));
+      expect(html, contains('5,8'));
+      expect(html, contains('<svg class="radar"'));
+      expect(html, contains('Bases'));
+      expect(html, contains('Micros'));
       expect(html, contains('Calcario'));
       expect(html, contains('7,25'));
       expect(html, contains('Fosforo (P)'));
       expect(html, contains('5,63'));
       expect(html, contains('Potassio (K)'));
+      expect(html, contains('0,15'));
       expect(html, contains('Enxofre (S)'));
       expect(html, contains('Micronutrientes'));
       expect(html, contains('Zinco (Zn)'));
       expect(html, contains('Avisos Tecnicos'));
+      expect(html, contains('Argumentos Tecnicos'));
       expect(html, contains('piso de manutencao'));
+      expect(html, isNot(contains('radar demonstrativo foi omitido')));
+      expect(html, isNot(contains('O radar')));
     });
 
     test('marker micro posicionado na escala NC', () {
