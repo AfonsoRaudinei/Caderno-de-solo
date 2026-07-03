@@ -167,7 +167,6 @@ class DisponibilidadeEixo {
     required this.sublabel,
     required this.color,
     required this.value,
-    this.isToxicity = false,
   });
 
   final String id;
@@ -175,7 +174,6 @@ class DisponibilidadeEixo {
   final String sublabel;
   final String color;
   final double value;
-  final bool isToxicity;
 }
 
 class _NutrientGroup {
