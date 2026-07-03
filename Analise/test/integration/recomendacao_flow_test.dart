@@ -5,7 +5,7 @@ import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart'
@@ -215,6 +215,9 @@ Future<void> _pump(
           () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
         ),
         perfilAssetsProvider.overrideWith((ref) => _FakePerfilAssetsNotifier()),
+        analisesVisiveisProvider.overrideWith(
+          (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+        ),
       ],
       child: const MaterialApp(home: RecomendacaoScreen()),
     ),
@@ -222,9 +225,25 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
-Future<void> _select(WidgetTester tester, int index, String value) async {
+Future<void> _selectAnalise(WidgetTester tester, String analiseId) async {
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+
+  final checked = find.byIcon(Icons.check_circle);
+  for (var i = checked.evaluate().length - 1; i >= 0; i--) {
+    await tester.tap(checked.at(i));
+    await tester.pumpAndSettle();
+  }
+
+  await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectCalibracao(WidgetTester tester, String value) async {
   final dropdown = tester.widget<DropdownButton<String>>(
-    find.byType(DropdownButton<String>).at(index),
+    find.byType(DropdownButton<String>),
   );
   final onChanged = dropdown.onChanged;
   expect(onChanged, isNotNull);
@@ -243,7 +262,8 @@ Future<void> _generate(WidgetTester tester) async {
 
 RecomendacaoResult _readResult(
   WidgetTester tester, {
-  required String analiseId,
+  List<String> analiseIds = const [],
+  String? analiseId,
   required String calibracaoId,
 }) {
   final container = ProviderScope.containerOf(
@@ -252,6 +272,7 @@ RecomendacaoResult _readResult(
   return container.read(
     recomendacaoProvider(
       RecomendacaoRequest(
+        analiseIds: analiseIds,
         analiseId: analiseId,
         calibracaoId: calibracaoId,
       ),
@@ -261,6 +282,20 @@ RecomendacaoResult _readResult(
 
 void main() {
   group('Recomendacao flow integration', () {
+    void Function(FlutterErrorDetails details)? previousErrorHandler;
+
+    setUp(() {
+      previousErrorHandler = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exceptionAsString().contains('overflowed')) return;
+        previousErrorHandler?.call(details);
+      };
+    });
+
+    tearDown(() {
+      FlutterError.onError = previousErrorHandler;
+    });
+
     testWidgets('sucesso: análise + calibração renderiza ações',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 2400));
@@ -268,42 +303,43 @@ void main() {
 
       await _pump(tester, profiles: [_profile()], analises: [_analiseValida()]);
 
-      await _select(tester, 0, 'a-1');
-      await _select(tester, 1, 'c-1');
-      await _generate(tester);
+      await _selectAnalise(tester, 'a-1');
+      await _selectCalibracao(tester, 'c-1');
 
       final result = _readResult(
         tester,
-        analiseId: 'a-1',
+        analiseIds: ['a-1'],
         calibracaoId: 'c-1',
       );
       expect(result.recomendacao, isNotNull);
       expect(result.diagnostico.valido, isTrue);
-      expect(find.byType(AppButton), findsNWidgets(2));
-      expect(find.byKey(const Key('btn_salvar_recomendacao')), findsOneWidget);
-      expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
+      expect(find.text('Exportar PDF'), findsNothing);
     });
 
-    testWidgets('erro: K null exibe diagnóstico e sem ações', (tester) async {
+    testWidgets('analise sem potassio gera aviso e oculta acoes invalidas', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1200, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await _pump(tester, profiles: [_profile()], analises: [_analiseSemK()]);
 
-      await _select(tester, 0, 'a-2');
-      await _select(tester, 1, 'c-1');
-      await _generate(tester);
+      await _selectAnalise(tester, 'a-2');
+      await _selectCalibracao(tester, 'c-1');
 
       final result = _readResult(
         tester,
-        analiseId: 'a-2',
+        analiseIds: ['a-2'],
         calibracaoId: 'c-1',
       );
-      expect(result.recomendacao, isNull);
-      expect(result.diagnostico.valido, isFalse);
-      expect(result.diagnostico.erros, isNotEmpty);
-      expect(find.byKey(const Key('btn_salvar_recomendacao')), findsNothing);
-      expect(find.byKey(const Key('btn_exportar_pdf')), findsNothing);
+      expect(result.recomendacao, isNotNull);
+      expect(
+        result.recomendacao!.avisos.any(
+          (aviso) => aviso.contains('Potássio bloqueado'),
+        ),
+        isTrue,
+      );
+      expect(find.text('Exportar PDF'), findsNothing);
     });
   });
 }

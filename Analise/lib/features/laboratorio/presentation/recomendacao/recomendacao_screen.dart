@@ -1,4 +1,5 @@
-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_pdf_helper.dart';
+import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
+import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
@@ -306,6 +308,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
+                      key: const Key('btn_salvar_recomendacao'),
                       onPressed: (_salvando || _exportando)
                           ? null
                           : () => _salvarResultado(resultado),
@@ -332,11 +335,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
+                      key: const Key('btn_exportar_html'),
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _exportarPdf(resultado),
-                      icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                      label: const Text('Exportar PDF'),
+                          : () => _exportarHtml(resultado),
+                      icon: const Icon(Icons.code_rounded, size: 18),
+                      label: const Text('Exportar HTML'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF666666),
                         side: const BorderSide(color: Color(0xFFD1D1D6)),
@@ -421,17 +425,33 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     }
   }
 
-  Future<void> _exportarPdf(ResultadoRecomendacao resultado) async {
+  Future<void> _exportarHtml(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
-      await RecomendacaoPdfHelper.exportar(
+      final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
+      AnaliseSolo? analiseSolo;
+      for (final a in analises) {
+        if (a.id == resultado.analise.id) {
+          analiseSolo = a;
+          break;
+        }
+      }
+
+      final perfilAssets = ref.read(perfilAssetsProvider);
+      final perfil = ref.read(configControllerProvider).valueOrNull;
+
+      final exportContext =
+          await const RecomendacaoExportContextBuilder().build(
         resultado: resultado,
-        context: context,
-        perfilAssets: ref.read(perfilAssetsProvider),
+        analiseSolo: analiseSolo,
+        perfil: perfil,
+        logoUrl: perfilAssets.logoUrl,
       );
+
+      await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro exportar PDF: $e');
+      _showMensagem('Erro exportar HTML: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }

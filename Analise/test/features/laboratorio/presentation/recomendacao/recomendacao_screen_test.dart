@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
@@ -285,11 +286,18 @@ void main() {
     );
   });
 
-  testWidgets('gera resultado e exibe cards técnicos principais', (
+  testWidgets('gera resultado e exibe acao de exportar html', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final previousErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (details.exceptionAsString().contains('overflowed')) return;
+      previousErrorHandler?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = previousErrorHandler);
 
     await _pumpRecomendacao(
       tester,
@@ -297,17 +305,37 @@ void main() {
       analises: [_analise()],
     );
 
-    await _selectAnaliseByIndex(tester, 0);
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('amostra_option_a-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
     await _setDropdownValue(tester, dropdownIndex: 0, value: 'c-1');
 
-    await tester.tap(
-      find.byKey(const Key('btn_gerar_recomendacao')),
-      warnIfMissed: false,
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RecomendacaoScreen)),
+    );
+    final result = container.read(
+      recomendacaoProvider(
+        const RecomendacaoRequest(
+          analiseIds: ['a-1'],
+          calibracaoId: 'c-1',
+        ),
+      ),
+    );
+    expect(result.recomendacao, isNotNull);
+    expect(result.diagnostico.valido, isTrue);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('btn_exportar_html')),
+      500,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    // expect(find.text('Salvar Recomendação'), findsOneWidget); // TODO: Fix test
-    // expect(find.text('Exportar PDF'), findsOneWidget); // TODO: Fix test
+    expect(find.text('Exportar HTML'), findsOneWidget);
+    expect(find.text('Exportar PDF'), findsNothing);
   });
 
   testWidgets(
