@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/features/analise/application/observability/analise_telemetry.dart';
 import 'package:soloforte/features/analise/application/providers/analise_telemetry_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
 

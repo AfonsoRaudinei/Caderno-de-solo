@@ -45,15 +45,6 @@ class AnaliseDetailScreen extends ConsumerWidget {
         title: Text(analise.talhao),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              // Navegar para edição usando go_router
-              context.push(
-                '${AppRoutes.analise}/detalhe/${analise.id}/editar',
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.delete),
             onPressed: () async {
               final confirm = await showDialog<bool>(

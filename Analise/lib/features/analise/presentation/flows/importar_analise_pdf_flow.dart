@@ -5,8 +5,8 @@ import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
+import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
 
@@ -343,87 +343,7 @@ Future<String?> showProdutorConfiguradoImportSheet(
   ).whenComplete(controller.dispose);
 }
 
-/// Bottom sheet para escolher entre importar PDF ou cadastro manual.
-Future<void> showNovaAnaliseOpcoesSheet(
-  BuildContext context,
-  WidgetRef ref, {
-  required VoidCallback onCadastrarManualmente,
-}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (sheetContext) {
-      return DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD1D1D6),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Nova análise',
-                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Importe o PDF do laboratório ou cadastre manualmente.',
-                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF6E6E73),
-                      ),
-                ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () async {
-                    Navigator.of(sheetContext).pop();
-                    await ImportarAnalisePdfFlow.executar(context, ref);
-                  },
-                  icon: const Icon(Icons.upload_file_outlined, size: 20),
-                  label: const Text('Importar PDF'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(sheetContext).pop();
-                    onCadastrarManualmente();
-                  },
-                  icon: const Icon(Icons.edit_note_outlined, size: 20),
-                  label: const Text('Cadastrar manualmente'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
+/// Inicia importação de PDF a partir da lista de análises.
+Future<void> iniciarImportacaoPdf(BuildContext context, WidgetRef ref) {
+  return ImportarAnalisePdfFlow.executar(context, ref);
 }

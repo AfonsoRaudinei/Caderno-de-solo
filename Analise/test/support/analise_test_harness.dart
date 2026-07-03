@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
-import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
-import 'package:soloforte/features/analise/presentation/screens/nova_analise_screen.dart';
 
 class InMemoryBatchGateway implements AnalisePersistenceGateway {
   final Map<String, AnaliseSolo> _storeById = {};
@@ -113,15 +112,5 @@ ProviderContainer makeAnaliseContainer({
     overrides: [
       analisePersistenceGatewayProvider.overrideWithValue(resolvedGateway),
     ],
-  );
-}
-
-Widget makeNovaAnaliseApp(ProviderContainer container) {
-  return UncontrolledProviderScope(
-    container: container,
-    child: const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: NovaAnaliseScreen(),
-    ),
   );
 }

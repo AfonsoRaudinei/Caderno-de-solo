@@ -5,10 +5,10 @@ import 'package:soloforte/features/analise/application/observability/analise_tel
 import 'package:soloforte/features/analise/application/providers/analise_telemetry_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/models/analise_draft.dart';
+import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
-import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:uuid/uuid.dart';
 
 /// Estado do controller da tabela de nova análise
@@ -70,32 +70,7 @@ class NovaAnaliseState {
   }
 }
 
-abstract class AnalisePersistenceGateway {
-  Future<SaveBatchResult> salvarLote(List<AnaliseSolo> analises);
-  Future<void> recarregar();
-}
-
-class RiverpodAnalisePersistenceGateway implements AnalisePersistenceGateway {
-  final Ref ref;
-
-  RiverpodAnalisePersistenceGateway(this.ref);
-
-  @override
-  Future<SaveBatchResult> salvarLote(List<AnaliseSolo> analises) async {
-    return ref.read(analiseNotifierProvider.notifier).salvarLote(analises);
-  }
-
-  @override
-  Future<void> recarregar() async {
-    await ref.read(analiseNotifierProvider.notifier).recarregar();
-  }
-}
-
-final analisePersistenceGatewayProvider = Provider<AnalisePersistenceGateway>(
-  (ref) => RiverpodAnalisePersistenceGateway(ref),
-);
-
-/// Controller para a tela NovaAnalise em formato tabela planilha.
+/// Controller da tabela planilha (uso interno/testes; sem rota de tela).
 class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
   final Ref _ref;
   final _calc = const CalcularDerivadosAnalise();

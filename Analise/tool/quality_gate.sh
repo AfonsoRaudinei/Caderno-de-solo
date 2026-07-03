@@ -96,7 +96,6 @@ flutter test --reporter compact \
   test/features/analise/data/datasources/analise_local_datasource_batch_test.dart
 
 echo "[GATE E] 7/9 - Golden and integration tests"
-flutter test --reporter compact test/features/analise/presentation/screens/nova_analise_screen_golden_test.dart
 flutter test --reporter compact test/features/analise/integration/nova_analise_flow_test.dart
 
 if [[ "${QUALITY_RUN_FULL_TESTS:-false}" == "true" ]]; then
