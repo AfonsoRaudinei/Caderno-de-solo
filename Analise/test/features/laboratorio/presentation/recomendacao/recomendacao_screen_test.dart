@@ -416,8 +416,8 @@ void main() {
 
       final result = container.read(
         recomendacaoProvider(
-          RecomendacaoRequest(
-            analiseIds: const ['a-2'],
+          const RecomendacaoRequest(
+            analiseIds: ['a-2'],
             calibracaoId: 'c-1',
           ),
         ),
