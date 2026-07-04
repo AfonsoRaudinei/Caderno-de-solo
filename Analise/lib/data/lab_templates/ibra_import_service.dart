@@ -3,6 +3,21 @@ import 'dart:developer';
 import 'package:soloforte/core/utils/safra_utils.dart';
 import 'package:soloforte/data/lab_templates/ibra_template.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
+
+String _firstNonEmptyString(List<dynamic> values) {
+  return ProdutorResolucaoService.firstNonEmpty(
+    values.map((value) => value?.toString()),
+  );
+}
+
+String _resolverProdutorIbra(Map<String, dynamic> laudo) {
+  final proprietario = _firstNonEmptyString([laudo['proprietario']]);
+  if (!ProdutorResolucaoService.isProdutorInvalido(proprietario)) {
+    return proprietario;
+  }
+  return '';
+}
 
 class IbraImportService {
   const IbraImportService();
@@ -99,11 +114,12 @@ class IbraImportService {
     final dataCadastro =
         DateTime.tryParse((laudo['dataEmissao'] ?? '').toString()) ??
             DateTime.now();
+    final consultor = _firstNonEmptyString([laudo['responsavel']]);
 
     return AnaliseSolo(
       id: id,
-      fazenda: (laudo['propriedade'] ?? '') as String,
-      produtor: (laudo['proprietario'] ?? laudo['responsavel'] ?? '') as String,
+      fazenda: _firstNonEmptyString([laudo['propriedade']]),
+      produtor: _resolverProdutorIbra(laudo),
       talhao: (raw('talhao') ?? '') as String,
       numeroAmostra: (raw('numeroAmostra') ?? '') as String,
       cultura: parseCultura((laudo['cultura'] ?? raw('cultura'))?.toString()),
@@ -139,6 +155,9 @@ class IbraImportService {
       ni: null,
       mo: null,
       se: null,
+      osLaboratorio: laudo['os']?.toString(),
+      dataEmissao: laudo['dataEmissao']?.toString(),
+      consultor: consultor.isEmpty ? null : consultor,
       laudoMetadata: metadata,
     );
   }
@@ -152,8 +171,9 @@ class IbraImportService {
     cleaned = cleaned.replaceAll(RegExp(r'[–—−]'), '-');
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-    final rangeMatch =
-        RegExp(r'(\d{1,3})\s*[-/]\s*(\d{1,3})').firstMatch(cleaned);
+    final rangeMatch = RegExp(
+      r'(\d{1,3})\s*[-/]\s*(\d{1,3})',
+    ).firstMatch(cleaned);
     if (rangeMatch != null) {
       return '${rangeMatch.group(1)}-${rangeMatch.group(2)}';
     }

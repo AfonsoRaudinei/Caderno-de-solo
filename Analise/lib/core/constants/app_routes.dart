@@ -10,6 +10,7 @@ class AppRoutes {
 
   static const String home = '/'; // Raiz redireciona
   static const String analise = '/analise';
+  @Deprecated('Rota legada removida; use importação PDF na lista de análises')
   static const String analiseForm = '/analise/nova';
   static const String analiseDetail =
       '/analise/detalhe'; // + /:id via go_router

@@ -10,6 +10,8 @@ import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/usecases/get_analises_usecase.dart';
 import 'package:soloforte/features/analise/domain/usecases/save_analise_usecase.dart';
 import 'package:soloforte/features/analise/domain/usecases/delete_analise_usecase.dart';
+import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
+import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
 import 'package:soloforte/features/analise/domain/repositories/analise_repository.dart';
 import 'package:soloforte/features/analise/data/repositories/analise_repository_impl.dart';
 import 'package:soloforte/features/analise/data/datasources/analise_local_datasource.dart';
@@ -129,13 +131,43 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     // do StreamNotifier e volte para AsyncLoading na tela de Pastas.
   }
 
+  Future<void> repararProdutoresLegados() async {
+    final configurado =
+        ref.read(produtorConfiguradoProvider).valueOrNull?.trim() ?? '';
+    if (configurado.isEmpty) return;
+
+    final lista = state.valueOrNull ?? const <AnaliseSolo>[];
+    final reparos = <AnaliseSolo>[];
+
+    for (final analise in lista) {
+      if (!ProdutorResolucaoService.isProdutorInvalido(analise.produtor)) {
+        continue;
+      }
+
+      final reparada = ProdutorResolucaoService.aplicarProdutorConfigurado(
+        analise,
+        configurado,
+      );
+      if (reparada.produtor.trim().isEmpty ||
+          reparada.produtor == analise.produtor) {
+        continue;
+      }
+      reparos.add(reparada);
+    }
+
+    for (final analise in reparos) {
+      await atualizarAnalise(analise);
+    }
+  }
+
   Future<void> deletar(String id) async {
     await ref.read(deleteAnaliseUsecaseProvider).call(id);
   }
 
   Future<void> atualizarAnalise(AnaliseSolo analiseAtualizada) async {
     final estadoAnterior = state.valueOrNull ?? const <AnaliseSolo>[];
-    final index = estadoAnterior.indexWhere((a) => a.id == analiseAtualizada.id);
+    final index =
+        estadoAnterior.indexWhere((a) => a.id == analiseAtualizada.id);
     if (index == -1) {
       await ref.read(saveAnaliseUsecaseProvider).call(analiseAtualizada);
       return;
@@ -352,6 +384,21 @@ List<AnaliseSolo> analisesFiltradas(
     return true;
   }).toList();
 }
+
+final analisesVisiveisProvider = Provider<List<AnaliseSolo>>((ref) {
+  final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
+  final configurado =
+      ref.watch(produtorConfiguradoProvider).valueOrNull?.trim() ?? '';
+  if (configurado.isEmpty) return analises;
+  return analises
+      .where(
+        (analise) => ProdutorResolucaoService.compativelComConfigurado(
+          analise,
+          configurado,
+        ),
+      )
+      .toList(growable: false);
+});
 
 final produtoresAnaliseProvider = Provider<List<Produtor>>((ref) {
   final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? const [];

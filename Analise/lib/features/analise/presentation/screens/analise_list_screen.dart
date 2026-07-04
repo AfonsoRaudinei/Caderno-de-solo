@@ -6,7 +6,9 @@ import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/presentation/flows/importar_analise_pdf_flow.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/presentation/utils/analise_card_labels.dart';
 
 class AnaliseListScreen extends ConsumerStatefulWidget {
   const AnaliseListScreen({super.key});
@@ -27,6 +29,12 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   bool _isSelectingAnalises = false;
   final Set<String> _selectedAnaliseIds = <String>{};
   String _searchQuery = '';
+  bool _reparoProdutorExecutado = false;
+  String? _selectedFolderHeaderTitle;
+
+  void _importarPdf(BuildContext context) {
+    iniciarImportacaoPdf(context, ref);
+  }
 
   @override
   void dispose() {
@@ -46,7 +54,14 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     }
 
     final analiseState = ref.watch(analiseNotifierProvider);
-    final analisesRaw = analiseState.valueOrNull ?? const <AnaliseSolo>[];
+    final analisesRaw = ref.watch(analisesVisiveisProvider);
+
+    if (!_reparoProdutorExecutado) {
+      _reparoProdutorExecutado = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(analiseNotifierProvider.notifier).repararProdutoresLegados();
+      });
+    }
 
     final safras = analisesRaw
         .map((e) => e.safra)
@@ -108,7 +123,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   children: [
                     Text(
                       mostrandoAmostrasHeader
-                          ? 'Amostras'
+                          ? (_selectedFolderHeaderTitle ?? 'Amostras')
                           : 'Pastas de Análises',
                       style: const TextStyle(
                         fontSize: 18,
@@ -121,6 +136,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         onPressed: () {
                           setState(() {
                             _selectedFolderKey = null;
+                            _selectedFolderHeaderTitle = null;
                             _isSelectingAnalises = false;
                             _selectedAnaliseIds.clear();
                           });
@@ -272,7 +288,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                       child: _AnaliseEmptyState(
-                        onCreate: () => context.push(AppRoutes.analiseForm),
+                        onImport: () => _importarPdf(context),
                       ),
                     ),
                   );
@@ -291,8 +307,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         if (showNovaAnaliseCard && index == itensGrid.length) {
-                          return _NovaAnaliseCard(
-                            onTap: () => context.push(AppRoutes.analiseForm),
+                          return _ImportarPdfCard(
+                            onTap: () => _importarPdf(context),
                           );
                         }
 
@@ -310,6 +326,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               }
                               setState(() {
                                 _selectedFolderKey = pasta.key;
+                                _selectedFolderHeaderTitle =
+                                    pasta.cardLabels.titulo;
                               });
                             },
                             onLongPress: () {
@@ -333,7 +351,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               return;
                             }
                             context.push(
-                                '${AppRoutes.analise}/detalhe/${analise.id}');
+                              '${AppRoutes.analise}/detalhe/${analise.id}',
+                            );
                           },
                           onLongPress: () {
                             if (_isSelectingAnalises) {
@@ -408,7 +427,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   }
 
   void _sincronizarSelecaoComPastasVisiveis(
-      List<_AnaliseFolderSummary> pastas) {
+    List<_AnaliseFolderSummary> pastas,
+  ) {
     if (_selectedFolderKeys.isEmpty && !_isSelectingFolders) return;
     final chavesVisiveis = pastas.map((pasta) => pasta.key).toSet();
     final selecionadasAtualizadas =
@@ -491,7 +511,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                pasta.laboratorio,
+                pasta.cardLabels.titulo,
                 style: AppTextStyles.body.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -501,8 +521,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading:
-                  const Icon(Icons.edit_outlined, color: AppColors.primary),
+              leading: const Icon(
+                Icons.edit_outlined,
+                color: AppColors.primary,
+              ),
               title: Text(
                 'Renomear Pasta',
                 style: AppTextStyles.body.copyWith(color: AppColors.primary),
@@ -543,7 +565,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
     BuildContext context,
     _AnaliseFolderSummary pasta,
   ) async {
-    final controller = TextEditingController(text: pasta.laboratorio);
+    final controller = TextEditingController(text: pasta.cardLabels.titulo);
 
     try {
       await showDialog<void>(
@@ -551,7 +573,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setStateDialog) {
             final nome = controller.text.trim();
-            final desabilitado = nome.isEmpty || nome == pasta.laboratorio;
+            final desabilitado =
+                nome.isEmpty || nome == pasta.cardLabels.titulo;
 
             return AlertDialog(
               title: const Text('Renomear pasta'),
@@ -573,8 +596,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                       width: 2,
                     ),
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
                 onChanged: (_) => setStateDialog(() {}),
               ),
@@ -583,8 +608,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: Text(
                     'Cancelar',
-                    style: AppTextStyles.body
-                        .copyWith(color: AppColors.textSecond),
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecond,
+                    ),
                   ),
                 ),
                 TextButton(
@@ -594,8 +620,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                           Navigator.of(dialogContext).pop();
                           await _executarRenomearPasta(pasta, nome);
                         },
-                  style:
-                      TextButton.styleFrom(foregroundColor: AppColors.primary),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                  ),
                   child: const Text('Salvar'),
                 ),
               ],
@@ -714,9 +741,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         safra: _selectedSafra,
         busca: _searchQuery,
       ),
-    ).where((pasta) => _selectedFolderKeys.contains(pasta.key)).toList(
-          growable: false,
-        );
+    )
+        .where((pasta) => _selectedFolderKeys.contains(pasta.key))
+        .toList(growable: false);
 
     if (pastasSelecionadas.isEmpty) {
       if (!mounted) return;
@@ -762,7 +789,8 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   }
 
   Future<void> _confirmarExcluirAnalisesSelecionadas(
-      BuildContext context) async {
+    BuildContext context,
+  ) async {
     final analises =
         ref.read(analiseNotifierProvider).valueOrNull ?? const <AnaliseSolo>[];
     final Cultura? culturaSelecionada = _selectedCultura == null
@@ -780,8 +808,9 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
         busca: _searchQuery,
       ),
     );
-    final pastaAtual =
-        pastasFiltradas.where((p) => p.key == _selectedFolderKey);
+    final pastaAtual = pastasFiltradas.where(
+      (p) => p.key == _selectedFolderKey,
+    );
     if (pastaAtual.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -858,10 +887,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       final label =
           total == 1 ? '1 amostra excluída' : '$total amostras excluídas';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(label),
-          duration: const Duration(seconds: 2),
-        ),
+        SnackBar(content: Text(label), duration: const Duration(seconds: 2)),
       );
     } catch (_) {
       if (!mounted) return;
@@ -969,10 +995,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                 Icons.drive_file_move_outline,
                 color: AppColors.primary,
               ),
-              title: Text(
-                'Mover para outra pasta',
-                style: AppTextStyles.body,
-              ),
+              title: Text('Mover para outra pasta', style: AppTextStyles.body),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1081,10 +1104,11 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       if (current == null) {
         map[folderKey] = _AnaliseFolderSummary(
           key: folderKey,
-          laboratorio: produtor.isNotEmpty
-              ? produtor
-              : (fazenda.isNotEmpty ? fazenda : laboratorio),
+          produtor: produtor,
+          fazenda: fazenda,
+          laboratorio: laboratorio,
           os: folderOs,
+          nomeExibicao: groupTitle,
           analises: [analise],
           dataMaisRecente: analise.dataCadastro,
         );
@@ -1097,8 +1121,11 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
           : current.dataMaisRecente;
       map[folderKey] = _AnaliseFolderSummary(
         key: current.key,
+        produtor: current.produtor,
+        fazenda: current.fazenda,
         laboratorio: current.laboratorio,
         os: current.os,
+        nomeExibicao: current.nomeExibicao,
         analises: atualizadas,
         dataMaisRecente: maisRecente,
       );
@@ -1155,10 +1182,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
 }
 
 class _AnaliseLoadError extends StatefulWidget {
-  const _AnaliseLoadError({
-    required this.error,
-    required this.onRetry,
-  });
+  const _AnaliseLoadError({required this.error, required this.onRetry});
 
   final Object error;
   final VoidCallback onRetry;
@@ -1218,17 +1242,48 @@ class _AnaliseLoadErrorState extends State<_AnaliseLoadError> {
 class _AnaliseFolderSummary {
   const _AnaliseFolderSummary({
     required this.key,
+    required this.produtor,
+    required this.fazenda,
     required this.laboratorio,
     required this.os,
+    required this.nomeExibicao,
     required this.analises,
     required this.dataMaisRecente,
   });
 
   final String key;
+  final String produtor;
+  final String fazenda;
   final String laboratorio;
   final String os;
+  final String nomeExibicao;
   final List<AnaliseSolo> analises;
   final DateTime dataMaisRecente;
+
+  AnalisePastaCardLabels get cardLabels {
+    if (nomeExibicao.trim().isNotEmpty) {
+      final detalhePartes = <String>[
+        if (laboratorio.trim().isNotEmpty &&
+            laboratorio.trim().toLowerCase() !=
+                nomeExibicao.trim().toLowerCase())
+          laboratorio.trim(),
+        if (os.trim().isNotEmpty) 'O.S. ${os.trim()}',
+      ];
+      return AnalisePastaCardLabels(
+        titulo: nomeExibicao.trim(),
+        subtitulo: produtor.trim().isNotEmpty
+            ? produtor.trim()
+            : (fazenda.trim().isNotEmpty ? fazenda.trim() : ''),
+        detalhe: detalhePartes.join(' · '),
+      );
+    }
+    return buildPastaCardLabels(
+      produtor: produtor,
+      fazenda: fazenda,
+      laboratorio: laboratorio,
+      os: os,
+    );
+  }
 }
 
 class _HeaderFilterPanel extends StatelessWidget {
@@ -1260,9 +1315,7 @@ class _HeaderFilterPanel extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.fromLTRB(0, 4, 0, 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           Container(
@@ -1298,8 +1351,10 @@ class _HeaderFilterPanel extends StatelessWidget {
                     color: Color(0xFF6E6E73),
                   ),
                 ),
-                prefixIconConstraints:
-                    const BoxConstraints(minWidth: 42, minHeight: 42),
+                prefixIconConstraints: const BoxConstraints(
+                  minWidth: 42,
+                  minHeight: 42,
+                ),
                 suffixIcon: searchQuery.isEmpty
                     ? null
                     : IconButton(
@@ -1532,6 +1587,7 @@ class _PastaAnaliseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = pasta.analises.length;
     final totalLabel = total == 1 ? '1 amostra' : '$total amostras';
+    final labels = pasta.cardLabels;
     return _CardSurface(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -1569,7 +1625,7 @@ class _PastaAnaliseCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              pasta.laboratorio,
+              labels.titulo,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -1580,17 +1636,32 @@ class _PastaAnaliseCard extends StatelessWidget {
                 letterSpacing: -0.1,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'O.S.: ${pasta.os}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.caption.copyWith(
-                fontSize: 11,
-                color: const Color(0xFF8E8E93),
+            if (labels.subtitulo.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                labels.subtitulo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 11,
+                  color: AppColors.textSecond,
+                ),
               ),
-            ),
+            ],
+            if (labels.detalhe.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                labels.detalhe,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 11,
+                  color: const Color(0xFF8E8E93),
+                ),
+              ),
+            ],
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1634,11 +1705,7 @@ class _AnaliseAmostraCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titulo =
-        analise.talhao.trim().isEmpty ? 'Sem talhão' : analise.talhao;
-    final subtitulo = analise.safra.trim().isEmpty
-        ? analise.cultura.label
-        : '${analise.cultura.label} · ${analise.safra}';
+    final labels = buildAmostraCardLabels(analise);
 
     return _CardSurface(
       onTap: onTap,
@@ -1671,15 +1738,16 @@ class _AnaliseAmostraCard extends StatelessWidget {
                 color: analise.cultura.color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                Icons.science_rounded,
-                size: 30,
-                color: analise.cultura.color,
+              child: Center(
+                child: Text(
+                  analise.cultura.emoji,
+                  style: const TextStyle(fontSize: 26),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              titulo,
+              labels.titulo,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -1689,15 +1757,77 @@ class _AnaliseAmostraCard extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
-              subtitulo,
+              labels.subtitulo,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: AppTextStyles.caption.copyWith(
                 fontSize: 11,
-                color: AppColors.textSecond,
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (labels.detalhe.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                labels.detalhe,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption.copyWith(
+                  fontSize: 10,
+                  color: AppColors.textSecond,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnaliseEmptyState extends StatelessWidget {
+  const _AnaliseEmptyState({required this.onImport});
+
+  final VoidCallback onImport;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Nenhuma análise importada',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.headline.copyWith(fontSize: 20),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Importe o PDF do laboratório para começar a organizar amostras por talhão.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onImport,
+                icon: const Icon(Icons.upload_file_outlined, size: 20),
+                label: const Text('Importar PDF'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
           ],
@@ -1707,216 +1837,8 @@ class _AnaliseAmostraCard extends StatelessWidget {
   }
 }
 
-class _AnaliseEmptyState extends StatelessWidget {
-  const _AnaliseEmptyState({required this.onCreate});
-
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppColors.borderSoft.withValues(alpha: 0.92),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 86,
-                  height: 86,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(26),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFEAF4FF),
-                        Color(0xFFF0FAF3),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: AppColors.borderSoft.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        right: 18,
-                        top: 18,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.insights_rounded,
-                        size: 38,
-                        color: AppColors.primaryDark,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'Comece sua primeira análise',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.headline.copyWith(
-                    fontSize: 26,
-                    height: 1.08,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Salve amostras, organize por área e monte um histórico técnico com padrão de consultoria desde o primeiro uso.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.textSecond,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _AnaliseEmptyPill(
-                      icon: Icons.cloud_done_outlined,
-                      label: 'Sincronizado',
-                    ),
-                    _AnaliseEmptyPill(
-                      icon: Icons.folder_open_rounded,
-                      label: 'Pastas por talhão',
-                    ),
-                    _AnaliseEmptyPill(
-                      icon: Icons.description_outlined,
-                      label: 'Base para recomendação',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: onCreate,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: const Icon(Icons.add_rounded, size: 18),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Nova análise',
-                          style: AppTextStyles.button.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Importe o PDF do laboratório ou cadastre manualmente.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 12,
-                    color: AppColors.textSecond,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AnaliseEmptyPill extends StatelessWidget {
-  const _AnaliseEmptyPill({
-    required this.icon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.borderSoft.withValues(alpha: 0.9),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 15,
-            color: AppColors.primaryDark,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTextStyles.caption.copyWith(
-              fontSize: 12,
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NovaAnaliseCard extends StatelessWidget {
-  const _NovaAnaliseCard({required this.onTap});
+class _ImportarPdfCard extends StatelessWidget {
+  const _ImportarPdfCard({required this.onTap});
 
   final VoidCallback onTap;
 
@@ -1941,21 +1863,21 @@ class _NovaAnaliseCard extends StatelessWidget {
                 width: 54,
                 height: 54,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(
-                  Icons.add_rounded,
-                  size: 30,
-                  color: AppColors.success,
+                  Icons.upload_file_outlined,
+                  size: 28,
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'Nova análise',
+                'Importar PDF',
                 style: AppTextStyles.label.copyWith(
                   fontSize: 13,
-                  color: const Color(0xFF6E6E73),
+                  color: AppColors.textSecond,
                   fontWeight: FontWeight.w600,
                 ),
               ),

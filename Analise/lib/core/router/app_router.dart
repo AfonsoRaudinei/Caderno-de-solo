@@ -13,12 +13,7 @@ import 'package:soloforte/features/auth/presentation/recuperar_senha/recuperar_s
 
 import 'package:soloforte/features/main/presentation/main_page.dart';
 import 'package:soloforte/features/analise/presentation/screens/analise_page.dart';
-import 'package:soloforte/features/analise/presentation/screens/analise_form_page.dart';
 import 'package:soloforte/features/analise/presentation/screens/analise_detail_screen.dart';
-import 'package:soloforte/features/analise/presentation/screens/nova_analise_screen.dart';
-import 'package:soloforte/features/analise/domain/entities/analise_solo.dart'
-    as feature_analise;
-import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/laboratorio/presentation/lab_page.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_page.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_seletor_page.dart';
@@ -267,7 +262,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'nova',
-                    builder: (context, state) => const AnaliseFormPage(),
+                    redirect: (_, __) => AppRoutes.analise,
                   ),
                   GoRoute(
                     path: 'detalhe/:id',
@@ -278,26 +273,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: 'editar',
-                        builder: (context, state) {
+                        redirect: (context, state) {
                           final id = state.pathParameters['id'] ?? '';
-                          final container = ProviderScope.containerOf(context);
-                          final lista = container
-                                  .read(analiseNotifierProvider)
-                                  .valueOrNull ??
-                              [];
-                          final feature_analise.AnaliseSolo? analise = lista
-                              .cast<feature_analise.AnaliseSolo?>()
-                              .firstWhere(
-                                (a) => a?.id == id,
-                                orElse: () => null,
-                              );
-                          if (analise == null) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              GoRouter.of(context).go(AppRoutes.analise);
-                            });
-                            return const SizedBox.shrink();
-                          }
-                          return NovaAnaliseScreen(analiseParaEditar: analise);
+                          return '${AppRoutes.analise}/detalhe/$id';
                         },
                       ),
                     ],
@@ -395,8 +373,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'lab-templates',
-                    builder: (context, state) =>
-                        const LabTemplatesListScreen(),
+                    builder: (context, state) => const LabTemplatesListScreen(),
                     routes: [
                       GoRoute(
                         path: 'editar',

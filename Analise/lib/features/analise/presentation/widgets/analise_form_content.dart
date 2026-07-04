@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
@@ -11,9 +10,9 @@ import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
-import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_table_widget.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
+import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
 
 const _brandGreen = Color(0xFF4ADE80);
 const _darkGreen = Color(0xFF1E3A2F);
@@ -23,14 +22,42 @@ const _muted = Color(0xFF6B7280);
 const _line = Color(0xFFE5E7EB);
 const _surfaceAlt = Color(0xFFF3F4F6);
 
-class NovaAnaliseScreen extends ConsumerWidget {
-  final AnaliseSolo? analiseParaEditar;
+/// Formulário planilha reutilizado em nova análise e edição inline no detalhe.
+class AnaliseFormContent extends ConsumerStatefulWidget {
+  final AnaliseSolo? analiseInicial;
+  final VoidCallback onSaveSuccess;
+  final bool showFab;
+  final bool showImportAction;
 
-  const NovaAnaliseScreen({super.key, this.analiseParaEditar});
+  const AnaliseFormContent({
+    super.key,
+    required this.analiseInicial,
+    required this.onSaveSuccess,
+    this.showFab = true,
+    this.showImportAction = false,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ctrlProvider = novaAnaliseControllerProvider(analiseParaEditar);
+  ConsumerState<AnaliseFormContent> createState() => AnaliseFormContentState();
+}
+
+class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
+  Future<void> salvar() => _salvar();
+
+  Future<void> importarPdf() async {
+    final ctrlProvider = novaAnaliseControllerProvider(widget.analiseInicial);
+    final ctrl = ref.read(ctrlProvider.notifier);
+    await _importarPdf(ctrl);
+  }
+
+  bool get isSaving {
+    final ctrlProvider = novaAnaliseControllerProvider(widget.analiseInicial);
+    return ref.read(ctrlProvider).isSaving;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrlProvider = novaAnaliseControllerProvider(widget.analiseInicial);
     final state = ref.watch(ctrlProvider);
     final ctrl = ref.read(ctrlProvider.notifier);
 
@@ -39,168 +66,147 @@ class NovaAnaliseScreen extends ConsumerWidget {
         .map((draft) => draft.toFormMap())
         .toList(growable: false);
 
-    return Scaffold(
-      backgroundColor: _surfaceAlt,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          analiseParaEditar == null ? 'Nova Análise' : 'Editar Análise',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: _ink,
-            letterSpacing: -0.2,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: _darkGreen),
-        actions: [
-          TextButton.icon(
-            onPressed:
-                state.isSaving ? null : () => _importarPdf(context, ctrl),
-            icon: const Icon(Icons.upload_file, size: 18),
-            label: const Text('Importar'),
-            style: TextButton.styleFrom(
-              foregroundColor: _darkGreen,
-              textStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(0.7),
-          child: SizedBox(height: 0.7, child: ColoredBox(color: _line)),
-        ),
+    final content = SingleChildScrollView(
+      padding: EdgeInsets.only(
+        top: 12,
+        bottom: widget.showFab ? 80 : 24,
       ),
-      body: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.only(top: 12, bottom: 80),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderGlobal(state, ctrl),
-                const SizedBox(height: 12),
-                _buildValidationOverview(context, state, ctrl),
-                const SizedBox(height: 12),
-                AnaliseTableWidget(
-                  analises: analisesForTable,
-                  derivados: derivados,
-                  onCampoChanged: ctrl.atualizarCampo,
-                  onGpsClicked: (index) async {
-                    final erro = await ctrl.capturarGps(index);
-                    if (!context.mounted) return;
-                    final snackBottomMargin =
-                        MediaQuery.of(context).viewPadding.bottom + 92;
-                    if (erro == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content:
-                              const Text('Localização capturada com sucesso'),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: _darkGreen,
-                          margin: EdgeInsets.fromLTRB(
-                            16,
-                            0,
-                            16,
-                            snackBottomMargin,
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(erro),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.error,
-                        margin:
-                            EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
-                      ),
-                    );
-                  },
-                  onAddAnalise: ctrl.adicionarAnalise,
-                  onRemoveAnalise: ctrl.removerAnalise,
-                  laboratorio: state.laudoLaboratorio,
-                  validation: state.validation,
-                  highlightedCellKey: state.highlightedCellKey,
+          _buildHeaderGlobal(state, ctrl),
+          const SizedBox(height: 12),
+          _buildValidationOverview(context, state, ctrl),
+          const SizedBox(height: 12),
+          AnaliseTableWidget(
+            analises: analisesForTable,
+            derivados: derivados,
+            onCampoChanged: ctrl.atualizarCampo,
+            onGpsClicked: (index) async {
+              final erro = await ctrl.capturarGps(index);
+              if (!context.mounted) return;
+              final snackBottomMargin =
+                  MediaQuery.of(context).viewPadding.bottom + 92;
+              if (erro == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Localização capturada com sucesso'),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: _darkGreen,
+                    margin: EdgeInsets.fromLTRB(
+                      16,
+                      0,
+                      16,
+                      snackBottomMargin,
+                    ),
+                  ),
+                );
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(erro),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: AppColors.error,
+                  margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
                 ),
-              ],
-            ),
+              );
+            },
+            onAddAnalise: ctrl.adicionarAnalise,
+            onRemoveAnalise: ctrl.removerAnalise,
+            laboratorio: state.laudoLaboratorio,
+            validation: state.validation,
+            highlightedCellKey: state.highlightedCellKey,
           ),
+        ],
+      ),
+    );
+
+    if (!widget.showFab) {
+      return ColoredBox(color: _surfaceAlt, child: content);
+    }
+
+    return ColoredBox(
+      color: _surfaceAlt,
+      child: Stack(
+        children: [
+          content,
           Positioned(
             right: 16,
             bottom: 24 + MediaQuery.of(context).viewPadding.bottom,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x4D007AFF),
-                    blurRadius: 12,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-                  onTap:
-                      state.isSaving ? null : () => _salvar(context, ref, ctrl),
-                  child: Container(
-                    height: AppDimens.inputHeight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (state.isSaving)
-                          const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        else
-                          const Icon(
-                            Icons.check_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        const SizedBox(width: 8),
-                        Text(
-                          state.analises.length == 1
-                              ? 'Salvar Análise'
-                              : 'Salvar ${state.analises.length} Análises',
-                          style: AppTextStyles.label.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            child: _buildSaveFab(state, ctrl),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildSaveFab(NovaAnaliseState state, NovaAnaliseController ctrl) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x4D007AFF),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+          onTap: state.isSaving ? null : _salvar,
+          child: Container(
+            height: AppDimens.inputHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (state.isSaving)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  state.analises.length == 1
+                      ? 'Salvar Análise'
+                      : 'Salvar ${state.analises.length} Análises',
+                  style: AppTextStyles.label.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeaderGlobal(
-      NovaAnaliseState state, NovaAnaliseController ctrl) {
+    NovaAnaliseState state,
+    NovaAnaliseController ctrl,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -290,7 +296,9 @@ class NovaAnaliseScreen extends ConsumerWidget {
               AppDropdownItem(value: 'Exata Brasil', label: 'Exata Brasil'),
               AppDropdownItem(value: 'IBRA', label: 'IBRA'),
               AppDropdownItem(
-                  value: 'MB Agronegócios', label: 'MB Agronegócios'),
+                value: 'MB Agronegócios',
+                label: 'MB Agronegócios',
+              ),
             ],
             onChanged: (val) => ctrl.atualizarLaudoLaboratorio(val ?? ''),
           ),
@@ -389,14 +397,12 @@ class NovaAnaliseScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _salvar(
-    BuildContext context,
-    WidgetRef ref,
-    NovaAnaliseController ctrl,
-  ) async {
+  Future<void> _salvar() async {
+    final ctrlProvider = novaAnaliseControllerProvider(widget.analiseInicial);
+    final ctrl = ref.read(ctrlProvider.notifier);
     final snackBottomMargin = MediaQuery.of(context).viewPadding.bottom + 92;
     final ok = await ctrl.salvar();
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -407,17 +413,13 @@ class NovaAnaliseScreen extends ConsumerWidget {
           margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
         ),
       );
-      if (context.canPop()) {
-        context.pop();
-      }
+      widget.onSaveSuccess();
       return;
     }
 
     ctrl.destacarProximaCelulaInvalida();
 
-    final erro =
-        (ref.read(novaAnaliseControllerProvider(analiseParaEditar)).error ?? '')
-            .trim();
+    final erro = (ref.read(ctrlProvider).error ?? '').trim();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(erro.isEmpty ? 'Erro ao salvar — tente novamente' : erro),
@@ -428,18 +430,15 @@ class NovaAnaliseScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _importarPdf(
-    BuildContext context,
-    NovaAnaliseController ctrl,
-  ) async {
+  Future<void> _importarPdf(NovaAnaliseController ctrl) async {
     try {
       final analises = await PdfImportService().importarDePdf();
       if (analises == null) return;
-      if (!context.mounted) return;
+      if (!mounted) return;
 
-      await _salvarImportadas(context, ctrl, analises);
+      await _salvarImportadas(ctrl, analises);
     } on LabConfiancaBaixaException catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       final selectedLabId = await showModalBottomSheet<String>(
         context: context,
         backgroundColor: Colors.transparent,
@@ -453,7 +452,7 @@ class NovaAnaliseScreen extends ConsumerWidget {
         ),
       );
 
-      if (selectedLabId == null || !context.mounted) return;
+      if (selectedLabId == null || !mounted) return;
 
       final analises = await PdfImportService().importarArquivoPdf(
         fileBytes: e.fileBytes,
@@ -462,10 +461,10 @@ class NovaAnaliseScreen extends ConsumerWidget {
         operationId: e.operationId,
       );
 
-      if (!context.mounted) return;
-      await _salvarImportadas(context, ctrl, analises);
+      if (!mounted) return;
+      await _salvarImportadas(ctrl, analises);
     } on LabNaoReconhecidoException {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
@@ -475,7 +474,7 @@ class NovaAnaliseScreen extends ConsumerWidget {
         ),
       );
     } on ExtracacaoIndisponivelException {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
@@ -485,7 +484,7 @@ class NovaAnaliseScreen extends ConsumerWidget {
         ),
       );
     } on ImportacaoQualidadeBaixaException catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
@@ -496,7 +495,7 @@ class NovaAnaliseScreen extends ConsumerWidget {
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao importar: $e')),
       );
@@ -504,13 +503,12 @@ class NovaAnaliseScreen extends ConsumerWidget {
   }
 
   Future<void> _salvarImportadas(
-    BuildContext context,
     NovaAnaliseController ctrl,
     List<AnaliseSolo> analises,
   ) async {
     try {
       final result = await ctrl.salvarImportadas(analises);
-      if (!context.mounted) return;
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -523,11 +521,9 @@ class NovaAnaliseScreen extends ConsumerWidget {
         ),
       );
 
-      if (context.canPop()) {
-        context.pop();
-      }
+      widget.onSaveSuccess();
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_mensagemErroImportacao(e)),

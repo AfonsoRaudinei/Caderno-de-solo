@@ -71,5 +71,25 @@ void main() {
     test('última amostra deve ser 257069', () {
       expect(amostras.last.numeroAmostra, '257069');
     });
+
+    test('produtor invalido usa metadata valida ou produtor configurado', () {
+      final jsonIbra = loadJson('assets/lab_data/ibra_237526_2025.json');
+      jsonIbra['proprietario'] = '';
+      jsonIbra['responsavel'] = 'Agrofarm';
+
+      final importadas = service.fromJson(jsonIbra);
+
+      expect(importadas, isNotEmpty);
+      expect(importadas.first.produtor, isEmpty);
+      expect(importadas.first.consultor, 'Agrofarm');
+    });
+
+    test('produtor valido vem de proprietario no laudo', () {
+      final jsonIbra = loadJson('assets/lab_data/ibra_235421_2025.json');
+      final importadas = service.fromJson(jsonIbra);
+
+      expect(importadas.first.produtor, 'Rogério de Paiva Moura');
+      expect(importadas.first.consultor, 'Agrofarm');
+    });
   });
 }

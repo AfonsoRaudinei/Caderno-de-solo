@@ -29,6 +29,15 @@ import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_header_footer.dart';
 import 'package:uuid/uuid.dart';
 
+bool analiseMatchesProdutorBusca(AnaliseSolo analise, String busca) {
+  final query = busca.trim();
+  if (query.isEmpty) return true;
+  final q = query.toLowerCase();
+  return analise.produtor.toLowerCase().contains(q) ||
+      analise.fazenda.toLowerCase().contains(q) ||
+      analise.talhao.toLowerCase().contains(q);
+}
+
 class RecomendacaoScreen extends ConsumerStatefulWidget {
   final String? analiseId;
   const RecomendacaoScreen({super.key, this.analiseId});
@@ -39,10 +48,12 @@ class RecomendacaoScreen extends ConsumerStatefulWidget {
 
 class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   final _uuid = const Uuid();
+  final _buscaProdutorController = TextEditingController();
   List<String> _analiseIdsSelecionados = [];
   String? _calibracaoIdSelecionada;
   bool _salvando = false;
   bool _exportando = false;
+  String _buscaProdutor = '';
 
   @override
   void initState() {
@@ -53,13 +64,25 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   }
 
   @override
+  void dispose() {
+    _buscaProdutorController.dispose();
+    super.dispose();
+  }
+
+  bool _analiseMatchesBusca(AnaliseSolo analise) =>
+      analiseMatchesProdutorBusca(analise, _buscaProdutor);
+
+  @override
   Widget build(BuildContext context) {
     final calibracaoState = ref.watch(calibracaoControllerProvider);
     final analisesAsync = ref.watch(analiseNotifierProvider);
+    final analisesVisiveis = ref.watch(analisesVisiveisProvider);
     final perfis = calibracaoState.profiles;
 
-    final opcoesAnalise =
-        analisesAsync.valueOrNull?.map(_toAnaliseOption).toList() ?? [];
+    final analisesRaw = analisesVisiveis;
+    final analisesFiltradas =
+        analisesRaw.where(_analiseMatchesBusca).toList(growable: false);
+    final opcoesAnalise = analisesFiltradas.map(_toAnaliseOption).toList();
     final n = _analiseIdsSelecionados.length;
     final labelBotao =
         n > 1 ? '✦ Gerar Média de $n Amostras' : '✦ Gerar Recomendação';
@@ -104,6 +127,43 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                TextField(
+                  key: const Key('filtro_produtor_recomendacao'),
+                  controller: _buscaProdutorController,
+                  onChanged: (value) {
+                    setState(() => _buscaProdutor = value.trim());
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Buscar produtor/cliente...',
+                    hintStyle: AppTextStyles.body.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: AppColors.textSecond,
+                      size: 20,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.bgPrimary,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 _SeletorAmostras(
                   analises: opcoesAnalise,
                   selecionados: _analiseIdsSelecionados,
@@ -135,8 +195,9 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                             _calibracaoIdSelecionada = value;
                           });
                           ref
-                              .read(calibracaoUsadaNaRecomendacaoProvider
-                                  .notifier)
+                              .read(
+                                calibracaoUsadaNaRecomendacaoProvider.notifier,
+                              )
                               .state = value;
                         },
                 ),
@@ -171,7 +232,21 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                 ],
                 if (opcoesAnalise.isEmpty &&
                     !analisesAsync.isLoading &&
-                    !analisesAsync.hasError) ...[
+                    !analisesAsync.hasError &&
+                    analisesRaw.isNotEmpty &&
+                    _buscaProdutor.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const _Badge(
+                    icon: Icons.search_off_outlined,
+                    color: AppColors.warning,
+                    label:
+                        'Nenhuma amostra encontrada para o produtor informado.',
+                  ),
+                ],
+                if (opcoesAnalise.isEmpty &&
+                    !analisesAsync.isLoading &&
+                    !analisesAsync.hasError &&
+                    analisesRaw.isEmpty) ...[
                   const SizedBox(height: 10),
                   const _Badge(
                     icon: Icons.info_outline,
@@ -260,12 +335,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      key: const Key('btn_exportar_html'),
+                      key: const Key('btn_compartilhar_recomendacao'),
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _exportarHtml(resultado),
-                      icon: const Icon(Icons.code_outlined, size: 18),
-                      label: const Text('Exportar HTML'),
+                          : () => _compartilharRecomendacao(resultado),
+                      icon: const Icon(Icons.share_outlined, size: 18),
+                      label: const Text('Compartilhar'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF666666),
                         side: const BorderSide(color: Color(0xFFD1D1D6)),
@@ -286,20 +361,25 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   }
 
   _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
+    final data = DateFormat('dd/MM/yyyy').format(analise.dataCadastro);
+    final prefixoProdutor = analise.produtor.trim().isNotEmpty
+        ? '${analise.produtor.trim()} · '
+        : '';
     final label =
-        '${analise.talhao} · ${analise.numeroAmostra} · ${analise.laboratorio} · ${DateFormat('dd/MM/yyyy').format(analise.dataCadastro)}';
+        '$prefixoProdutor${analise.talhao} · ${analise.numeroAmostra} · ${analise.laboratorio} · $data';
     return _AnaliseOption(
       id: analise.id,
       label: label,
+      produtor: analise.produtor,
       profundidade: analise.profundidade,
       laboratorio: analise.laboratorio,
     );
   }
 
   void _showMensagem(String mensagem) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
   Future<void> _salvarResultado(ResultadoRecomendacao resultado) async {
@@ -330,8 +410,9 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
           content: const Text('Recomendação salva com sucesso'),
           backgroundColor: const Color(0xFF34C759),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           margin: const EdgeInsets.all(16),
           duration: const Duration(seconds: 3),
         ),
@@ -344,7 +425,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     }
   }
 
-  Future<void> _exportarHtml(ResultadoRecomendacao resultado) async {
+  Future<void> _compartilharRecomendacao(
+      ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
       final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
@@ -370,7 +452,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro exportar HTML: $e');
+      _showMensagem('Erro ao compartilhar: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }
@@ -413,14 +495,16 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       ncPotassio: resultado.ncPotassio,
       doseK2OKgHa: resultado.doseK2OKgHa,
       micros: resultado.micros
-          .map((m) => {
-                'simbolo': m.elemento,
-                'via': m.via,
-                'fonte': m.fonte,
-                'doseElemento': m.dose,
-                'doseProduto': m.doseProduto,
-                'doseProdutoLabel': m.doseProdutoLabel,
-              })
+          .map(
+            (m) => {
+              'simbolo': m.elemento,
+              'via': m.via,
+              'fonte': m.fonte,
+              'doseElemento': m.dose,
+              'doseProduto': m.doseProduto,
+              'doseProdutoLabel': m.doseProdutoLabel,
+            },
+          )
           .toList(),
       avisos: resultado.avisos,
       argumentos: resultado.argumentos,
@@ -430,11 +514,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.icon,
-    required this.color,
-    required this.label,
-  });
+  const _Badge({required this.icon, required this.color, required this.label});
 
   final IconData icon;
   final Color color;
@@ -504,12 +584,13 @@ class _SeletorAmostras extends StatelessWidget {
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bgPrimary,
+      child: Material(
+        color: AppColors.bgPrimary,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
+          side: const BorderSide(color: AppColors.border),
         ),
+        clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
           key: const Key('seletor_amostras_dropdown'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -587,7 +668,9 @@ class _SeletorAmostras extends StatelessWidget {
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 2),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelecionado
                           ? const Color(0xFF007AFF).withValues(alpha: 0.08)
@@ -654,10 +737,7 @@ class _SeletorAmostras extends StatelessWidget {
 }
 
 class _ContextLabel extends StatelessWidget {
-  const _ContextLabel({
-    required this.icon,
-    required this.label,
-  });
+  const _ContextLabel({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -671,10 +751,7 @@ class _ContextLabel extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF86868B),
-          ),
+          style: const TextStyle(fontSize: 12, color: Color(0xFF86868B)),
         ),
       ],
     );
@@ -710,12 +787,14 @@ class _AnaliseOption {
   const _AnaliseOption({
     required this.id,
     required this.label,
+    this.produtor,
     this.profundidade,
     this.laboratorio,
   });
 
   final String id;
   final String label;
+  final String? produtor;
   final String? profundidade;
   final String? laboratorio;
 }
