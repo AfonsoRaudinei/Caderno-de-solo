@@ -41,6 +41,24 @@ class ProdutorResolucaoService {
     return configurado;
   }
 
+  static String produtorEfetivo(AnaliseSolo analise) {
+    final produtor = analise.produtor.trim();
+    if (produtor.isNotEmpty) return produtor;
+
+    final proprietario =
+        analise.laudoMetadata?['proprietario']?.toString().trim() ?? '';
+    if (proprietario.isNotEmpty) return proprietario;
+
+    return '';
+  }
+
+  static bool nomesProdutorCompatíveis(String a, String b) {
+    final left = a.trim().toLowerCase();
+    final right = b.trim().toLowerCase();
+    if (left.isEmpty || right.isEmpty) return false;
+    return left == right || left.contains(right) || right.contains(left);
+  }
+
   static bool compativelComConfigurado(
     AnaliseSolo analise,
     String produtorConfigurado,
@@ -48,22 +66,26 @@ class ProdutorResolucaoService {
     final configurado = produtorConfigurado.trim();
     if (configurado.isEmpty) return true;
 
-    final produtorAnalise = analise.produtor.trim();
+    final produtorAnalise = produtorEfetivo(analise);
     if (produtorAnalise.isEmpty) return false;
 
-    return produtorAnalise.toLowerCase() == configurado.toLowerCase();
+    return nomesProdutorCompatíveis(produtorAnalise, configurado);
   }
 
   static AnaliseSolo aplicarProdutorConfigurado(
     AnaliseSolo analise,
     String produtorConfigurado, {
     String? consultor,
+    bool forcarProdutorConfigurado = false,
   }) {
-    final produtorResolvido = resolver(
-      produtorAtual: analise.produtor,
-      laudoMetadata: analise.laudoMetadata,
-      produtorConfigurado: produtorConfigurado,
-    );
+    final configurado = produtorConfigurado.trim();
+    final produtorResolvido = forcarProdutorConfigurado && configurado.isNotEmpty
+        ? configurado
+        : resolver(
+            produtorAtual: analise.produtor,
+            laudoMetadata: analise.laudoMetadata,
+            produtorConfigurado: produtorConfigurado,
+          );
 
     final consultorResolvido = firstNonEmpty([
       consultor,

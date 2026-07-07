@@ -127,6 +127,7 @@ class ImportarAnalisePdfFlow {
           (analise) => ProdutorResolucaoService.aplicarProdutorConfigurado(
             analise,
             produtorConfigurado,
+            forcarProdutorConfigurado: true,
           ),
         )
         .toList(growable: false);

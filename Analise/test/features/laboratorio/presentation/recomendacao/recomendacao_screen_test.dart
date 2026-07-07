@@ -145,6 +145,7 @@ AnaliseSolo _analise({
   String profundidade = '0-20',
   double? ca = 2.1,
   double? k = 0.22,
+  Map<String, dynamic>? metadata,
 }) {
   return AnaliseSolo(
     id: id,
@@ -172,6 +173,7 @@ AnaliseSolo _analise({
     fe: 35,
     mn: 3.2,
     zn: 1.4,
+    laudoMetadata: metadata,
   );
 }
 
@@ -478,6 +480,41 @@ void main() {
     expect(find.byKey(const Key('amostra_option_a-2')), findsNothing);
   });
 
+  testWidgets(
+    'filtro por produtor parcial encontra nome completo do cliente',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpRecomendacao(
+        tester,
+        profiles: [_profile()],
+        analises: [
+          _analise(
+            id: 'a-1',
+            produtor: 'ANDRE LUIZ DE SIQUEIRA',
+            numeroAmostra: '001',
+          ),
+        ],
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('filtro_produtor_recomendacao')),
+        'Andre Luiz',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
+      expect(
+        find.textContaining('ANDRE LUIZ DE SIQUEIRA'),
+        findsWidgets,
+      );
+    },
+  );
+
   test('analiseMatchesProdutorBusca filtra por produtor fazenda e talhao', () {
     final analise = _analise(produtor: 'Cliente A', talhao: 'Talhão A');
 
@@ -486,5 +523,15 @@ void main() {
     expect(analiseMatchesProdutorBusca(analise, 'fazenda'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'talhão'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'inexistente'), isFalse);
+  });
+
+  test('analiseMatchesProdutorBusca usa metadata quando produtor esta vazio',
+      () {
+    final analise = _analise(
+      produtor: '',
+      metadata: const {'proprietario': 'ANDRE LUIZ DE SIQUEIRA'},
+    );
+
+    expect(analiseMatchesProdutorBusca(analise, 'andre luiz'), isTrue);
   });
 }

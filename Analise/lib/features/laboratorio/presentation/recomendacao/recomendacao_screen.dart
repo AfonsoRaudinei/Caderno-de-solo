@@ -16,6 +16,7 @@ import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
@@ -34,9 +35,12 @@ bool analiseMatchesProdutorBusca(AnaliseSolo analise, String busca) {
   final query = busca.trim();
   if (query.isEmpty) return true;
   final q = query.toLowerCase();
-  return analise.produtor.toLowerCase().contains(q) ||
+  final produtor =
+      ProdutorResolucaoService.produtorEfetivo(analise).toLowerCase();
+  return produtor.contains(q) ||
       analise.fazenda.toLowerCase().contains(q) ||
-      analise.talhao.toLowerCase().contains(q);
+      analise.talhao.toLowerCase().contains(q) ||
+      analise.numeroAmostra.toLowerCase().contains(q);
 }
 
 class RecomendacaoScreen extends ConsumerStatefulWidget {
@@ -365,15 +369,14 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
   _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
     final data = DateFormat('dd/MM/yyyy').format(analise.dataCadastro);
-    final prefixoProdutor = analise.produtor.trim().isNotEmpty
-        ? '${analise.produtor.trim()} · '
-        : '';
+    final produtor = ProdutorResolucaoService.produtorEfetivo(analise);
+    final prefixoProdutor = produtor.isNotEmpty ? '$produtor · ' : '';
     final label =
         '$prefixoProdutor${analise.talhao} · ${analise.numeroAmostra} · ${analise.laboratorio} · $data';
     return _AnaliseOption(
       id: analise.id,
       label: label,
-      produtor: analise.produtor,
+      produtor: produtor.isEmpty ? null : produtor,
       profundidade: analise.profundidade,
       laboratorio: analise.laboratorio,
     );
@@ -566,6 +569,7 @@ class _SeletorAmostras extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     String? profAtiva;
     String? laboratorioAtivo;
     if (selecionados.isNotEmpty) {
@@ -588,22 +592,25 @@ class _SeletorAmostras extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: Material(
-        color: AppColors.bgPrimary,
+        color: palette.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: palette.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
           key: const Key('seletor_amostras_dropdown'),
           tilePadding: const EdgeInsets.symmetric(horizontal: 12),
           childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-          iconColor: AppColors.textSecond,
-          collapsedIconColor: AppColors.textSecond,
+          iconColor: palette.textSecondary,
+          collapsedIconColor: palette.textSecondary,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Selecionar Amostras', style: AppTextStyles.label),
+              Text(
+                'Selecionar Amostras',
+                style: AppTextStyles.label.copyWith(color: palette.textPrimary),
+              ),
               const SizedBox(height: 4),
               Text(
                 resumo,
@@ -611,8 +618,8 @@ class _SeletorAmostras extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.body.copyWith(
                   color: selecionados.isEmpty
-                      ? AppColors.textTertiary
-                      : AppColors.textPrimary,
+                      ? palette.textTertiary
+                      : palette.textPrimary,
                 ),
               ),
             ],
@@ -695,10 +702,10 @@ class _SeletorAmostras extends StatelessWidget {
                                   : Icons.radio_button_unchecked,
                           size: 20,
                           color: isSelecionado
-                              ? const Color(0xFF007AFF)
+                              ? AppColors.primary
                               : isBloqueado
-                                  ? const Color(0xFFC7C7CC)
-                                  : const Color(0xFF86868B),
+                                  ? palette.textTertiary
+                                  : palette.textSecondary,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -707,8 +714,8 @@ class _SeletorAmostras extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               color: isSelecionado
-                                  ? const Color(0xFF007AFF)
-                                  : const Color(0xFF1D1D1F),
+                                  ? AppColors.primary
+                                  : palette.textPrimary,
                               fontWeight: isSelecionado
                                   ? FontWeight.w500
                                   : FontWeight.w400,
