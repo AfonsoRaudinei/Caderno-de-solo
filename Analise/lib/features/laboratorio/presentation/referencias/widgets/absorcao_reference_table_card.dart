@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/widgets/absorcao_card_wrapper.dart';
 
@@ -16,6 +17,8 @@ class AbsorcaoReferenceTableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return AbsorcaoCardWrapper(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,7 +28,10 @@ class AbsorcaoReferenceTableCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   card.title,
-                  style: AppTextStyles.label.copyWith(fontSize: 15),
+                  style: AppTextStyles.label.copyWith(
+                    fontSize: 15,
+                    color: palette.textPrimary,
+                  ),
                 ),
               ),
               Container(
@@ -48,7 +54,10 @@ class AbsorcaoReferenceTableCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             card.description,
-            style: AppTextStyles.caption.copyWith(fontSize: 12),
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 12,
+              color: palette.textSecondary,
+            ),
           ),
           const SizedBox(height: 10),
           ...card.rows.map(
@@ -59,7 +68,10 @@ class AbsorcaoReferenceTableCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       row.label,
-                      style: AppTextStyles.caption.copyWith(fontSize: 12),
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 12,
+                        color: palette.textPrimary,
+                      ),
                     ),
                   ),
                   Text(
@@ -77,17 +89,17 @@ class AbsorcaoReferenceTableCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Icon(
+              Icon(
                 Icons.table_rows_outlined,
                 size: 14,
-                color: AppColors.textSecond,
+                color: palette.textSecondary,
               ),
               const SizedBox(width: 4),
               Text(
                 'Tabela de referência',
                 style: AppTextStyles.caption.copyWith(
                   fontSize: 11,
-                  color: AppColors.textSecond,
+                  color: palette.textSecondary,
                 ),
               ),
             ],

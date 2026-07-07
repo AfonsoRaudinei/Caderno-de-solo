@@ -22,7 +22,6 @@ class HistoricoDetalheScreen extends ConsumerWidget {
     final dataFmt = DateFormat('dd/MM/yyyy HH:mm').format(data);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text(titulo),
         actions: [

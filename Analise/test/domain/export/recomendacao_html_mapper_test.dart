@@ -92,7 +92,7 @@ void main() {
         observacoes: [],
       );
 
-      final micro = const MicroResultado(
+      const micro = MicroResultado(
         elemento: 'Zn',
         valorAtual: 0.56,
         nc: 0.91,

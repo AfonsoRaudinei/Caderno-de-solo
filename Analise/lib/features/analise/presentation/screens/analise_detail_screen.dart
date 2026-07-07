@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
-import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/presentation/formatters/analise_number_formatter.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_form_content.dart';
-import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/map_preview_widget.dart';
 
 class AnaliseDetailScreen extends ConsumerStatefulWidget {
@@ -95,6 +93,7 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
   }
 
   Widget _buildViewBody(BuildContext context, AnaliseSolo analise) {
+    final palette = _AnaliseDetailPalette.of(context);
     final derivados = AnaliseDetailScreen._calc.call({
       'ca': analise.ca,
       'mg': analise.mg,
@@ -138,11 +137,26 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('Produtor: ${analise.produtor}'),
-                  Text('Fazenda: ${analise.fazenda}'),
-                  Text('Nº Amostra: ${analise.numeroAmostra}'),
-                  Text('Safra: ${analise.safra}'),
-                  Text('Laboratório: ${analise.laboratorio}'),
+                  Text(
+                    'Produtor: ${analise.produtor}',
+                    style: TextStyle(color: palette.mutedText),
+                  ),
+                  Text(
+                    'Fazenda: ${analise.fazenda}',
+                    style: TextStyle(color: palette.mutedText),
+                  ),
+                  Text(
+                    'Nº Amostra: ${analise.numeroAmostra}',
+                    style: TextStyle(color: palette.mutedText),
+                  ),
+                  Text(
+                    'Safra: ${analise.safra}',
+                    style: TextStyle(color: palette.mutedText),
+                  ),
+                  Text(
+                    'Laboratório: ${analise.laboratorio}',
+                    style: TextStyle(color: palette.mutedText),
+                  ),
                 ],
               ),
             ),
@@ -186,20 +200,11 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
                   );
                 },
               ),
-              _ActionButton(
-                icon: Icons.upload_file,
-                label: 'Reimportar',
-                color: Colors.orange,
-                onTap: () => _reimportarPdf(context, analise),
-              ),
             ],
           ),
           const SizedBox(height: 24),
           if (analise.latitude != null && analise.longitude != null) ...[
-            const Text(
-              'Localização',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            _buildSectionTitle('Localização', palette),
             const SizedBox(height: 8),
             MapPreviewWidget(
               latitude: analise.latitude!,
@@ -212,115 +217,87 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          const Text(
-            'Localização',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildSectionTitle('Localização', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Latitude', _fmt(analise.latitude)),
-          _buildDataRow('Longitude', _fmt(analise.longitude)),
-          _buildDataRow('Descrição', analise.descricaoLocal ?? '-'),
-          const Divider(),
-          const Text(
-            'Composição Física',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Latitude', _fmt(analise.latitude), palette),
+          _buildDataRow('Longitude', _fmt(analise.longitude), palette),
+          _buildDataRow('Descrição', analise.descricaoLocal ?? '-', palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Composição Física', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Argila (g/kg)', _fmt(analise.argila)),
-          _buildDataRow('Silte (g/kg)', _fmt(analise.silte)),
-          _buildDataRow('Areia Total (g/kg)', _fmt(analise.areiaTotal)),
-          _buildDataRow('Profundidade', analise.profundidade),
-          const Divider(),
-          const Text(
-            'pH',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Argila (g/kg)', _fmt(analise.argila), palette),
+          _buildDataRow('Silte (g/kg)', _fmt(analise.silte), palette),
+          _buildDataRow(
+              'Areia Total (g/kg)', _fmt(analise.areiaTotal), palette),
+          _buildDataRow('Profundidade', analise.profundidade, palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('pH', palette),
           const SizedBox(height: 8),
-          _buildDataRow('pH Água', _fmt(analise.phAgua)),
-          _buildDataRow('pH SMP', _fmt(analise.phSmp)),
-          _buildDataRow('pH CaCl₂', _fmt(analise.phCaCl2)),
-          const Divider(),
-          const Text(
-            'Matéria Orgânica',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('pH Água', _fmt(analise.phAgua), palette),
+          _buildDataRow('pH SMP', _fmt(analise.phSmp), palette),
+          _buildDataRow('pH CaCl₂', _fmt(analise.phCaCl2), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Matéria Orgânica', palette),
           const SizedBox(height: 8),
-          _buildDataRow('M.O. (dag/kg)', _fmt(analise.materiaOrganica)),
-          _buildDataRow('C Orgânico (dag/kg)', _fmt(analise.carbonoOrganico)),
-          const Divider(),
-          const Text(
-            'Fósforo',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow(
+              'M.O. (dag/kg)', _fmt(analise.materiaOrganica), palette),
+          _buildDataRow(
+              'C Orgânico (dag/kg)', _fmt(analise.carbonoOrganico), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Fósforo', palette),
           const SizedBox(height: 8),
-          _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich)),
-          _buildDataRow('P Resina (mg/dm³)', _fmt(analise.pResina)),
-          _buildDataRow('P-rem (mg/L)', _fmt(analise.pRem)),
-          const Divider(),
-          const Text(
-            'Enxofre',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich), palette),
+          _buildDataRow('P Resina (mg/dm³)', _fmt(analise.pResina), palette),
+          _buildDataRow('P-rem (mg/L)', _fmt(analise.pRem), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Enxofre', palette),
           const SizedBox(height: 8),
-          _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020)),
-          _buildDataRow('S 20-40 (mg/dm³)', _fmt(analise.s2040)),
-          const Divider(),
-          const Text(
-            'Macronutrientes',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020), palette),
+          _buildDataRow('S 20-40 (mg/dm³)', _fmt(analise.s2040), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Macronutrientes', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k)),
-          _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca)),
-          _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg)),
-          _buildDataRow('Alumínio (cmolc/dm³)', _fmt(analise.al)),
-          _buildDataRow('H+Al (cmolc/dm³)', _fmt(analise.hMaisAl)),
-          _buildDataRow('Sódio (cmolc/dm³)', _fmt(analise.na)),
-          const Divider(),
-          const Text(
-            'Bases e CTC',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k), palette),
+          _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca), palette),
+          _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg), palette),
+          _buildDataRow('Alumínio (cmolc/dm³)', _fmt(analise.al), palette),
+          _buildDataRow('H+Al (cmolc/dm³)', _fmt(analise.hMaisAl), palette),
+          _buildDataRow('Sódio (cmolc/dm³)', _fmt(analise.na), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Bases e CTC', palette),
           const SizedBox(height: 8),
-          _buildDataRow('SB (cmolc/dm³)', _fmt(derivados['sb'])),
-          _buildDataRow('CTC(T) (cmolc/dm³)', _fmt(derivados['ctcTotal'])),
-          _buildDataRow('CTC(e) (cmolc/dm³)', _fmt(derivados['ctcEfetiva'])),
-          _buildDataRow('V% (%)', _fmt(derivados['vPct'])),
-          _buildDataRow('m% (%)', _fmt(derivados['mPct'])),
-          const Divider(),
-          const Text(
-            'Saturação das Bases',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('SB (cmolc/dm³)', _fmt(derivados['sb']), palette),
+          _buildDataRow(
+              'CTC(T) (cmolc/dm³)', _fmt(derivados['ctcTotal']), palette),
+          _buildDataRow(
+              'CTC(e) (cmolc/dm³)', _fmt(derivados['ctcEfetiva']), palette),
+          _buildDataRow('V% (%)', _fmt(derivados['vPct']), palette),
+          _buildDataRow('m% (%)', _fmt(derivados['mPct']), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Saturação das Bases', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Ca/T (%)', _fmt(derivados['caPctT'])),
-          _buildDataRow('Mg/T (%)', _fmt(derivados['mgPctT'])),
-          _buildDataRow('K/T (%)', _fmt(derivados['kPctT'])),
-          _buildDataRow('H+Al/T (%)', _fmt(derivados['hAlPctT'])),
-          const Divider(),
-          const Text(
-            'Relações entre Bases',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Ca/T (%)', _fmt(derivados['caPctT']), palette),
+          _buildDataRow('Mg/T (%)', _fmt(derivados['mgPctT']), palette),
+          _buildDataRow('K/T (%)', _fmt(derivados['kPctT']), palette),
+          _buildDataRow('H+Al/T (%)', _fmt(derivados['hAlPctT']), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Relações entre Bases', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Ca/Mg', _fmt(derivados['relCaMg'])),
-          _buildDataRow('Ca/K', _fmt(derivados['relCaK'])),
-          _buildDataRow('Mg/K', _fmt(derivados['relMgK'])),
-          _buildDataRow('(Ca+Mg)/T (%)', _fmt(derivados['relCaMgT'])),
-          const Divider(),
-          const Text(
-            'Micronutrientes (mg/dm³)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Ca/Mg', _fmt(derivados['relCaMg']), palette),
+          _buildDataRow('Ca/K', _fmt(derivados['relCaK']), palette),
+          _buildDataRow('Mg/K', _fmt(derivados['relMgK']), palette),
+          _buildDataRow('(Ca+Mg)/T (%)', _fmt(derivados['relCaMgT']), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Micronutrientes (mg/dm³)', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Boro', _fmt(analise.b)),
-          _buildDataRow('Cobre', _fmt(analise.cu)),
-          _buildDataRow('Ferro', _fmt(analise.fe)),
-          _buildDataRow('Manganês', _fmt(analise.mn)),
-          _buildDataRow('Zinco', _fmt(analise.zn)),
-          _buildDataRow('Níquel', _fmt(analise.ni)),
-          _buildDataRow('Molibdênio', _fmt(analise.mo)),
-          _buildDataRow('Selênio', _fmt(analise.se)),
+          _buildDataRow('Boro', _fmt(analise.b), palette),
+          _buildDataRow('Cobre', _fmt(analise.cu), palette),
+          _buildDataRow('Ferro', _fmt(analise.fe), palette),
+          _buildDataRow('Manganês', _fmt(analise.mn), palette),
+          _buildDataRow('Zinco', _fmt(analise.zn), palette),
+          _buildDataRow('Níquel', _fmt(analise.ni), palette),
+          _buildDataRow('Molibdênio', _fmt(analise.mo), palette),
+          _buildDataRow('Selênio', _fmt(analise.se), palette),
           const SizedBox(height: 32),
         ],
       ),
@@ -351,7 +328,22 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
     }
   }
 
-  Widget _buildDataRow(String label, String value) {
+  Widget _buildSectionTitle(String title, _AnaliseDetailPalette palette) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: palette.sectionText,
+      ),
+    );
+  }
+
+  Widget _buildDataRow(
+    String label,
+    String value,
+    _AnaliseDetailPalette palette,
+  ) {
     final isVazio =
         value == '-' || value.isEmpty || value == 'N/A' || value == 'null';
     return Padding(
@@ -359,12 +351,19 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade700)),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: palette.mutedText),
+            ),
+          ),
+          const SizedBox(width: 16),
           Text(
             isVazio ? 'Não informado' : value,
+            textAlign: TextAlign.right,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isVazio ? Colors.orange : Colors.black,
+              color: isVazio ? Colors.orange : palette.valueText,
             ),
           ),
         ],
@@ -373,179 +372,29 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
   }
 
   String _fmt(num? value) => AnaliseNumberFormatter.formatDecimal(value);
+}
 
-  Future<void> _reimportarPdf(
-    BuildContext context,
-    AnaliseSolo analise,
-  ) async {
-    final forcedLabId = _forcedLabIdFor(analise.laboratorio);
-    if (forcedLabId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Laboratório atual não suporta reimportação guiada.'),
-        ),
-      );
-      return;
-    }
+class _AnaliseDetailPalette {
+  const _AnaliseDetailPalette({
+    required this.valueText,
+    required this.mutedText,
+    required this.sectionText,
+    required this.divider,
+  });
 
-    try {
-      final importadas = await PdfImportService().importarDePdf(
-        forcedLabId: forcedLabId,
-      );
-      if (importadas == null || !context.mounted) return;
+  final Color valueText;
+  final Color mutedText;
+  final Color sectionText;
+  final Color divider;
 
-      final numeroAtual = analise.numeroAmostra.trim().toLowerCase();
-      final matches = importadas
-          .where(
-            (item) => item.numeroAmostra.trim().toLowerCase() == numeroAtual,
-          )
-          .toList(growable: false);
-
-      if (matches.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'A amostra ${analise.numeroAmostra} não foi encontrada no PDF selecionado.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      if (matches.length > 1) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'A amostra ${analise.numeroAmostra} apareceu duplicada no PDF selecionado.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      final atualizada = _mergeReimportedAnalise(
-        current: analise,
-        imported: matches.single,
-      );
-      await ref.read(analiseNotifierProvider.notifier).atualizarAnalise(
-            atualizada,
-          );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Análise ${analise.numeroAmostra} atualizada a partir do PDF.',
-          ),
-        ),
-      );
-    } on ImportacaoQualidadeBaixaException catch (e) {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.qualidadeInsuficiente,
-          detalhe: e.buildSummary(),
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } on LabNaoReconhecidoException {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.labNaoReconhecido,
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } on ExtracacaoIndisponivelException {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.extracacaoIndisponivel,
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao reimportar PDF: $e')),
-      );
-    }
-  }
-
-  AnaliseSolo _mergeReimportedAnalise({
-    required AnaliseSolo current,
-    required AnaliseSolo imported,
-  }) {
-    final metadata = <String, dynamic>{
-      ...?current.laudoMetadata,
-      ...?imported.laudoMetadata,
-    };
-
-    String keepImported(String importedValue, String fallback) {
-      final normalized = importedValue.trim();
-      return normalized.isEmpty ? fallback : importedValue;
-    }
-
-    return AnaliseSolo(
-      id: current.id,
-      fazenda: keepImported(imported.fazenda, current.fazenda),
-      produtor: keepImported(imported.produtor, current.produtor),
-      talhao: keepImported(imported.talhao, current.talhao),
-      numeroAmostra:
-          keepImported(imported.numeroAmostra, current.numeroAmostra),
-      cultura: current.cultura,
-      safra: keepImported(imported.safra, current.safra),
-      laboratorio: keepImported(imported.laboratorio, current.laboratorio),
-      dataCadastro: current.dataCadastro,
-      profundidade: keepImported(imported.profundidade, current.profundidade),
-      latitude: current.latitude,
-      longitude: current.longitude,
-      descricaoLocal: imported.descricaoLocal ?? current.descricaoLocal,
-      argila: imported.argila,
-      silte: imported.silte,
-      areiaTotal: imported.areiaTotal,
-      phAgua: imported.phAgua,
-      phSmp: imported.phSmp,
-      phCaCl2: imported.phCaCl2,
-      materiaOrganica: imported.materiaOrganica,
-      carbonoOrganico: imported.carbonoOrganico,
-      pMehlich: imported.pMehlich,
-      pResina: imported.pResina,
-      pRem: imported.pRem,
-      s020: imported.s020,
-      s2040: imported.s2040,
-      k: imported.k,
-      ca: imported.ca,
-      mg: imported.mg,
-      al: imported.al,
-      hMaisAl: imported.hMaisAl,
-      na: imported.na,
-      b: imported.b,
-      cu: imported.cu,
-      fe: imported.fe,
-      mn: imported.mn,
-      zn: imported.zn,
-      ni: imported.ni,
-      mo: imported.mo,
-      se: imported.se,
-      pdfUrl: current.pdfUrl,
-      laudoMetadata: metadata.isEmpty ? null : metadata,
+  factory _AnaliseDetailPalette.of(BuildContext context) {
+    final theme = Theme.of(context);
+    return _AnaliseDetailPalette(
+      valueText: theme.colorScheme.onSurface,
+      mutedText: theme.colorScheme.onSurfaceVariant,
+      sectionText: theme.colorScheme.onSurface,
+      divider: theme.dividerColor,
     );
-  }
-
-  String? _forcedLabIdFor(String laboratorio) {
-    final raw = laboratorio.trim().toLowerCase();
-    if (raw.contains('exata')) return 'exata_brasil';
-    if (raw.contains('sellar')) return 'sellar';
-    if (raw.contains('ibra')) return 'ibra';
-    if (raw.contains('solum')) return 'solum';
-    if (raw.contains('mb')) return 'mb';
-    return null;
   }
 }
 

@@ -240,6 +240,7 @@ Future<void> _pump(
         ),
         analiseNotifierProvider
             .overrideWith(() => _FakeAnaliseNotifier(analises)),
+        analisesVisiveisProvider.overrideWith((ref) => analises),
         tabelaMetricasProvider.overrideWith(
           () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
         ),
@@ -265,18 +266,23 @@ Future<void> _select(
   await tester.pumpAndSettle();
 }
 
-Future<void> _selectAnaliseByIndex(WidgetTester tester, int index) async {
+Future<void> _selectAnalise(WidgetTester tester, String analiseId) async {
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  await tester.pumpAndSettle();
+
   final checks = find.byIcon(Icons.check_circle);
-  final checkedCount = checks.evaluate().length;
-  for (var i = 0; i < checkedCount; i++) {
+  for (var i = checks.evaluate().length - 1; i >= 0; i--) {
     await tester.ensureVisible(checks.at(i));
     await tester.tap(checks.at(i));
     await tester.pumpAndSettle();
   }
 
-  final unchecked = find.byIcon(Icons.radio_button_unchecked);
-  await tester.ensureVisible(unchecked.at(index));
-  await tester.tap(unchecked.at(index));
+  final option = find.byKey(Key('amostra_option_$analiseId'));
+  await tester.ensureVisible(option);
+  await tester.tap(option);
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
   await tester.pumpAndSettle();
 }
 
@@ -320,7 +326,7 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      await _selectAnaliseByIndex(tester, 0);
+      await _selectAnalise(tester, 'a-ok');
       await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
 
@@ -344,7 +350,7 @@ void main() {
         analises: [_analiseValida()],
       );
 
-      await _selectAnaliseByIndex(tester, 0);
+      await _selectAnalise(tester, 'a-ok');
       await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
       final container = _container(tester);
@@ -371,30 +377,28 @@ void main() {
       );
     });
 
-    testWidgets('4) alterar análise muda resultado', (tester) async {
+    testWidgets('4) campo ausente gera aviso sem bloquear recomendação',
+        (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await _pump(
         tester,
         profiles: [_calibracaoMehlich()],
-        analises: [_analiseValida(), _analiseSemK()],
+        analises: [_analiseSemK()],
       );
 
-      await _selectAnaliseByIndex(tester, 0);
+      await _selectAnalise(tester, 'a-null-k');
       await _select(tester, 0, 'c-mehlich');
       await _gerar(tester);
       final container = _container(tester);
-      const reqValida = RecomendacaoRequest(
-        analiseIds: ['a-ok'],
-        calibracaoId: 'c-mehlich',
-      );
-      expect(container.read(recomendacaoProvider(reqValida)).recomendacao, isNotNull);
       const reqSemK = RecomendacaoRequest(
         analiseIds: ['a-null-k'],
         calibracaoId: 'c-mehlich',
       );
-      expect(container.read(recomendacaoProvider(reqSemK)).recomendacao, isNull);
+      final result = container.read(recomendacaoProvider(reqSemK));
+      expect(result.recomendacao, isNotNull);
+      expect(result.diagnostico.avisos, isNotEmpty);
     });
   });
 }

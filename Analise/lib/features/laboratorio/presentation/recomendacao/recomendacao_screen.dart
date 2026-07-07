@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
@@ -92,17 +93,17 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     );
     final result = ref.watch(recomendacaoProvider(request));
     final resultado = result.recomendacao;
+    final palette = context.appPalette;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: AppColors.bgSecondary,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textPrimary,
+            color: palette.textPrimary,
             size: 20,
           ),
           onPressed: () {
@@ -115,7 +116,9 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
         ),
         title: Text(
           'Recomendação',
-          style: AppTextStyles.headline.copyWith(color: AppColors.primary),
+          style: AppTextStyles.headline.copyWith(
+            color: palette.isDark ? const Color(0xFF4DA3FF) : AppColors.primary,
+          ),
         ),
         centerTitle: false,
       ),
@@ -136,26 +139,26 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   decoration: InputDecoration(
                     hintText: 'Buscar produtor/cliente...',
                     hintStyle: AppTextStyles.body.copyWith(
-                      color: AppColors.textTertiary,
+                      color: palette.textTertiary,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: AppColors.textSecond,
+                      color: palette.textSecondary,
                       size: 20,
                     ),
                     filled: true,
-                    fillColor: AppColors.bgPrimary,
+                    fillColor: palette.inputFill,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 10,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: palette.border),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: palette.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),

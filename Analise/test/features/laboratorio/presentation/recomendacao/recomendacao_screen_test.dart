@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
@@ -248,25 +247,6 @@ Future<void> _setDropdownValue(
   final onChanged = dropdown.onChanged;
   expect(onChanged, isNotNull);
   onChanged?.call(value);
-  await tester.pumpAndSettle();
-}
-
-Future<void> _selectAnaliseByIndex(WidgetTester tester, int index) async {
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-  await tester.pumpAndSettle();
-
-  final checks = find.byIcon(Icons.check_circle);
-  final checkedCount = checks.evaluate().length;
-  for (var i = 0; i < checkedCount; i++) {
-    await tester.tap(checks.at(i));
-    await tester.pumpAndSettle();
-  }
-
-  final unchecked = find.byIcon(Icons.radio_button_unchecked);
-  await tester.tap(unchecked.at(index));
-  await tester.pumpAndSettle();
-
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
   await tester.pumpAndSettle();
 }
 

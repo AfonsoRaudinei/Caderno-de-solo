@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 class LabReferenciasPage extends StatelessWidget {
   const LabReferenciasPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
       appBar: AppBar(
         title: const Text('Referências'),
       ),
@@ -16,34 +18,43 @@ class LabReferenciasPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           ListTile(
-            title: const Text('Referências Técnicas'),
-            trailing: const Icon(
+            title: Text(
+              'Referências Técnicas',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labRefTecnicas),
           ),
-          const Divider(
+          Divider(
             height: 0.5,
-            color: Color(0xFFE5E5E7),
+            color: palette.border,
           ),
           ListTile(
-            title: const Text('Tabelas Agronômicas'),
-            trailing: const Icon(
+            title: Text(
+              'Tabelas Agronômicas',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labRefMetricas),
           ),
-          const Divider(
+          Divider(
             height: 0.5,
-            color: Color(0xFFE5E5E7),
+            color: palette.border,
           ),
           ListTile(
-            title: const Text('Absorção de Nutrientes'),
-            trailing: const Icon(
+            title: Text(
+              'Absorção de Nutrientes',
+              style: TextStyle(color: palette.textPrimary),
+            ),
+            trailing: Icon(
               Icons.chevron_right,
-              color: Color(0xFFC7C7CC),
+              color: palette.textTertiary,
             ),
             onTap: () => context.push(AppRoutes.labRefAbsorcaoNutrientes),
           ),

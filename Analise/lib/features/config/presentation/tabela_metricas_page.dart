@@ -18,7 +18,6 @@ class TabelaMetricasPage extends ConsumerWidget {
     final tabelasAsync = ref.watch(tabelaMetricasProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Tabelas de Métricas'),
         actions: [

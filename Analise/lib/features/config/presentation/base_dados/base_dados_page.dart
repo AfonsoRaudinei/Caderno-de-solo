@@ -14,7 +14,6 @@ class BaseDadosPage extends StatelessWidget {
     const referencias = referenciasTecnicasPadrao;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Referências Técnicas'),
         leading: IconButton(

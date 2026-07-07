@@ -5,6 +5,7 @@ import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/flows/importar_analise_pdf_flow.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
@@ -71,9 +72,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       ..sort((a, b) => b.compareTo(a));
 
     final mostrandoAmostrasHeader = _selectedFolderKey != null;
+    final palette = context.appPalette;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Análise de Solo'),
         bottom: PreferredSize(
@@ -125,9 +127,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                       mostrandoAmostrasHeader
                           ? (_selectedFolderHeaderTitle ?? 'Amostras')
                           : 'Pastas de Análises',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: palette.textPrimary,
                       ),
                     ),
                     if (mostrandoAmostrasHeader) ...[
@@ -1311,6 +1314,7 @@ class _HeaderFilterPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
@@ -1321,34 +1325,35 @@ class _HeaderFilterPanel extends StatelessWidget {
           Container(
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: palette.card,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.borderSoft.withValues(alpha: 0.9),
-              ),
+              border: Border.all(color: palette.border),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  color: palette.shadow,
+                  blurRadius: palette.isDark ? 16 : 10,
+                  offset: Offset(0, palette.isDark ? 8 : 3),
                 ),
               ],
             ),
             child: TextField(
               controller: searchController,
               onChanged: onSearchChanged,
-              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
+              style: AppTextStyles.body.copyWith(
+                fontWeight: FontWeight.w500,
+                color: palette.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'Buscar área, produtor, cultura...',
                 hintStyle: AppTextStyles.body.copyWith(
-                  color: const Color(0xFFA1A1A6),
+                  color: palette.textTertiary,
                 ),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(left: 4),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 4),
                   child: Icon(
                     Icons.search_rounded,
                     size: 22,
-                    color: Color(0xFF6E6E73),
+                    color: palette.textSecondary,
                   ),
                 ),
                 prefixIconConstraints: const BoxConstraints(
@@ -1362,10 +1367,10 @@ class _HeaderFilterPanel extends StatelessWidget {
                           searchController.clear();
                           onSearchChanged('');
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
                           size: 18,
-                          color: Color(0xFF8E8E93),
+                          color: palette.textSecondary,
                         ),
                       ),
                 border: InputBorder.none,
@@ -1447,18 +1452,19 @@ class _SafraChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: isSelected
             ? AppColors.primary.withValues(alpha: 0.10)
-            : Colors.white,
+            : palette.card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.22)
-              : AppColors.borderSoft,
+              : palette.border,
         ),
         boxShadow: [
           BoxShadow(
@@ -1479,7 +1485,7 @@ class _SafraChip extends StatelessWidget {
               label,
               style: AppTextStyles.caption.copyWith(
                 fontSize: 12,
-                color: isSelected ? AppColors.primary : AppColors.textSecond,
+                color: isSelected ? AppColors.primary : palette.textSecondary,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
@@ -1521,9 +1527,13 @@ class _CardSurfaceState extends State<_CardSurface> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final shadowColor = widget.isSelected
         ? widget.selectionColor.withValues(alpha: 0.10)
-        : Colors.black.withValues(alpha: 0.04);
+        : palette.shadow;
+    final borderColor = widget.isSelected
+        ? widget.selectionColor.withValues(alpha: 0.30)
+        : palette.border;
 
     return AnimatedScale(
       scale: _pressed ? 0.988 : 1,
@@ -1533,12 +1543,10 @@ class _CardSurfaceState extends State<_CardSurface> {
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: palette.card,
           borderRadius: BorderRadius.circular(widget.borderRadius),
           border: Border.all(
-            color: widget.isSelected
-                ? widget.selectionColor.withValues(alpha: 0.30)
-                : AppColors.borderSoft.withValues(alpha: 0.95),
+            color: borderColor,
             width: widget.isSelected ? 1.2 : 1,
           ),
           boxShadow: [
@@ -1588,6 +1596,7 @@ class _PastaAnaliseCard extends StatelessWidget {
     final total = pasta.analises.length;
     final totalLabel = total == 1 ? '1 amostra' : '$total amostras';
     final labels = pasta.cardLabels;
+    final palette = context.appPalette;
     return _CardSurface(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -1632,7 +1641,7 @@ class _PastaAnaliseCard extends StatelessWidget {
               style: AppTextStyles.label.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF1D1D1F),
+                color: palette.textPrimary,
                 letterSpacing: -0.1,
               ),
             ),
@@ -1645,7 +1654,7 @@ class _PastaAnaliseCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.caption.copyWith(
                   fontSize: 11,
-                  color: AppColors.textSecond,
+                  color: palette.textSecondary,
                 ),
               ),
             ],
@@ -1658,7 +1667,7 @@ class _PastaAnaliseCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.caption.copyWith(
                   fontSize: 11,
-                  color: const Color(0xFF8E8E93),
+                  color: palette.textTertiary,
                 ),
               ),
             ],
@@ -1706,6 +1715,7 @@ class _AnaliseAmostraCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labels = buildAmostraCardLabels(analise);
+    final palette = context.appPalette;
 
     return _CardSurface(
       onTap: onTap,
@@ -1754,7 +1764,7 @@ class _AnaliseAmostraCard extends StatelessWidget {
               style: AppTextStyles.label.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -1778,7 +1788,7 @@ class _AnaliseAmostraCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.caption.copyWith(
                   fontSize: 10,
-                  color: AppColors.textSecond,
+                  color: palette.textSecondary,
                 ),
               ),
             ],
@@ -1844,12 +1854,13 @@ class _ImportarPdfCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return _CardSurface(
       onTap: onTap,
       borderRadius: 20,
       child: CustomPaint(
         painter: _DashedBorderPainter(
-          color: AppColors.border.withValues(alpha: 0.95),
+          color: palette.border,
           strokeWidth: 1.4,
           dashWidth: 8,
           dashSpace: 6,
@@ -1877,7 +1888,7 @@ class _ImportarPdfCard extends StatelessWidget {
                 'Importar PDF',
                 style: AppTextStyles.label.copyWith(
                   fontSize: 13,
-                  color: AppColors.textSecond,
+                  color: palette.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),

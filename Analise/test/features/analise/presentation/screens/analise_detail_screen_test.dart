@@ -39,7 +39,7 @@ void main() {
             () => _FakeAnaliseNotifier([analise]),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: AnaliseDetailScreen(analiseId: 'det-1'),
         ),
       ),

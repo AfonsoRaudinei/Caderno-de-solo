@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
@@ -248,15 +247,6 @@ Future<void> _selectCalibracao(WidgetTester tester, String value) async {
   final onChanged = dropdown.onChanged;
   expect(onChanged, isNotNull);
   onChanged?.call(value);
-  await tester.pumpAndSettle();
-}
-
-Future<void> _generate(WidgetTester tester) async {
-  final button = tester.widget<AppButton>(
-    find.byKey(const Key('btn_gerar_recomendacao')),
-  );
-  expect(button.onPressed, isNotNull);
-  button.onPressed?.call();
   await tester.pumpAndSettle();
 }
 

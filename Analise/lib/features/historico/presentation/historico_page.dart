@@ -14,9 +14,10 @@ class HistoricoPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historicoAsync = ref.watch(historicoProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Histórico'),
         actions: [
@@ -98,7 +99,7 @@ class HistoricoPage extends ConsumerWidget {
                           style: AppTextStyles.caption.copyWith(
                             fontSize: 12,
                             letterSpacing: 0.5,
-                            color: const Color(0xFF86868B),
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -167,7 +168,7 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.history_outlined,
               size: 72,
-              color: AppColors.textTertiary.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: AppDimens.md),
             Text(
@@ -179,7 +180,9 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Gere uma recomendação na aba Lab',
               textAlign: TextAlign.center,
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+              style: AppTextStyles.body.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/domain/entities/analise_entity.dart';
 import 'package:soloforte/domain/entities/resultado_gesso.dart';
-import 'package:soloforte/domain/export/recomendacao_export_context.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
