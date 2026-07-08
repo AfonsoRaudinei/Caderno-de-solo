@@ -1,5 +1,4 @@
-import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
+import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
@@ -441,15 +440,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       final perfilAssets = ref.read(perfilAssetsProvider);
       final perfil = ref.read(configControllerProvider).valueOrNull;
 
-      final exportContext =
-          await const RecomendacaoExportContextBuilder().build(
+      await ref.read(exportRecomendacaoProvider)(
         resultado: resultado,
         analiseSolo: analiseSolo,
         perfil: perfil,
         logoUrl: perfilAssets.logoUrl,
       );
-
-      await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
       _showMensagem('Erro ao compartilhar: $e');
