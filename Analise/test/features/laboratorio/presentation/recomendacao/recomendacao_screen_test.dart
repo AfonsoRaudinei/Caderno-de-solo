@@ -310,13 +310,14 @@ void main() {
     expect(result.diagnostico.valido, isTrue);
 
     await tester.scrollUntilVisible(
-      find.byKey(const Key('btn_compartilhar_recomendacao')),
+      find.byKey(const Key('btn_exportar_pdf')),
       500,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Compartilhar'), findsOneWidget);
+    expect(find.text('Exportar relatorio'), findsOneWidget);
+    expect(find.text('Compartilhar'), findsNothing);
     expect(find.text('Exportar HTML'), findsNothing);
     expect(find.text('Exportar PDF'), findsNothing);
   });

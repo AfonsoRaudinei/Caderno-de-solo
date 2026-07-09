@@ -1,5 +1,4 @@
-import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
+import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
@@ -342,12 +341,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      key: const Key('btn_compartilhar_recomendacao'),
+                      key: const Key('btn_exportar_pdf'),
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _compartilharRecomendacao(resultado),
+                          : () => _exportarRelatorio(resultado),
                       icon: const Icon(Icons.share_outlined, size: 18),
-                      label: const Text('Compartilhar'),
+                      label: const Text('Exportar relatorio'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF666666),
                         side: const BorderSide(color: Color(0xFFD1D1D6)),
@@ -431,8 +430,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     }
   }
 
-  Future<void> _compartilharRecomendacao(
-      ResultadoRecomendacao resultado) async {
+  Future<void> _exportarRelatorio(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
       final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
@@ -447,18 +445,15 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       final perfilAssets = ref.read(perfilAssetsProvider);
       final perfil = ref.read(configControllerProvider).valueOrNull;
 
-      final exportContext =
-          await const RecomendacaoExportContextBuilder().build(
+      await ref.read(exportRecomendacaoProvider)(
         resultado: resultado,
         analiseSolo: analiseSolo,
         perfil: perfil,
         logoUrl: perfilAssets.logoUrl,
       );
-
-      await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro ao compartilhar: $e');
+      _showMensagem('Erro exportar relatorio: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }

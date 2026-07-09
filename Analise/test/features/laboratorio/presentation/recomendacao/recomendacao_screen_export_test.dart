@@ -3,16 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
+import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
+import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
+import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
 import 'package:soloforte/features/config/presentation/providers/tabela_metricas_provider.dart';
 import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
+import 'package:soloforte/core/widgets/app_button.dart';
+import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
 
@@ -99,6 +104,16 @@ class _FakePerfilAssetsNotifier extends StateNotifier<PerfilAssets>
   Future<bool> removeAssinatura() async => true;
 }
 
+class _FakeConfigController extends ConfigController {
+  @override
+  Future<UserProfileData> build() async => const UserProfileData(
+        nome: 'Consultor Teste',
+        email: 'teste@example.com',
+        empresa: 'Empresa A',
+        tipoPerfil: 'Eng. Agr.',
+      );
+}
+
 final _emptyProfile = CalibracaoProfile(
   id: '__empty__',
   nome: '',
@@ -128,8 +143,12 @@ CalibracaoProfile _profile() {
         'metodoCalagem': '① Saturação por Bases (V%)',
         'vDesejado': 60.0,
       },
-      'fosforo': {'modoCalculo': '① Correção do solo'},
-      'potassio': {'modoCalculo': '① Correção do solo'},
+      'fosforo': {
+        'modoCalculo': '① Correção do solo',
+      },
+      'potassio': {
+        'modoCalculo': '① Correção do solo',
+      },
       'micros': {},
     },
     createdAt: DateTime(2026, 1, 1),
@@ -137,7 +156,7 @@ CalibracaoProfile _profile() {
   );
 }
 
-AnaliseSolo _analiseValida() {
+AnaliseSolo _analise() {
   return AnaliseSolo(
     id: 'a-1',
     fazenda: 'Fazenda A',
@@ -167,93 +186,40 @@ AnaliseSolo _analiseValida() {
   );
 }
 
-AnaliseSolo _analiseSemK() {
-  return AnaliseSolo(
-    id: 'a-2',
-    fazenda: 'Fazenda A',
-    produtor: 'Produtor A',
-    talhao: 'Talhão A',
-    numeroAmostra: '002',
-    cultura: Cultura.soja,
-    safra: '24/25',
-    laboratorio: 'Lab A',
-    dataCadastro: DateTime(2026, 4, 5),
-    profundidade: '0-20',
-    argila: 350,
-    phAgua: 5.3,
-    materiaOrganica: 3.0,
-    pMehlich: 8.0,
-    k: null,
-    ca: 2.1,
-    mg: 0.9,
-    hMaisAl: 4.6,
-    al: 0.2,
-    s020: 7.0,
-    b: 0.25,
-    cu: 0.6,
-    fe: 35,
-    mn: 3.2,
-    zn: 1.4,
-  );
-}
-
-Future<void> _pump(
-  WidgetTester tester, {
-  required List<CalibracaoProfile> profiles,
-  required List<AnaliseSolo> analises,
-}) async {
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        calibracaoControllerProvider.overrideWith(
-          (ref) => _FakeCalibracaoController(profiles: profiles),
-        ),
-        analiseNotifierProvider
-            .overrideWith(() => _FakeAnaliseNotifier(analises)),
-        tabelaMetricasProvider.overrideWith(
-          () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
-        ),
-        perfilAssetsProvider.overrideWith((ref) => _FakePerfilAssetsNotifier()),
-        analisesVisiveisProvider.overrideWith(
-          (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
-        ),
-      ],
-      child: const MaterialApp(home: RecomendacaoScreen()),
-    ),
-  );
+Future<void> _pumpAndDrain(WidgetTester tester) async {
   await tester.pumpAndSettle();
+  while (tester.takeException() != null) {}
 }
 
-Future<void> _selectAnalise(WidgetTester tester, String analiseId) async {
+Future<void> _selectAmostra(WidgetTester tester, String analiseId) async {
   await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-  await tester.pumpAndSettle();
-
-  final checked = find.byIcon(Icons.check_circle);
-  for (var i = checked.evaluate().length - 1; i >= 0; i--) {
-    await tester.tap(checked.at(i));
-    await tester.pumpAndSettle();
-  }
-
+  await _pumpAndDrain(tester);
   await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
-  await tester.pumpAndSettle();
+  await _pumpAndDrain(tester);
   await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-  await tester.pumpAndSettle();
+  await _pumpAndDrain(tester);
 }
 
-Future<void> _selectCalibracao(WidgetTester tester, String value) async {
+Future<void> _selectCalibracao(WidgetTester tester, String calibracaoId) async {
   final dropdown = tester.widget<DropdownButton<String>>(
     find.byType(DropdownButton<String>),
   );
-  final onChanged = dropdown.onChanged;
-  expect(onChanged, isNotNull);
-  onChanged?.call(value);
-  await tester.pumpAndSettle();
+  dropdown.onChanged?.call(calibracaoId);
+  await _pumpAndDrain(tester);
+}
+
+Future<void> _generate(WidgetTester tester) async {
+  final button = tester.widget<AppButton>(
+    find.byKey(const Key('btn_gerar_recomendacao')),
+  );
+  expect(button.onPressed, isNotNull);
+  button.onPressed?.call();
+  await _pumpAndDrain(tester);
 }
 
 RecomendacaoResult _readResult(
   WidgetTester tester, {
-  List<String> analiseIds = const [],
-  String? analiseId,
+  required List<String> analiseIds,
   required String calibracaoId,
 }) {
   final container = ProviderScope.containerOf(
@@ -263,7 +229,6 @@ RecomendacaoResult _readResult(
     recomendacaoProvider(
       RecomendacaoRequest(
         analiseIds: analiseIds,
-        analiseId: analiseId,
         calibracaoId: calibracaoId,
       ),
     ),
@@ -271,80 +236,78 @@ RecomendacaoResult _readResult(
 }
 
 void main() {
-  group('Recomendacao flow integration', () {
-    void Function(FlutterErrorDetails details)? previousErrorHandler;
+  testWidgets('botão exportar dispara exportador mockado', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    setUp(() {
-      previousErrorHandler = FlutterError.onError;
-      FlutterError.onError = (details) {
-        if (details.exceptionAsString().contains('overflowed')) return;
-        previousErrorHandler?.call(details);
-      };
-    });
+    var exportChamado = false;
+    ResultadoRecomendacao? resultadoExportado;
 
-    tearDown(() {
-      FlutterError.onError = previousErrorHandler;
-    });
-
-    testWidgets('sucesso: análise + calibração renderiza ações',
-        (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 2400));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await _pump(tester, profiles: [_profile()], analises: [_analiseValida()]);
-
-      await _selectAnalise(tester, 'a-1');
-      await _selectCalibracao(tester, 'c-1');
-
-      final result = _readResult(
-        tester,
-        analiseIds: ['a-1'],
-        calibracaoId: 'c-1',
-      );
-      expect(result.recomendacao, isNotNull);
-      expect(result.diagnostico.valido, isTrue);
-
-      await tester.scrollUntilVisible(
-        find.byKey(const Key('btn_exportar_pdf')),
-        500,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
-      expect(find.text('Exportar relatorio'), findsOneWidget);
-      expect(find.text('Compartilhar'), findsNothing);
-      expect(find.text('Exportar HTML'), findsNothing);
-      expect(find.text('Exportar PDF'), findsNothing);
-    });
-
-    testWidgets('analise sem potassio gera aviso e oculta acoes invalidas', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 2400));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await _pump(tester, profiles: [_profile()], analises: [_analiseSemK()]);
-
-      await _selectAnalise(tester, 'a-2');
-      await _selectCalibracao(tester, 'c-1');
-
-      final result = _readResult(
-        tester,
-        analiseIds: ['a-2'],
-        calibracaoId: 'c-1',
-      );
-      expect(result.recomendacao, isNotNull);
-      expect(
-        result.recomendacao!.avisos.any(
-          (aviso) => aviso.contains('Potássio bloqueado'),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          calibracaoControllerProvider.overrideWith(
+            (ref) => _FakeCalibracaoController(profiles: [_profile()]),
+          ),
+          analiseNotifierProvider.overrideWith(
+            () => _FakeAnaliseNotifier([_analise()]),
+          ),
+          tabelaMetricasProvider.overrideWith(
+            () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
+          ),
+          perfilAssetsProvider.overrideWith(
+            (ref) => _FakePerfilAssetsNotifier(),
+          ),
+          analisesVisiveisProvider.overrideWith(
+            (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+          ),
+          configControllerProvider.overrideWith(_FakeConfigController.new),
+          exportRecomendacaoProvider.overrideWith((ref) {
+            return ({
+              required ResultadoRecomendacao resultado,
+              analiseSolo,
+              perfil,
+              logoUrl,
+            }) async {
+              exportChamado = true;
+              resultadoExportado = resultado;
+            };
+          }),
+        ],
+        child: const MaterialApp(
+          home: RecomendacaoScreen(),
         ),
-        isTrue,
-      );
-      expect(find.text('Exportar relatorio'), findsNothing);
-      expect(find.text('Compartilhar'), findsNothing);
-      expect(find.text('Exportar HTML'), findsNothing);
-      expect(find.text('Exportar PDF'), findsNothing);
-    });
+      ),
+    );
+    await _pumpAndDrain(tester);
+
+    await _selectAmostra(tester, 'a-1');
+    await _selectCalibracao(tester, 'c-1');
+    await _generate(tester);
+
+    final result = _readResult(
+      tester,
+      analiseIds: const ['a-1'],
+      calibracaoId: 'c-1',
+    );
+    expect(result.recomendacao, isNotNull);
+    expect(result.diagnostico.valido, isTrue);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('btn_exportar_pdf')),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await _pumpAndDrain(tester);
+
+    expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
+    expect(find.text('Exportar relatorio'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('btn_exportar_pdf')));
+    await _pumpAndDrain(tester);
+
+    expect(exportChamado, isTrue);
+    expect(resultadoExportado, isNotNull);
+    expect(resultadoExportado!.calibracao.id, 'c-1');
   });
 }

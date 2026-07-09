@@ -52,7 +52,7 @@ class ProdutorResolucaoService {
     return '';
   }
 
-  static bool nomesProdutorCompatíveis(String a, String b) {
+  static bool nomesProdutorCompativeis(String a, String b) {
     final left = a.trim().toLowerCase();
     final right = b.trim().toLowerCase();
     if (left.isEmpty || right.isEmpty) return false;
@@ -69,7 +69,7 @@ class ProdutorResolucaoService {
     final produtorAnalise = produtorEfetivo(analise);
     if (produtorAnalise.isEmpty) return false;
 
-    return nomesProdutorCompatíveis(produtorAnalise, configurado);
+    return nomesProdutorCompativeis(produtorAnalise, configurado);
   }
 
   static AnaliseSolo aplicarProdutorConfigurado(
