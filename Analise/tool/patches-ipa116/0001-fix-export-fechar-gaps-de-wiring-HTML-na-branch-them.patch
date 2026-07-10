@@ -1,0 +1,515 @@
+From 4fef5fd647f93bd2e32edd16bdc70bbb582709d7 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Thu, 9 Jul 2026 00:39:17 +0000
+Subject: [PATCH 1/2] fix(export): fechar gaps de wiring HTML na branch theme
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Adiciona exportRecomendacaoProvider mockável
+- Tela usa provider com btn_exportar_pdf e label Exportar relatorio
+- Adiciona recomendacao_screen_export_test.dart
+- Atualiza testes de screen/integration para novo contrato
+- Renomeia nomesProdutorCompativeis (identificador ASCII)
+
+Co-authored-by: AfonsoRaudinei <AfonsoRaudinei@users.noreply.github.com>
+---
+ .../services/produtor_resolucao_service.dart  |   4 +-
+ .../recomendacao_export_provider.dart         |  31 ++
+ .../recomendacao/recomendacao_screen.dart     |  19 +-
+ .../recomendacao_screen_export_test.dart      | 313 ++++++++++++++++++
+ .../recomendacao_screen_test.dart             |   5 +-
+ .../integration/recomendacao_flow_test.dart   |  11 +
+ 6 files changed, 367 insertions(+), 16 deletions(-)
+ create mode 100644 Analise/lib/features/laboratorio/presentation/providers/recomendacao_export_provider.dart
+ create mode 100644 Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_export_test.dart
+
+diff --git a/Analise/lib/features/analise/domain/services/produtor_resolucao_service.dart b/Analise/lib/features/analise/domain/services/produtor_resolucao_service.dart
+index 9e1a2f6..6a480f3 100644
+--- a/Analise/lib/features/analise/domain/services/produtor_resolucao_service.dart
++++ b/Analise/lib/features/analise/domain/services/produtor_resolucao_service.dart
+@@ -52,7 +52,7 @@ class ProdutorResolucaoService {
+     return '';
+   }
+ 
+-  static bool nomesProdutorCompatíveis(String a, String b) {
++  static bool nomesProdutorCompativeis(String a, String b) {
+     final left = a.trim().toLowerCase();
+     final right = b.trim().toLowerCase();
+     if (left.isEmpty || right.isEmpty) return false;
+@@ -69,7 +69,7 @@ class ProdutorResolucaoService {
+     final produtorAnalise = produtorEfetivo(analise);
+     if (produtorAnalise.isEmpty) return false;
+ 
+-    return nomesProdutorCompatíveis(produtorAnalise, configurado);
++    return nomesProdutorCompativeis(produtorAnalise, configurado);
+   }
+ 
+   static AnaliseSolo aplicarProdutorConfigurado(
+diff --git a/Analise/lib/features/laboratorio/presentation/providers/recomendacao_export_provider.dart b/Analise/lib/features/laboratorio/presentation/providers/recomendacao_export_provider.dart
+new file mode 100644
+index 0000000..5bfb897
+--- /dev/null
++++ b/Analise/lib/features/laboratorio/presentation/providers/recomendacao_export_provider.dart
+@@ -0,0 +1,31 @@
++import 'package:flutter_riverpod/flutter_riverpod.dart';
++import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
++import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
++import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
++import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
++import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
++
++typedef ExportRecomendacaoFn = Future<void> Function({
++  required ResultadoRecomendacao resultado,
++  AnaliseSolo? analiseSolo,
++  UserProfileData? perfil,
++  String? logoUrl,
++});
++
++/// Exporta recomendação como HTML (substituível em testes).
++final exportRecomendacaoProvider = Provider<ExportRecomendacaoFn>((ref) {
++  return ({
++    required ResultadoRecomendacao resultado,
++    AnaliseSolo? analiseSolo,
++    UserProfileData? perfil,
++    String? logoUrl,
++  }) async {
++    final exportContext = await const RecomendacaoExportContextBuilder().build(
++      resultado: resultado,
++      analiseSolo: analiseSolo,
++      perfil: perfil,
++      logoUrl: logoUrl,
++    );
++    await const RecomendacaoHtmlExporter().exportar(exportContext);
++  };
++});
+diff --git a/Analise/lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart b/Analise/lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart
+index 3689a5e..8629ba5 100644
+--- a/Analise/lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart
++++ b/Analise/lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart
+@@ -1,5 +1,4 @@
+-import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
+-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
++import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
+ import 'package:firebase_auth/firebase_auth.dart';
+ import 'package:soloforte/domain/models/recomendacao_model.dart';
+ import 'package:flutter/material.dart';
+@@ -342,12 +341,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
+                   SizedBox(
+                     width: double.infinity,
+                     child: OutlinedButton.icon(
+-                      key: const Key('btn_compartilhar_recomendacao'),
++                      key: const Key('btn_exportar_pdf'),
+                       onPressed: (_salvando || _exportando)
+                           ? null
+-                          : () => _compartilharRecomendacao(resultado),
++                          : () => _exportarRelatorio(resultado),
+                       icon: const Icon(Icons.share_outlined, size: 18),
+-                      label: const Text('Compartilhar'),
++                      label: const Text('Exportar relatorio'),
+                       style: OutlinedButton.styleFrom(
+                         foregroundColor: const Color(0xFF666666),
+                         side: const BorderSide(color: Color(0xFFD1D1D6)),
+@@ -431,8 +430,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
+     }
+   }
+ 
+-  Future<void> _compartilharRecomendacao(
+-      ResultadoRecomendacao resultado) async {
++  Future<void> _exportarRelatorio(ResultadoRecomendacao resultado) async {
+     setState(() => _exportando = true);
+     try {
+       final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
+@@ -447,18 +445,15 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
+       final perfilAssets = ref.read(perfilAssetsProvider);
+       final perfil = ref.read(configControllerProvider).valueOrNull;
+ 
+-      final exportContext =
+-          await const RecomendacaoExportContextBuilder().build(
++      await ref.read(exportRecomendacaoProvider)(
+         resultado: resultado,
+         analiseSolo: analiseSolo,
+         perfil: perfil,
+         logoUrl: perfilAssets.logoUrl,
+       );
+-
+-      await const RecomendacaoHtmlExporter().exportar(exportContext);
+     } catch (e) {
+       if (!mounted) return;
+-      _showMensagem('Erro ao compartilhar: $e');
++      _showMensagem('Erro exportar relatorio: $e');
+     } finally {
+       if (mounted) setState(() => _exportando = false);
+     }
+diff --git a/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_export_test.dart b/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_export_test.dart
+new file mode 100644
+index 0000000..99fea1b
+--- /dev/null
++++ b/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_export_test.dart
+@@ -0,0 +1,313 @@
++import 'package:flutter/material.dart';
++import 'package:flutter_riverpod/flutter_riverpod.dart';
++import 'package:flutter_test/flutter_test.dart';
++import 'package:soloforte/domain/models/calibracao_profile.dart';
++import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
++import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
++import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
++import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
++import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
++import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
++import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
++import 'package:soloforte/features/config/presentation/config_controller.dart';
++import 'package:soloforte/features/config/presentation/config_page.dart'
++    show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
++import 'package:soloforte/features/config/presentation/providers/tabela_metricas_provider.dart';
++import 'package:soloforte/features/laboratorio/domain/repositories/calibracao_repository.dart';
++import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
++import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
++import 'package:soloforte/core/widgets/app_button.dart';
++import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
++import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
++import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
++
++class _FakeCalibracaoController extends CalibracaoController {
++  _FakeCalibracaoController({required List<CalibracaoProfile> profiles})
++      : super(
++          carregarCalibracoes: CarregarCalibracoesUsecase(
++            _FakeCalibracaoRepository(profiles),
++          ),
++          salvarCalibracao: SalvarCalibracaoUsecase(
++            _FakeCalibracaoRepository(profiles),
++          ),
++          excluirCalibracao: ExcluirCalibracaoUsecase(
++            _FakeCalibracaoRepository(profiles),
++          ),
++        ) {
++    final first = profiles.isNotEmpty ? profiles.first : _emptyProfile;
++    state = state.copyWith(
++      loading: false,
++      profiles: profiles,
++      selectedProfileId: profiles.isNotEmpty ? first.id : null,
++      draft: first,
++    );
++  }
++}
++
++class _FakeCalibracaoRepository implements CalibracaoRepository {
++  _FakeCalibracaoRepository(this.profiles);
++
++  List<CalibracaoProfile> profiles;
++
++  @override
++  Future<List<CalibracaoProfile>> carregarPerfis() async => profiles;
++
++  @override
++  Future<void> salvarPerfis({
++    required List<CalibracaoProfile> perfis,
++    required CalibracaoProfile perfilSincronizar,
++  }) async {
++    profiles = perfis;
++  }
++
++  @override
++  Future<void> excluirPerfil({
++    required List<CalibracaoProfile> perfisRestantes,
++    required String perfilId,
++  }) async {
++    profiles = perfisRestantes;
++  }
++}
++
++class _FakeAnaliseNotifier extends AnaliseNotifier {
++  _FakeAnaliseNotifier(this._analises);
++
++  final List<AnaliseSolo> _analises;
++
++  @override
++  Stream<List<AnaliseSolo>> build() => Stream.value(_analises);
++}
++
++class _FakeTabelaMetricasNotifier extends TabelaMetricasNotifier {
++  _FakeTabelaMetricasNotifier(this._tabelas);
++
++  final List<TabelaMetricas> _tabelas;
++
++  @override
++  Future<List<TabelaMetricas>> build() async => _tabelas;
++}
++
++class _FakePerfilAssetsNotifier extends StateNotifier<PerfilAssets>
++    implements PerfilAssetsNotifier {
++  _FakePerfilAssetsNotifier() : super(const PerfilAssets());
++
++  @override
++  Future<bool> uploadLogo() async => true;
++
++  @override
++  Future<bool> uploadAssinatura() async => true;
++
++  @override
++  Future<bool> removeLogo() async => true;
++
++  @override
++  Future<bool> removeAssinatura() async => true;
++}
++
++class _FakeConfigController extends ConfigController {
++  @override
++  Future<UserProfileData> build() async => const UserProfileData(
++        nome: 'Consultor Teste',
++        email: 'teste@example.com',
++        empresa: 'Empresa A',
++        tipoPerfil: 'Eng. Agr.',
++      );
++}
++
++final _emptyProfile = CalibracaoProfile(
++  id: '__empty__',
++  nome: '',
++  cultura: 'Soja',
++  safra: '',
++  cliente: '',
++  fazenda: '',
++  talhao: '',
++  observacoes: '',
++  parametrosCards: {},
++  createdAt: DateTime(2026, 1, 1),
++  updatedAt: DateTime(2026, 1, 1),
++);
++
++CalibracaoProfile _profile() {
++  return CalibracaoProfile(
++    id: 'c-1',
++    nome: 'Perfil Soja',
++    cultura: 'Soja',
++    safra: '24/25',
++    cliente: 'Cliente A',
++    fazenda: 'Fazenda A',
++    talhao: 'Talhão A',
++    observacoes: '',
++    parametrosCards: {
++      'corretivos': {
++        'metodoCalagem': '① Saturação por Bases (V%)',
++        'vDesejado': 60.0,
++      },
++      'fosforo': {
++        'modoCalculo': '① Correção do solo',
++      },
++      'potassio': {
++        'modoCalculo': '① Correção do solo',
++      },
++      'micros': {},
++    },
++    createdAt: DateTime(2026, 1, 1),
++    updatedAt: DateTime(2026, 1, 2),
++  );
++}
++
++AnaliseSolo _analise() {
++  return AnaliseSolo(
++    id: 'a-1',
++    fazenda: 'Fazenda A',
++    produtor: 'Produtor A',
++    talhao: 'Talhão A',
++    numeroAmostra: '001',
++    cultura: Cultura.soja,
++    safra: '24/25',
++    laboratorio: 'Lab A',
++    dataCadastro: DateTime(2026, 4, 5),
++    profundidade: '0-20',
++    argila: 350,
++    phAgua: 5.3,
++    materiaOrganica: 3.0,
++    pMehlich: 8.0,
++    k: 0.22,
++    ca: 2.1,
++    mg: 0.9,
++    hMaisAl: 4.6,
++    al: 0.2,
++    s020: 7.0,
++    b: 0.25,
++    cu: 0.6,
++    fe: 35,
++    mn: 3.2,
++    zn: 1.4,
++  );
++}
++
++Future<void> _pumpAndDrain(WidgetTester tester) async {
++  await tester.pumpAndSettle();
++  while (tester.takeException() != null) {}
++}
++
++Future<void> _selectAmostra(WidgetTester tester, String analiseId) async {
++  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
++  await _pumpAndDrain(tester);
++  await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
++  await _pumpAndDrain(tester);
++  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
++  await _pumpAndDrain(tester);
++}
++
++Future<void> _selectCalibracao(WidgetTester tester, String calibracaoId) async {
++  final dropdown = tester.widget<DropdownButton<String>>(
++    find.byType(DropdownButton<String>),
++  );
++  dropdown.onChanged?.call(calibracaoId);
++  await _pumpAndDrain(tester);
++}
++
++Future<void> _generate(WidgetTester tester) async {
++  final button = tester.widget<AppButton>(
++    find.byKey(const Key('btn_gerar_recomendacao')),
++  );
++  expect(button.onPressed, isNotNull);
++  button.onPressed?.call();
++  await _pumpAndDrain(tester);
++}
++
++RecomendacaoResult _readResult(
++  WidgetTester tester, {
++  required List<String> analiseIds,
++  required String calibracaoId,
++}) {
++  final container = ProviderScope.containerOf(
++    tester.element(find.byType(RecomendacaoScreen)),
++  );
++  return container.read(
++    recomendacaoProvider(
++      RecomendacaoRequest(
++        analiseIds: analiseIds,
++        calibracaoId: calibracaoId,
++      ),
++    ),
++  );
++}
++
++void main() {
++  testWidgets('botão exportar dispara exportador mockado', (tester) async {
++    await tester.binding.setSurfaceSize(const Size(1200, 2400));
++    addTearDown(() => tester.binding.setSurfaceSize(null));
++
++    var exportChamado = false;
++    ResultadoRecomendacao? resultadoExportado;
++
++    await tester.pumpWidget(
++      ProviderScope(
++        overrides: [
++          calibracaoControllerProvider.overrideWith(
++            (ref) => _FakeCalibracaoController(profiles: [_profile()]),
++          ),
++          analiseNotifierProvider.overrideWith(
++            () => _FakeAnaliseNotifier([_analise()]),
++          ),
++          tabelaMetricasProvider.overrideWith(
++            () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
++          ),
++          perfilAssetsProvider.overrideWith(
++            (ref) => _FakePerfilAssetsNotifier(),
++          ),
++          analisesVisiveisProvider.overrideWith(
++            (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
++          ),
++          configControllerProvider.overrideWith(_FakeConfigController.new),
++          exportRecomendacaoProvider.overrideWith((ref) {
++            return ({
++              required ResultadoRecomendacao resultado,
++              analiseSolo,
++              perfil,
++              logoUrl,
++            }) async {
++              exportChamado = true;
++              resultadoExportado = resultado;
++            };
++          }),
++        ],
++        child: const MaterialApp(
++          home: RecomendacaoScreen(),
++        ),
++      ),
++    );
++    await _pumpAndDrain(tester);
++
++    await _selectAmostra(tester, 'a-1');
++    await _selectCalibracao(tester, 'c-1');
++    await _generate(tester);
++
++    final result = _readResult(
++      tester,
++      analiseIds: const ['a-1'],
++      calibracaoId: 'c-1',
++    );
++    expect(result.recomendacao, isNotNull);
++    expect(result.diagnostico.valido, isTrue);
++
++    await tester.scrollUntilVisible(
++      find.byKey(const Key('btn_exportar_pdf')),
++      500,
++      scrollable: find.byType(Scrollable).first,
++    );
++    await _pumpAndDrain(tester);
++
++    expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
++    expect(find.text('Exportar relatorio'), findsOneWidget);
++
++    await tester.tap(find.byKey(const Key('btn_exportar_pdf')));
++    await _pumpAndDrain(tester);
++
++    expect(exportChamado, isTrue);
++    expect(resultadoExportado, isNotNull);
++    expect(resultadoExportado!.calibracao.id, 'c-1');
++  });
++}
+diff --git a/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_test.dart b/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_test.dart
+index 4f4908f..a941a79 100644
+--- a/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_test.dart
++++ b/Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_test.dart
+@@ -310,13 +310,14 @@ void main() {
+     expect(result.diagnostico.valido, isTrue);
+ 
+     await tester.scrollUntilVisible(
+-      find.byKey(const Key('btn_compartilhar_recomendacao')),
++      find.byKey(const Key('btn_exportar_pdf')),
+       500,
+       scrollable: find.byType(Scrollable).first,
+     );
+     await tester.pumpAndSettle();
+ 
+-    expect(find.text('Compartilhar'), findsOneWidget);
++    expect(find.text('Exportar relatorio'), findsOneWidget);
++    expect(find.text('Compartilhar'), findsNothing);
+     expect(find.text('Exportar HTML'), findsNothing);
+     expect(find.text('Exportar PDF'), findsNothing);
+   });
+diff --git a/Analise/test/integration/recomendacao_flow_test.dart b/Analise/test/integration/recomendacao_flow_test.dart
+index e636794..e9b904b 100644
+--- a/Analise/test/integration/recomendacao_flow_test.dart
++++ b/Analise/test/integration/recomendacao_flow_test.dart
+@@ -303,6 +303,16 @@ void main() {
+       );
+       expect(result.recomendacao, isNotNull);
+       expect(result.diagnostico.valido, isTrue);
++
++      await tester.scrollUntilVisible(
++        find.byKey(const Key('btn_exportar_pdf')),
++        500,
++        scrollable: find.byType(Scrollable).first,
++      );
++      await tester.pumpAndSettle();
++
++      expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
++      expect(find.text('Exportar relatorio'), findsOneWidget);
+       expect(find.text('Compartilhar'), findsNothing);
+       expect(find.text('Exportar HTML'), findsNothing);
+       expect(find.text('Exportar PDF'), findsNothing);
+@@ -331,6 +341,7 @@ void main() {
+         ),
+         isTrue,
+       );
++      expect(find.text('Exportar relatorio'), findsNothing);
+       expect(find.text('Compartilhar'), findsNothing);
+       expect(find.text('Exportar HTML'), findsNothing);
+       expect(find.text('Exportar PDF'), findsNothing);
+-- 
+2.43.0
+
