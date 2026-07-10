@@ -257,7 +257,8 @@ class _AbsorcaoNutrientesReferenciaPageState
 
     return Container(
       decoration: BoxDecoration(
-        color: AbsorcaoNutrientesCores.sectionSwitcherBg(isDark: palette.isDark),
+        color:
+            AbsorcaoNutrientesCores.sectionSwitcherBg(isDark: palette.isDark),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AbsorcaoNutrientesCores.sectionSwitcherBorder(
@@ -568,12 +569,14 @@ class _AbsorcaoNutrientesReferenciaPageState
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingTextStyle: AppTextStyles.label.copyWith(
-                color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+                color:
+                    AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
                 fontSize: 12,
               ),
               dataTextStyle: AppTextStyles.body.copyWith(
                 fontSize: 13,
-                color: AbsorcaoNutrientesCores.valueColor(isDark: palette.isDark),
+                color:
+                    AbsorcaoNutrientesCores.valueColor(isDark: palette.isDark),
               ),
               columns: [
                 const DataColumn(label: Text('Estádio')),

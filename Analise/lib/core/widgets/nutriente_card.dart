@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
@@ -72,7 +71,8 @@ class _NutrienteCardState extends State<NutrienteCard>
   @override
   void didUpdateWidget(covariant NutrienteCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isExpanded != null && widget.isExpanded != oldWidget.isExpanded) {
+    if (widget.isExpanded != null &&
+        widget.isExpanded != oldWidget.isExpanded) {
       if (widget.isExpanded!) {
         _controller.forward();
       } else {

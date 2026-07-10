@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 
 class RecomendacaoMicrosUnificadosSection extends StatelessWidget {
@@ -12,6 +13,7 @@ class RecomendacaoMicrosUnificadosSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (resultado.micros.isEmpty) return const SizedBox.shrink();
+    final palette = context.appPalette;
 
     final referencia = resultado.micros
         .firstWhere((m) => m.referencia != null && m.referencia!.isNotEmpty,
@@ -21,14 +23,14 @@ class RecomendacaoMicrosUnificadosSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             'MICRONUTRIENTES',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF86868B),
+              color: palette.textSecondary,
               letterSpacing: 0.5,
             ),
           ),
@@ -53,9 +55,9 @@ class RecomendacaoMicrosUnificadosSection extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                   child: Text(
                     referencia,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF86868B),
+                      color: palette.textSecondary,
                     ),
                   ),
                 ),
@@ -171,11 +173,11 @@ class _MicroNutrienteItem extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          const Divider(
+          Divider(
             height: 1,
             indent: 16,
             endIndent: 16,
-            color: Color(0xFFE5E5E7),
+            color: context.appPalette.border,
           ),
       ],
     );
@@ -232,14 +234,15 @@ class _DoseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Row(
       children: [
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF86868B),
+              color: palette.textSecondary,
             ),
           ),
         ),

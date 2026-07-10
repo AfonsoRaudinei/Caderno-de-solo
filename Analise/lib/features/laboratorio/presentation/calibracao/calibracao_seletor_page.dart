@@ -280,7 +280,7 @@ class _NovaCalibracaoCard extends StatelessWidget {
               const Icon(
                 Icons.add_circle,
                 size: 48,
-                color: Color(0xFF34C759), // verde iOS
+                color: AppColors.success,
               ),
               const SizedBox(height: 8),
               Text(

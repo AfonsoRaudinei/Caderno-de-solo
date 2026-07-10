@@ -146,7 +146,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                         },
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          foregroundColor: const Color(0xFF007AFF),
+                          foregroundColor: AppColors.primary,
                         ),
                         icon: const Icon(Icons.arrow_back_rounded, size: 18),
                         label: Text(
@@ -164,7 +164,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               '${_selectedAnaliseIds.length} selecionada(s)',
                               style: AppTextStyles.body.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textSecond,
+                                color: palette.textSecondary,
                               ),
                             ),
                           const Spacer(),
@@ -202,7 +202,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                               '${_selectedFolderKeys.length} selecionada(s)',
                               style: AppTextStyles.body.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textSecond,
+                                color: palette.textSecondary,
                               ),
                             ),
                           const Spacer(),
@@ -498,69 +498,75 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                pasta.cardLabels.titulo,
-                style: AppTextStyles.body.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+      builder: (sheetContext) {
+        final sheetPalette = sheetContext.appPalette;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: sheetPalette.borderStrong,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(
-                Icons.edit_outlined,
-                color: AppColors.primary,
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  pasta.cardLabels.titulo,
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: sheetPalette.textPrimary,
+                  ),
+                ),
               ),
-              title: Text(
-                'Renomear Pasta',
-                style: AppTextStyles.body.copyWith(color: AppColors.primary),
+              Divider(height: 1, color: sheetPalette.border),
+              ListTile(
+                leading: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  'Renomear Pasta',
+                  style: AppTextStyles.body.copyWith(color: AppColors.primary),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _showRenomearPastaDialog(context, pasta);
+                },
               ),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _showRenomearPastaDialog(context, pasta);
-              },
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: Text(
-                'Excluir Pasta',
-                style: AppTextStyles.body.copyWith(color: AppColors.error),
+              Divider(height: 1, color: sheetPalette.border),
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_outline, color: AppColors.error),
+                title: Text(
+                  'Excluir Pasta',
+                  style: AppTextStyles.body.copyWith(color: AppColors.error),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _confirmarExcluirPasta(context, pasta);
+                },
               ),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _confirmarExcluirPasta(context, pasta);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.close, color: AppColors.textSecond),
-              title: Text(
-                'Cancelar',
-                style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+              ListTile(
+                leading: Icon(Icons.close, color: sheetPalette.textSecondary),
+                title: Text(
+                  'Cancelar',
+                  style: AppTextStyles.body
+                      .copyWith(color: sheetPalette.textSecondary),
+                ),
+                onTap: () => Navigator.of(sheetContext).pop(),
               ),
-              onTap: () => Navigator.of(sheetContext).pop(),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -578,6 +584,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
             final nome = controller.text.trim();
             final desabilitado =
                 nome.isEmpty || nome == pasta.cardLabels.titulo;
+            final dialogPalette = context.appPalette;
 
             return AlertDialog(
               title: const Text('Renomear pasta'),
@@ -590,7 +597,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                   counterText: '',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: dialogPalette.borderStrong),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -609,12 +616,10 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(
-                    'Cancelar',
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecond,
-                    ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: dialogPalette.textSecondary,
                   ),
+                  child: const Text('Cancelar'),
                 ),
                 TextButton(
                   onPressed: desabilitado
@@ -957,70 +962,81 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                analise.talhao.trim().isEmpty ? 'Análise' : analise.talhao,
-                style: AppTextStyles.body.copyWith(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+      builder: (sheetContext) {
+        final sheetPalette = sheetContext.appPalette;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: sheetPalette.borderStrong,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: Text(
-                'Excluir Análise',
-                style: AppTextStyles.body.copyWith(color: AppColors.error),
-              ),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _confirmarExcluirAnalise(context, analise);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.drive_file_move_outline,
-                color: AppColors.primary,
-              ),
-              title: Text('Mover para outra pasta', style: AppTextStyles.body),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Em breve'),
-                    duration: Duration(seconds: 2),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  analise.talhao.trim().isEmpty ? 'Análise' : analise.talhao,
+                  style: AppTextStyles.body.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: sheetPalette.textPrimary,
                   ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.close, color: AppColors.textSecond),
-              title: Text(
-                'Cancelar',
-                style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+                ),
               ),
-              onTap: () => Navigator.of(sheetContext).pop(),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+              Divider(height: 1, color: sheetPalette.border),
+              ListTile(
+                leading:
+                    const Icon(Icons.delete_outline, color: AppColors.error),
+                title: Text(
+                  'Excluir Análise',
+                  style: AppTextStyles.body.copyWith(color: AppColors.error),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _confirmarExcluirAnalise(context, analise);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.drive_file_move_outline,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  'Mover para outra pasta',
+                  style: AppTextStyles.body.copyWith(
+                    color: sheetPalette.textPrimary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Em breve'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.close, color: sheetPalette.textSecondary),
+                title: Text(
+                  'Cancelar',
+                  style: AppTextStyles.body
+                      .copyWith(color: sheetPalette.textSecondary),
+                ),
+                onTap: () => Navigator.of(sheetContext).pop(),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1613,8 +1629,7 @@ class _PastaAnaliseCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color:
-                      isSelected ? AppColors.primary : AppColors.textTertiary,
+                  color: isSelected ? AppColors.primary : palette.textTertiary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1734,9 +1749,8 @@ class _AnaliseAmostraCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color: isSelected
-                      ? analise.cultura.color
-                      : AppColors.textTertiary,
+                  color:
+                      isSelected ? analise.cultura.color : palette.textTertiary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1806,6 +1820,7 @@ class _AnaliseEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1815,13 +1830,16 @@ class _AnaliseEmptyState extends StatelessWidget {
             Text(
               'Nenhuma análise importada',
               textAlign: TextAlign.center,
-              style: AppTextStyles.headline.copyWith(fontSize: 20),
+              style: AppTextStyles.headline.copyWith(
+                fontSize: 20,
+                color: palette.textPrimary,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
               'Importe o PDF do laboratório para começar a organizar amostras por talhão.',
               textAlign: TextAlign.center,
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
+              style: AppTextStyles.body.copyWith(color: palette.textSecondary),
             ),
             const SizedBox(height: 24),
             SizedBox(

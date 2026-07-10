@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/nivel_gradiente_bar.dart';
 import 'package:soloforte/domain/formulas/classificacao_nivel.dart';
@@ -13,10 +14,13 @@ class RecomendacaoPotassioSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _buildPotassio(resultado);
+    return _buildPotassio(resultado, context.appPalette);
   }
 
-  Widget _buildPotassio(ResultadoRecomendacao resultado) {
+  Widget _buildPotassio(
+    ResultadoRecomendacao resultado,
+    AppThemePalette palette,
+  ) {
     final analise = resultado.analise;
     final k = analise.k;
     final kMg = k * 391.0;
@@ -55,9 +59,10 @@ class RecomendacaoPotassioSection extends StatelessWidget {
                         color: AppColors.potassio,
                       ),
                     ),
-                    const Text(
+                    Text(
                       'cmolc/dm³',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF86868B)),
+                      style:
+                          TextStyle(fontSize: 11, color: palette.textSecondary),
                     ),
                   ],
                 ),
@@ -73,15 +78,17 @@ class RecomendacaoPotassioSection extends StatelessWidget {
                         color: Color(0xFF1D1D1F),
                       ),
                     ),
-                    const Text(
+                    Text(
                       'mg/dm³',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF86868B)),
+                      style:
+                          TextStyle(fontSize: 11, color: palette.textSecondary),
                     ),
                   ],
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.potassio.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -115,10 +122,10 @@ class RecomendacaoPotassioSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
             child: Text(
               'NC: ${nc.toStringAsFixed(2)} cmolc/dm³  ·  ${ncMg.toStringAsFixed(0)} mg/dm³',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF86868B)),
+              style: TextStyle(fontSize: 11, color: palette.textSecondary),
             ),
           ),
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Row(
@@ -129,15 +136,16 @@ class RecomendacaoPotassioSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: temDose ? AppColors.potassio : const Color(0xFF86868B),
+                    color: temDose ? AppColors.potassio : palette.textSecondary,
                   ),
                 ),
                 if (temDose) ...[
                   const SizedBox(width: 6),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text('kg K₂O/ha',
-                        style: TextStyle(fontSize: 13, color: Color(0xFF86868B))),
+                        style: TextStyle(
+                            fontSize: 13, color: palette.textSecondary)),
                   ),
                 ],
               ],
@@ -150,11 +158,11 @@ class RecomendacaoPotassioSection extends StatelessWidget {
               textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 11,
-                color: AppColors.textSecond.withValues(alpha: 0.6),
+                color: palette.textSecondary.withValues(alpha: 0.6),
               ),
             ),
           ),
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Row(
@@ -164,41 +172,46 @@ class RecomendacaoPotassioSection extends StatelessWidget {
                     'K% CTC',
                     '${kPct.toStringAsFixed(1)}%',
                     corKPct(),
+                    palette,
                   ),
                 ),
                 Expanded(
                   child: _miniBloco(
                     'K:Mg',
                     resultado.relacoesK.relKMg.toStringAsFixed(2),
-                    const Color(0xFF86868B),
+                    palette.textSecondary,
+                    palette,
                   ),
                 ),
                 Expanded(
                   child: _miniBloco(
                     'K:Ca',
                     resultado.relacoesK.relKCa.toStringAsFixed(2),
-                    const Color(0xFF86868B),
+                    palette.textSecondary,
+                    palette,
                   ),
                 ),
               ],
             ),
           ),
           if (resultado.relacoesK.alertas.isNotEmpty) ...[
-            const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 1, thickness: 0.5, color: palette.border),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: resultado.relacoesK.alertas.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: RecomendacaoBadge(
-                      icon: Icons.warning_amber_rounded,
-                      color: AppColors.warning,
-                      label: item,
-                    ),
-                  ),
-                ).toList(),
+                children: resultado.relacoesK.alertas
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: RecomendacaoBadge(
+                          icon: Icons.warning_amber_rounded,
+                          color: AppColors.warning,
+                          label: item,
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ] else
@@ -208,19 +221,24 @@ class RecomendacaoPotassioSection extends StatelessWidget {
     );
   }
 
-  Widget _miniBloco(String label, String valor, Color cor) {
+  Widget _miniBloco(
+    String label,
+    String valor,
+    Color cor,
+    AppThemePalette palette,
+  ) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF86868B))),
+        Text(label,
+            style: TextStyle(fontSize: 10, color: palette.textSecondary)),
         const SizedBox(height: 2),
         Text(
           valor,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cor),
+          style:
+              TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cor),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 }
-
-

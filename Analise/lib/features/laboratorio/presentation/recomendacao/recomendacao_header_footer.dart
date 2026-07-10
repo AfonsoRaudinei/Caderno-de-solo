@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 
 class RecomendacaoHeader extends ConsumerWidget {
@@ -12,13 +13,14 @@ class RecomendacaoHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(perfilAssetsProvider);
     final hasLogo = assets.logoUrl != null && assets.logoUrl!.isNotEmpty;
+    final palette = context.appPalette;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E5E7), width: 0.5),
+          bottom: BorderSide(color: palette.border, width: 0.5),
         ),
       ),
       child: Row(
@@ -41,11 +43,11 @@ class RecomendacaoHeader extends ConsumerWidget {
                 : const _LogoPlaceholder(key: ValueKey('placeholder')),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Recomendação de Adubação',
                   style: TextStyle(
                     fontSize: 13,
@@ -53,12 +55,12 @@ class RecomendacaoHeader extends ConsumerWidget {
                     color: Color(0xFF1D1D1F),
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   'SoloForte · ESALQ/USP',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF86868B),
+                    color: palette.textSecondary,
                   ),
                 ),
               ],
@@ -75,22 +77,23 @@ class _LogoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Container(
       height: 48,
       width: 96,
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F7),
+        color: palette.sectionHeader,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFD1D1D6),
+          color: palette.borderStrong,
           width: 1,
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           CupertinoIcons.building_2_fill,
           size: 22,
-          color: Color(0xFFC7C7CC),
+          color: palette.textTertiary,
         ),
       ),
     );
@@ -112,6 +115,7 @@ class AssinaturaWidget extends ConsumerWidget {
     final assets = ref.watch(perfilAssetsProvider);
     final hasAssinatura =
         assets.assinaturaUrl != null && assets.assinaturaUrl!.isNotEmpty;
+    final palette = context.appPalette;
 
     return Container(
       width: double.infinity,
@@ -119,7 +123,7 @@ class AssinaturaWidget extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E5E7), width: 0.5),
+        border: Border.all(color: palette.border, width: 0.5),
       ),
       child: Column(
         children: [
@@ -161,9 +165,9 @@ class AssinaturaWidget extends ConsumerWidget {
             const SizedBox(height: 2),
             Text(
               'CREA/CRQ nº $creaNumero',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: Color(0xFF86868B),
+                color: palette.textSecondary,
               ),
             ),
           ],
@@ -191,12 +195,13 @@ class _AssinaturaPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final palette = context.appPalette;
+    return Center(
       child: Text(
         '· · · · · · · · · · · · · · ·',
         style: TextStyle(
           fontSize: 16,
-          color: Color(0xFFC7C7CC),
+          color: palette.textTertiary,
           letterSpacing: 4,
         ),
       ),

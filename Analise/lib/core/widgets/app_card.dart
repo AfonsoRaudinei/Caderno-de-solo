@@ -87,7 +87,8 @@ class AppCardSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.appPalette;
-    final contentPadding = padding ?? const EdgeInsets.all(AppDimens.cardPadding);
+    final contentPadding =
+        padding ?? const EdgeInsets.all(AppDimens.cardPadding);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

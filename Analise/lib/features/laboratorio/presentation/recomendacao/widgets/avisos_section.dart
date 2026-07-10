@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
@@ -86,23 +87,26 @@ class RecomendacaoArgumentosSection extends StatelessWidget {
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 8),
-          _buildCitacao('Calcário', citacoes?['calagem']),
-          _buildCitacao('Gesso', citacoes?['gesso']),
-          _buildCitacao('Fósforo', citacoes?['fosforo']),
-          _buildCitacao('Potássio', citacoes?['potassio']),
-          _buildCitacao('Micronutrientes', citacoes?['micros']),
+          _buildCitacao(context, 'Calcário', citacoes?['calagem']),
+          _buildCitacao(context, 'Gesso', citacoes?['gesso']),
+          _buildCitacao(context, 'Fósforo', citacoes?['fosforo']),
+          _buildCitacao(context, 'Potássio', citacoes?['potassio']),
+          _buildCitacao(context, 'Micronutrientes', citacoes?['micros']),
         ],
       ),
     );
   }
 
-  Widget _buildCitacao(String nutriente, String? citacao) {
+  Widget _buildCitacao(
+      BuildContext context, String nutriente, String? citacao) {
     if (citacao == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         '• $nutriente: $citacao',
-        style: AppTextStyles.label.copyWith(color: AppColors.textSecond),
+        style: AppTextStyles.label.copyWith(
+          color: context.appPalette.textSecondary,
+        ),
       ),
     );
   }

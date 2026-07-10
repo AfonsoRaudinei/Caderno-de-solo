@@ -119,9 +119,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
         ),
         title: Text(
           'Recomendação',
-          style: AppTextStyles.headline.copyWith(
-            color: palette.isDark ? const Color(0xFF4DA3FF) : AppColors.primary,
-          ),
+          style: AppTextStyles.headline.copyWith(color: AppColors.primary),
         ),
         centerTitle: false,
       ),
@@ -278,11 +276,11 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
             // BLOCO 1 — Identificação
             RecomendacaoIdentificacaoSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 2 — Qualidade do Solo
             RecomendacaoQualidadeSoloSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 3 — Correções
             RecomendacaoCalcarioGessoSection(resultado: resultado),
@@ -290,17 +288,17 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             RecomendacaoBasesDashboard(resultado: resultado),
             const SizedBox(height: 12),
             RecomendacaoGraficosSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 4 — Nutrientes
             RecomendacaoFosforoSection(resultado: resultado),
             RecomendacaoPotassioSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 5 — Micronutrientes por Aplicação
             RecomendacaoMicrosUnificadosSection(resultado: resultado),
 
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // Avisos e Argumentos (mantidos no final)
             RecomendacaoAvisosSection(resultado: resultado),
@@ -348,8 +346,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                       icon: const Icon(Icons.share_outlined, size: 18),
                       label: const Text('Exportar relatorio'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF666666),
-                        side: const BorderSide(color: Color(0xFFD1D1D6)),
+                        foregroundColor: palette.textSecondary,
+                        side: BorderSide(color: palette.borderStrong),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -678,12 +676,12 @@ class _SeletorAmostras extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isSelecionado
-                          ? const Color(0xFF007AFF).withValues(alpha: 0.08)
+                          ? AppColors.primary.withValues(alpha: 0.08)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isSelecionado
-                            ? const Color(0xFF007AFF).withValues(alpha: 0.3)
+                            ? AppColors.primary.withValues(alpha: 0.3)
                             : Colors.transparent,
                       ),
                     ),
@@ -749,14 +747,15 @@ class _ContextLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: const Color(0xFF86868B)),
+        Icon(icon, size: 14, color: palette.textSecondary),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF86868B)),
+          style: TextStyle(fontSize: 12, color: palette.textSecondary),
         ),
       ],
     );
@@ -770,17 +769,18 @@ class _DepthBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFE5E5E7),
+        color: palette.sectionHeader,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
-          color: Color(0xFF86868B),
+          color: palette.textSecondary,
           fontWeight: FontWeight.w500,
         ),
       ),

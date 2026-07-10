@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/agronomic_progress_bar.dart';
 import 'package:soloforte/core/widgets/nutrient_ph_bar_chart.dart';
@@ -13,6 +14,7 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final analise = resultado.analise;
+    final palette = context.appPalette;
 
     return AppCardSection(
       title: 'QUALIDADE DO SOLO',
@@ -22,30 +24,31 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
           // ── Gráfico pH ──────────────────────────────────────────
           NutrientPhBarChart(ph: analise.ph),
 
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
 
           // ── Argila + Classe Textural ────────────────────────────────────
           _buildArgilaCard(
             analise.argila.toDouble(),
+            palette: palette,
             silte: analise.silte,
             areiaTotal: analise.areiaTotal,
           ),
 
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
 
           // ── Matéria Orgânica ─────────────────────────────────────
-          _buildMOCard(analise.mo),
+          _buildMOCard(analise.mo, palette),
 
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
 
           // ── Enxofre ──────────────────────────────────────────────
-          _buildEnxofreCard(analise.s, s2040: analise.s2040),
+          _buildEnxofreCard(analise.s, palette, s2040: analise.s2040),
         ],
       ),
     );
   }
 
-  Widget _buildEnxofreCard(double s, {double? s2040}) {
+  Widget _buildEnxofreCard(double s, AppThemePalette palette, {double? s2040}) {
     double doseKgHa() {
       if (s < 10) return 20.0;
       if (s < 20) return 10.0;
@@ -78,7 +81,7 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
               children: [
                 Text(
                   'S · $profundidade',
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF86868B)),
+                  style: TextStyle(fontSize: 13, color: palette.textSecondary),
                 ),
                 const Spacer(),
                 Text(
@@ -132,12 +135,13 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 5),
                 child: Text(
                   temDose ? 'kg S/ha' : 'Sem necessidade',
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF86868B)),
+                  style: TextStyle(fontSize: 13, color: palette.textSecondary),
                 ),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: corDose().withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -156,21 +160,17 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
             ],
           ),
         ),
-
-        const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
-
+        Divider(height: 1, thickness: 0.5, color: palette.border),
         buildCamada(
           profundidade: '0–20 cm',
           valor: s,
           barPct: barPct020,
           rotuloCamada: rotulo020,
         ),
-
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Divider(height: 1, color: Color(0xFFE5E5E7)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Divider(height: 1, color: palette.border),
         ),
-
         if (s2040 != null)
           buildCamada(
             profundidade: '20–40 cm',
@@ -180,23 +180,22 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
                 ClassificacaoNivel.classificar(nutriente: 's', valor: s2040),
           )
         else
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Text(
               '⚠️ Camada 20–40 cm não disponível nesta análise',
-              style: TextStyle(fontSize: 11, color: Color(0xFFC7C7CC)),
+              style: TextStyle(fontSize: 11, color: palette.textTertiary),
             ),
           ),
-
         if (temDose) ...[
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Text(
               s < 10
                   ? 'Nível muito baixo — aplicar enxofre elementar ou sulfato.'
                   : 'Nível baixo — complementar com fonte sulfatada.',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF86868B)),
+              style: TextStyle(fontSize: 11, color: palette.textSecondary),
             ),
           ),
         ] else
@@ -205,12 +204,19 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
     );
   }
 
-  Widget _buildArgilaCard(double argila, {double? silte, double? areiaTotal}) {
+  Widget _buildArgilaCard(
+    double argila, {
+    required AppThemePalette palette,
+    double? silte,
+    double? areiaTotal,
+  }) {
     final argilaPct = argila / 10.0;
     final siltePct = silte != null ? silte / 10.0 : null;
     final areiaPct = areiaTotal != null ? areiaTotal / 10.0 : null;
     final areiaPctFinal = areiaPct ??
-        (siltePct != null ? (100.0 - argilaPct - siltePct).clamp(0.0, 100.0) : null);
+        (siltePct != null
+            ? (100.0 - argilaPct - siltePct).clamp(0.0, 100.0)
+            : null);
 
     String classeTextural;
     if (argilaPct < 15) {
@@ -232,9 +238,9 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Argila',
-                style: TextStyle(fontSize: 14, color: Color(0xFF86868B)),
+                style: TextStyle(fontSize: 14, color: palette.textSecondary),
               ),
               const Spacer(),
               Text(
@@ -280,11 +286,11 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
             ),
           )
         else
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Text(
               '· Areia e Silte não disponíveis nesta análise',
-              style: TextStyle(fontSize: 11, color: Color(0xFFC7C7CC)),
+              style: TextStyle(fontSize: 11, color: palette.textTertiary),
             ),
           ),
       ],
@@ -310,7 +316,7 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
     );
   }
 
-  Widget _buildMOCard(double mo) {
+  Widget _buildMOCard(double mo, AppThemePalette palette) {
     final carbono = mo / 1.724;
     final nitrogenio = mo * 1.0;
     final barPercent = (mo / 50.0 * 100).clamp(0.0, 100.0);
@@ -323,11 +329,11 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Matéria Orgânica',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF86868B),
+                  color: palette.textSecondary,
                 ),
               ),
               const Spacer(),
@@ -350,9 +356,9 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           child: Text(
             rotulo,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Color(0xFF86868B),
+              color: palette.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -363,9 +369,9 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F7),
+              color: palette.sectionHeader,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE5E5E7), width: 0.5),
+              border: Border.all(color: palette.border, width: 0.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +394,7 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+                Divider(height: 1, thickness: 0.5, color: palette.border),
                 const SizedBox(height: 6),
                 Row(
                   children: [

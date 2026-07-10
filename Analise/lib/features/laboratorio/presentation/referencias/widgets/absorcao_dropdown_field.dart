@@ -60,7 +60,8 @@ class AbsorcaoDropdownField<T> extends StatelessWidget {
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: AbsorcaoNutrientesCores.inputFill(isDark: palette.isDark),
+            fillColor:
+                AbsorcaoNutrientesCores.inputFill(isDark: palette.isDark),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,

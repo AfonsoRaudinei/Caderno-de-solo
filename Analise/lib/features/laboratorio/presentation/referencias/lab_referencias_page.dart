@@ -11,6 +11,7 @@ class LabReferenciasPage extends StatelessWidget {
     final palette = context.appPalette;
 
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Referências'),
       ),

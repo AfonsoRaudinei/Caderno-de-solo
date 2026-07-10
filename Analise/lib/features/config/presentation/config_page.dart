@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/features/config/application/providers/app_theme_mode_provider.dart';
 import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
@@ -12,59 +13,6 @@ import 'package:soloforte/features/config/application/providers/perfil_assets_pr
 
 export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
-
-class _ConfigPalette {
-  const _ConfigPalette({
-    required this.background,
-    required this.card,
-    required this.cardStrong,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.textTertiary,
-    required this.border,
-    required this.borderStrong,
-    required this.shadow,
-  });
-
-  final Color background;
-  final Color card;
-  final Color cardStrong;
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color textTertiary;
-  final Color border;
-  final Color borderStrong;
-  final Color shadow;
-
-  static _ConfigPalette of(BuildContext context) {
-    final isBlack = Theme.of(context).brightness == Brightness.dark;
-    if (isBlack) {
-      return _ConfigPalette(
-        background: Colors.black,
-        card: const Color(0xFF1C1C1E),
-        cardStrong: const Color(0xFF2C2C2E),
-        textPrimary: const Color(0xFFF2F2F7),
-        textSecondary: const Color(0xFFAEAEB2),
-        textTertiary: const Color(0xFF636366),
-        border: const Color(0xFF2C2C2E),
-        borderStrong: const Color(0xFF3A3A3C),
-        shadow: Colors.black.withValues(alpha: 0.45),
-      );
-    }
-
-    return _ConfigPalette(
-      background: const Color(0xFFF5F5F7),
-      card: Colors.white.withValues(alpha: 0.95),
-      cardStrong: Colors.white,
-      textPrimary: const Color(0xFF1D1D1F),
-      textSecondary: const Color(0xFF86868B),
-      textTertiary: const Color(0xFFC7C7CC),
-      border: const Color(0xFFE5E5E7),
-      borderStrong: const Color(0xFFD1D1D6),
-      shadow: Colors.black.withValues(alpha: 0.06),
-    );
-  }
-}
 
 /// Bottom sheet iOS para edição de campo de texto.
 Future<void> _showEditSheet(
@@ -75,7 +23,7 @@ Future<void> _showEditSheet(
   required String firestoreField,
   String? placeholder,
 }) async {
-  final palette = _ConfigPalette.of(context);
+  final AppThemePalette palette = context.appPalette;
   final controller =
       TextEditingController(text: currentValue == '—' ? '' : currentValue);
 
@@ -109,9 +57,9 @@ Future<void> _showEditSheet(
               CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () => Navigator.of(sheetContext).pop(),
-                child: const Text(
+                child: Text(
                   'Cancelar',
-                  style: TextStyle(color: Color(0xFF86868B)),
+                  style: TextStyle(color: palette.textSecondary),
                 ),
               ),
             ],
@@ -193,7 +141,7 @@ class ConfigPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(configControllerProvider);
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -299,7 +247,7 @@ class ConfigPage extends ConsumerWidget {
                           const SnackBar(
                             content:
                                 Text('Dados locais removidos com sucesso.'),
-                            backgroundColor: Color(0xFF34C759),
+                            backgroundColor: AppColors.success,
                           ),
                         );
                       },
@@ -408,7 +356,7 @@ class ConfigPage extends ConsumerWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(e.message),
-                                backgroundColor: const Color(0xFFFF3B30),
+                                backgroundColor: AppColors.error,
                               ),
                             );
                           } catch (_) {
@@ -418,7 +366,7 @@ class ConfigPage extends ConsumerWidget {
                                 content: Text(
                                   'Erro ao excluir conta. Tente novamente.',
                                 ),
-                                backgroundColor: Color(0xFFFF3B30),
+                                backgroundColor: AppColors.error,
                               ),
                             );
                           }
@@ -428,7 +376,7 @@ class ConfigPage extends ConsumerWidget {
                             Icon(
                               CupertinoIcons.delete,
                               size: 18,
-                              color: Color(0xFFFF3B30),
+                              color: AppColors.error,
                             ),
                             SizedBox(width: 10),
                             Text(
@@ -436,7 +384,7 @@ class ConfigPage extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400,
-                                color: Color(0xFFFF3B30),
+                                color: AppColors.error,
                               ),
                             ),
                           ],
@@ -504,7 +452,7 @@ class ConfigPage extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
-                            color: Color(0xFFFF3B30),
+                            color: AppColors.error,
                           ),
                         ),
                       ),
@@ -537,7 +485,7 @@ class _IdentidadeVisualCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(perfilAssetsProvider);
     final notifier = ref.read(perfilAssetsProvider.notifier);
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Container(
       decoration: BoxDecoration(
@@ -639,7 +587,7 @@ class _ImageUploadRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     final double thumbW = shape == _ImageShape.wide ? 80 : 52;
     final double thumbH = shape == _ImageShape.wide ? 40 : 52;
@@ -666,7 +614,7 @@ class _ImageUploadRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
                   color: hasImage
-                      ? const Color(0xFF007AFF).withValues(alpha: 0.3)
+                      ? AppColors.primary.withValues(alpha: 0.3)
                       : palette.borderStrong,
                   width: hasImage ? 1.5 : 1,
                 ),
@@ -680,7 +628,7 @@ class _ImageUploadRow extends StatelessWidget {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFF007AFF),
+                            color: AppColors.primary,
                           ),
                         ),
                       )
@@ -734,7 +682,7 @@ class _ImageUploadRow extends StatelessWidget {
             children: [
               _ActionChip(
                 label: hasImage ? 'Trocar' : 'Adicionar',
-                color: const Color(0xFF007AFF),
+                color: AppColors.primary,
                 onTap: isUploading
                     ? null
                     : () => _runAction(
@@ -747,7 +695,7 @@ class _ImageUploadRow extends StatelessWidget {
                 const SizedBox(width: 6),
                 _ActionChip(
                   label: 'Remover',
-                  color: const Color(0xFFFF3B30),
+                  color: AppColors.error,
                   onTap: isUploading
                       ? null
                       : () => _runAction(
@@ -810,7 +758,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6, top: 2),
@@ -834,7 +782,7 @@ class _CardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Container(
       decoration: BoxDecoration(
@@ -936,7 +884,7 @@ class _ThemeModeRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
     final themeMode = ref.watch(appThemeModeProvider).valueOrNull;
     final isBlack = themeMode?.isBlack ?? false;
 
@@ -985,7 +933,7 @@ class _ProfileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return InkWell(
       onTap: onTap,
@@ -1035,7 +983,7 @@ class _ProfileChevronRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return InkWell(
       onTap: onTap,
@@ -1069,7 +1017,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Padding(
       padding: const EdgeInsets.only(left: 16),

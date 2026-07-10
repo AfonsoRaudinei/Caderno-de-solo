@@ -161,9 +161,8 @@ class _AppInputState extends State<AppInput> {
             autofillHints: widget.autofillHints,
             inputFormatters: _buildFormatters(),
             style: AppTextStyles.input.copyWith(
-              color: widget.enabled
-                  ? palette.textPrimary
-                  : palette.textSecondary,
+              color:
+                  widget.enabled ? palette.textPrimary : palette.textSecondary,
             ),
             onChanged: widget.onChanged,
             onFieldSubmitted: widget.onSubmitted,
@@ -175,7 +174,8 @@ class _AppInputState extends State<AppInput> {
               ),
               counterText: '',
               filled: true,
-              fillColor: widget.enabled ? palette.inputFill : palette.cardStrong,
+              fillColor:
+                  widget.enabled ? palette.inputFill : palette.cardStrong,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 12,

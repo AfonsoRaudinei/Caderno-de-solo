@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 
-/// Tokens visuais sensíveis ao tema (light / black).
+/// Fonte de verdade para tokens de superfície/texto sensíveis ao tema.
 ///
-/// Use via [BuildContext.appPalette] em widgets que ainda não consomem
-/// exclusivamente [ThemeData], evitando cores fixas de [AppColors].
+/// Light e dark/black compartilham a mesma API. Cores semânticas fixas
+/// (primary, success, error, nutrientes) continuam em [AppColors].
+///
+/// Uso: `final palette = context.appPalette;`
 class AppThemePalette {
   const AppThemePalette._({
     required this.isDark,
@@ -22,34 +24,58 @@ class AppThemePalette {
   });
 
   final bool isDark;
+
+  /// Fundo de scaffold / tela.
   final Color background;
+
+  /// Superfície de card padrão.
   final Color card;
+
+  /// Superfície elevada (menus, dropdown, header forte).
   final Color cardStrong;
+
+  /// Texto principal — contraste ≥ 4.5:1 sobre [background]/[card].
   final Color textPrimary;
+
+  /// Labels e texto secundário — contraste ≥ 4.5:1.
   final Color textSecondary;
+
+  /// Hints / placeholders (ainda legível em dark).
   final Color textTertiary;
+
+  /// Bordas suaves / divisores.
   final Color border;
+
+  /// Bordas de input e contornos mais visíveis.
   final Color borderStrong;
+
+  /// Fill de TextField / dropdown.
   final Color inputFill;
+
+  /// Faixa de título de seção em cards.
   final Color sectionHeader;
+
+  /// Sombra de elevação.
   final Color shadow;
 
   static AppThemePalette of(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
-      return AppThemePalette._(
+      // Black theme: fundo #000000, cards iOS system gray.
+      // textTertiary #8E8E93 ≈ 5.5:1 sobre preto (WCAG AA).
+      return const AppThemePalette._(
         isDark: true,
-        background: Colors.black,
-        card: const Color(0xFF1C1C1E),
-        cardStrong: const Color(0xFF2C2C2E),
-        textPrimary: const Color(0xFFF2F2F7),
-        textSecondary: const Color(0xFFAEAEB2),
-        textTertiary: const Color(0xFF636366),
-        border: const Color(0xFF2C2C2E),
-        borderStrong: const Color(0xFF3A3A3C),
-        inputFill: const Color(0xFF1C1C1E),
-        sectionHeader: const Color(0xFF2C2C2E),
-        shadow: Colors.black.withValues(alpha: 0.45),
+        background: Color(0xFF000000),
+        card: Color(0xFF1C1C1E),
+        cardStrong: Color(0xFF2C2C2E),
+        textPrimary: Color(0xFFF2F2F7),
+        textSecondary: Color(0xFFAEAEB2),
+        textTertiary: Color(0xFF8E8E93),
+        border: Color(0xFF2C2C2E),
+        borderStrong: Color(0xFF3A3A3C),
+        inputFill: Color(0xFF1C1C1E),
+        sectionHeader: Color(0xFF2C2C2E),
+        shadow: Color(0x73000000),
       );
     }
 
