@@ -53,5 +53,10 @@ class CalibracaoState with _$CalibracaoState {
     @Default(FosforoState()) FosforoState fosforo,
     @Default(PotassioState()) PotassioState potassio,
     @Default(MicronutrientesState()) MicronutrientesState micros,
+    @Default(false) bool isHeaderExpanded,
+    @Default(false) bool isCorretivosExpanded,
+    @Default(false) bool isFosforoExpanded,
+    @Default(false) bool isPotassioExpanded,
+    @Default(false) bool isMicronutrientesExpanded,
   }) = _CalibracaoState;
 }

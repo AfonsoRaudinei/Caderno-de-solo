@@ -722,6 +722,11 @@ mixin _$CalibracaoState {
   FosforoState get fosforo => throw _privateConstructorUsedError;
   PotassioState get potassio => throw _privateConstructorUsedError;
   MicronutrientesState get micros => throw _privateConstructorUsedError;
+  bool get isHeaderExpanded => throw _privateConstructorUsedError;
+  bool get isCorretivosExpanded => throw _privateConstructorUsedError;
+  bool get isFosforoExpanded => throw _privateConstructorUsedError;
+  bool get isPotassioExpanded => throw _privateConstructorUsedError;
+  bool get isMicronutrientesExpanded => throw _privateConstructorUsedError;
 
   /// Create a copy of CalibracaoState
   /// with the given fields replaced by the non-null parameter values.
@@ -748,7 +753,12 @@ abstract class $CalibracaoStateCopyWith<$Res> {
       GessoState gesso,
       FosforoState fosforo,
       PotassioState potassio,
-      MicronutrientesState micros});
+      MicronutrientesState micros,
+      bool isHeaderExpanded,
+      bool isCorretivosExpanded,
+      bool isFosforoExpanded,
+      bool isPotassioExpanded,
+      bool isMicronutrientesExpanded});
 
   $CalcarioStateCopyWith<$Res> get calcario;
   $GessoStateCopyWith<$Res> get gesso;
@@ -784,6 +794,11 @@ class _$CalibracaoStateCopyWithImpl<$Res, $Val extends CalibracaoState>
     Object? fosforo = null,
     Object? potassio = null,
     Object? micros = null,
+    Object? isHeaderExpanded = null,
+    Object? isCorretivosExpanded = null,
+    Object? isFosforoExpanded = null,
+    Object? isPotassioExpanded = null,
+    Object? isMicronutrientesExpanded = null,
   }) {
     return _then(_value.copyWith(
       loading: null == loading
@@ -834,6 +849,26 @@ class _$CalibracaoStateCopyWithImpl<$Res, $Val extends CalibracaoState>
           ? _value.micros
           : micros // ignore: cast_nullable_to_non_nullable
               as MicronutrientesState,
+      isHeaderExpanded: null == isHeaderExpanded
+          ? _value.isHeaderExpanded
+          : isHeaderExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isCorretivosExpanded: null == isCorretivosExpanded
+          ? _value.isCorretivosExpanded
+          : isCorretivosExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isFosforoExpanded: null == isFosforoExpanded
+          ? _value.isFosforoExpanded
+          : isFosforoExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isPotassioExpanded: null == isPotassioExpanded
+          ? _value.isPotassioExpanded
+          : isPotassioExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isMicronutrientesExpanded: null == isMicronutrientesExpanded
+          ? _value.isMicronutrientesExpanded
+          : isMicronutrientesExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 
@@ -908,7 +943,12 @@ abstract class _$$CalibracaoStateImplCopyWith<$Res>
       GessoState gesso,
       FosforoState fosforo,
       PotassioState potassio,
-      MicronutrientesState micros});
+      MicronutrientesState micros,
+      bool isHeaderExpanded,
+      bool isCorretivosExpanded,
+      bool isFosforoExpanded,
+      bool isPotassioExpanded,
+      bool isMicronutrientesExpanded});
 
   @override
   $CalcarioStateCopyWith<$Res> get calcario;
@@ -947,6 +987,11 @@ class __$$CalibracaoStateImplCopyWithImpl<$Res>
     Object? fosforo = null,
     Object? potassio = null,
     Object? micros = null,
+    Object? isHeaderExpanded = null,
+    Object? isCorretivosExpanded = null,
+    Object? isFosforoExpanded = null,
+    Object? isPotassioExpanded = null,
+    Object? isMicronutrientesExpanded = null,
   }) {
     return _then(_$CalibracaoStateImpl(
       loading: null == loading
@@ -997,6 +1042,26 @@ class __$$CalibracaoStateImplCopyWithImpl<$Res>
           ? _value.micros
           : micros // ignore: cast_nullable_to_non_nullable
               as MicronutrientesState,
+      isHeaderExpanded: null == isHeaderExpanded
+          ? _value.isHeaderExpanded
+          : isHeaderExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isCorretivosExpanded: null == isCorretivosExpanded
+          ? _value.isCorretivosExpanded
+          : isCorretivosExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isFosforoExpanded: null == isFosforoExpanded
+          ? _value.isFosforoExpanded
+          : isFosforoExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isPotassioExpanded: null == isPotassioExpanded
+          ? _value.isPotassioExpanded
+          : isPotassioExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isMicronutrientesExpanded: null == isMicronutrientesExpanded
+          ? _value.isMicronutrientesExpanded
+          : isMicronutrientesExpanded // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1016,7 +1081,12 @@ class _$CalibracaoStateImpl implements _CalibracaoState {
       this.gesso = const GessoState(),
       this.fosforo = const FosforoState(),
       this.potassio = const PotassioState(),
-      this.micros = const MicronutrientesState()})
+      this.micros = const MicronutrientesState(),
+      this.isHeaderExpanded = false,
+      this.isCorretivosExpanded = false,
+      this.isFosforoExpanded = false,
+      this.isPotassioExpanded = false,
+      this.isMicronutrientesExpanded = false})
       : _profiles = profiles;
 
   @override
@@ -1057,10 +1127,25 @@ class _$CalibracaoStateImpl implements _CalibracaoState {
   @override
   @JsonKey()
   final MicronutrientesState micros;
+  @override
+  @JsonKey()
+  final bool isHeaderExpanded;
+  @override
+  @JsonKey()
+  final bool isCorretivosExpanded;
+  @override
+  @JsonKey()
+  final bool isFosforoExpanded;
+  @override
+  @JsonKey()
+  final bool isPotassioExpanded;
+  @override
+  @JsonKey()
+  final bool isMicronutrientesExpanded;
 
   @override
   String toString() {
-    return 'CalibracaoState(loading: $loading, saving: $saving, profiles: $profiles, selectedProfileId: $selectedProfileId, draft: $draft, errorMessage: $errorMessage, successMessage: $successMessage, calcario: $calcario, gesso: $gesso, fosforo: $fosforo, potassio: $potassio, micros: $micros)';
+    return 'CalibracaoState(loading: $loading, saving: $saving, profiles: $profiles, selectedProfileId: $selectedProfileId, draft: $draft, errorMessage: $errorMessage, successMessage: $successMessage, calcario: $calcario, gesso: $gesso, fosforo: $fosforo, potassio: $potassio, micros: $micros, isHeaderExpanded: $isHeaderExpanded, isCorretivosExpanded: $isCorretivosExpanded, isFosforoExpanded: $isFosforoExpanded, isPotassioExpanded: $isPotassioExpanded, isMicronutrientesExpanded: $isMicronutrientesExpanded)';
   }
 
   @override
@@ -1084,7 +1169,18 @@ class _$CalibracaoStateImpl implements _CalibracaoState {
             (identical(other.fosforo, fosforo) || other.fosforo == fosforo) &&
             (identical(other.potassio, potassio) ||
                 other.potassio == potassio) &&
-            (identical(other.micros, micros) || other.micros == micros));
+            (identical(other.micros, micros) || other.micros == micros) &&
+            (identical(other.isHeaderExpanded, isHeaderExpanded) ||
+                other.isHeaderExpanded == isHeaderExpanded) &&
+            (identical(other.isCorretivosExpanded, isCorretivosExpanded) ||
+                other.isCorretivosExpanded == isCorretivosExpanded) &&
+            (identical(other.isFosforoExpanded, isFosforoExpanded) ||
+                other.isFosforoExpanded == isFosforoExpanded) &&
+            (identical(other.isPotassioExpanded, isPotassioExpanded) ||
+                other.isPotassioExpanded == isPotassioExpanded) &&
+            (identical(other.isMicronutrientesExpanded,
+                    isMicronutrientesExpanded) ||
+                other.isMicronutrientesExpanded == isMicronutrientesExpanded));
   }
 
   @override
@@ -1101,7 +1197,12 @@ class _$CalibracaoStateImpl implements _CalibracaoState {
       gesso,
       fosforo,
       potassio,
-      micros);
+      micros,
+      isHeaderExpanded,
+      isCorretivosExpanded,
+      isFosforoExpanded,
+      isPotassioExpanded,
+      isMicronutrientesExpanded);
 
   /// Create a copy of CalibracaoState
   /// with the given fields replaced by the non-null parameter values.
@@ -1126,7 +1227,12 @@ abstract class _CalibracaoState implements CalibracaoState {
       final GessoState gesso,
       final FosforoState fosforo,
       final PotassioState potassio,
-      final MicronutrientesState micros}) = _$CalibracaoStateImpl;
+      final MicronutrientesState micros,
+      final bool isHeaderExpanded,
+      final bool isCorretivosExpanded,
+      final bool isFosforoExpanded,
+      final bool isPotassioExpanded,
+      final bool isMicronutrientesExpanded}) = _$CalibracaoStateImpl;
 
   @override
   bool get loading;
@@ -1152,6 +1258,16 @@ abstract class _CalibracaoState implements CalibracaoState {
   PotassioState get potassio;
   @override
   MicronutrientesState get micros;
+  @override
+  bool get isHeaderExpanded;
+  @override
+  bool get isCorretivosExpanded;
+  @override
+  bool get isFosforoExpanded;
+  @override
+  bool get isPotassioExpanded;
+  @override
+  bool get isMicronutrientesExpanded;
 
   /// Create a copy of CalibracaoState
   /// with the given fields replaced by the non-null parameter values.

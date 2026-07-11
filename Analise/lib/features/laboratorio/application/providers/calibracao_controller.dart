@@ -372,6 +372,28 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     state = state.copyWith(errorMessage: null, successMessage: null);
   }
 
+  void toggleHeader() {
+    state = state.copyWith(isHeaderExpanded: !state.isHeaderExpanded);
+  }
+
+  void toggleCorretivos() {
+    state = state.copyWith(isCorretivosExpanded: !state.isCorretivosExpanded);
+  }
+
+  void toggleFosforo() {
+    state = state.copyWith(isFosforoExpanded: !state.isFosforoExpanded);
+  }
+
+  void togglePotassio() {
+    state = state.copyWith(isPotassioExpanded: !state.isPotassioExpanded);
+  }
+
+  void toggleMicronutrientes() {
+    state = state.copyWith(
+      isMicronutrientesExpanded: !state.isMicronutrientesExpanded,
+    );
+  }
+
   void _updateDraft(CalibracaoProfile draft) {
     state = state.copyWith(
       draft: draft,

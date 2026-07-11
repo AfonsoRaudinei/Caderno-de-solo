@@ -13,7 +13,7 @@ import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
-import 'package:soloforte/features/config/presentation/config_controller.dart';
+import 'package:soloforte/features/config/application/providers/user_profile_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
@@ -441,7 +441,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
       }
 
       final perfilAssets = ref.read(perfilAssetsProvider);
-      final perfil = ref.read(configControllerProvider).valueOrNull;
+      final perfil = ref.read(userProfileProvider).valueOrNull;
 
       await ref.read(exportRecomendacaoProvider)(
         resultado: resultado,

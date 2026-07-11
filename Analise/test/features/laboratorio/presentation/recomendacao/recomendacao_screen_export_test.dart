@@ -3,12 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
-import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
-import 'package:soloforte/features/config/domain/entities/user_profile_data.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;

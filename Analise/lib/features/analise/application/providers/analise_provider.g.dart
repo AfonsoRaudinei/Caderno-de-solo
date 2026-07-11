@@ -339,7 +339,7 @@ class _AnalisesFiltradasProviderElement
   String? get busca => (origin as AnalisesFiltradasProvider).busca;
 }
 
-String _$analiseNotifierHash() => r'b37944e20ab463b939db8426808ebe938822ade1';
+String _$analiseNotifierHash() => r'd689daf67e2beb070bccb0a51444e151bc495d7b';
 
 /// See also [AnaliseNotifier].
 @ProviderFor(AnaliseNotifier)

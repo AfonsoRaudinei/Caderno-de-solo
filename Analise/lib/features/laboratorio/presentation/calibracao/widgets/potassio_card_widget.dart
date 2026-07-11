@@ -1,6 +1,6 @@
 // lib/presentation/lab/calibracao/widgets/potassio_card_widget.dart
 //
-// Card 3 — Potássio  ·  Versão final
+// Potássio — card de calibração
 //
 // ══════════════════════════════════════════════════════════════════════════════
 // DIFERENCIAL DO K vs P: dois critérios de NC simultâneos
@@ -42,8 +42,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
-import 'package:soloforte/core/widgets/nutriente_card.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/data/culturas_data.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -160,23 +161,33 @@ const _refsK = <ReferenciaK, _RefK>{
 // WIDGET
 // ══════════════════════════════════════════════════════════════════════════════
 
-class PotassioCardWidget extends StatefulWidget {
-  const PotassioCardWidget({
+class PotassioCard extends StatefulWidget {
+  const PotassioCard({
     super.key,
     this.initialData,
     this.cultura,
+    required this.isExpanded,
+    required this.onToggle,
     this.onChanged,
   });
 
+  static const title = 'Potássio';
+  static const Color accentColor = AppColors.potassio;
+
   final Map<String, dynamic>? initialData;
   final String? cultura;
+  final bool isExpanded;
+  final VoidCallback onToggle;
   final ValueChanged<Map<String, dynamic>>? onChanged;
 
   @override
-  State<PotassioCardWidget> createState() => _PotassioCardWidgetState();
+  State<PotassioCard> createState() => _PotassioCardState();
 }
 
-class _PotassioCardWidgetState extends State<PotassioCardWidget> {
+class _PotassioCardState extends State<PotassioCard> {
+  static const Duration _animDuration = Duration(milliseconds: 250);
+
+  final GlobalKey _cardKey = GlobalKey();
   ReferenciaK _ref = ReferenciaK.iacBol100;
   CamadaK _camada = CamadaK.c0a20;
   CriterioNC _criterio = CriterioNC.ambosUsarMaior;
@@ -203,11 +214,24 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
   }
 
   @override
-  void didUpdateWidget(covariant PotassioCardWidget oldWidget) {
+  void didUpdateWidget(covariant PotassioCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!mapEquals(oldWidget.initialData, widget.initialData) ||
         oldWidget.cultura != widget.cultura) {
       _syncFromExternalData(widget.initialData);
+    }
+    if (!oldWidget.isExpanded && widget.isExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = _cardKey.currentContext;
+        if (context != null && context.mounted) {
+          Scrollable.ensureVisible(
+            context,
+            duration: _animDuration,
+            curve: Curves.easeInOut,
+            alignment: 0,
+          );
+        }
+      });
     }
   }
 
@@ -499,11 +523,120 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return NutrienteCard(
-      nutriente: 'Card 3 — Potássio',
-      icon: Icons.bolt_outlined,
-      cor: AppColors.potassio,
-      initiallyExpanded: false,
+    final shadowColor = context.appPalette.shadow;
+
+    return Container(
+      key: _cardKey,
+      margin: const EdgeInsets.only(bottom: AppDimens.md),
+      decoration: BoxDecoration(
+        color: AppColors.bgPrimary.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        border: Border.all(color: AppColors.border, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!widget.isExpanded)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onToggle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.lg,
+                    vertical: 14,
+                  ),
+                  child: _buildCollapsedHeader(),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimens.lg,
+                  14,
+                  AppDimens.lg,
+                  0,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildChevron(onTap: widget.onToggle),
+                ),
+              ),
+            AnimatedSize(
+              duration: _animDuration,
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.hardEdge,
+              child: widget.isExpanded
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDimens.lg,
+                        AppDimens.sm,
+                        AppDimens.lg,
+                        AppDimens.lg,
+                      ),
+                      child: _buildConteudo(),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsedHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 32,
+          decoration: BoxDecoration(
+            color: PotassioCard.accentColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: AppDimens.md),
+        Expanded(
+          child: Text(
+            PotassioCard.title,
+            style:
+                AppTextStyles.label.copyWith(color: PotassioCard.accentColor),
+          ),
+        ),
+        _buildChevron(onTap: widget.onToggle),
+      ],
+    );
+  }
+
+  Widget _buildChevron({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedRotation(
+        turns: widget.isExpanded ? 0.5 : 0.0,
+        duration: _animDuration,
+        curve: Curves.easeInOut,
+        child: const Icon(
+          Icons.keyboard_arrow_down,
+          color: AppColors.textSecond,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConteudo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,8 +674,6 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
           ],
         ),
         const SizedBox(height: AppDimens.sm),
-
-        // 3 · Critério NC
         _lbl('Critério NC'),
         const SizedBox(height: AppDimens.xs),
         _drop<CriterioNC>(
@@ -564,12 +695,8 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
           }),
         ),
         const SizedBox(height: AppDimens.sm),
-
-        // 4 · Badges NC — layout dinâmico por critério
         _buildNcSection(),
         const SizedBox(height: AppDimens.sm),
-
-        // 5 · Camada
         _lbl('Camada'),
         const SizedBox(height: AppDimens.xs),
         _drop<CamadaK>(
@@ -582,8 +709,6 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
           }),
         ),
         const SizedBox(height: AppDimens.sm),
-
-        // 6 · Modo de cálculo
         _lbl('Modo de cálculo'),
         const SizedBox(height: AppDimens.xs),
         _drop<ModoCalculo>(
@@ -605,8 +730,6 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
           }),
         ),
         const SizedBox(height: AppDimens.sm),
-
-        // 7 · Modo de aplicação
         _lbl('Modo de aplicação'),
         const SizedBox(height: AppDimens.xs),
         _drop<ModoAplicacao>(
@@ -620,9 +743,8 @@ class _PotassioCardWidgetState extends State<PotassioCardWidget> {
           }),
         ),
         const SizedBox(height: AppDimens.sm),
-
-        // 8 · FEK — único campo editável do card
-        _buildFekSection(), const SizedBox(height: AppDimens.sm),
+        _buildFekSection(),
+        const SizedBox(height: AppDimens.sm),
         _buildAbsorcaoSecaoK(),
       ],
     );
