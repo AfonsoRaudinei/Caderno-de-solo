@@ -10,7 +10,9 @@ class GoogleMapEngine implements MapEngine {
     required double zoom,
     required List<MapPin> pins,
     required AbstractMapController controller,
+    List<MapPolygon> polygons = const <MapPolygon>[],
     void Function(LatLng center, double zoom)? onCameraChanged,
+    void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
     String? selectedPinId,
   }) {

@@ -35,6 +35,9 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   MapPin? _selectedPin;
   String? _focusAnaliseId;
   bool _focusRequestHandled = false;
+  bool _isEditingPolygon = false;
+  final List<LatLng> _polygonDraft = <LatLng>[];
+  final List<LatLng> _redoStack = <LatLng>[];
 
   @override
   void initState() {
@@ -75,11 +78,52 @@ class _MapaPageState extends ConsumerState<MapaPage> {
               zoom: _initialZoom,
               pins: pins,
               controller: _controller,
+              polygons: _polygonDraft.isEmpty
+                  ? const <MapPolygon>[]
+                  : [
+                      MapPolygon(
+                        id: 'draft',
+                        points: List<LatLng>.unmodifiable(_polygonDraft),
+                        editable: _isEditingPolygon,
+                      ),
+                    ],
               onCameraChanged: _onCameraChanged,
+              onMapTap: _isEditingPolygon ? _onMapTapEditing : null,
               onPinTap: _onPinTap,
               selectedPinId: _selectedPin?.id,
             ),
           ),
+          if (_isEditingPolygon) ...[
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 14,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _EditingBadge(
+                  text: 'Editando vertices',
+                  vertexCount: _polygonDraft.length,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 18,
+              top: MediaQuery.paddingOf(context).top + 82,
+              child: _AreaBadge(areaHa: _polygonAreaHa(_polygonDraft)),
+            ),
+            Positioned(
+              right: 18,
+              bottom: MediaQuery.paddingOf(context).bottom + 96,
+              child: _EditingActions(
+                canConfirm: _polygonDraft.length >= 3,
+                canUndo: _polygonDraft.isNotEmpty,
+                canRedo: _redoStack.isNotEmpty,
+                onConfirm: _confirmarEdicaoPoligono,
+                onUndo: _desfazerVertice,
+                onRedo: _refazerVertice,
+                onCancel: _cancelarEdicaoPoligono,
+              ),
+            ),
+          ],
           Positioned(
             top: MediaQuery.paddingOf(context).top + 12,
             right: 14,
@@ -94,6 +138,12 @@ class _MapaPageState extends ConsumerState<MapaPage> {
               ],
             ),
           ),
+          if (!_isEditingPolygon)
+            Positioned(
+              right: 18,
+              bottom: MediaQuery.paddingOf(context).bottom + 24,
+              child: _MapEditButton(onPressed: _entrarEdicaoPoligono),
+            ),
           if (pinsAsync.isLoading && pins.isEmpty)
             const Positioned(
               top: 24,
@@ -113,7 +163,7 @@ class _MapaPageState extends ConsumerState<MapaPage> {
                 isError: true,
               ),
             ),
-          if (_selectedPin != null)
+          if (_selectedPin != null && !_isEditingPolygon)
             Positioned(
               left: 0,
               right: 0,
@@ -161,6 +211,9 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   }
 
   void _onPinTap(MapPin pin) {
+    if (_isEditingPolygon) {
+      return;
+    }
     const focusZoom = 11.5;
     final shouldZoom = _cameraZoom < focusZoom;
     if (shouldZoom) {
@@ -172,6 +225,53 @@ class _MapaPageState extends ConsumerState<MapaPage> {
       if (shouldZoom) {
         _cameraZoom = focusZoom;
       }
+    });
+  }
+
+  void _entrarEdicaoPoligono() {
+    setState(() {
+      _isEditingPolygon = true;
+      _selectedPin = null;
+      _redoStack.clear();
+    });
+  }
+
+  void _onMapTapEditing(LatLng point) {
+    setState(() {
+      _polygonDraft.add(point);
+      _redoStack.clear();
+    });
+  }
+
+  void _desfazerVertice() {
+    if (_polygonDraft.isEmpty) {
+      return;
+    }
+    setState(() => _redoStack.add(_polygonDraft.removeLast()));
+  }
+
+  void _refazerVertice() {
+    if (_redoStack.isEmpty) {
+      return;
+    }
+    setState(() => _polygonDraft.add(_redoStack.removeLast()));
+  }
+
+  void _cancelarEdicaoPoligono() {
+    setState(() {
+      _isEditingPolygon = false;
+      _polygonDraft.clear();
+      _redoStack.clear();
+    });
+  }
+
+  void _confirmarEdicaoPoligono() {
+    if (_polygonDraft.length < 3) {
+      return;
+    }
+    setState(() {
+      _isEditingPolygon = false;
+      _redoStack.clear();
     });
   }
 
@@ -203,6 +303,7 @@ class _MapaPageState extends ConsumerState<MapaPage> {
         break;
       }
     }
+
     _focusRequestHandled = true;
     if (target == null) {
       return;
@@ -266,6 +367,261 @@ class _MapaPageState extends ConsumerState<MapaPage> {
       _cameraCenter = centroUsuario;
       _cameraZoom = zoomUsuario;
     });
+  }
+}
+
+double _polygonAreaHa(List<LatLng> points) {
+  if (points.length < 3) {
+    return 0;
+  }
+
+  final refLatRad = points.map((p) => p.latitude).reduce((a, b) => a + b) /
+      points.length *
+      math.pi /
+      180;
+  const metersPerDegreeLat = 111320.0;
+  final metersPerDegreeLng = metersPerDegreeLat * math.cos(refLatRad);
+
+  final projected = points
+      .map(
+        (p) => Offset(
+          p.longitude * metersPerDegreeLng,
+          p.latitude * metersPerDegreeLat,
+        ),
+      )
+      .toList(growable: false);
+
+  var area = 0.0;
+  for (var i = 0; i < projected.length; i++) {
+    final current = projected[i];
+    final next = projected[(i + 1) % projected.length];
+    area += current.dx * next.dy - next.dx * current.dy;
+  }
+  return area.abs() / 2 / 10000;
+}
+
+class _EditingBadge extends StatelessWidget {
+  const _EditingBadge({
+    required this.text,
+    required this.vertexCount,
+  });
+
+  final String text;
+  final int vertexCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFAF52DE),
+      elevation: 4,
+      borderRadius: BorderRadius.circular(28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              '$text · $vertexCount',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AreaBadge extends StatelessWidget {
+  const _AreaBadge({required this.areaHa});
+
+  final double areaHa;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xCC000000),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${areaHa.toStringAsFixed(areaHa >= 100 ? 0 : 2)} ha',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _UnitChip(label: 'ha', active: true),
+                SizedBox(width: 6),
+                _UnitChip(label: 'm2'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UnitChip extends StatelessWidget {
+  const _UnitChip({
+    required this.label,
+    this.active = false,
+  });
+
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: active ? AppColors.success : const Color(0x33FFFFFF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditingActions extends StatelessWidget {
+  const _EditingActions({
+    required this.canConfirm,
+    required this.canUndo,
+    required this.canRedo,
+    required this.onConfirm,
+    required this.onUndo,
+    required this.onRedo,
+    required this.onCancel,
+  });
+
+  final bool canConfirm;
+  final bool canUndo;
+  final bool canRedo;
+  final VoidCallback onConfirm;
+  final VoidCallback onUndo;
+  final VoidCallback onRedo;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xE61D1D1F),
+      borderRadius: BorderRadius.circular(34),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _RoundActionButton(
+              icon: Icons.check_rounded,
+              color: AppColors.success,
+              onPressed: canConfirm ? onConfirm : null,
+              tooltip: 'Confirmar desenho',
+            ),
+            const SizedBox(height: 10),
+            _RoundActionButton(
+              icon: Icons.undo_rounded,
+              color: const Color(0xFF8E8E93),
+              onPressed: canUndo ? onUndo : null,
+              tooltip: 'Desfazer vertice',
+            ),
+            const SizedBox(height: 10),
+            _RoundActionButton(
+              icon: Icons.redo_rounded,
+              color: const Color(0xFF8E8E93),
+              onPressed: canRedo ? onRedo : null,
+              tooltip: 'Refazer vertice',
+            ),
+            const SizedBox(height: 10),
+            _RoundActionButton(
+              icon: Icons.close_rounded,
+              color: AppColors.error,
+              onPressed: onCancel,
+              tooltip: 'Cancelar desenho',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoundActionButton extends StatelessWidget {
+  const _RoundActionButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: onPressed == null ? 0.45 : 1,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: color,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 58,
+              height: 58,
+              child: Icon(icon, color: Colors.white, size: 34),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapEditButton extends StatelessWidget {
+  const _MapEditButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: 'fab_editar_mapa',
+      backgroundColor: const Color(0xFFAF52DE),
+      onPressed: onPressed,
+      tooltip: 'Editar vertices',
+      child: const Icon(Icons.edit_rounded, color: Colors.white),
+    );
   }
 }
 

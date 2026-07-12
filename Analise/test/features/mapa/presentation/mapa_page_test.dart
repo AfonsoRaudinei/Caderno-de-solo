@@ -24,7 +24,9 @@ class _FakeMapEngine implements MapEngine {
     required double zoom,
     required List<MapPin> pins,
     required AbstractMapController controller,
+    List<MapPolygon> polygons = const <MapPolygon>[],
     void Function(LatLng center, double zoom)? onCameraChanged,
+    void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
     String? selectedPinId,
   }) {
@@ -32,6 +34,14 @@ class _FakeMapEngine implements MapEngine {
       child: Column(
         children: [
           Text('selected:${selectedPinId ?? 'none'}'),
+          Text('polygons:${polygons.length}'),
+          Text(
+              'vertices:${polygons.isEmpty ? 0 : polygons.first.points.length}'),
+          TextButton(
+            key: const Key('fake-map-tap'),
+            onPressed: () => onMapTap?.call(const LatLng(-10.1, -48.1)),
+            child: const Text('Tap map'),
+          ),
           for (final pin in pins)
             TextButton(
               key: Key('pin-${pin.id}'),
@@ -150,5 +160,62 @@ void main() {
     expect(find.text('selected:a2'), findsOneWidget);
     expect(find.text('T-02'), findsAtLeastNWidgets(1));
     expect(find.text('Composição Física'), findsOneWidget);
+  });
+
+  testWidgets('edita desenho com adicionar, desfazer, refazer e confirmar',
+      (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier(
+            [
+              _analise(
+                id: 'a1',
+                talhao: 'T-01',
+                latitude: -10.1234,
+                longitude: -48.9876,
+              ),
+            ],
+          ),
+        ),
+        mapEngineProvider.overrideWithValue(_FakeMapEngine()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: MapaPage()),
+      ),
+    );
+
+    await tester.pump();
+    await tester.tap(find.byTooltip('Editar vertices'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Editando vertices'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('fake-map-tap')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('fake-map-tap')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('fake-map-tap')));
+    await tester.pump();
+
+    expect(find.text('vertices:3'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Desfazer vertice'));
+    await tester.pump();
+    expect(find.text('vertices:2'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Refazer vertice'));
+    await tester.pump();
+    expect(find.text('vertices:3'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Confirmar desenho'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Editando vertices'), findsNothing);
+    expect(find.text('polygons:1'), findsOneWidget);
   });
 }
