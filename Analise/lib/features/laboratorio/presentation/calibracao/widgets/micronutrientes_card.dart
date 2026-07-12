@@ -181,7 +181,10 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
   }
 
   Widget _buildCollapsedHeader() {
+    final summaryLines = _collapsedSummaryLines();
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 4,
@@ -193,15 +196,85 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
         ),
         const SizedBox(width: AppDimens.md),
         Expanded(
-          child: Text(
-            MicronutrientesCard.title,
-            style: AppTextStyles.label
-                .copyWith(color: MicronutrientesCard.accentColor),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                MicronutrientesCard.title,
+                style: AppTextStyles.label
+                    .copyWith(color: MicronutrientesCard.accentColor),
+              ),
+              ..._buildSummaryWidgets(summaryLines),
+            ],
           ),
         ),
         _buildChevron(onTap: widget.onToggle),
       ],
     );
+  }
+
+  List<String> _collapsedSummaryLines() {
+    final fonte = _fonteAtualResumo();
+    final grupos = widget.grupos;
+    final elementosSelecionados = _elementosMicros
+        .where(
+          (simbolo) => grupos.any(
+            (grupo) => ((grupo['elementos'] as List?) ?? const [])
+                .map((e) => e.toString())
+                .contains(simbolo),
+          ),
+        )
+        .toList();
+
+    return [
+      fonte,
+      _grupoResumo(grupos),
+      _joinSegments(elementosSelecionados),
+    ].where((line) => line.isNotEmpty).toList();
+  }
+
+  String _grupoResumo(List<Map<String, dynamic>> grupos) {
+    if (grupos.isEmpty) return 'Nenhum grupo criado';
+    if (grupos.length > 1) return '${grupos.length} grupos';
+
+    final grupo = grupos.first;
+    final nome = grupo['nome']?.toString().trim() ?? '';
+    final via = grupo['via']?.toString().trim() ?? '';
+    final detalhe = _joinSegments([nome, via]);
+    return detalhe.isEmpty ? '1 grupo' : '1 grupo: $detalhe';
+  }
+
+  String _fonteAtualResumo() {
+    final fontes = _fontesParaTipoMicro(_microTipoFonte);
+    if (_microFonteNome != null &&
+        fontes.contains(_microFonteNome) &&
+        _microFonteNome!.trim().isNotEmpty) {
+      return _microFonteNome!.trim();
+    }
+    return fontes.isNotEmpty ? fontes.first : '';
+  }
+
+  List<String> _fontesParaTipoMicro(String tipo) {
+    if (tipo == 'Guidorizzi') return kTecnologias.keys.toList();
+    if (tipo == 'Cultivar') return kCultivares.keys.toList();
+    return kAutores.keys.toList();
+  }
+
+  List<Widget> _buildSummaryWidgets(List<String> lines) {
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return [
+      for (final line in lines) ...[
+        const SizedBox(height: 2),
+        Text(
+          line,
+          style: captionStyle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ];
   }
 
   Widget _buildChevron({required VoidCallback onTap}) {
@@ -1166,6 +1239,13 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
     final text = value?.toString() ?? '';
     if (text.isEmpty) return fallback;
     return text;
+  }
+
+  String _joinSegments(Iterable<String> values) {
+    return values
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .join(' · ');
   }
 
   double _num(dynamic value, {double fallback = 0}) {

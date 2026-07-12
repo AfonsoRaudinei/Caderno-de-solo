@@ -422,7 +422,10 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   }
 
   Widget _buildCollapsedHeader() {
+    final summaryLines = _collapsedSummaryLines();
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 4,
@@ -434,14 +437,73 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
         ),
         const SizedBox(width: AppDimens.md),
         Expanded(
-          child: Text(
-            FosforoCard.title,
-            style: AppTextStyles.label.copyWith(color: FosforoCard.accentColor),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                FosforoCard.title,
+                style: AppTextStyles.label
+                    .copyWith(color: FosforoCard.accentColor),
+              ),
+              ..._buildSummaryWidgets(summaryLines),
+            ],
           ),
         ),
         _buildChevron(onTap: widget.onToggle),
       ],
     );
+  }
+
+  List<String> _collapsedSummaryLines() {
+    final extrator =
+        _d.extrator == ExtratorP.resinaIAC ? 'Resina IAC' : 'Mehlich-1';
+    final referencia = _d.label;
+    final camada = _camada == CamadaP.c0a20 ? '0–20 cm' : '20–40 cm';
+    final nc = _nc;
+    final modoCalculo = _limparPrefixo(_modoLabelForPayload(_modo));
+    final tipo = _tipo == TipoCalculo.exportacao ? 'Exportação' : 'Manutenção';
+    final percentualP = _percentSegment(
+      '',
+      double.tryParse(_pSoloCtrl.text.replaceAll(',', '.')),
+      suffix: ' P',
+    );
+    final fonteNome = _fonteAtualResumo();
+
+    return [
+      _joinSegments([extrator, referencia, camada]),
+      _joinSegments([
+        if (nc != null) 'NC ${_fmtNumber(nc)} mg/dm³',
+        modoCalculo,
+      ]),
+      _joinSegments([tipo, percentualP, _fosforoTipoFonte, fonteNome]),
+    ].where((line) => line.isNotEmpty).toList();
+  }
+
+  String _fonteAtualResumo() {
+    final fontes = _fontesParaTipoP(_fosforoTipoFonte);
+    if (_fosforoFonteNome != null &&
+        fontes.contains(_fosforoFonteNome) &&
+        _fosforoFonteNome!.trim().isNotEmpty) {
+      return _fosforoFonteNome!.trim();
+    }
+    return fontes.isNotEmpty ? fontes.first : '';
+  }
+
+  List<Widget> _buildSummaryWidgets(List<String> lines) {
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return [
+      for (final line in lines) ...[
+        const SizedBox(height: 2),
+        Text(
+          line,
+          style: captionStyle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ];
   }
 
   Widget _buildChevron({required VoidCallback onTap}) {
@@ -954,6 +1016,32 @@ class _InfoIcon extends StatelessWidget {
       ),
     );
   }
+}
+
+String _joinSegments(Iterable<String> values) {
+  return values
+      .map((value) => value.trim())
+      .where((value) => value.isNotEmpty)
+      .join(' · ');
+}
+
+String _percentSegment(String label, double? value, {String suffix = ''}) {
+  if (value == null) return '';
+  final prefix = label.isEmpty ? '' : '$label ';
+  return '$prefix${_fmtNumber(value)}%$suffix';
+}
+
+String _fmtNumber(double value) {
+  final fixed =
+      value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+  return fixed.replaceAll('.', ',');
+}
+
+String _limparPrefixo(String value) {
+  return value
+      .replaceFirst(RegExp(r'^[①②③④⑤⑥⑦⑧⑨⓪]\s*'), '')
+      .replaceFirst(RegExp(r'^\d+\s*[-.)]?\s*'), '')
+      .trim();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

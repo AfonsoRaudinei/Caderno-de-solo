@@ -594,7 +594,10 @@ class _PotassioCardState extends State<PotassioCard> {
   }
 
   Widget _buildCollapsedHeader() {
+    final summaryLines = _collapsedSummaryLines();
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 4,
@@ -606,15 +609,72 @@ class _PotassioCardState extends State<PotassioCard> {
         ),
         const SizedBox(width: AppDimens.md),
         Expanded(
-          child: Text(
-            PotassioCard.title,
-            style:
-                AppTextStyles.label.copyWith(color: PotassioCard.accentColor),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                PotassioCard.title,
+                style: AppTextStyles.label
+                    .copyWith(color: PotassioCard.accentColor),
+              ),
+              ..._buildSummaryWidgets(summaryLines),
+            ],
           ),
         ),
         _buildChevron(onTap: widget.onToggle),
       ],
     );
+  }
+
+  List<String> _collapsedSummaryLines() {
+    final camada = _camada == CamadaK.c0a20 ? '0–20 cm' : '20–40 cm';
+    final modoCalculo = _limparPrefixo(_modoLabelForPayload(_modo));
+    final fek = double.tryParse(_fekCtrl.text.replaceAll(',', '.'));
+    final aplicacao = _aplicacao.label == 'Lanço plantio direto'
+        ? 'Lanço PD'
+        : _aplicacao.label;
+    final fonteNome = _fonteAtualResumo();
+
+    return [
+      _joinSegments([_extratorLabel, _d.label, camada]),
+      _joinSegments([
+        if (_d.nc.ncTeor != null) 'NC ${_fmtNumber(_d.nc.ncTeor!)} mg/dm³',
+        if (_d.nc.ncCtcPct != null) 'NC ${_fmtNumber(_d.nc.ncCtcPct!)}% CTC',
+        modoCalculo,
+      ]),
+      _joinSegments([
+        aplicacao,
+        _percentSegment('FEK', fek),
+        fonteNome,
+      ]),
+    ].where((line) => line.isNotEmpty).toList();
+  }
+
+  String _fonteAtualResumo() {
+    final fontes = _fontesParaTipoK(_potassioTipoFonte);
+    if (_potassioFonteNome != null &&
+        fontes.contains(_potassioFonteNome) &&
+        _potassioFonteNome!.trim().isNotEmpty) {
+      return _potassioFonteNome!.trim();
+    }
+    return fontes.isNotEmpty ? fontes.first : '';
+  }
+
+  List<Widget> _buildSummaryWidgets(List<String> lines) {
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return [
+      for (final line in lines) ...[
+        const SizedBox(height: 2),
+        Text(
+          line,
+          style: captionStyle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ];
   }
 
   Widget _buildChevron({required VoidCallback onTap}) {
@@ -1160,6 +1220,31 @@ class _PotassioCardState extends State<PotassioCard> {
           ),
         ),
       );
+}
+
+String _joinSegments(Iterable<String> values) {
+  return values
+      .map((value) => value.trim())
+      .where((value) => value.isNotEmpty)
+      .join(' · ');
+}
+
+String _percentSegment(String label, double? value) {
+  if (value == null) return '';
+  return '$label ${_fmtNumber(value)}%';
+}
+
+String _fmtNumber(double value) {
+  final fixed =
+      value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+  return fixed.replaceAll('.', ',');
+}
+
+String _limparPrefixo(String value) {
+  return value
+      .replaceFirst(RegExp(r'^[①②③④⑤⑥⑦⑧⑨⓪]\s*'), '')
+      .replaceFirst(RegExp(r'^\d+\s*[-.)]?\s*'), '')
+      .trim();
 }
 
 // ─── Seta tooltip ─────────────────────────────────────────────────────────────

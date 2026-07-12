@@ -129,7 +129,10 @@ class _CorretivosCardState extends State<CorretivosCard> {
   }
 
   Widget _buildCollapsedHeader() {
+    final summaryLines = _collapsedSummaryLines();
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 4,
@@ -141,14 +144,62 @@ class _CorretivosCardState extends State<CorretivosCard> {
         ),
         const SizedBox(width: AppDimens.md),
         Expanded(
-          child: Text(
-            CorretivosCard.title,
-            style: AppTextStyles.label.copyWith(color: AppColors.primary),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                CorretivosCard.title,
+                style: AppTextStyles.label.copyWith(color: AppColors.primary),
+              ),
+              ..._buildSummaryWidgets(summaryLines),
+            ],
           ),
         ),
         _buildChevron(onTap: widget.onToggle),
       ],
     );
+  }
+
+  List<String> _collapsedSummaryLines() {
+    final calcario1 = _asMap(widget.corretivos['calcario1']);
+    final tipoCalagem = _string(widget.corretivos['tipoCalagem']);
+    final tipoCalcario = _string(widget.corretivos['tipoCalcario']);
+    final metodoCalagem =
+        _limparPrefixo(_string(widget.corretivos['metodoCalagem']));
+    final metodoIncorp = _string(widget.corretivos['metodoIncorporacao']);
+    final mes = _string(widget.corretivos['mesAplicacao']);
+
+    return [
+      _joinSegments([
+        tipoCalagem,
+        tipoCalcario,
+        _percentSegment('PRNT', calcario1['prnt']),
+      ]),
+      _joinSegments([
+        _percentSegment('CaO', calcario1['caO']),
+        _percentSegment('MgO', calcario1['mgO']),
+        _percentSegment('PN', calcario1['pn']),
+        _percentSegment('RE', calcario1['re']),
+      ]),
+      _joinSegments([metodoCalagem, metodoIncorp, mes]),
+    ].where((line) => line.isNotEmpty).toList();
+  }
+
+  List<Widget> _buildSummaryWidgets(List<String> lines) {
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return [
+      for (final line in lines) ...[
+        const SizedBox(height: 2),
+        Text(
+          line,
+          style: captionStyle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ];
   }
 
   Widget _buildChevron({required VoidCallback onTap}) {
@@ -932,6 +983,38 @@ String _fmt(double value, {int decimals = 2}) {
 double _parseDouble(String value) {
   final parsed = double.tryParse(value.replaceAll(',', '.').trim());
   return parsed ?? 0;
+}
+
+String _joinSegments(Iterable<String> values) {
+  return values
+      .map((value) => value.trim())
+      .where((value) => value.isNotEmpty)
+      .join(' · ');
+}
+
+String _percentSegment(String label, dynamic value) {
+  final number = _numOrNull(value);
+  if (number == null) return '';
+  return '$label ${_fmt(number, decimals: 0)}%';
+}
+
+String _limparPrefixo(String value) {
+  return value
+      .replaceFirst(RegExp(r'^[①②③④⑤⑥⑦⑧⑨⓪]\s*'), '')
+      .replaceFirst(RegExp(r'^\d+\s*[-.)]?\s*'), '')
+      .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
+      .trim();
+}
+
+double? _numOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    return double.tryParse(text.replaceAll(',', '.'));
+  }
+  return null;
 }
 
 Map<String, dynamic> _asMap(dynamic value) {
