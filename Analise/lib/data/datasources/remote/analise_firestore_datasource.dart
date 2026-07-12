@@ -70,14 +70,47 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
 
   @override
   Stream<List<AnaliseSoloModel>> watchAnalises({required String userId}) {
-    return _collection
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) => _toCommittedAnalises(snapshot.docs))
-        .handleError((Object error, StackTrace stackTrace) {
-          debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
-          throw error;
-        });
+    late final StreamController<List<AnaliseSoloModel>> controller;
+    StreamSubscription<User?>? authSub;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? querySub;
+
+    Future<void> bindUser(User? user) async {
+      await querySub?.cancel();
+      querySub = null;
+
+      if (user == null || user.uid != userId) {
+        if (!controller.isClosed) controller.add(const <AnaliseSoloModel>[]);
+        return;
+      }
+
+      querySub = _collection
+          .where('userId', isEqualTo: userId)
+          .snapshots()
+          .listen((snapshot) {
+        if (!controller.isClosed) {
+          controller.add(_toCommittedAnalises(snapshot.docs));
+        }
+      }, onError: controller.addError);
+    }
+
+    controller = StreamController<List<AnaliseSoloModel>>(
+      onListen: () {
+        bindUser(_auth.currentUser);
+        authSub = _auth.authStateChanges().listen(
+              bindUser,
+              onError: controller.addError,
+            );
+      },
+      onCancel: () async {
+        await querySub?.cancel();
+        await authSub?.cancel();
+      },
+    );
+
+    return controller.stream.handleError((Object error, StackTrace stackTrace) {
+      debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
+      throw error;
+    });
   }
 
   List<AnaliseSoloModel> _toCommittedAnalises(

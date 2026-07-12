@@ -59,7 +59,7 @@ class _LabStats {
 
 void main() {
   test('ground truth local: aceite P0 com 20+ PDFs reais e 95%+ de sucesso',
-      () async {
+      skip: !const bool.fromEnvironment('RUN_LOCAL_GROUND_TRUTH'), () async {
     final csv = File(
       '/Users/raudineisilvapereira/dev/Caderno de Solo/Analise/docs/importacao/ground_truth_lote_local.csv',
     );

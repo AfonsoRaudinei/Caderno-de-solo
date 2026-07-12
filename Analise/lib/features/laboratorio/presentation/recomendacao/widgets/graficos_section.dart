@@ -389,26 +389,31 @@ class RecomendacaoGraficosSection extends StatelessWidget {
     Widget barra(double proporcao, Color cor, double valor, String unidade,
         String label) {
       final altura = (alturaMax * proporcao).clamp(4.0, alturaMax);
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(
-            _fmtBar(valor, unidade, label),
-            style: const TextStyle(fontSize: 9, color: Color(0xFF1D1D1F)),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            width: larguraBarra,
-            height: altura,
-            decoration: BoxDecoration(
-              color: cor,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(5)),
+      return SizedBox(
+        width: 26.5,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              _fmtBar(valor, unidade, label),
+              style: const TextStyle(fontSize: 9, color: Color(0xFF1D1D1F)),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              width: larguraBarra,
+              height: altura,
+              decoration: BoxDecoration(
+                color: cor,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(5)),
+              ),
+            ),
+          ],
+        ),
       );
     }
 

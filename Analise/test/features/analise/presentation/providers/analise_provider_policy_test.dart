@@ -9,13 +9,13 @@ void main() {
     );
     final content = file.readAsStringSync();
 
-    expect(content.contains('if (AppConfig.allowAnaliseMockMode)'), isTrue);
     expect(
       content.contains('return ref.watch(analiseFirestoreDatasourceProvider);'),
       isTrue,
     );
     expect(
-        content.contains('return ref.watch(analiseLocalDatasourceProvider);'),
-        isTrue);
+      content.contains('return ref.watch(analiseLocalDatasourceProvider);'),
+      isFalse,
+    );
   });
 }
