@@ -240,6 +240,7 @@ void main() {
 
     var exportChamado = false;
     ResultadoRecomendacao? resultadoExportado;
+    List<AnaliseSolo> analisesExportadas = const [];
 
     await tester.pumpWidget(
       ProviderScope(
@@ -264,11 +265,14 @@ void main() {
             return ({
               required ResultadoRecomendacao resultado,
               analiseSolo,
+              analisesSelecionadas = const [],
               perfil,
               logoUrl,
+              sharePositionOrigin,
             }) async {
               exportChamado = true;
               resultadoExportado = resultado;
+              analisesExportadas = analisesSelecionadas;
             };
           }),
         ],
@@ -279,6 +283,11 @@ void main() {
     );
     await _pumpAndDrain(tester);
 
+    await tester.enterText(
+      find.byKey(const Key('filtro_produtor_recomendacao')),
+      'Produtor',
+    );
+    await _pumpAndDrain(tester);
     await _selectAmostra(tester, 'a-1');
     await _selectCalibracao(tester, 'c-1');
     await _generate(tester);
@@ -307,5 +316,6 @@ void main() {
     expect(exportChamado, isTrue);
     expect(resultadoExportado, isNotNull);
     expect(resultadoExportado!.calibracao.id, 'c-1');
+    expect(analisesExportadas.map((a) => a.id), ['a-1']);
   });
 }

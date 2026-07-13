@@ -103,9 +103,17 @@ void main() {
       ctx = RecomendacaoExportContext(
         resultado: resultado,
         geradaEm: DateTime(2026, 6, 16, 9, 49),
-        metadata: const RecomendacaoExportMetadata(
+        metadata: RecomendacaoExportMetadata(
           consultorNome: 'Consultor',
+          produtor: 'Produtor',
+          fazenda: 'Fazenda',
+          cidadeUf: 'Cidade / UF',
+          talhao: 'T01',
+          cultura: 'Soja',
+          safra: '2025/2026',
           laboratorio: 'Solum',
+          profundidade: '0-20',
+          dataLaudo: DateTime(2026, 6, 16),
         ),
       );
     });
@@ -120,8 +128,15 @@ void main() {
       expect(html, contains('<svg class="radar"'));
       expect(html, contains('pH do solo'));
       expect(html, contains('Calcario'));
+      expect(html, contains('Profundidade'));
+      expect(html, contains('0-20'));
+      expect(html, contains('Produtor'));
+      expect(html, contains('Fazenda'));
+      expect(html, contains('Solum'));
       expect(html, contains('SoloForte · Caderno de Solo'));
       expect(html, isNot(contains('{{BODY}}')));
+      expect(html, isNot(contains('undefined')));
+      expect(html, isNot(contains('null')));
       expect(html, isNot(contains('radar demonstrativo foi omitido')));
     });
   });

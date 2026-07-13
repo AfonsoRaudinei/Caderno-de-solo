@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -16,7 +17,10 @@ class RecomendacaoHtmlExporter {
 
   final RecomendacaoHtmlRenderer _renderer;
 
-  Future<void> exportar(RecomendacaoExportContext exportContext) async {
+  Future<void> exportar(
+    RecomendacaoExportContext exportContext, {
+    Rect? sharePositionOrigin,
+  }) async {
     final html = await _renderer.render(exportContext);
     final dir = await getTemporaryDirectory();
     final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
@@ -33,6 +37,7 @@ class RecomendacaoHtmlExporter {
       ],
       subject: 'Recomendacao SoloForte',
       text: 'Relatorio de recomendacao agronomica gerado pelo Caderno de Solo.',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 

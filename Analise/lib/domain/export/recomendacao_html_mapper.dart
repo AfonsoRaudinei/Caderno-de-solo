@@ -50,6 +50,12 @@ class RecomendacaoHtmlMapper {
         .replaceAll('"', '&quot;');
   }
 
+  static String _info(String? text) {
+    final value = text?.trim();
+    if (value == null || value.isEmpty) return '—';
+    return _esc(value);
+  }
+
   static String _fmt(double value, [int decimals = 2]) {
     return value.toStringAsFixed(decimals).replaceAll('.', ',');
   }
@@ -159,6 +165,10 @@ class RecomendacaoHtmlMapper {
     final consultor = _esc(meta.consultorNome ?? a.consultor);
     final credencial = _esc(meta.consultorCredencial ?? '');
     final dataLaudo = meta.dataLaudo != null ? _fmtDate(meta.dataLaudo!) : '—';
+    final cultura = _info(meta.cultura ?? cal.cultura);
+    final safra = _info(meta.safra ?? cal.safra);
+    final cidadeUfRaw = (meta.cidadeUf ?? a.localizacao).toString().trim();
+    final cidadeUf = cidadeUfRaw.isEmpty ? '—' : _parseCidadeUf(cidadeUfRaw);
 
     return '''
 <div class="consult-card">
@@ -171,12 +181,13 @@ class RecomendacaoHtmlMapper {
     <div class="c-badge">${_esc(cal.nome).replaceAll(' ', '<br>')}</div>
   </div>
   <div class="info-grid">
-    <div class="info-cell"><div class="info-lbl">Produtor</div><div class="info-val">${_esc(cal.cliente)}</div></div>
-    <div class="info-cell"><div class="info-lbl">Fazenda</div><div class="info-val">${_esc(cal.fazenda)}</div></div>
-    <div class="info-cell"><div class="info-lbl">Cidade / UF</div><div class="info-val">${_parseCidadeUf(a.localizacao)}</div></div>
-    <div class="info-cell"><div class="info-lbl">Talhao</div><div class="info-val">${_esc(cal.talhao)}</div></div>
-    <div class="info-cell"><div class="info-lbl">Cultura · Safra</div><div class="info-val">${_esc(cal.cultura)} <span class="sm">· ${_esc(cal.safra)}</span></div></div>
-    <div class="info-cell"><div class="info-lbl">Laboratorio</div><div class="info-val">${_esc(meta.laboratorio ?? a.nome)}</div></div>
+    <div class="info-cell"><div class="info-lbl">Produtor</div><div class="info-val">${_info(meta.produtor ?? cal.cliente)}</div></div>
+    <div class="info-cell"><div class="info-lbl">Fazenda</div><div class="info-val">${_info(meta.fazenda ?? cal.fazenda)}</div></div>
+    <div class="info-cell"><div class="info-lbl">Cidade / UF</div><div class="info-val">$cidadeUf</div></div>
+    <div class="info-cell"><div class="info-lbl">Talhao</div><div class="info-val">${_info(meta.talhao ?? cal.talhao)}</div></div>
+    <div class="info-cell"><div class="info-lbl">Cultura · Safra</div><div class="info-val">$cultura <span class="sm">· $safra</span></div></div>
+    <div class="info-cell"><div class="info-lbl">Laboratorio</div><div class="info-val">${_info(meta.laboratorio ?? a.nome)}</div></div>
+    <div class="info-cell"><div class="info-lbl">Profundidade</div><div class="info-val">${_info(meta.profundidade)}</div></div>
     <div class="info-cell"><div class="info-lbl">Data do Laudo</div><div class="info-val">$dataLaudo</div></div>
     <div class="info-cell"><div class="info-lbl">Recomendacao</div><div class="info-val">${_fmtDateTime(gerada)}</div></div>
   </div>

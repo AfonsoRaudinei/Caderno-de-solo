@@ -153,7 +153,14 @@ void main() {
         metadata: const RecomendacaoExportMetadata(
           consultorNome: 'Raudinei Silva Pereira',
           consultorCredencial: 'Eng. Agronomo · CREA-MT',
+          produtor: 'Produtor',
+          fazenda: 'Fazenda',
+          cidadeUf: 'Cidade / UF',
+          talhao: 'T01',
+          cultura: 'Soja',
+          safra: '2025/2026',
           laboratorio: 'Solum',
+          profundidade: '0-20',
           dataLaudo: null,
         ),
       );
@@ -165,6 +172,8 @@ void main() {
 
       expect(html, contains('Qualidade do Solo'));
       expect(html, contains('Disponibilidade de Nutrientes'));
+      expect(html, contains('Profundidade'));
+      expect(html, contains('0-20'));
       expect(html, contains('pH do solo'));
       expect(html, contains('5,8'));
       expect(html, contains('<svg class="radar"'));

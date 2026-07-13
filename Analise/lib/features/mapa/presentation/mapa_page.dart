@@ -138,12 +138,6 @@ class _MapaPageState extends ConsumerState<MapaPage> {
               ],
             ),
           ),
-          if (!_isEditingPolygon)
-            Positioned(
-              right: 18,
-              bottom: MediaQuery.paddingOf(context).bottom + 24,
-              child: _MapEditButton(onPressed: _entrarEdicaoPoligono),
-            ),
           if (pinsAsync.isLoading && pins.isEmpty)
             const Positioned(
               top: 24,
@@ -225,14 +219,6 @@ class _MapaPageState extends ConsumerState<MapaPage> {
       if (shouldZoom) {
         _cameraZoom = focusZoom;
       }
-    });
-  }
-
-  void _entrarEdicaoPoligono() {
-    setState(() {
-      _isEditingPolygon = true;
-      _selectedPin = null;
-      _redoStack.clear();
     });
   }
 
@@ -420,7 +406,8 @@ class _EditingBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.location_on_rounded,
+                color: Colors.white, size: 20),
             const SizedBox(width: 10),
             Text(
               '$text · $vertexCount',
@@ -604,23 +591,6 @@ class _RoundActionButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _MapEditButton extends StatelessWidget {
-  const _MapEditButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      heroTag: 'fab_editar_mapa',
-      backgroundColor: const Color(0xFFAF52DE),
-      onPressed: onPressed,
-      tooltip: 'Editar vertices',
-      child: const Icon(Icons.edit_rounded, color: Colors.white),
     );
   }
 }

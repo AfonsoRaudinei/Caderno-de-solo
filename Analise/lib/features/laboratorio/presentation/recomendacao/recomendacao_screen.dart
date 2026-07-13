@@ -53,11 +53,11 @@ class RecomendacaoScreen extends ConsumerStatefulWidget {
 class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   final _uuid = const Uuid();
   final _buscaProdutorController = TextEditingController();
+  final _shareButtonKey = GlobalKey();
   List<String> _analiseIdsSelecionados = [];
   String? _calibracaoIdSelecionada;
   bool _salvando = false;
   bool _exportando = false;
-  String _buscaProdutor = '';
 
   @override
   void initState() {
@@ -73,19 +73,34 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     super.dispose();
   }
 
-  bool _analiseMatchesBusca(AnaliseSolo analise) =>
-      analiseMatchesProdutorBusca(analise, _buscaProdutor);
+  bool _analiseMatchesBusca(AnaliseSolo analise) => analiseMatchesProdutorBusca(
+        analise,
+        ref.read(recomendacaoSearchQueryProvider),
+      );
+
+  bool _isProfundidade0a20(AnaliseSolo analise) {
+    final profundidade =
+        analise.profundidade.replaceAll('–', '-').replaceAll(' ', '').trim();
+    return profundidade.isEmpty || profundidade == '0-20';
+  }
 
   @override
   Widget build(BuildContext context) {
     final calibracaoState = ref.watch(calibracaoControllerProvider);
     final analisesAsync = ref.watch(analiseNotifierProvider);
     final analisesVisiveis = ref.watch(analisesVisiveisProvider);
+    final buscaProdutor = ref.watch(recomendacaoSearchQueryProvider);
     final perfis = calibracaoState.profiles;
 
-    final analisesRaw = analisesVisiveis;
-    final analisesFiltradas =
-        analisesRaw.where(_analiseMatchesBusca).toList(growable: false);
+    // SOLOFORTE - PROTECAO: apenas amostras 0-20 sao exibidas na Recomendacao.
+    // Amostras 20-40 sao usadas internamente pela engine de gesso, mas nao
+    // devem ser selecionaveis pelo usuario aqui. Nao remover este filtro.
+    final analisesRaw = analisesVisiveis.where(_isProfundidade0a20).toList(
+          growable: false,
+        );
+    final analisesFiltradas = buscaProdutor.isEmpty
+        ? const <AnaliseSolo>[]
+        : analisesRaw.where(_analiseMatchesBusca).toList(growable: false);
     final opcoesAnalise = analisesFiltradas.map(_toAnaliseOption).toList();
     final n = _analiseIdsSelecionados.length;
     final labelBotao =
@@ -135,7 +150,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   key: const Key('filtro_produtor_recomendacao'),
                   controller: _buscaProdutorController,
                   onChanged: (value) {
-                    setState(() => _buscaProdutor = value.trim());
+                    ref.read(recomendacaoSearchQueryProvider.notifier).state =
+                        value.trim();
                   },
                   decoration: InputDecoration(
                     hintText: 'Buscar produtor/cliente...',
@@ -238,13 +254,25 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                     !analisesAsync.isLoading &&
                     !analisesAsync.hasError &&
                     analisesRaw.isNotEmpty &&
-                    _buscaProdutor.isNotEmpty) ...[
+                    buscaProdutor.length > 1) ...[
                   const SizedBox(height: 10),
                   const _Badge(
                     icon: Icons.search_off_outlined,
                     color: AppColors.warning,
                     label:
                         'Nenhuma amostra encontrada para o produtor informado.',
+                  ),
+                ],
+                if (opcoesAnalise.isEmpty &&
+                    !analisesAsync.isLoading &&
+                    !analisesAsync.hasError &&
+                    analisesRaw.isNotEmpty &&
+                    buscaProdutor.isEmpty) ...[
+                  const SizedBox(height: 10),
+                  const _Badge(
+                    icon: Icons.search_outlined,
+                    color: AppColors.warning,
+                    label: 'Digite o nome do produtor.',
                   ),
                 ],
                 if (opcoesAnalise.isEmpty &&
@@ -337,9 +365,10 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
+                    key: const Key('btn_exportar_pdf'),
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      key: const Key('btn_exportar_pdf'),
+                      key: _shareButtonKey,
                       onPressed: (_salvando || _exportando)
                           ? null
                           : () => _exportarRelatorio(resultado),
@@ -432,22 +461,24 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     setState(() => _exportando = true);
     try {
       final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
-      AnaliseSolo? analiseSolo;
-      for (final a in analises) {
-        if (a.id == resultado.analise.id) {
-          analiseSolo = a;
-          break;
-        }
-      }
+      final idsSelecionados = _analiseIdsSelecionados.toSet();
+      final analisesSelecionadas = analises
+          .where((analise) => idsSelecionados.contains(analise.id))
+          .toList(growable: false);
+      final analiseSolo =
+          analisesSelecionadas.length == 1 ? analisesSelecionadas.first : null;
 
       final perfilAssets = ref.read(perfilAssetsProvider);
       final perfil = ref.read(userProfileProvider).valueOrNull;
+      final sharePositionOrigin = _sharePositionOrigin(context);
 
       await ref.read(exportRecomendacaoProvider)(
         resultado: resultado,
         analiseSolo: analiseSolo,
+        analisesSelecionadas: analisesSelecionadas,
         perfil: perfil,
         logoUrl: perfilAssets.logoUrl,
+        sharePositionOrigin: sharePositionOrigin,
       );
     } catch (e) {
       if (!mounted) return;
@@ -455,6 +486,21 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     } finally {
       if (mounted) setState(() => _exportando = false);
     }
+  }
+
+  Rect _sharePositionOrigin(BuildContext context) {
+    final box =
+        _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && !box.size.isEmpty) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromCenter(
+      center: Offset(size.width / 2, size.height * 0.8),
+      width: 200,
+      height: 50,
+    );
   }
 
   // ignore: unused_element
