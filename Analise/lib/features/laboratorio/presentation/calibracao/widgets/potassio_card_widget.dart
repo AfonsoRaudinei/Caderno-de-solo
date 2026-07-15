@@ -55,8 +55,6 @@ enum ExtratorK { resinaIAC, mehlich1, resinaOuMehlich }
 
 enum ReferenciaK { iacBol100, embrapasCerrado, embrapaRsSc, ufla }
 
-enum CamadaK { c0a20, c20a40 }
-
 enum CriterioNC { teor, ctc, ambosUsarMaior }
 
 enum ModoCalculo { correcaoSolo, manutencao, exportacao }
@@ -189,7 +187,6 @@ class _PotassioCardState extends State<PotassioCard> {
 
   final GlobalKey _cardKey = GlobalKey();
   ReferenciaK _ref = ReferenciaK.iacBol100;
-  CamadaK _camada = CamadaK.c0a20;
   CriterioNC _criterio = CriterioNC.ambosUsarMaior;
   ModoCalculo _modo = ModoCalculo.correcaoSolo;
   ModoAplicacao _aplicacao = ModoAplicacao.lancoIncorporado;
@@ -198,8 +195,12 @@ class _PotassioCardState extends State<PotassioCard> {
   String _potassioTipoFonte = 'Autores';
   String? _potassioFonteNome;
   String _potassioModoAbsorcao = 'extracao';
+  bool _ncTeorManual = false;
+  bool _ncCtcManual = false;
 
   late TextEditingController _fekCtrl;
+  late TextEditingController _ncTeorCtrl;
+  late TextEditingController _ncCtcCtrl;
   Map<String, dynamic> _baseData = const {};
   final _ncBadgeKey = GlobalKey();
   OverlayEntry? _tip;
@@ -210,6 +211,8 @@ class _PotassioCardState extends State<PotassioCard> {
     _fekCtrl = TextEditingController(
       text: _aplicacao.fekDefault.toInt().toString(),
     );
+    _ncTeorCtrl = TextEditingController();
+    _ncCtcCtrl = TextEditingController();
     _syncFromExternalData(widget.initialData);
   }
 
@@ -238,6 +241,8 @@ class _PotassioCardState extends State<PotassioCard> {
   @override
   void dispose() {
     _fekCtrl.dispose();
+    _ncTeorCtrl.dispose();
+    _ncCtcCtrl.dispose();
     _removeTip();
     super.dispose();
   }
@@ -260,16 +265,63 @@ class _PotassioCardState extends State<PotassioCard> {
   bool get _showCtc =>
       _criterio == CriterioNC.ctc || _criterio == CriterioNC.ambosUsarMaior;
   bool get _isAmbos => _criterio == CriterioNC.ambosUsarMaior;
+  double? get _ncTeorAtual => _ncTeorManual
+      ? _parseDoubleOrNull(_ncTeorCtrl.text)
+      : _ncTeorAutomatico();
+  double? get _ncCtcAtual =>
+      _ncCtcManual ? _parseDoubleOrNull(_ncCtcCtrl.text) : _ncCtcAutomatico();
+
+  double? _ncTeorAutomatico() {
+    if (_ref == ReferenciaK.iacBol100) {
+      final argila = _argilaPercentual();
+      if (argila == null) return _d.nc.ncTeor;
+      if (argila < 15) return 120;
+      if (argila <= 35) return 100;
+      return 70;
+    }
+    return _d.nc.ncTeor;
+  }
+
+  double? _ncCtcAutomatico() => _d.nc.ncCtcPct;
+
+  double? _argilaPercentual() {
+    return _numOrNull(_baseData['argila']) ??
+        _numOrNull(_baseData['argilaPercent']) ??
+        _numOrNull(_baseData['argilaPercentual']) ??
+        _numOrNull(_baseData['teorArgila']);
+  }
+
+  void _syncNcControllersFromMode() {
+    final ncTeor =
+        _ncTeorManual ? _numOrNull(_baseData['ncTeor']) : _ncTeorAutomatico();
+    final ncCtc =
+        _ncCtcManual ? _numOrNull(_baseData['ncPctCtc']) : _ncCtcAutomatico();
+    _ncTeorCtrl.text = ncTeor == null ? '' : _fmtNumber(ncTeor);
+    _ncCtcCtrl.text = ncCtc == null ? '' : _fmtNumber(ncCtc);
+  }
+
+  void _resetNcTeorParaAutomatico() {
+    _ncTeorManual = false;
+    final nc = _ncTeorAutomatico();
+    _ncTeorCtrl.text = nc == null ? '' : _fmtNumber(nc);
+  }
+
+  void _resetNcCtcParaAutomatico() {
+    _ncCtcManual = false;
+    final nc = _ncCtcAutomatico();
+    _ncCtcCtrl.text = nc == null ? '' : _fmtNumber(nc);
+  }
 
   void _syncFromExternalData(Map<String, dynamic>? data) {
     final source = data ?? const <String, dynamic>{};
     _baseData = Map<String, dynamic>.from(source);
 
     _ref = _referenciaFromString(source['referencia']?.toString());
-    _camada = _camadaFromString(source['camada']?.toString());
     _criterio = _criterioFromString(source['criterioNc']?.toString());
     _modo = _modoFromString(source['modoCalculo']?.toString());
     _aplicacao = _aplicacaoFromString(source['modoAplicacao']?.toString());
+    _ncTeorManual = source['ncTeorManual'] as bool? ?? false;
+    _ncCtcManual = source['ncCtcManual'] as bool? ?? false;
     _potassioTipoFonte = source['potassioTipoFonte']?.toString() ?? 'Autores';
     _potassioFonteNome = source['potassioFonteNome']?.toString();
     _potassioModoAbsorcao =
@@ -279,6 +331,7 @@ class _PotassioCardState extends State<PotassioCard> {
     final fekTexto =
         fek == null ? _aplicacao.fekDefault.toString() : fek.toString();
     _fekCtrl.text = fekTexto.replaceAll('.', ',');
+    _syncNcControllersFromMode();
   }
 
   void _emitChange() {
@@ -293,9 +346,11 @@ class _PotassioCardState extends State<PotassioCard> {
       'extrator': _extratorLabel,
       'referencia': _d.label,
       'criterioNc': _criterioLabelForPayload(_criterio),
-      'ncTeor': _d.nc.ncTeor ?? _baseData['ncTeor'] ?? 80.0,
-      'ncPctCtc': _d.nc.ncCtcPct ?? _baseData['ncPctCtc'] ?? 4.0,
-      'camada': _camada == CamadaK.c0a20 ? '0–20 cm' : '20–40 cm',
+      'ncTeor': _ncTeorAtual ?? _ncTeorAutomatico() ?? 46.0,
+      'ncPctCtc': _ncCtcAtual ?? _ncCtcAutomatico() ?? 3.0,
+      'ncTeorManual': _ncTeorManual,
+      'ncCtcManual': _ncCtcManual,
+      'camada': '0-20',
       'modoCalculo': _modoLabelForPayload(_modo),
       'modoAplicacao': _aplicacao.label,
       'fekBase': fekBase,
@@ -324,10 +379,6 @@ class _PotassioCardState extends State<PotassioCard> {
       default:
         return ReferenciaK.iacBol100;
     }
-  }
-
-  CamadaK _camadaFromString(String? value) {
-    return value == '20–40 cm' ? CamadaK.c20a40 : CamadaK.c0a20;
   }
 
   CriterioNC _criterioFromString(String? value) {
@@ -545,31 +596,7 @@ class _PotassioCardState extends State<PotassioCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isExpanded)
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onToggle,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.lg,
-                    vertical: 14,
-                  ),
-                  child: _buildCollapsedHeader(),
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimens.lg,
-                  14,
-                  AppDimens.lg,
-                  0,
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _buildChevron(onTap: widget.onToggle),
-                ),
-              ),
+            _buildHeader(),
             AnimatedSize(
               duration: _animDuration,
               curve: Curves.easeInOut,
@@ -593,105 +620,109 @@ class _PotassioCardState extends State<PotassioCard> {
     );
   }
 
-  Widget _buildCollapsedHeader() {
-    final summaryLines = _collapsedSummaryLines();
+  Widget _buildHeader() {
+    return InkWell(
+      onTap: widget.onToggle,
+      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.lg,
+          vertical: 14,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF9500),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Potássio',
+                    style: AppTextStyles.label.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child: widget.isExpanded
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            key: const ValueKey('potassio-resumo'),
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _buildResumoColapsado(),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedRotation(
+              turns: widget.isExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFF86868B),
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Row(
+  Widget _buildResumoColapsado() {
+    final summaryLines = _collapsedSummaryLines();
+    if (summaryLines.isEmpty) return const SizedBox.shrink();
+
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 4,
-          height: 32,
-          decoration: BoxDecoration(
-            color: PotassioCard.accentColor,
-            borderRadius: BorderRadius.circular(2),
+        for (final line in summaryLines) ...[
+          const SizedBox(height: 2),
+          Text(
+            line,
+            style: captionStyle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(width: AppDimens.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                PotassioCard.title,
-                style: AppTextStyles.label
-                    .copyWith(color: PotassioCard.accentColor),
-              ),
-              ..._buildSummaryWidgets(summaryLines),
-            ],
-          ),
-        ),
-        _buildChevron(onTap: widget.onToggle),
+        ],
       ],
     );
   }
 
   List<String> _collapsedSummaryLines() {
-    final camada = _camada == CamadaK.c0a20 ? '0–20 cm' : '20–40 cm';
-    final modoCalculo = _limparPrefixo(_modoLabelForPayload(_modo));
-    final fek = double.tryParse(_fekCtrl.text.replaceAll(',', '.'));
+    final modoCalculo = _labelModoCalculo(_modo);
     final aplicacao = _aplicacao.label == 'Lanço plantio direto'
         ? 'Lanço PD'
         : _aplicacao.label;
-    final fonteNome = _fonteAtualResumo();
+    final ncTeor = _ncTeorAtual;
+    final ncCtc = _ncCtcAtual;
+    final teorSuffix = _ncTeorManual ? '*' : '';
+    final ctcSuffix = _ncCtcManual ? '*' : '';
 
     return [
-      _joinSegments([_extratorLabel, _d.label, camada]),
+      _joinSegments([_extratorLabel, _d.label]),
       _joinSegments([
-        if (_d.nc.ncTeor != null) 'NC ${_fmtNumber(_d.nc.ncTeor!)} mg/dm³',
-        if (_d.nc.ncCtcPct != null) 'NC ${_fmtNumber(_d.nc.ncCtcPct!)}% CTC',
-        modoCalculo,
+        if (ncTeor != null) 'NC ${_fmtNumber(ncTeor)} mg/dm³$teorSuffix',
+        if (ncCtc != null) 'NC ${_fmtNumber(ncCtc)}% CTC$ctcSuffix',
       ]),
-      _joinSegments([
-        aplicacao,
-        _percentSegment('FEK', fek),
-        fonteNome,
-      ]),
+      _joinSegments([modoCalculo, aplicacao]),
     ].where((line) => line.isNotEmpty).toList();
-  }
-
-  String _fonteAtualResumo() {
-    final fontes = _fontesParaTipoK(_potassioTipoFonte);
-    if (_potassioFonteNome != null &&
-        fontes.contains(_potassioFonteNome) &&
-        _potassioFonteNome!.trim().isNotEmpty) {
-      return _potassioFonteNome!.trim();
-    }
-    return fontes.isNotEmpty ? fontes.first : '';
-  }
-
-  List<Widget> _buildSummaryWidgets(List<String> lines) {
-    final captionStyle = AppTextStyles.caption.copyWith(
-      color: AppColors.textSecond,
-    );
-    return [
-      for (final line in lines) ...[
-        const SizedBox(height: 2),
-        Text(
-          line,
-          style: captionStyle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ];
-  }
-
-  Widget _buildChevron({required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedRotation(
-        turns: widget.isExpanded ? 0.5 : 0.0,
-        duration: _animDuration,
-        curve: Curves.easeInOut,
-        child: const Icon(
-          Icons.keyboard_arrow_down,
-          color: AppColors.textSecond,
-          size: 20,
-        ),
-      ),
-    );
   }
 
   Widget _buildConteudo() {
@@ -725,6 +756,8 @@ class _PotassioCardState extends State<PotassioCard> {
                     onChanged: (v) => setState(() {
                       _ref = v!;
                       _removeTip();
+                      if (!_ncTeorManual) _resetNcTeorParaAutomatico();
+                      if (!_ncCtcManual) _resetNcCtcParaAutomatico();
                       _emitChange();
                     }),
                   ),
@@ -756,18 +789,6 @@ class _PotassioCardState extends State<PotassioCard> {
         ),
         const SizedBox(height: AppDimens.sm),
         _buildNcSection(),
-        const SizedBox(height: AppDimens.sm),
-        _lbl('Camada'),
-        const SizedBox(height: AppDimens.xs),
-        _drop<CamadaK>(
-          value: _camada,
-          items: CamadaK.values,
-          labelOf: (c) => c == CamadaK.c0a20 ? '0–20 cm' : '20–40 cm',
-          onChanged: (v) => setState(() {
-            _camada = v!;
-            _emitChange();
-          }),
-        ),
         const SizedBox(height: AppDimens.sm),
         _lbl('Modo de cálculo'),
         const SizedBox(height: AppDimens.xs),
@@ -832,11 +853,28 @@ class _PotassioCardState extends State<PotassioCard> {
                     const SizedBox(height: AppDimens.xs),
                     _ncBadge(
                       key: _ncBadgeKey,
-                      value: _d.nc.ncTeor != null
-                          ? _d.nc.ncTeor!.toInt().toString()
-                          : '—',
+                      controller: _ncTeorCtrl,
+                      value: _ncTeorAtual,
+                      placeholder: '46',
                       unit: isPlaceholder ? '*' : 'mg/dm³',
+                      manual: _ncTeorManual,
                       isPlaceholder: isPlaceholder,
+                      onToggleManual: () {
+                        setState(() {
+                          _ncTeorManual = !_ncTeorManual;
+                          if (_ncTeorManual) {
+                            _ncTeorCtrl.text =
+                                _fmtNumber(_ncTeorAutomatico() ?? 46);
+                          } else {
+                            _resetNcTeorParaAutomatico();
+                          }
+                        });
+                        _emitChange();
+                      },
+                      onRestore: () {
+                        setState(_resetNcTeorParaAutomatico);
+                        _emitChange();
+                      },
                     ),
                   ],
                 ),
@@ -851,11 +889,28 @@ class _PotassioCardState extends State<PotassioCard> {
                     _lbl('NC % CTC'),
                     const SizedBox(height: AppDimens.xs),
                     _ncBadge(
-                      value: _d.nc.ncCtcPct != null
-                          ? _d.nc.ncCtcPct!.toInt().toString()
-                          : '—',
+                      controller: _ncCtcCtrl,
+                      value: _ncCtcAtual,
+                      placeholder: '3',
                       unit: isPlaceholder ? '*' : '%',
+                      manual: _ncCtcManual,
                       isPlaceholder: isPlaceholder,
+                      onToggleManual: () {
+                        setState(() {
+                          _ncCtcManual = !_ncCtcManual;
+                          if (_ncCtcManual) {
+                            _ncCtcCtrl.text =
+                                _fmtNumber(_ncCtcAutomatico() ?? 3);
+                          } else {
+                            _resetNcCtcParaAutomatico();
+                          }
+                        });
+                        _emitChange();
+                      },
+                      onRestore: () {
+                        setState(_resetNcCtcParaAutomatico);
+                        _emitChange();
+                      },
                     ),
                   ],
                 ),
@@ -918,43 +973,115 @@ class _PotassioCardState extends State<PotassioCard> {
 
   Widget _ncBadge({
     Key? key,
-    required String value,
+    required TextEditingController controller,
+    required double? value,
+    required String placeholder,
     required String unit,
+    required bool manual,
     required bool isPlaceholder,
+    required VoidCallback onToggleManual,
+    required VoidCallback onRestore,
   }) {
-    final bg = isPlaceholder ? AppColors.bgWarning : const Color(0xFFEEF4FF);
-    final bdr = isPlaceholder ? AppColors.warning : const Color(0xFFB8D4FF);
-    final valC = isPlaceholder ? const Color(0xFFBF360C) : AppColors.primary;
+    final bg = manual
+        ? AppColors.bgPrimary
+        : isPlaceholder
+            ? AppColors.bgWarning
+            : const Color(0xFF007AFF).withValues(alpha: 0.06);
+    final bdr = manual
+        ? const Color(0xFFD1D1D6)
+        : isPlaceholder
+            ? AppColors.warning
+            : const Color(0xFF007AFF).withValues(alpha: 0.3);
+    final valC =
+        isPlaceholder && !manual ? const Color(0xFFBF360C) : AppColors.primary;
+    final textValue = value == null ? '' : _fmtNumber(value);
 
-    return Container(
+    if (!manual && controller.text != textValue) {
+      controller.text = textValue;
+    }
+
+    return Column(
       key: key,
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: bdr, width: 1),
-      ),
-      child: Row(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: valC,
-              letterSpacing: -0.3,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: bdr, width: 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  readOnly: !manual,
+                  onChanged: (_) => _emitChange(),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(7),
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d,\.]')),
+                  ],
+                  style: TextStyle(
+                    fontSize: manual ? 15 : 18,
+                    fontWeight: manual ? FontWeight.w500 : FontWeight.w600,
+                    color: manual ? AppColors.textPrimary : valC,
+                    letterSpacing: manual ? 0 : -0.3,
+                  ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    isDense: true,
+                    isCollapsed: true,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: placeholder,
+                    suffixText: unit,
+                    suffixStyle: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecond,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onToggleManual,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(
+                    manual ? Icons.edit_outlined : Icons.lock_outline,
+                    key: ValueKey(manual),
+                    size: 16,
+                    color: manual
+                        ? const Color(0xFF86868B)
+                        : const Color(0xFF007AFF),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (manual) ...[
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: onRestore,
+            child: Text(
+              'Restaurar valor automático',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.primary,
+              ),
             ),
           ),
-          const SizedBox(width: 5),
-          Text(unit,
-              style:
-                  const TextStyle(fontSize: 11, color: AppColors.textSecond)),
-          const Spacer(),
-          Icon(Icons.lock_outline_rounded,
-              size: 13, color: valC.withValues(alpha: 0.35)),
         ],
-      ),
+      ],
     );
   }
 
@@ -1229,22 +1356,34 @@ String _joinSegments(Iterable<String> values) {
       .join(' · ');
 }
 
-String _percentSegment(String label, double? value) {
-  if (value == null) return '';
-  return '$label ${_fmtNumber(value)}%';
-}
-
 String _fmtNumber(double value) {
   final fixed =
       value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
   return fixed.replaceAll('.', ',');
 }
 
-String _limparPrefixo(String value) {
-  return value
-      .replaceFirst(RegExp(r'^[①②③④⑤⑥⑦⑧⑨⓪]\s*'), '')
-      .replaceFirst(RegExp(r'^\d+\s*[-.)]?\s*'), '')
-      .trim();
+double? _parseDoubleOrNull(String value) {
+  final text = value.trim();
+  if (text.isEmpty) return null;
+  return double.tryParse(text.replaceAll(',', '.'));
+}
+
+double? _numOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return _parseDoubleOrNull(value);
+  return null;
+}
+
+String _labelModoCalculo(ModoCalculo modo) {
+  switch (modo) {
+    case ModoCalculo.correcaoSolo:
+      return 'Correção';
+    case ModoCalculo.manutencao:
+      return 'Manutenção';
+    case ModoCalculo.exportacao:
+      return 'Exportação';
+  }
 }
 
 // ─── Seta tooltip ─────────────────────────────────────────────────────────────

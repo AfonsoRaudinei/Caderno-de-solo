@@ -80,31 +80,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isExpanded)
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onToggle,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.lg,
-                    vertical: 14,
-                  ),
-                  child: _buildCollapsedHeader(),
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimens.lg,
-                  14,
-                  AppDimens.lg,
-                  0,
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _buildChevron(onTap: widget.onToggle),
-                ),
-              ),
+            _buildHeader(),
             AnimatedSize(
               duration: _animDuration,
               curve: Curves.easeInOut,
@@ -128,95 +104,135 @@ class _CorretivosCardState extends State<CorretivosCard> {
     );
   }
 
-  Widget _buildCollapsedHeader() {
-    final summaryLines = _collapsedSummaryLines();
+  Widget _buildHeader() {
+    return InkWell(
+      onTap: widget.onToggle,
+      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.lg,
+          vertical: 14,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFF007AFF),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Corretivos',
+                    style: AppTextStyles.label.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child: widget.isExpanded
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            key: const ValueKey('corretivos-resumo'),
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _buildResumoColapsado(),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedRotation(
+              turns: widget.isExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFF86868B),
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Row(
+  Widget _buildResumoColapsado() {
+    final lines = _collapsedSummaryLines();
+    if (lines.isEmpty) return const SizedBox.shrink();
+
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 4,
-          height: 32,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(2),
+        for (final line in lines) ...[
+          const SizedBox(height: 2),
+          Text(
+            line,
+            style: captionStyle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(width: AppDimens.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                CorretivosCard.title,
-                style: AppTextStyles.label.copyWith(color: AppColors.primary),
-              ),
-              ..._buildSummaryWidgets(summaryLines),
-            ],
-          ),
-        ),
-        _buildChevron(onTap: widget.onToggle),
+        ],
       ],
     );
   }
 
   List<String> _collapsedSummaryLines() {
     final calcario1 = _asMap(widget.corretivos['calcario1']);
-    final tipoCalagem = _string(widget.corretivos['tipoCalagem']);
+    final albrecht = _asMap(widget.corretivos['albrecht']);
+    final metodoCalagem = _labelMetodo(widget.corretivos['metodoCalagem']);
     final tipoCalcario = _string(widget.corretivos['tipoCalcario']);
-    final metodoCalagem =
-        _limparPrefixo(_string(widget.corretivos['metodoCalagem']));
-    final metodoIncorp = _string(widget.corretivos['metodoIncorporacao']);
-    final mes = _string(widget.corretivos['mesAplicacao']);
+    final usarNivelCritico = _bool(widget.corretivos['usarNivelCritico']);
+
+    final caDesejadoPct = _numOrNull(widget.corretivos['caDesejadoPct']) ??
+        _numOrNull(albrecht['caAlvo']);
+    final mgDesejadoPct = _numOrNull(widget.corretivos['mgDesejadoPct']) ??
+        _numOrNull(albrecht['mgAlvo']);
+    final kDesejadoPct = _numOrNull(widget.corretivos['kDesejadoPct']) ??
+        _numOrNull(albrecht['kAlvo']);
+    final ncCa =
+        _numOrNull(widget.corretivos['ncCa']) ?? _numOrNull(albrecht['ncCa']);
+    final ncMg =
+        _numOrNull(widget.corretivos['ncMg']) ?? _numOrNull(albrecht['ncMg']);
+    final ncK =
+        _numOrNull(widget.corretivos['ncK']) ?? _numOrNull(albrecht['ncK']);
+
+    final criterio = usarNivelCritico
+        ? _joinSegments([
+            if (ncCa != null) 'Ca ${_fmt(ncCa)}',
+            if (ncMg != null) 'Mg ${_fmt(ncMg)}',
+            if (ncK != null) 'K ${_fmt(ncK)}',
+          ])
+        : _joinSegments([
+            if (caDesejadoPct != null)
+              'Ca ${_fmt(caDesejadoPct, decimals: 0)}%',
+            if (mgDesejadoPct != null)
+              'Mg ${_fmt(mgDesejadoPct, decimals: 0)}%',
+            if (kDesejadoPct != null) 'K ${_fmt(kDesejadoPct, decimals: 0)}%',
+          ]);
 
     return [
+      _joinSegments([metodoCalagem ?? '', tipoCalcario]),
       _joinSegments([
-        tipoCalagem,
-        tipoCalcario,
-        _percentSegment('PRNT', calcario1['prnt']),
-      ]),
-      _joinSegments([
+        _percentSegment('PRNT', widget.corretivos['prnt'] ?? calcario1['prnt']),
         _percentSegment('CaO', calcario1['caO']),
         _percentSegment('MgO', calcario1['mgO']),
-        _percentSegment('PN', calcario1['pn']),
-        _percentSegment('RE', calcario1['re']),
       ]),
-      _joinSegments([metodoCalagem, metodoIncorp, mes]),
+      if (criterio.isNotEmpty)
+        usarNivelCritico ? 'NC: $criterio cmolc/dm³' : 'Meta: $criterio',
     ].where((line) => line.isNotEmpty).toList();
-  }
-
-  List<Widget> _buildSummaryWidgets(List<String> lines) {
-    final captionStyle = AppTextStyles.caption.copyWith(
-      color: AppColors.textSecond,
-    );
-    return [
-      for (final line in lines) ...[
-        const SizedBox(height: 2),
-        Text(
-          line,
-          style: captionStyle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ];
-  }
-
-  Widget _buildChevron({required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedRotation(
-        turns: widget.isExpanded ? 0.5 : 0.0,
-        duration: _animDuration,
-        curve: Curves.easeInOut,
-        child: const Icon(
-          Icons.keyboard_arrow_down,
-          color: AppColors.textSecond,
-          size: 20,
-        ),
-      ),
-    );
   }
 
   Widget _buildConteudo() {
@@ -258,6 +274,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
 
     final gesso = _asMap(widget.corretivos['gesso']);
     final usarGesso = _bool(gesso['usarGesso']);
+    final usarNivelCritico = _bool(widget.corretivos['usarNivelCritico']);
 
     final qualidade = _qualidadeCalcario(prnt1);
     final scoreBars = (qualidade / 20).clamp(0, 5).toInt();
@@ -410,6 +427,11 @@ class _CorretivosCardState extends State<CorretivosCard> {
                     : 'Qualidade baixa: considerar ajuste de fonte/época.',
             style: AppTextStyles.caption,
           ),
+        ),
+        const SizedBox(height: 10),
+        _buildMetaCaMgKSection(
+          usarNivelCritico: usarNivelCritico,
+          albrecht: albrecht,
         ),
         const SizedBox(height: 10),
         SwitchListTile.adaptive(
@@ -870,6 +892,217 @@ class _CorretivosCardState extends State<CorretivosCard> {
     );
   }
 
+  Widget _buildMetaCaMgKSection({
+    required bool usarNivelCritico,
+    required Map<String, dynamic> albrecht,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 24, thickness: 0.5, color: Color(0xFFE5E5E7)),
+        Text(
+          'META DE CA, MG E K',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _ToggleBtn(
+                label: '% da CTC',
+                selected: !usarNivelCritico,
+                onTap: () => _updateCorretivoValue('usarNivelCritico', false),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ToggleBtn(
+                label: 'Nível Crítico',
+                selected: usarNivelCritico,
+                onTap: () => _updateCorretivoValue('usarNivelCritico', true),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: usarNivelCritico
+              ? _buildInputsNc(key: const ValueKey('nc'), albrecht: albrecht)
+              : _buildInputsPct(key: const ValueKey('pct'), albrecht: albrecht),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputsPct({
+    Key? key,
+    required Map<String, dynamic> albrecht,
+  }) {
+    final ca = _numOrNull(widget.corretivos['caDesejadoPct']) ??
+        _numOrNull(albrecht['caAlvo']);
+    final mg = _numOrNull(widget.corretivos['mgDesejadoPct']) ??
+        _numOrNull(albrecht['mgAlvo']);
+    final k = _numOrNull(widget.corretivos['kDesejadoPct']) ??
+        _numOrNull(albrecht['kAlvo']);
+
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _LabeledInput(
+                label: 'Ca (%)',
+                placeholder: '65',
+                value: ca,
+                onChanged: (value) =>
+                    _updateCorretivoValue('caDesejadoPct', _numInput(value)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _LabeledInput(
+                label: 'Mg (%)',
+                placeholder: '15',
+                value: mg,
+                onChanged: (value) =>
+                    _updateCorretivoValue('mgDesejadoPct', _numInput(value)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _LabeledInput(
+                label: 'K (%)',
+                placeholder: '5',
+                value: k,
+                onChanged: (value) =>
+                    _updateCorretivoValue('kDesejadoPct', _numInput(value)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'A soma Ca + Mg + K define o V% desejado',
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecond),
+        ),
+        const SizedBox(height: 4),
+        _buildSomaV(ca: ca, mg: mg, k: k),
+      ],
+    );
+  }
+
+  Widget _buildInputsNc({
+    Key? key,
+    required Map<String, dynamic> albrecht,
+  }) {
+    final ncCa =
+        _numOrNull(widget.corretivos['ncCa']) ?? _numOrNull(albrecht['ncCa']);
+    final ncMg =
+        _numOrNull(widget.corretivos['ncMg']) ?? _numOrNull(albrecht['ncMg']);
+    final ncK =
+        _numOrNull(widget.corretivos['ncK']) ?? _numOrNull(albrecht['ncK']);
+
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _LabeledInput(
+                label: 'NC Ca',
+                placeholder: '1,5',
+                value: ncCa,
+                onChanged: (value) =>
+                    _updateCorretivoValue('ncCa', _numInput(value)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _LabeledInput(
+                label: 'NC Mg',
+                placeholder: '0,7',
+                value: ncMg,
+                onChanged: (value) =>
+                    _updateCorretivoValue('ncMg', _numInput(value)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _LabeledInput(
+                label: 'NC K',
+                placeholder: '0,08',
+                value: ncK,
+                onChanged: (value) =>
+                    _updateCorretivoValue('ncK', _numInput(value)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Valores mínimos no solo (cmolc/dm³)',
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecond),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSomaV({
+    required double? ca,
+    required double? mg,
+    required double? k,
+  }) {
+    final caValue = ca ?? 0;
+    final mgValue = mg ?? 0;
+    final kValue = k ?? 0;
+    final soma = caValue + mgValue + kValue;
+    final temValor = caValue > 0 || mgValue > 0 || kValue > 0;
+    if (!temValor) return const SizedBox.shrink();
+
+    final color = soma >= 60 && soma <= 85
+        ? const Color(0xFF34C759)
+        : const Color(0xFFFF9500);
+    final somaText = _fmt(soma, decimals: 0);
+    return Text(
+      'Soma: $somaText% → V% esperado: $somaText%',
+      style: AppTextStyles.caption.copyWith(
+        color: color,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  void _updateCorretivoValue(String key, dynamic value) {
+    final atualizado = {...widget.corretivos, key: value};
+
+    if (key == 'caDesejadoPct' ||
+        key == 'mgDesejadoPct' ||
+        key == 'kDesejadoPct') {
+      final albrecht = _asMap(widget.corretivos['albrecht']);
+      final albrechtKey = key == 'caDesejadoPct'
+          ? 'caAlvo'
+          : key == 'mgDesejadoPct'
+              ? 'mgAlvo'
+              : 'kAlvo';
+      atualizado['albrecht'] = {...albrecht, albrechtKey: value};
+    } else if (key == 'ncCa' || key == 'ncMg' || key == 'ncK') {
+      final albrecht = _asMap(widget.corretivos['albrecht']);
+      atualizado['albrecht'] = {...albrecht, key: value};
+    }
+
+    widget.onChanged(atualizado);
+  }
+
   Widget _buildNumericPair({
     required Widget left,
     required Widget right,
@@ -880,6 +1113,90 @@ class _CorretivosCardState extends State<CorretivosCard> {
         Expanded(child: left),
         const SizedBox(width: 8),
         Expanded(child: right),
+      ],
+    );
+  }
+}
+
+class _ToggleBtn extends StatelessWidget {
+  const _ToggleBtn({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 36,
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF007AFF).withValues(alpha: 0.10)
+              : const Color(0xFFE5E5E7),
+          border: Border.all(
+            color: selected ? const Color(0xFF007AFF) : const Color(0xFFD1D1D6),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? const Color(0xFF007AFF) : const Color(0xFF86868B),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LabeledInput extends StatelessWidget {
+  const _LabeledInput({
+    required this.label,
+    required this.placeholder,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String placeholder;
+  final double? value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        AppInput(
+          key: ValueKey('$label-${value ?? placeholder}'),
+          initialValue: value == null ? '' : _fmt(value!),
+          hint: placeholder,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          maxLength: 7,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[\d,\.]')),
+            LengthLimitingTextInputFormatter(7),
+          ],
+          onChanged: onChanged,
+        ),
       ],
     );
   }
@@ -985,6 +1302,12 @@ double _parseDouble(String value) {
   return parsed ?? 0;
 }
 
+double? _numInput(String value) {
+  final text = value.trim();
+  if (text.isEmpty) return null;
+  return double.tryParse(text.replaceAll(',', '.'));
+}
+
 String _joinSegments(Iterable<String> values) {
   return values
       .map((value) => value.trim())
@@ -1004,6 +1327,27 @@ String _limparPrefixo(String value) {
       .replaceFirst(RegExp(r'^\d+\s*[-.)]?\s*'), '')
       .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
       .trim();
+}
+
+String? _labelMetodo(dynamic raw) {
+  final value = _string(raw);
+  if (value.isEmpty) return null;
+  switch (value) {
+    case 'saturacaoV':
+      return 'Sat. V%';
+    case 'albrecht':
+      return 'Albrecht';
+    case 'smp':
+      return 'SMP';
+    case 'iac':
+      return 'IAC';
+    default:
+      final normalized = _limparPrefixo(value);
+      if (normalized.startsWith('Saturação')) return 'Sat. V%';
+      if (normalized.startsWith('Albrecht')) return 'Albrecht';
+      if (normalized.startsWith('EMBRAPA')) return 'EMBRAPA';
+      return normalized.isEmpty ? value : normalized;
+  }
 }
 
 double? _numOrNull(dynamic value) {

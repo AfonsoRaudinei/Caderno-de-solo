@@ -132,31 +132,17 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isExpanded)
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onToggle,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.lg,
-                    vertical: 14,
-                  ),
-                  child: _buildCollapsedHeader(),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onToggle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.lg,
+                  vertical: 14,
                 ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimens.lg,
-                  14,
-                  AppDimens.lg,
-                  0,
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _buildChevron(onTap: widget.onToggle),
-                ),
+                child: _buildHeader(),
               ),
+            ),
             AnimatedSize(
               duration: _animDuration,
               curve: Curves.easeInOut,
@@ -180,31 +166,43 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
     );
   }
 
-  Widget _buildCollapsedHeader() {
+  Widget _buildHeader() {
     final summaryLines = _collapsedSummaryLines();
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: 4,
-          height: 32,
+          height: 20,
           decoration: BoxDecoration(
-            color: MicronutrientesCard.accentColor,
+            color: const Color(0xFFAF52DE),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: AppDimens.md),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 MicronutrientesCard.title,
-                style: AppTextStyles.label
-                    .copyWith(color: MicronutrientesCard.accentColor),
+                style: AppTextStyles.label.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
-              ..._buildSummaryWidgets(summaryLines),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                child: widget.isExpanded
+                    ? const SizedBox.shrink()
+                    : Column(
+                        key: const ValueKey('micronutrientes-resumo'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _buildSummaryWidgets(summaryLines),
+                      ),
+              ),
             ],
           ),
         ),
@@ -257,7 +255,86 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
   List<String> _fontesParaTipoMicro(String tipo) {
     if (tipo == 'Guidorizzi') return kTecnologias.keys.toList();
     if (tipo == 'Cultivar') return kCultivares.keys.toList();
+    if (tipo == 'Personalizado') return const ['Personalizado'];
     return kAutores.keys.toList();
+  }
+
+  List<String> _fontesParaTipoElemento(String tipo) {
+    if (tipo == 'Guidorizzi') return kTecnologias.keys.toList();
+    if (tipo == 'Cultivar') return kCultivares.keys.toList();
+    if (tipo == 'Personalizado') return const ['Personalizado'];
+    return const [
+      'Araújo (2023)',
+      'Malavolta (1997)',
+      'Fancelli (2020)',
+      'Personalizado',
+    ];
+  }
+
+  String _labelFonte(String tipo) {
+    if (tipo == 'Guidorizzi') return 'Tecnologia';
+    if (tipo == 'Cultivar') return 'Cultivar';
+    return 'Autor';
+  }
+
+  String? _fonteAtual(List<String> fontes, dynamic value) {
+    final raw = value?.toString();
+    if (raw != null && fontes.contains(raw)) return raw;
+    return fontes.isNotEmpty ? fontes.first : null;
+  }
+
+  String _tipoFonteElemento(Map<String, dynamic> elemento) {
+    const tipos = ['Autores', 'Guidorizzi', 'Cultivar', 'Personalizado'];
+    final raw = elemento['tipoFonte']?.toString();
+    return tipos.contains(raw) ? raw! : 'Autores';
+  }
+
+  List<String> _normalizarViasGrupo(Map<String, dynamic> grupo) {
+    return _normalizarListaVias(
+      grupo['viasAplicacaoGrupo'] ?? grupo['via'],
+      opcoes: _viasGrupo,
+      fallback: 'Foliar',
+    );
+  }
+
+  List<String> _normalizarViasElemento(Map<String, dynamic> elemento) {
+    final raw = elemento['viasAplicacao'] ?? elemento['viaAplicacao'];
+    if (raw is String) {
+      if (raw == 'Ambas') return ['Solo', 'Foliar'];
+      if (raw == 'Solo (correção)') return ['Solo'];
+    }
+    return _normalizarListaVias(
+      raw,
+      opcoes: const ['Solo', 'Foliar', 'TS'],
+      fallback: 'Solo',
+    );
+  }
+
+  List<String> _normalizarListaVias(
+    dynamic raw, {
+    required List<String> opcoes,
+    required String fallback,
+  }) {
+    final valores = <String>[];
+    if (raw is List) {
+      valores.addAll(raw.map((item) => item.toString()));
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      valores.add(raw.trim());
+    }
+
+    final filtrados = valores
+        .where((item) => opcoes.contains(item))
+        .toSet()
+        .toList(growable: false);
+    return filtrados.isEmpty ? [fallback] : filtrados;
+  }
+
+  String _viaLegadaElemento(List<String> vias) {
+    if (vias.contains('Solo') && vias.contains('Foliar')) return 'Ambas';
+    if (vias.contains('Solo')) return 'Solo (correção)';
+    if (vias.contains('Foliar')) return 'Foliar';
+    if (vias.contains('TS')) return 'TS';
+    return _viasMicros.first;
   }
 
   List<Widget> _buildSummaryWidgets(List<String> lines) {
@@ -294,31 +371,350 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
     );
   }
 
+  Widget _buildCamposViasGrupo({
+    required Key key,
+    required String draftKey,
+    required Map<String, dynamic> grupo,
+    required List<String> vias,
+    required Map<String, dynamic> micros,
+    required List<Map<String, dynamic>> grupos,
+    required int index,
+    required ValueChanged<Map<String, dynamic>> onChanged,
+  }) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (vias.contains('Foliar')) ...[
+          AppInput(
+            key: ValueKey('$draftKey-grupo-fonte-foliar-$index'),
+            label: 'Fonte foliar do grupo',
+            initialValue: _string(
+              grupo['fonteFoliarGrupo'] ?? grupo['produto'],
+              fallback: 'Mistura manual',
+            ),
+            onChanged: (value) => _updateGrupo(
+              micros: micros,
+              grupos: grupos,
+              index: index,
+              patch: {'fonteFoliarGrupo': value, 'produto': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildNumericInput(
+            keyValue: '$draftKey-grupo-ef-foliar-$index',
+            label: 'Eficiência foliar (%)',
+            value: _num(grupo['eficienciaFoliarGrupo'] ?? grupo['eficiencia'],
+                fallback: 70),
+            onChanged: (value) => _updateGrupo(
+              micros: micros,
+              grupos: grupos,
+              index: index,
+              patch: {'eficienciaFoliarGrupo': value, 'eficiencia': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (vias.contains('Solo')) ...[
+          _buildNumericPair(
+            left: _buildNumericInput(
+              keyValue: '$draftKey-grupo-pct-solo-$index',
+              label: '% correção solo do grupo',
+              value: _num(grupo['percentualCorrecaoSoloGrupo'], fallback: 100),
+              onChanged: (value) => _updateGrupo(
+                micros: micros,
+                grupos: grupos,
+                index: index,
+                patch: {'percentualCorrecaoSoloGrupo': value},
+                onChanged: onChanged,
+              ),
+            ),
+            right: _buildNumericInput(
+              keyValue: '$draftKey-grupo-teor-solo-$index',
+              label: 'Teor fonte solo (%)',
+              value: _num(grupo['teorFonteSoloGrupo']),
+              onChanged: (value) => _updateGrupo(
+                micros: micros,
+                grupos: grupos,
+                index: index,
+                patch: {'teorFonteSoloGrupo': value},
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          AppInput(
+            key: ValueKey('$draftKey-grupo-fonte-solo-$index'),
+            label: 'Fonte solo do grupo',
+            initialValue: _string(grupo['fonteSoloGrupo'], fallback: ''),
+            onChanged: (value) => _updateGrupo(
+              micros: micros,
+              grupos: grupos,
+              index: index,
+              patch: {'fonteSoloGrupo': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildNumericInput(
+            keyValue: '$draftKey-grupo-ef-solo-$index',
+            label: 'Eficiência solo (%)',
+            value: _num(grupo['eficienciaSoloGrupo'], fallback: 30),
+            onChanged: (value) => _updateGrupo(
+              micros: micros,
+              grupos: grupos,
+              index: index,
+              patch: {'eficienciaSoloGrupo': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (vias.contains('TS')) ...[
+          AppInput(
+            key: ValueKey('$draftKey-grupo-fonte-ts-$index'),
+            label: 'Fonte TS do grupo',
+            initialValue: _string(grupo['fonteTsGrupo'], fallback: ''),
+            onChanged: (value) => _updateGrupo(
+              micros: micros,
+              grupos: grupos,
+              index: index,
+              patch: {'fonteTsGrupo': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildNumericInput(
+            keyValue: '$draftKey-grupo-dose-ts-$index',
+            label: 'Dose TS (g/100kg)',
+            value: _num(grupo['doseTsGrupo']),
+            onChanged: (value) => _updateGrupo(
+              micros: micros,
+              grupos: grupos,
+              index: index,
+              patch: {'doseTsGrupo': value},
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildReferenciaAbsorcaoElemento({
+    required String tipoFonte,
+    required List<String> fontes,
+    required String? fonteAtual,
+    required String labelFonte,
+    required ValueChanged<String?> onTipoChanged,
+    required ValueChanged<String?> onFonteChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'REFERÊNCIA DE ABSORÇÃO',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        AppDropdown<String>(
+          label: 'Tipo de Fonte',
+          value: tipoFonte,
+          items: const [
+            AppDropdownItem(value: 'Autores', label: 'Autores'),
+            AppDropdownItem(value: 'Guidorizzi', label: 'Guidorizzi'),
+            AppDropdownItem(value: 'Cultivar', label: 'Cultivar'),
+            AppDropdownItem(value: 'Personalizado', label: 'Personalizado'),
+          ],
+          onChanged: onTipoChanged,
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: tipoFonte == 'Autores'
+              ? Padding(
+                  key: const ValueKey('autor'),
+                  padding: const EdgeInsets.only(top: 8),
+                  child: AppDropdown<String>(
+                    label: labelFonte,
+                    value: fonteAtual,
+                    items: fontes
+                        .map(
+                          (item) => AppDropdownItem(value: item, label: item),
+                        )
+                        .toList(),
+                    onChanged: onFonteChanged,
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('sem-autor')),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCamposViasElemento({
+    required Key key,
+    required String draftKey,
+    required String simbolo,
+    required Map<String, dynamic> elemento,
+    required List<String> vias,
+    required Map<String, dynamic> micros,
+    required Map<String, dynamic> elementos,
+    required ValueChanged<Map<String, dynamic>> onChanged,
+  }) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (vias.contains('Solo')) ...[
+          _buildNumericPair(
+            left: _buildNumericInput(
+              keyValue: '$draftKey-$simbolo-pct-solo',
+              label: '% correção solo',
+              value: _num(elemento['percentualCorrecaoSolo'], fallback: 100),
+              onChanged: (value) => _updateElementoMicro(
+                micros: micros,
+                elementos: elementos,
+                simbolo: simbolo,
+                patch: {'percentualCorrecaoSolo': value},
+                onChanged: onChanged,
+              ),
+            ),
+            right: _buildNumericInput(
+              keyValue: '$draftKey-$simbolo-teor-solo',
+              label: 'Teor fonte solo (%)',
+              value: _num(elemento['teorFonteSolo']),
+              onChanged: (value) => _updateElementoMicro(
+                micros: micros,
+                elementos: elementos,
+                simbolo: simbolo,
+                patch: {'teorFonteSolo': value},
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          AppInput(
+            key: ValueKey('$draftKey-$simbolo-fonte-solo'),
+            label: 'Fonte solo',
+            initialValue: _string(elemento['fonteSolo'], fallback: ''),
+            onChanged: (value) => _updateElementoMicro(
+              micros: micros,
+              elementos: elementos,
+              simbolo: simbolo,
+              patch: {'fonteSolo': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildNumericInput(
+            keyValue: '$draftKey-$simbolo-eff-solo',
+            label: 'Eficiência solo (%)',
+            value: _num(elemento['eficienciaSolo'], fallback: 30),
+            onChanged: (value) => _updateElementoMicro(
+              micros: micros,
+              elementos: elementos,
+              simbolo: simbolo,
+              patch: {'eficienciaSolo': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (vias.contains('Foliar')) ...[
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Teor foliar disponível?'),
+            value: _bool(elemento['temAnaliseFoliar']),
+            onChanged: (value) => _updateElementoMicro(
+              micros: micros,
+              elementos: elementos,
+              simbolo: simbolo,
+              patch: {'temAnaliseFoliar': value},
+              onChanged: onChanged,
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _bool(elemento['temAnaliseFoliar'])
+                ? Column(
+                    key: const ValueKey('foliar-campos'),
+                    children: [
+                      AppInput(
+                        key: ValueKey('$draftKey-$simbolo-fonte-foliar'),
+                        label: 'Fonte foliar',
+                        initialValue:
+                            _string(elemento['fonteFoliar'], fallback: ''),
+                        onChanged: (value) => _updateElementoMicro(
+                          micros: micros,
+                          elementos: elementos,
+                          simbolo: simbolo,
+                          patch: {'fonteFoliar': value},
+                          onChanged: onChanged,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildNumericInput(
+                        keyValue: '$draftKey-$simbolo-eff-foliar',
+                        label: 'Eficiência foliar (%)',
+                        value: _num(elemento['eficienciaFoliar'], fallback: 70),
+                        onChanged: (value) => _updateElementoMicro(
+                          micros: micros,
+                          elementos: elementos,
+                          simbolo: simbolo,
+                          patch: {'eficienciaFoliar': value},
+                          onChanged: onChanged,
+                        ),
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(key: ValueKey('foliar-vazio')),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (vias.contains('TS')) ...[
+          AppInput(
+            key: ValueKey('$draftKey-$simbolo-fonte-ts'),
+            label: 'Fonte TS',
+            initialValue: _string(elemento['fonteTs'], fallback: ''),
+            onChanged: (value) => _updateElementoMicro(
+              micros: micros,
+              elementos: elementos,
+              simbolo: simbolo,
+              patch: {'fonteTs': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildNumericInput(
+            keyValue: '$draftKey-$simbolo-dose-ts',
+            label: 'Dose TS (g/100kg)',
+            value: _num(elemento['doseTs']),
+            onChanged: (value) => _updateElementoMicro(
+              micros: micros,
+              elementos: elementos,
+              simbolo: simbolo,
+              patch: {'doseTs': value},
+              onChanged: onChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
   Widget _buildConteudo() {
     final draftKey = widget.draftKey;
     final micros = widget.micros;
     final elementos = widget.elementos;
     final grupos = widget.grupos;
     final onChanged = widget.onChanged;
-    final microTipoFonte = _microTipoFonte;
-    final microFonteNome = _microFonteNome;
-    // Helper local para fontes por tipo
-    List<String> fontesParaTipo(String tipo) {
-      if (tipo == 'Guidorizzi') return kTecnologias.keys.toList();
-      if (tipo == 'Cultivar') return kCultivares.keys.toList();
-      return kAutores.keys.toList();
-    }
-
-    const tiposDisponiveis = ['Autores', 'Guidorizzi', 'Cultivar'];
-    final fontesAtual = fontesParaTipo(microTipoFonte);
-    final fonteAtual = fontesAtual.contains(microFonteNome)
-        ? microFonteNome!
-        : (fontesAtual.isNotEmpty ? fontesAtual.first : '');
-    final labelFonte = microTipoFonte == 'Guidorizzi'
-        ? 'Tecnologia'
-        : microTipoFonte == 'Cultivar'
-            ? 'Cultivar'
-            : 'Autor';
     final Set<String> elementosEmGrupos = grupos
         .expand<String>(
           (g) =>
@@ -330,57 +726,6 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // — Seção: Referência de Absorção (T3C) —
-        const Text(
-          'REFERÊNCIA DE ABSORÇÃO',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecond,
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 6),
-        AppDropdown<String>(
-          label: 'Tipo de Fonte',
-          value: microTipoFonte,
-          items: tiposDisponiveis
-              .map((t) => AppDropdownItem(value: t, label: t))
-              .toList(),
-          onChanged: (v) {
-            if (v == null) return;
-            final novasFontes = fontesParaTipo(v);
-            final novoNome = novasFontes.isNotEmpty ? novasFontes.first : null;
-
-            final atualizado = {
-              ...micros,
-              'microTipoFonte': v,
-              'microFonteNome': novoNome ?? '',
-            };
-            onChanged(atualizado);
-          },
-        ),
-        const SizedBox(height: 8),
-        AppDropdown<String>(
-          label: labelFonte,
-          value: fonteAtual.isNotEmpty
-              ? fonteAtual
-              : (fontesAtual.isNotEmpty ? fontesAtual.first : ''),
-          items: fontesAtual.isNotEmpty
-              ? fontesAtual
-                  .map((t) => AppDropdownItem(value: t, label: t))
-                  .toList()
-              : [const AppDropdownItem(value: '', label: '')],
-          onChanged: (v) {
-            if (v == null || v.isEmpty) return;
-
-            final atualizado = {...micros, 'microFonteNome': v};
-            onChanged(atualizado);
-          },
-        ),
-        const SizedBox(height: 16),
-        const Divider(),
-        const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
@@ -389,6 +734,8 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
                 'id': 'grupo-${DateTime.now().microsecondsSinceEpoch}',
                 'nome': 'Grupo ${grupos.length + 1}',
                 'via': _viasGrupo.first,
+                'viasAplicacaoGrupo': [_viasGrupo.first],
+                'extrator': 'DTPA-TEA',
                 'elementos': <String>[],
                 'produto': 'Mistura manual',
                 'eficiencia': 70.0,
@@ -416,7 +763,7 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
           final index = entry.key;
           final grupo = entry.value;
           final nome = grupo['nome']?.toString() ?? 'Grupo ${index + 1}';
-          final via = grupo['via']?.toString() ?? _viasGrupo.first;
+          final viasGrupo = _normalizarViasGrupo(grupo);
           final referenciaGrupo = grupo['referenciaNome'] as String? ?? '';
           const tiposFonteGrupo = ['Autores', 'Guidorizzi', 'Cultivar'];
           final tipoFonteGrupoRaw = grupo['microGrupoTipoFonte']?.toString();
@@ -482,17 +829,71 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
                   ),
                   const SizedBox(height: 8),
                   AppDropdown<String>(
-                    label: 'Via de aplicação do grupo',
-                    value: _safeValue(_viasGrupo, via),
-                    items: _viasGrupo
-                        .map(
-                            (item) => AppDropdownItem(value: item, label: item))
-                        .toList(),
+                    label: 'Extrator',
+                    value: _safeValue(
+                      const [
+                        'DTPA-TEA',
+                        'Mehlich-1',
+                        'HCl',
+                        'Água quente (B)',
+                        'Personalizado',
+                      ],
+                      _string(grupo['extrator'], fallback: 'DTPA-TEA'),
+                    ),
+                    items: const [
+                      AppDropdownItem(value: 'DTPA-TEA', label: 'DTPA-TEA'),
+                      AppDropdownItem(value: 'Mehlich-1', label: 'Mehlich-1'),
+                      AppDropdownItem(value: 'HCl', label: 'HCl'),
+                      AppDropdownItem(
+                          value: 'Água quente (B)', label: 'Água quente (B)'),
+                      AppDropdownItem(
+                          value: 'Personalizado', label: 'Personalizado'),
+                    ],
                     onChanged: (value) => _updateGrupo(
                       micros: micros,
                       grupos: grupos,
                       index: index,
-                      patch: {'via': value ?? _viasGrupo.first},
+                      patch: {'extrator': value ?? 'DTPA-TEA'},
+                      onChanged: onChanged,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Via de aplicação do grupo',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecond,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  _ViaToggleGroup(
+                    selecionadas: viasGrupo,
+                    opcoes: _viasGrupo,
+                    onChanged: (value) => _updateGrupo(
+                      micros: micros,
+                      grupos: grupos,
+                      index: index,
+                      patch: {
+                        'viasAplicacaoGrupo': value,
+                        'via': value.first,
+                      },
+                      onChanged: onChanged,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _buildCamposViasGrupo(
+                      key: ValueKey('grupo-vias-${viasGrupo.join('-')}-$index'),
+                      draftKey: draftKey,
+                      grupo: grupo,
+                      vias: viasGrupo,
+                      micros: micros,
+                      grupos: grupos,
+                      index: index,
                       onChanged: onChanged,
                     ),
                   ),
@@ -623,33 +1024,6 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
                       },
                     ).toList(),
                   ),
-                  const SizedBox(height: 12),
-                  AppInput(
-                    key: ValueKey('$draftKey-grupo-produto-$index'),
-                    label: 'Fonte / Produto comercial',
-                    initialValue:
-                        grupo['produto']?.toString() ?? 'Mistura manual',
-                    onChanged: (value) => _updateGrupo(
-                      micros: micros,
-                      grupos: grupos,
-                      index: index,
-                      patch: {'produto': value},
-                      onChanged: onChanged,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNumericInput(
-                    keyValue: '$draftKey-grupo-ef-$index',
-                    label: 'Eficiência esperada (%)',
-                    value: _num(grupo['eficiencia'], fallback: 70),
-                    onChanged: (value) => _updateGrupo(
-                      micros: micros,
-                      grupos: grupos,
-                      index: index,
-                      patch: {'eficiencia': value},
-                      onChanged: onChanged,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -668,6 +1042,14 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
           final classe = _classeMicro(elemento);
           final chaveReferencia = '${simbolo}referencia';
           final chaveNc = '${simbolo}ncSolo';
+          final viasElemento = _normalizarViasElemento(elemento);
+          final tipoFonteElemento = _tipoFonteElemento(elemento);
+          final fontesElemento = _fontesParaTipoElemento(tipoFonteElemento);
+          final fonteElemento = _fonteAtual(
+            fontesElemento,
+            elemento['autor'] ?? elemento['fonteAbsorcao'],
+          );
+          final labelFonteElemento = _labelFonte(tipoFonteElemento);
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Container(
@@ -789,6 +1171,37 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
                               ],
                             ),
                           const SizedBox(height: 8),
+                          _buildReferenciaAbsorcaoElemento(
+                            tipoFonte: tipoFonteElemento,
+                            fontes: fontesElemento,
+                            fonteAtual: fonteElemento,
+                            labelFonte: labelFonteElemento,
+                            onTipoChanged: (value) {
+                              final novoTipo = value ?? 'Autores';
+                              final novasFontes =
+                                  _fontesParaTipoElemento(novoTipo);
+                              _updateElementoMicro(
+                                micros: micros,
+                                elementos: elementos,
+                                simbolo: simbolo,
+                                patch: {
+                                  'tipoFonte': novoTipo,
+                                  'autor': novasFontes.isNotEmpty
+                                      ? novasFontes.first
+                                      : null,
+                                },
+                                onChanged: onChanged,
+                              );
+                            },
+                            onFonteChanged: (value) => _updateElementoMicro(
+                              micros: micros,
+                              elementos: elementos,
+                              simbolo: simbolo,
+                              patch: {'autor': value},
+                              onChanged: onChanged,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           if (!propagadoDoGrupo)
                             _buildNumericInput(
                               keyValue: '$draftKey-$simbolo-nc',
@@ -846,149 +1259,45 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
                               ],
                             ),
                           const SizedBox(height: 8),
-                          AppDropdown<String>(
-                            label: 'Via de aplicação',
-                            value: _safeValue(
-                                _viasMicros,
-                                _string(elemento['viaAplicacao'],
-                                    fallback: _viasMicros.first)),
-                            items: _viasMicros
-                                .map((item) =>
-                                    AppDropdownItem(value: item, label: item))
-                                .toList(),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Via de aplicação',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecond,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _ViaToggleGroup(
+                            selecionadas: viasElemento,
+                            opcoes: const ['Solo', 'Foliar', 'TS', 'Ambas'],
+                            permiteAmbas: true,
                             onChanged: (value) => _updateElementoMicro(
                               micros: micros,
                               elementos: elementos,
                               simbolo: simbolo,
                               patch: {
-                                'viaAplicacao': value ?? _viasMicros.first
+                                'viasAplicacao': value,
+                                'viaAplicacao': _viaLegadaElemento(value),
                               },
                               onChanged: onChanged,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          if (_usaSolo(elemento)) ...[
-                            _buildNumericPair(
-                              left: _buildNumericInput(
-                                keyValue: '$draftKey-$simbolo-pct-solo',
-                                label: '% correção solo',
-                                value: _num(elemento['percentualCorrecaoSolo'],
-                                    fallback: 100),
-                                onChanged: (value) => _updateElementoMicro(
-                                  micros: micros,
-                                  elementos: elementos,
-                                  simbolo: simbolo,
-                                  patch: {'percentualCorrecaoSolo': value},
-                                  onChanged: onChanged,
-                                ),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: _buildCamposViasElemento(
+                              key: ValueKey(
+                                '$simbolo-vias-${viasElemento.join('-')}',
                               ),
-                              right: _buildNumericInput(
-                                keyValue: '$draftKey-$simbolo-teor-solo',
-                                label: 'Teor fonte solo (%)',
-                                value: _num(elemento['teorFonteSolo']),
-                                onChanged: (value) => _updateElementoMicro(
-                                  micros: micros,
-                                  elementos: elementos,
-                                  simbolo: simbolo,
-                                  patch: {'teorFonteSolo': value},
-                                  onChanged: onChanged,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            AppInput(
-                              key: ValueKey('$draftKey-$simbolo-fonte-solo'),
-                              label: 'Fonte solo',
-                              initialValue:
-                                  _string(elemento['fonteSolo'], fallback: ''),
-                              onChanged: (value) => _updateElementoMicro(
-                                micros: micros,
-                                elementos: elementos,
-                                simbolo: simbolo,
-                                patch: {'fonteSolo': value},
-                                onChanged: onChanged,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildNumericInput(
-                              keyValue: '$draftKey-$simbolo-eff-solo',
-                              label: 'Eficiência solo (%)',
-                              value: _num(elemento['eficienciaSolo']),
-                              onChanged: (value) => _updateElementoMicro(
-                                micros: micros,
-                                elementos: elementos,
-                                simbolo: simbolo,
-                                patch: {'eficienciaSolo': value},
-                                onChanged: onChanged,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          if (_usaFoliarOuTs(elemento)) ...[
-                            _buildNumericPair(
-                              left: _buildNumericInput(
-                                keyValue: '$draftKey-$simbolo-dose-foliar',
-                                label: 'Dose elemento puro (g/ha)',
-                                value: _num(elemento['doseElementoFoliar']),
-                                onChanged: (value) => _updateElementoMicro(
-                                  micros: micros,
-                                  elementos: elementos,
-                                  simbolo: simbolo,
-                                  patch: {'doseElementoFoliar': value},
-                                  onChanged: onChanged,
-                                ),
-                              ),
-                              right: _buildNumericInput(
-                                keyValue: '$draftKey-$simbolo-teor-foliar',
-                                label: 'Teor fonte foliar (%)',
-                                value: _num(elemento['teorFonteFoliar']),
-                                onChanged: (value) => _updateElementoMicro(
-                                  micros: micros,
-                                  elementos: elementos,
-                                  simbolo: simbolo,
-                                  patch: {'teorFonteFoliar': value},
-                                  onChanged: onChanged,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            AppInput(
-                              key: ValueKey('$draftKey-$simbolo-fonte-foliar'),
-                              label: 'Fonte foliar',
-                              initialValue: _string(elemento['fonteFoliar'],
-                                  fallback: ''),
-                              onChanged: (value) => _updateElementoMicro(
-                                micros: micros,
-                                elementos: elementos,
-                                simbolo: simbolo,
-                                patch: {'fonteFoliar': value},
-                                onChanged: onChanged,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildNumericInput(
-                              keyValue: '$draftKey-$simbolo-eff-foliar',
-                              label: 'Eficiência foliar (%)',
-                              value: _num(elemento['eficienciaFoliar']),
-                              onChanged: (value) => _updateElementoMicro(
-                                micros: micros,
-                                elementos: elementos,
-                                simbolo: simbolo,
-                                patch: {'eficienciaFoliar': value},
-                                onChanged: onChanged,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Teor foliar disponível?'),
-                            value: _bool(elemento['temAnaliseFoliar']),
-                            onChanged: (value) => _updateElementoMicro(
+                              draftKey: draftKey,
+                              simbolo: simbolo,
+                              elemento: elemento,
+                              vias: viasElemento,
                               micros: micros,
                               elementos: elementos,
-                              simbolo: simbolo,
-                              patch: {'temAnaliseFoliar': value},
                               onChanged: onChanged,
                             ),
                           ),
@@ -1266,18 +1575,6 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
     return options.isNotEmpty ? options.first : null;
   }
 
-  bool _usaSolo(Map<String, dynamic> elemento) {
-    final via = _string(elemento['viaAplicacao'], fallback: _viasMicros.first)
-        .toLowerCase();
-    return via.contains('solo') || via == 'ambas';
-  }
-
-  bool _usaFoliarOuTs(Map<String, dynamic> elemento) {
-    final via = _string(elemento['viaAplicacao'], fallback: _viasMicros.first)
-        .toLowerCase();
-    return via.contains('foliar') || via.contains('ts') || via == 'ambas';
-  }
-
   String _classeMicro(Map<String, dynamic> elemento) {
     final atual = _num(elemento['teorSoloAtual']);
     final nc = _num(elemento['ncSolo'], fallback: 1);
@@ -1316,5 +1613,90 @@ class _MicronutrientesCardState extends ConsumerState<MicronutrientesCard> {
       'Se': Color(0xFF30B0C7),
     };
     return colors[simbolo] ?? AppColors.primary;
+  }
+}
+
+class _ViaToggleGroup extends StatelessWidget {
+  const _ViaToggleGroup({
+    required this.selecionadas,
+    required this.opcoes,
+    required this.onChanged,
+    this.permiteAmbas = false,
+  });
+
+  final List<String> selecionadas;
+  final List<String> opcoes;
+  final ValueChanged<List<String>> onChanged;
+  final bool permiteAmbas;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < opcoes.length; i++) ...[
+          Expanded(child: _buildToggle(opcoes[i])),
+          if (i < opcoes.length - 1) const SizedBox(width: 6),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildToggle(String opcao) {
+    final selected = opcao == 'Ambas'
+        ? selecionadas.contains('Solo') && selecionadas.contains('Foliar')
+        : selecionadas.contains(opcao);
+
+    return GestureDetector(
+      onTap: () => _toggle(opcao),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 36,
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFAF52DE).withValues(alpha: 0.10)
+              : const Color(0xFFE5E5E7),
+          border: Border.all(
+            color: selected ? const Color(0xFFAF52DE) : const Color(0xFFD1D1D6),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          opcao,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? const Color(0xFFAF52DE) : const Color(0xFF86868B),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggle(String opcao) {
+    final nova = List<String>.from(selecionadas);
+
+    if (permiteAmbas && opcao == 'Ambas') {
+      final ambasSelecionadas =
+          nova.contains('Solo') && nova.contains('Foliar');
+      if (ambasSelecionadas) {
+        nova.remove('Solo');
+        nova.remove('Foliar');
+      } else {
+        if (!nova.contains('Solo')) nova.add('Solo');
+        if (!nova.contains('Foliar')) nova.add('Foliar');
+      }
+    } else if (nova.contains(opcao)) {
+      nova.remove(opcao);
+    } else {
+      nova.add(opcao);
+    }
+
+    final semAmbas =
+        nova.where((item) => item != 'Ambas').toSet().toList(growable: false);
+    if (semAmbas.isEmpty) return;
+    onChanged(semAmbas);
   }
 }

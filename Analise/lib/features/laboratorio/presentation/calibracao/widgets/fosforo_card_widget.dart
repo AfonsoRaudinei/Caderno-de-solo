@@ -59,15 +59,16 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   ReferenciaP _ref = ReferenciaP.iacBol100;
   CamadaP _camada = CamadaP.c0a20;
   ModoCalculo _modo = ModoCalculo.correcaoSolo;
-  TipoCalculo _tipo = TipoCalculo.exportacao;
   FaixaArgila _faixa = FaixaArgila.f3; // 21–40% como padrão
 
   // Referência de Absorção bibliográfica (T3A)
   String _fosforoTipoFonte = 'Autores';
   String? _fosforoFonteNome;
   String _fosforoModoAbsorcao = 'extracao';
+  bool _ncModoManual = false;
 
   final _pSoloCtrl = TextEditingController(text: '0');
+  final _ncCtrl = TextEditingController();
   Map<String, dynamic> _baseData = const {};
   final _ncBadgeKey = GlobalKey();
   OverlayEntry? _tip;
@@ -103,12 +104,15 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   @override
   void dispose() {
     _pSoloCtrl.dispose();
+    _ncCtrl.dispose();
     _removeTip();
     super.dispose();
   }
 
   RefDesc get _d => ref.read(fosforoFormulaProvider)[_ref]!;
   double? get _nc => _d.resolveNc(_faixa, _ref);
+  double? get _ncAtual =>
+      _ncModoManual ? _parseDoubleOrNull(_ncCtrl.text) : _nc;
 
   void _syncFromExternalData(Map<String, dynamic>? data) {
     final source = data ?? const <String, dynamic>{};
@@ -117,25 +121,29 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     _ref = _referenciaFromString(source['referencia']?.toString());
     _camada = _camadaFromString(source['camada']?.toString());
     _modo = _modoFromString(source['modoCalculo']?.toString());
-    _tipo = _tipoFromString(source['tipoDadoCultivar']?.toString());
     _faixa = _faixaFromString(source['faixaArgila']?.toString());
+    _ncModoManual = source['ncModoManual'] as bool? ?? false;
     _fosforoTipoFonte = source['fosforoTipoFonte']?.toString() ?? 'Autores';
     _fosforoFonteNome = source['fosforoFonteNome']?.toString();
     _fosforoModoAbsorcao =
         source['fosforoModoAbsorcao']?.toString() ?? 'extracao';
 
     final usoPSolo = source['percentualUsoPSolo'];
-    final usoPSoloTexto = usoPSolo == null ? '0' : usoPSolo.toString();
+    final usoPSoloTexto = usoPSolo == null
+        ? _defaultPercentualUsoPSolo(_modo).toString()
+        : usoPSolo.toString();
     _pSoloCtrl.text = usoPSoloTexto.replaceAll('.', ',');
+    _syncNcControllerFromMode(source['nc']);
   }
 
   void _emitChange() {
     if (widget.onChanged == null) return;
 
-    final percentualUsoPSolo =
-        double.tryParse(_pSoloCtrl.text.replaceAll(',', '.')) ?? 0.0;
+    final percentualUsoPSolo = _percentualUsoPSoloParaModo(_modo);
     final cultura =
         widget.cultura ?? _baseData['cultivar']?.toString() ?? 'Soja';
+    final tipoDadoCultivar =
+        _modo == ModoCalculo.exportacao ? 'Exportação' : 'Manutenção';
 
     final payload = <String, dynamic>{
       ..._baseData,
@@ -143,12 +151,12 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
           _d.extrator == ExtratorP.resinaIAC ? 'Resina IAC' : 'Mehlich-1',
       'referencia': _d.label,
       'faixaArgila': _faixa.label,
-      'nc': _nc ?? 30.0,
+      'nc': _ncAtual ?? _nc ?? 30.0,
+      'ncModoManual': _ncModoManual,
       'camada': _camada == CamadaP.c0a20 ? '0–20 cm' : '20–40 cm',
       'modoCalculo': _modoLabelForPayload(_modo),
       'cultivar': cultura,
-      'tipoDadoCultivar':
-          _tipo == TipoCalculo.exportacao ? 'Exportação' : 'Manutenção',
+      'tipoDadoCultivar': tipoDadoCultivar,
       'percentualUsoPSolo': percentualUsoPSolo,
       'fosforoTipoFonte': _fosforoTipoFonte,
       'fosforoFonteNome': _fosforoFonteNome ??
@@ -183,13 +191,8 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     if (value == null) return ModoCalculo.correcaoSolo;
     if (value.contains('Manutenção')) return ModoCalculo.manutencao;
     if (value.contains('Exportação')) return ModoCalculo.exportacao;
+    if (value.contains('Extração')) return ModoCalculo.exportacao;
     return ModoCalculo.correcaoSolo;
-  }
-
-  TipoCalculo _tipoFromString(String? value) {
-    return value == 'Manutenção'
-        ? TipoCalculo.manutencao
-        : TipoCalculo.exportacao;
   }
 
   FaixaArgila _faixaFromString(String? value) {
@@ -213,9 +216,20 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
       case ModoCalculo.correcaoSolo:
         return '① Correção do solo';
       case ModoCalculo.manutencao:
-        return '② Manutenção';
+        return '② Manutenção / Extração';
       case ModoCalculo.exportacao:
-        return '② Extração';
+        return '③ Exportação';
+    }
+  }
+
+  String _modoLabelResumo(ModoCalculo modo) {
+    switch (modo) {
+      case ModoCalculo.correcaoSolo:
+        return 'Correção do solo';
+      case ModoCalculo.manutencao:
+        return 'Manutenção / Extração';
+      case ModoCalculo.exportacao:
+        return 'Exportação';
     }
   }
   // ── T3A: Helpers de Referência de Absorção ───────────────────────────────────────
@@ -373,31 +387,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isExpanded)
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onToggle,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.lg,
-                    vertical: 14,
-                  ),
-                  child: _buildCollapsedHeader(),
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimens.lg,
-                  14,
-                  AppDimens.lg,
-                  0,
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _buildChevron(onTap: widget.onToggle),
-                ),
-              ),
+            _buildHeader(),
             AnimatedSize(
               duration: _animDuration,
               curve: Curves.easeInOut,
@@ -421,35 +411,87 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     );
   }
 
-  Widget _buildCollapsedHeader() {
-    final summaryLines = _collapsedSummaryLines();
+  Widget _buildHeader() {
+    return InkWell(
+      onTap: widget.onToggle,
+      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.lg,
+          vertical: 14,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 4,
+              height: 20,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF3B30),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Fósforo',
+                    style: AppTextStyles.label.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child: widget.isExpanded
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            key: const ValueKey('fosforo-resumo'),
+                            padding: const EdgeInsets.only(top: 4),
+                            child: _buildResumoColapsado(),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedRotation(
+              turns: widget.isExpanded ? 0.5 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFF86868B),
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Row(
+  Widget _buildResumoColapsado() {
+    final summaryLines = _collapsedSummaryLines();
+    if (summaryLines.isEmpty) return const SizedBox.shrink();
+
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 4,
-          height: 32,
-          decoration: BoxDecoration(
-            color: FosforoCard.accentColor,
-            borderRadius: BorderRadius.circular(2),
+        for (final line in summaryLines) ...[
+          const SizedBox(height: 2),
+          Text(
+            line,
+            style: captionStyle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(width: AppDimens.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                FosforoCard.title,
-                style: AppTextStyles.label
-                    .copyWith(color: FosforoCard.accentColor),
-              ),
-              ..._buildSummaryWidgets(summaryLines),
-            ],
-          ),
-        ),
-        _buildChevron(onTap: widget.onToggle),
+        ],
       ],
     );
   }
@@ -459,68 +501,25 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
         _d.extrator == ExtratorP.resinaIAC ? 'Resina IAC' : 'Mehlich-1';
     final referencia = _d.label;
     final camada = _camada == CamadaP.c0a20 ? '0–20 cm' : '20–40 cm';
-    final nc = _nc;
-    final modoCalculo = _limparPrefixo(_modoLabelForPayload(_modo));
-    final tipo = _tipo == TipoCalculo.exportacao ? 'Exportação' : 'Manutenção';
-    final percentualP = _percentSegment(
-      '',
-      double.tryParse(_pSoloCtrl.text.replaceAll(',', '.')),
-      suffix: ' P',
-    );
-    final fonteNome = _fonteAtualResumo();
+    final nc = _ncAtual;
+    final modoCalculo = _modoLabelResumo(_modo);
+    final percentualP = _percentualUsoPSoloParaModo(_modo);
+    final percentualSolo =
+        _modo == ModoCalculo.manutencao && (percentualP - 100).abs() > 0.001
+            ? '${_fmtNumber(percentualP)}% solo'
+            : '';
 
     return [
-      _joinSegments([extrator, referencia, camada]),
+      _joinSegments([
+        extrator,
+        referencia,
+      ]),
       _joinSegments([
         if (nc != null) 'NC ${_fmtNumber(nc)} mg/dm³',
-        modoCalculo,
+        camada,
       ]),
-      _joinSegments([tipo, percentualP, _fosforoTipoFonte, fonteNome]),
+      _joinSegments([modoCalculo, percentualSolo]),
     ].where((line) => line.isNotEmpty).toList();
-  }
-
-  String _fonteAtualResumo() {
-    final fontes = _fontesParaTipoP(_fosforoTipoFonte);
-    if (_fosforoFonteNome != null &&
-        fontes.contains(_fosforoFonteNome) &&
-        _fosforoFonteNome!.trim().isNotEmpty) {
-      return _fosforoFonteNome!.trim();
-    }
-    return fontes.isNotEmpty ? fontes.first : '';
-  }
-
-  List<Widget> _buildSummaryWidgets(List<String> lines) {
-    final captionStyle = AppTextStyles.caption.copyWith(
-      color: AppColors.textSecond,
-    );
-    return [
-      for (final line in lines) ...[
-        const SizedBox(height: 2),
-        Text(
-          line,
-          style: captionStyle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ];
-  }
-
-  Widget _buildChevron({required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedRotation(
-        turns: widget.isExpanded ? 0.5 : 0.0,
-        duration: _animDuration,
-        curve: Curves.easeInOut,
-        child: const Icon(
-          Icons.keyboard_arrow_down,
-          color: AppColors.textSecond,
-          size: 20,
-        ),
-      ),
-    );
   }
 
   Widget _buildConteudo() {
@@ -558,6 +557,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
                     onChanged: (v) => setState(() {
                       _ref = v!;
                       _removeTip();
+                      if (!_ncModoManual) _syncNcControllerFromMode(null);
                       _emitChange();
                     }),
                   ),
@@ -613,53 +613,99 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               case ModoCalculo.correcaoSolo:
                 return '⓪  Correção do solo';
               case ModoCalculo.manutencao:
-                return 'Manutenção';
+                return 'Manutenção / Extração';
               case ModoCalculo.exportacao:
                 return 'Exportação';
             }
           },
           onChanged: (v) => setState(() {
-            _modo = v!;
+            _onModoChanged(v!);
             _emitChange();
           }),
         ),
         const SizedBox(height: AppDimens.sm),
         _cultivarRow(),
-        const SizedBox(height: AppDimens.sm),
-        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _lbl('Tipo'),
-              const SizedBox(height: AppDimens.xs),
-              _drop<TipoCalculo>(
-                value: _tipo,
-                items: TipoCalculo.values,
-                labelOf: (t) =>
-                    t == TipoCalculo.exportacao ? 'Exportação' : 'Manutenção',
-                onChanged: (v) => setState(() {
-                  _tipo = v!;
-                  _emitChange();
-                }),
-              ),
-            ],
-          )),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _lbl('% P do solo que vai usar'),
-              const SizedBox(height: AppDimens.xs),
-              _numField(_pSoloCtrl),
-            ],
-          )),
-        ]),
+        _buildCampoPercentualPSolo(),
         const SizedBox(height: AppDimens.sm),
         _buildAbsorcaoSecaoP(),
       ],
     );
+  }
+
+  Widget _buildCampoPercentualPSolo() {
+    final mostrarCampo = _modo == ModoCalculo.manutencao;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: mostrarCampo
+          ? Column(
+              key: const ValueKey('campo_p_solo'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Text(
+                  '% P DO SOLO CONSIDERADO',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _numField(
+                  _pSoloCtrl,
+                  hint: '100,0',
+                  onChanged: _emitChange,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '100% = usa tudo do solo · 0% = ignora o solo',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond,
+                  ),
+                ),
+              ],
+            )
+          : const SizedBox.shrink(key: ValueKey('campo_p_solo_hidden')),
+    );
+  }
+
+  void _onModoChanged(ModoCalculo modo) {
+    _modo = modo;
+    if (modo == ModoCalculo.correcaoSolo) {
+      _pSoloCtrl.text = '100';
+    } else if (modo == ModoCalculo.exportacao) {
+      _pSoloCtrl.text = '0';
+    } else if (_pSoloCtrl.text.trim().isEmpty ||
+        _parseDoubleOrNull(_pSoloCtrl.text) == 0) {
+      _pSoloCtrl.text = '100';
+    }
+  }
+
+  double _percentualUsoPSoloParaModo(ModoCalculo modo) {
+    switch (modo) {
+      case ModoCalculo.correcaoSolo:
+        return 100.0;
+      case ModoCalculo.exportacao:
+        return 0.0;
+      case ModoCalculo.manutencao:
+        return _parseDoubleOrNull(_pSoloCtrl.text) ?? 100.0;
+    }
+  }
+
+  double _defaultPercentualUsoPSolo(ModoCalculo modo) {
+    return modo == ModoCalculo.exportacao ? 0.0 : 100.0;
+  }
+
+  void _syncNcControllerFromMode(dynamic savedNc) {
+    final nc = _ncModoManual ? _numOrNull(savedNc) : _nc;
+    _ncCtrl.text = nc == null ? '' : _fmtNumber(nc);
+  }
+
+  void _restaurarNcAutomatico() {
+    _ncModoManual = false;
+    final nc = _nc;
+    _ncCtrl.text = nc == null ? '' : _fmtNumber(nc);
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -671,12 +717,22 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   //   Laranja → UFLA placeholder
 
   Widget _ncBadge() {
-    final nc = _nc;
+    final nc = _ncAtual;
     final isOrange = _d.placeholder;
+    final isManual = _ncModoManual;
 
-    final Color bg = isOrange ? AppColors.bgWarning : const Color(0xFFEEF4FF);
-    final Color bdr = isOrange ? AppColors.warning : const Color(0xFFB8D4FF);
-    final Color valC = isOrange ? const Color(0xFFBF360C) : AppColors.primary;
+    final Color bg = isManual
+        ? AppColors.bgPrimary
+        : isOrange
+            ? AppColors.bgWarning
+            : const Color(0xFF007AFF).withValues(alpha: 0.06);
+    final Color bdr = isOrange && !isManual
+        ? AppColors.warning
+        : isManual
+            ? AppColors.border
+            : const Color(0xFFB8D4FF);
+    final Color valC =
+        isOrange && !isManual ? const Color(0xFFBF360C) : AppColors.primary;
 
     final String val = nc != null
         ? (nc == nc.truncateToDouble()
@@ -686,29 +742,106 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
 
     final String unit = isOrange ? 'mg/dm³ *' : 'mg/dm³';
 
-    return Container(
-      key: _ncBadgeKey,
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: bdr, width: 1),
-      ),
-      child: Row(children: [
-        Text(val,
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: valC,
-                letterSpacing: -0.3)),
-        const SizedBox(width: 5),
-        Text(unit,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecond)),
-        const Spacer(),
-        Icon(Icons.lock_outline_rounded,
-            size: 13, color: valC.withValues(alpha: 0.35)),
-      ]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          key: _ncBadgeKey,
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: bdr, width: 1),
+          ),
+          child: Row(children: [
+            Expanded(
+              child: isManual
+                  ? TextField(
+                      controller: _ncCtrl,
+                      onChanged: (_) => _emitChange(),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(7),
+                        FilteringTextInputFormatter.allow(RegExp(r'[\d,\.]')),
+                      ],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: val,
+                        suffixText: unit,
+                        suffixStyle: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecond,
+                        ),
+                      ),
+                    )
+                  : Row(
+                      children: [
+                        Text(
+                          val,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: valC,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          unit,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecond,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _ncModoManual = !_ncModoManual;
+                  if (_ncModoManual) {
+                    _ncCtrl.text = val == '—' ? '' : val;
+                  } else {
+                    _restaurarNcAutomatico();
+                  }
+                });
+                _emitChange();
+              },
+              child: Icon(
+                isManual ? Icons.edit_outlined : Icons.lock_outline,
+                size: 18,
+                color: isManual ? const Color(0xFF86868B) : AppColors.primary,
+              ),
+            ),
+          ]),
+        ),
+        if (isManual)
+          GestureDetector(
+            onTap: () {
+              setState(() => _restaurarNcAutomatico());
+              _emitChange();
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Restaurar valor automático',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.primary,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -752,6 +885,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               child: GestureDetector(
                 onTap: () => setState(() {
                   _faixa = f;
+                  if (!_ncModoManual) _syncNcControllerFromMode(null);
                   _emitChange();
                 }),
                 child: AnimatedContainer(
@@ -963,7 +1097,12 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
         ),
       );
 
-  Widget _numField(TextEditingController ctrl) => Container(
+  Widget _numField(
+    TextEditingController ctrl, {
+    String? hint,
+    VoidCallback? onChanged,
+  }) =>
+      Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
@@ -972,14 +1111,14 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
             border: Border.all(color: AppColors.border, width: 1)),
         child: TextField(
           controller: ctrl,
-          onChanged: (_) => _emitChange(),
+          onChanged: (_) => onChanged?.call(),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             LengthLimitingTextInputFormatter(7),
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            FilteringTextInputFormatter.allow(RegExp(r'[\d,\.]')),
           ],
           style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -989,6 +1128,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
             isDense: true,
             isCollapsed: true,
             contentPadding: EdgeInsets.zero,
+            hintText: hint,
           ),
         ),
       );
@@ -1025,23 +1165,23 @@ String _joinSegments(Iterable<String> values) {
       .join(' · ');
 }
 
-String _percentSegment(String label, double? value, {String suffix = ''}) {
-  if (value == null) return '';
-  final prefix = label.isEmpty ? '' : '$label ';
-  return '$prefix${_fmtNumber(value)}%$suffix';
-}
-
 String _fmtNumber(double value) {
   final fixed =
       value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
   return fixed.replaceAll('.', ',');
 }
 
-String _limparPrefixo(String value) {
-  return value
-      .replaceFirst(RegExp(r'^[①②③④⑤⑥⑦⑧⑨⓪]\s*'), '')
-      .replaceFirst(RegExp(r'^\d+\s*[-.)]?\s*'), '')
-      .trim();
+double? _parseDoubleOrNull(String value) {
+  final text = value.trim();
+  if (text.isEmpty) return null;
+  return double.tryParse(text.replaceAll(',', '.'));
+}
+
+double? _numOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return _parseDoubleOrNull(value);
+  return null;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
