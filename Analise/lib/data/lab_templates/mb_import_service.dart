@@ -103,7 +103,7 @@ class MbImportService {
       silte: silteGkg,
       areiaTotal: areiaGkg,
       phAgua: null,
-      phSmp: null,
+      phSmp: toDouble(raw('phSmp')),
       phCaCl2: toDouble(raw('phCaCl2')),
       materiaOrganica: moDagKg,
       carbonoOrganico: carbonoDagKg,

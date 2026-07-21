@@ -47,9 +47,21 @@ class LabDetector {
 
   static final Map<String, List<_SignalRule>> _rules = {
     'solum': [
-      _SignalRule(RegExp(r'solum\s+laborat[oó]rio', caseSensitive: false), 0.35, 'brand_solum'),
-      _SignalRule(RegExp(r'solumlab\.com\.br', caseSensitive: false), 0.25, 'domain_solum'),
-      _SignalRule(RegExp(r'amo\s+\d+\/\d+', caseSensitive: false), 0.15, 'amostra_solum'),
+      _SignalRule(RegExp(r'solum\s+laborat[oó]rio', caseSensitive: false), 0.25,
+          'brand_solum'),
+      _SignalRule(
+          RegExp(r'solumlab\.com\.br|solum\.net\.br', caseSensitive: false),
+          0.3,
+          'domain_solum'),
+      _SignalRule(
+          RegExp(r'laudo\s+anal[íi]tico\s+de\s+amostras\s+de\s+fertilidade',
+              caseSensitive: false),
+          0.3,
+          'laudo_fertilidade_solum'),
+      _SignalRule(RegExp(r'n[ºo]\s+do\s+lab\.', caseSensitive: false), 0.1,
+          'numero_lab_solum'),
+      _SignalRule(RegExp(r'amo\s+\d+\/\d+', caseSensitive: false), 0.15,
+          'amostra_solum'),
     ],
     'sellar': [
       _SignalRule(
