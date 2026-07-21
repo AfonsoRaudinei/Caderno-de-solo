@@ -25,6 +25,14 @@ service cloud.firestore {
       return resource == null || resource.data.userId == uid;
     }
 
+    function keepsClienteOwner(uid) {
+      return request.resource.data.usuarioId == uid;
+    }
+
+    function clienteOwner(clienteId) {
+      return get(/databases/$(database)/documents/clientes/$(clienteId)).data.usuarioId == request.auth.uid;
+    }
+
     // Perfil do usuário e subcoleções privadas.
     match /users/{uid} {
       allow read, write: if isOwner(uid);
@@ -66,6 +74,22 @@ service cloud.firestore {
       allow update: if signedIn() &&
           currentUserIdMatches(request.auth.uid) &&
           keepsUserId(request.auth.uid);
+    }
+
+    match /clientes/{clienteId} {
+      allow create: if signedIn() && keepsClienteOwner(request.auth.uid);
+      allow read, delete: if signedIn() && resource.data.usuarioId == request.auth.uid;
+      allow update: if signedIn() &&
+          resource.data.usuarioId == request.auth.uid &&
+          keepsClienteOwner(request.auth.uid);
+
+      match /fazendas/{fazendaId} {
+        allow read, write: if signedIn() && clienteOwner(clienteId);
+
+        match /talhoes/{talhaoId} {
+          allow read, write: if signedIn() && clienteOwner(clienteId);
+        }
+      }
     }
   }
 }

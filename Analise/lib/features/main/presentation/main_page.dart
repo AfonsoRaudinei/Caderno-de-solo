@@ -43,9 +43,9 @@ class MainPage extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: Icons.science_outlined,
-                selectedIcon: Icons.science,
-                label: 'Análise',
+                icon: Icons.contacts_outlined,
+                selectedIcon: Icons.contacts,
+                label: 'Clientes',
                 selected: currentIndex == 0,
                 onTap: () => navigationShell.goBranch(
                   0,
@@ -53,9 +53,9 @@ class MainPage extends ConsumerWidget {
                 ),
               ),
               _NavItem(
-                icon: Icons.biotech_outlined,
-                selectedIcon: Icons.biotech,
-                label: 'Lab',
+                icon: Icons.science_outlined,
+                selectedIcon: Icons.science,
+                label: 'Análise',
                 selected: currentIndex == 1,
                 onTap: () => navigationShell.goBranch(
                   1,
@@ -63,9 +63,9 @@ class MainPage extends ConsumerWidget {
                 ),
               ),
               _NavItem(
-                icon: Icons.map_outlined,
-                selectedIcon: Icons.map,
-                label: 'Mapa',
+                icon: Icons.biotech_outlined,
+                selectedIcon: Icons.biotech,
+                label: 'Lab',
                 selected: currentIndex == 2,
                 onTap: () => navigationShell.goBranch(
                   2,
@@ -73,12 +73,22 @@ class MainPage extends ConsumerWidget {
                 ),
               ),
               _NavItem(
-                icon: Icons.settings_outlined,
-                selectedIcon: Icons.settings,
-                label: 'Config',
+                icon: Icons.map_outlined,
+                selectedIcon: Icons.map,
+                label: 'Mapa',
                 selected: currentIndex == 3,
                 onTap: () => navigationShell.goBranch(
                   3,
+                  initialLocation: true,
+                ),
+              ),
+              _NavItem(
+                icon: Icons.settings_outlined,
+                selectedIcon: Icons.settings,
+                label: 'Config',
+                selected: currentIndex == 4,
+                onTap: () => navigationShell.goBranch(
+                  4,
                   initialLocation: true,
                 ),
               ),
@@ -107,8 +117,6 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -121,8 +129,7 @@ class _NavItem extends StatelessWidget {
             child: Icon(
               selected ? selectedIcon : icon,
               key: ValueKey(selected),
-              color:
-                  selected ? AppColors.primary : colorScheme.onSurfaceVariant,
+              color: selected ? AppColors.primary : AppColors.textSecond,
               size: 26,
             ),
           ),

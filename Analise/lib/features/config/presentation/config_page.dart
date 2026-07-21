@@ -14,6 +14,9 @@ import 'package:soloforte/features/config/application/providers/perfil_assets_pr
 export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
 
+// Senha de acesso ao módulo Cálculos — alterar em cada release.
+const String _kCalculosAccessPassword = 'S-@oloforte';
+
 /// Bottom sheet iOS para edição de campo de texto.
 Future<void> _showEditSheet(
   BuildContext context,
@@ -460,12 +463,9 @@ class ConfigPage extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                Center(
-                  child: Text(
-                    'Analise v1.0.1',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
+                const Center(
+                  child: _CalculosAccessVersion(
+                    versionLabel: 'Analise v1.0.1',
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -1022,6 +1022,98 @@ class _Divider extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: Divider(height: 1, color: palette.border),
+    );
+  }
+}
+
+class _CalculosAccessVersion extends StatefulWidget {
+  const _CalculosAccessVersion({
+    required this.versionLabel,
+  });
+
+  final String versionLabel;
+
+  @override
+  State<_CalculosAccessVersion> createState() => _CalculosAccessVersionState();
+}
+
+class _CalculosAccessVersionState extends State<_CalculosAccessVersion> {
+  void _abrirCalculos() {
+    _mostrarDialogSenha(context);
+  }
+
+  void _mostrarDialogSenha(BuildContext context) {
+    final controller = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Acesso restrito'),
+          content: TextField(
+            controller: controller,
+            obscureText: true,
+            keyboardType: TextInputType.visiblePassword,
+            maxLength: 20,
+            decoration: const InputDecoration(
+              hintText: 'Senha de acesso',
+              counterText: '',
+            ),
+            autofocus: true,
+            onSubmitted: (_) => _validarSenha(
+              dialogContext,
+              controller.text,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => _validarSenha(
+                dialogContext,
+                controller.text,
+              ),
+              child: const Text('Entrar'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
+
+  void _validarSenha(BuildContext dialogContext, String senha) {
+    Navigator.of(dialogContext).pop();
+
+    if (senha == _kCalculosAccessPassword) {
+      context.go(AppRoutes.calculos);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Senha incorreta'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPress: _abrirCalculos,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
+        child: Text(
+          widget.versionLabel,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+          ),
+        ),
+      ),
     );
   }
 }

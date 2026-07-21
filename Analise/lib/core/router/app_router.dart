@@ -12,6 +12,11 @@ import 'package:soloforte/features/auth/presentation/cadastro/cadastro_page.dart
 import 'package:soloforte/features/auth/presentation/recuperar_senha/recuperar_senha_page.dart';
 
 import 'package:soloforte/features/main/presentation/main_page.dart';
+import 'package:soloforte/features/clientes/presentation/cliente_detail_screen.dart';
+import 'package:soloforte/features/clientes/presentation/cliente_form_screen.dart';
+import 'package:soloforte/features/clientes/presentation/fazenda_form_screen.dart';
+import 'package:soloforte/features/clientes/presentation/talhao_form_screen.dart';
+import 'package:soloforte/features/clientes/presentation/clientes_page.dart';
 import 'package:soloforte/features/analise/presentation/screens/analise_page.dart';
 import 'package:soloforte/features/analise/presentation/screens/analise_detail_screen.dart';
 import 'package:soloforte/features/laboratorio/presentation/lab_page.dart';
@@ -24,6 +29,7 @@ import 'package:soloforte/features/historico/presentation/historico_page.dart';
 import 'package:soloforte/features/historico/presentation/historico_detalhe_screen.dart';
 import 'package:soloforte/features/mapa/presentation/mapa_page.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart';
+import 'package:soloforte/features/config/presentation/calculos/calculos_page.dart';
 import 'package:soloforte/features/config/presentation/screens/lab_templates_list_screen.dart';
 import 'package:soloforte/features/config/presentation/screens/lab_template_edit_screen.dart';
 import 'package:soloforte/domain/entities/lab_template.dart';
@@ -257,6 +263,47 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: AppRoutes.clientes,
+                builder: (context, state) => const ClientesPage(),
+                routes: [
+                  GoRoute(
+                    path: 'novo',
+                    builder: (context, state) => const ClienteFormScreen(),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => ClienteDetailScreen(
+                      clienteId: state.pathParameters['id']!,
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'editar',
+                        builder: (context, state) => ClienteFormScreen(
+                          clienteId: state.pathParameters['id'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'fazenda/nova',
+                        builder: (context, state) => FazendaFormScreen(
+                          clienteId: state.pathParameters['id']!,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'fazenda/:fazendaId/talhao/novo',
+                        builder: (context, state) => TalhaoFormScreen(
+                          clienteId: state.pathParameters['id']!,
+                          fazendaId: state.pathParameters['fazendaId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: AppRoutes.analise,
                 builder: (context, state) => const AnalisePage(),
                 routes: [
@@ -370,6 +417,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'feedback',
                     builder: (context, state) => const FeedbackPage(),
+                  ),
+                  GoRoute(
+                    path: 'calculos',
+                    builder: (context, state) => const CalculosPage(),
                   ),
                   GoRoute(
                     path: 'lab-templates',
