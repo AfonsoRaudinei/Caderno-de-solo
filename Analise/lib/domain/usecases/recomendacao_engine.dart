@@ -18,7 +18,7 @@ import 'package:soloforte/domain/formulas/types/fosforo_input.dart';
 import 'package:soloforte/domain/formulas/types/gesso_input.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
-import 'package:soloforte/data/culturas_data.dart';
+import 'package:soloforte/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart';
 
 part 'recomendacao_engine.freezed.dart';
 
@@ -65,7 +65,6 @@ class MicroResultado with _$MicroResultado {
 
     /// Citação científica da referência usada
     String? referencia,
-
     @Default([]) List<String> avisosNutriente,
   }) = _MicroResultado;
 }
@@ -219,12 +218,13 @@ class RecomendacaoEngine {
       fosforo: fosforo,
       analise: analise,
       cultura: calibracao.cultura,
+      produtividadeEsperadaTha: calibracao.produtividadeEsperadaTha,
       tabelas: tabelas,
     );
     final ncP = fosforoResult.ncP;
     final doseP = fosforoResult.doseP;
     final legacyP = fosforoResult.legacyP;
-    final modoP = _string(fosforo['modoCalculo'], '① Correção do solo');
+    final modoP = fosforoResult.modoResumo;
 
     final modoK = _string(potassio['modoCalculo'], '① Correção do solo');
     final criterioK = _string(potassio['criterioNc'], 'Ambos — usar o maior');
@@ -268,8 +268,8 @@ class RecomendacaoEngine {
 
     final microsResultado = calcularMicros(micros: micros, analise: analise);
     final gruposMicros = _asListMap(micros['grupos']);
-    final gruposResultado = calcularGrupos(
-        grupos: gruposMicros, micros: microsResultado);
+    final gruposResultado =
+        calcularGrupos(grupos: gruposMicros, micros: microsResultado);
 
     final relacaoCaMg = analise.mg > 0 ? analise.ca / analise.mg : 0.0;
     // Fórmula: CaO% × dose(t/ha) × 0.714(CaO→Ca) × (10/2) = cmolc/dm³ aportado
@@ -279,7 +279,8 @@ class RecomendacaoEngine {
     final mgAportado = (mgO / 100) * doseCalcario * 0.603 * (10 / 2.43);
     final caEsperado = analise.ca + caAportado;
     final mgEsperado = analise.mg + mgAportado;
-    final vEsperado = _vEsperado(caEsperado, mgEsperado, analise.k, analise.ctc);
+    final vEsperado =
+        _vEsperado(caEsperado, mgEsperado, analise.k, analise.ctc);
 
     final avisos = <String>[
       if (legacyP) 'Fósforo acima do NC: aplicado piso de manutenção.',
@@ -438,25 +439,17 @@ class RecomendacaoEngine {
     required String nutriente,
   }) {
     final sourceType = switch (tipoFonte) {
-      'Guidorizzi' => SourceType.tecnologia,
-      'Cultivar' => SourceType.cultivar,
-      _ => SourceType.autor,
+      'Guidorizzi' => 'Guidorizzi',
+      'Cultivar' => 'Cultivar',
+      _ => 'Autores',
     };
-    final dataset = datasetFor(sourceType);
-    final entry = dataset[fonteNome];
-    if (entry == null) return null;
-    final record =
-        modoAbsorcao == 'exportacao' ? entry.exportacao : entry.extracao;
-    return switch (nutriente) {
-      'P' => record.P,
-      'K' => record.K,
-      'B' => record.B,
-      'Cu' => record.Cu,
-      'Fe' => record.Fe,
-      'Mn' => record.Mn,
-      'Zn' => record.Zn,
-      _ => null,
-    };
+    final resolved = const AbsorcaoNutrientesResolver().resolve(
+      sourceType: sourceType,
+      sourceName: fonteNome,
+      dataType: modoAbsorcao == 'exportacao' ? 'Exportação' : 'Extração',
+      nutrient: nutriente,
+    );
+    return resolved.valuePerTon > 0 ? resolved.valuePerTon : null;
   }
 
   /// Despacha para o método de calcário correto conforme string do metodo.
@@ -614,16 +607,28 @@ class RecomendacaoEngine {
     );
   }
 
-  /// Calcula a dose de fósforo conforme as calibrações de correção ou manutenção (extrativa).
+  /// Calcula a dose de fósforo por componentes independentes:
+  /// correção do solo + uma reposição da planta (exportação ou extração).
   /// Lógica migrada de _calcularResultado (RE2).
-  ({double ncP, double doseP, bool legacyP}) calcularFosforo({
+  ({
+    double ncP,
+    double doseP,
+    bool legacyP,
+    String modoResumo,
+    double doseCorrecao,
+    double doseExportacao,
+    double doseExtracao,
+    double pSoloCreditadoP2O5,
+  }) calcularFosforo({
     required Map<String, dynamic> fosforo,
     required AnaliseEntity analise,
     required String cultura,
+    double? produtividadeEsperadaTha,
     required List<Map<String, dynamic>> tabelas,
   }) {
-    final modoP = _string(fosforo['modoCalculo'], '① Correção do solo');
     final referenciaP = _string(fosforo['referencia'], 'IAC Bol.100');
+    final corrigirSolo = _corrigirSoloFosforo(fosforo);
+    final reposicao = _reposicaoFosforo(fosforo);
 
     // Nível Crítico de Fósforo (Dinâmico)
     final ncP = ncFosforoPorReferencia(
@@ -640,32 +645,98 @@ class RecomendacaoEngine {
     final fepBaseLocal = _num(fosforo['fepBase'],
         fepBaseTabela(argilaPercent: analise.argila, tabelas: tabelas));
 
-    var doseP = modoP.startsWith('①')
-        ? FosforoFormula.recomendacaoCorrecao(
-            FosforoInput(
-              pAtual: analise.p,
-              nc: ncP,
-              argila: analise.argila,
-              referencia: referenciaP,
-            ),
-          ).doseRecomendada
-        : FosforoFormula.recomendacaoExtracao(
-            pSolo: analise.p,
-            percentualUsoSolo: _num(fosforo['percentualUsoPSolo'], 0),
-            profundidadeCm: 20,
-            extracaoP2O5: _extracaoP2O5(cultura),
-            fepFinal: fepBaseLocal,
-          );
+    final exportacaoP2O5 = _p2O5PorAbsorcao(
+          fosforo: fosforo,
+          modoAbsorcao: 'exportacao',
+          produtividadeEsperadaTha: produtividadeEsperadaTha,
+        ) ??
+        _exportacaoP2O5(cultura);
+    final extracaoP2O5 = _p2O5PorAbsorcao(
+          fosforo: fosforo,
+          modoAbsorcao: 'extracao',
+          produtividadeEsperadaTha: produtividadeEsperadaTha,
+        ) ??
+        _extracaoP2O5(cultura);
+
+    final resultado = FosforoFormula.recomendacaoComponentes(
+      corrigirSolo: corrigirSolo,
+      reposicao: reposicao,
+      correcaoInput: FosforoInput(
+        pAtual: analise.p,
+        nc: ncP,
+        argila: analise.argila,
+        referencia: referenciaP,
+      ),
+      pSolo: analise.p,
+      percentualUsoSoloExtracao: _num(fosforo['percentualUsoPSolo'], 100),
+      profundidadeCm: 20,
+      exportacaoP2O5: exportacaoP2O5,
+      extracaoP2O5: extracaoP2O5,
+      fepFinal: fepBaseLocal,
+    );
+    var doseP = resultado.doseTotal;
     final legacyInfo = FosforoFormula.avaliarLegacyP(
       pSolo: analise.p,
       nivelCritico: ncP,
-      exportacaoGrao: _extracaoP2O5(cultura),
+      exportacaoGrao: exportacaoP2O5,
     );
-    if (legacyInfo.legacyP && doseP < legacyInfo.doseMinima) {
+    if (reposicao == ReposicaoFosforo.nenhuma &&
+        legacyInfo.legacyP &&
+        doseP < legacyInfo.doseMinima) {
       doseP = legacyInfo.doseMinima;
     }
 
-    return (ncP: ncP, doseP: doseP, legacyP: legacyInfo.legacyP);
+    return (
+      ncP: ncP,
+      doseP: doseP,
+      legacyP: reposicao == ReposicaoFosforo.nenhuma && legacyInfo.legacyP,
+      modoResumo: resultado.modoResumo,
+      doseCorrecao: resultado.doseCorrecao,
+      doseExportacao: resultado.doseExportacao,
+      doseExtracao: resultado.doseExtracao,
+      pSoloCreditadoP2O5: resultado.pSoloCreditadoP2O5,
+    );
+  }
+
+  bool _corrigirSoloFosforo(Map<String, dynamic> fosforo) {
+    final explicit = fosforo['corrigirSolo'];
+    if (explicit is bool) return explicit;
+    final modo = _string(fosforo['modoCalculo'], '① Correção do solo');
+    return modo.contains('Correção');
+  }
+
+  ReposicaoFosforo _reposicaoFosforo(Map<String, dynamic> fosforo) {
+    final explicit = _string(fosforo['reposicaoFosforo'], '');
+    if (explicit == 'exportacao') return ReposicaoFosforo.exportacao;
+    if (explicit == 'extracao') return ReposicaoFosforo.extracao;
+    if (explicit == 'nenhuma') return ReposicaoFosforo.nenhuma;
+
+    final modo = _string(fosforo['modoCalculo'], '');
+    if (modo.contains('Manutenção') || modo.contains('Exportação')) {
+      return ReposicaoFosforo.exportacao;
+    }
+    if (modo.contains('Extração')) return ReposicaoFosforo.extracao;
+    return ReposicaoFosforo.nenhuma;
+  }
+
+  double? _p2O5PorAbsorcao({
+    required Map<String, dynamic> fosforo,
+    required String modoAbsorcao,
+    required double? produtividadeEsperadaTha,
+  }) {
+    final prodTha = produtividadeEsperadaTha;
+    if (prodTha == null || prodTha <= 0) return null;
+    final tipoFonte = _string(fosforo['fosforoTipoFonte'], 'Autores');
+    final fonteNome = _string(fosforo['fosforoFonteNome'], '');
+    if (fonteNome.isEmpty) return null;
+    final pKgT = _getAbsorcaoKgT(
+      tipoFonte: tipoFonte,
+      fonteNome: fonteNome,
+      modoAbsorcao: modoAbsorcao,
+      nutriente: 'P',
+    );
+    if (pKgT == null) return null;
+    return pKgT * prodTha * 2.29;
   }
 
   /// Calcula doses de micronutrientes elemento a elemento.
@@ -896,6 +967,15 @@ double _extracaoP2O5(String cultura) {
   if (c.contains('algod')) return 130.0;
   if (c.contains('feij')) return 90.0;
   return 100.0;
+}
+
+/// Exportação P2O5 baseado no nome da cultura.
+double _exportacaoP2O5(String cultura) {
+  final c = cultura.toLowerCase();
+  if (c.contains('milho')) return 60.0;
+  if (c.contains('algod')) return 60.0;
+  if (c.contains('feij')) return 30.0;
+  return 70.0;
 }
 
 const String _kFosforoNcResina = 'fosforo_nc_resina';

@@ -638,6 +638,8 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       'ncModoManual': false,
       'camada': '0–20 cm',
       'modoCalculo': '① Correção do solo',
+      'corrigirSolo': true,
+      'reposicaoFosforo': 'nenhuma',
       'percentualCorrecao': 100.0,
       'fatorSolo': 4.0,
       'cultivar': '',

@@ -55,14 +55,12 @@ void main() {
   });
 
   group('FosforoCard — Modo de cálculo', () {
-    testWidgets('texto Manutenção / Extração existe no dropdown',
+    testWidgets('não exibe dropdown legado Manutenção / Extração',
         (tester) async {
       await pumpCard(tester, fosforoCard(initialExpanded: true));
 
-      await tester.tap(find.textContaining('Correção do solo').last);
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Manutenção / Extração'), findsWidgets);
+      expect(find.textContaining('Composição do cálculo'), findsOneWidget);
+      expect(find.textContaining('Manutenção / Extração'), findsNothing);
     });
 
     testWidgets('% P DO SOLO ausente no modo Correção do solo', (tester) async {
@@ -73,12 +71,14 @@ void main() {
       expect(find.textContaining('% P DO SOLO'), findsNothing);
     });
 
-    testWidgets('% P DO SOLO presente no modo Manutenção', (tester) async {
+    testWidgets('legado Manutenção / Extração migra para Exportação',
+        (tester) async {
       final data =
           mergeCard(fosforoBase(), {'modoCalculo': 'Manutenção / Extração'});
       await pumpCard(tester, fosforoCard(fosforo: data, initialExpanded: true));
 
-      expect(find.textContaining('% P DO SOLO'), findsOneWidget);
+      expect(find.text('Exportação'), findsOneWidget);
+      expect(find.textContaining('% P DO SOLO'), findsNothing);
     });
 
     testWidgets('% P DO SOLO ausente no modo Exportação', (tester) async {
@@ -86,6 +86,16 @@ void main() {
       await pumpCard(tester, fosforoCard(fosforo: data, initialExpanded: true));
 
       expect(find.textContaining('% P DO SOLO'), findsNothing);
+    });
+
+    testWidgets('% P DO SOLO presente no modo Extração', (tester) async {
+      final data = mergeCard(fosforoBase(), {
+        'corrigirSolo': true,
+        'reposicaoFosforo': 'extracao',
+      });
+      await pumpCard(tester, fosforoCard(fosforo: data, initialExpanded: true));
+
+      expect(find.textContaining('% P DO SOLO'), findsOneWidget);
     });
   });
 

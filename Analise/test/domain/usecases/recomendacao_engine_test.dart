@@ -415,8 +415,47 @@ void main() {
 
       // P > NC -> manutencao
       expect(res.legacyP, isTrue);
-      // Dose de milho exportacao = 110, e exportação manutenção = exportacao * 0.3 = 33.0
-      expect(res.doseP, closeTo(33.0, 0.01));
+      // Dose de milho exportação = 60, e piso legacy = exportação * 0.3 = 18.0
+      expect(res.doseP, closeTo(18.0, 0.01));
+    });
+
+    test('exportação repõe grão sem abater P do solo', () {
+      final res = engine.calcularFosforo(
+        fosforo: {
+          'corrigirSolo': false,
+          'reposicaoFosforo': 'exportacao',
+          'referencia': 'IAC Bol.100',
+          'fepBase': 20.0,
+        },
+        analise: _fancelli.copyWith(argila: 25.0, p: 30.0),
+        cultura: 'Soja',
+        tabelas: [],
+      );
+
+      expect(res.doseExportacao, closeTo(350.0, 0.01));
+      expect(res.doseExtracao, equals(0.0));
+      expect(res.pSoloCreditadoP2O5, equals(0.0));
+      expect(res.legacyP, isFalse);
+    });
+
+    test('extração abate percentual de P do solo', () {
+      final res = engine.calcularFosforo(
+        fosforo: {
+          'corrigirSolo': false,
+          'reposicaoFosforo': 'extracao',
+          'referencia': 'IAC Bol.100',
+          'fepBase': 20.0,
+          'percentualUsoPSolo': 100.0,
+        },
+        analise: _fancelli.copyWith(argila: 25.0, p: 10.0),
+        cultura: 'Soja',
+        tabelas: [],
+      );
+
+      expect(res.doseExportacao, equals(0.0));
+      expect(res.pSoloCreditadoP2O5, closeTo(45.82, 0.01));
+      expect(res.doseExtracao, closeTo(270.9, 0.1));
+      expect(res.doseP, closeTo(res.doseExtracao, 0.01));
     });
   });
 
@@ -512,14 +551,16 @@ void main() {
       expect(resultado.avisos, isA<List<String>>());
     });
 
-    test('calcula doses informativas de absorção/exportação quando configuradas',
+    test(
+        'calcula doses informativas de absorção/exportação quando configuradas',
         () {
       final perfilComAbsorcao = perfil.copyWith(
         produtividadeEsperadaTha: 4.0,
         parametrosCards: {
           ...perfil.parametrosCards,
           'fosforo': {
-            ...Map<String, dynamic>.from(perfil.parametrosCards['fosforo'] as Map),
+            ...Map<String, dynamic>.from(
+                perfil.parametrosCards['fosforo'] as Map),
             'fosforoTipoFonte': 'Autores',
             'fosforoFonteNome': 'EMBRAPA',
             'fosforoModoAbsorcao': 'extracao',

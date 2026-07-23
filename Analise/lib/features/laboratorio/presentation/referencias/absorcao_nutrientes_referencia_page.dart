@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/widgets/absorcao_card_wrapper.dart';
@@ -67,40 +68,15 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   DataValue resolveDataValue() {
-    final source =
-        AbsorcaoNutrientesData.nutrientData[_sourceType]?[_selectedSource];
-    if (source == null) {
-      return const DataValue(
-        valuePerTon: 0,
-        quality: DataQuality.unavailable,
-      );
-    }
-
-    final selectedValue = source[_selectedDataType]?[_selectedNutrient] ?? 0;
-    if (selectedValue > 0) {
-      return DataValue(
-        valuePerTon: selectedValue,
-        quality: DataQuality.original,
-      );
-    }
-
-    final oppositeType =
-        _selectedDataType == 'Extração' ? 'Exportação' : 'Extração';
-    final oppositeValue = source[oppositeType]?[_selectedNutrient] ?? 0;
-    final index = AbsorcaoNutrientesData.exportIndexes[_selectedNutrient] ?? 0;
-    if (oppositeValue <= 0 || index <= 0) {
-      return const DataValue(
-        valuePerTon: 0,
-        quality: DataQuality.unavailable,
-      );
-    }
-
-    final calculated = _selectedDataType == 'Exportação'
-        ? oppositeValue * index
-        : oppositeValue / index;
+    final resolved = const AbsorcaoNutrientesResolver().resolve(
+      sourceType: _sourceType,
+      sourceName: _selectedSource,
+      dataType: _selectedDataType,
+      nutrient: _selectedNutrient,
+    );
     return DataValue(
-      valuePerTon: calculated,
-      quality: DataQuality.calculated,
+      valuePerTon: resolved.valuePerTon,
+      quality: resolved.quality,
     );
   }
 

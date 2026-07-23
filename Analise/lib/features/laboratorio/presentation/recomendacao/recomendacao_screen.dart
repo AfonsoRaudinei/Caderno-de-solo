@@ -50,6 +50,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(calculosSelectedAnaliseIdsProvider.notifier).state =
           List<String>.from(_analiseIdsSelecionados);
+      ref.read(calculosSelectedCalibracaoIdProvider.notifier).state =
+          _calibracaoIdSelecionada;
     });
   }
 
@@ -171,6 +173,9 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                         ref
                             .read(calculosSelectedAnaliseIdsProvider.notifier)
                             .state = List<String>.from(ids);
+                        ref
+                            .read(calculosSelectedCalibracaoIdProvider.notifier)
+                            .state = _calibracaoIdSelecionada;
                       },
                     ),
                     const SizedBox(height: 12),
@@ -196,6 +201,10 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                               setState(() {
                                 _calibracaoIdSelecionada = value;
                               });
+                              ref
+                                  .read(calculosSelectedCalibracaoIdProvider
+                                      .notifier)
+                                  .state = value;
                             },
                     ),
                     const SizedBox(height: 16),
@@ -211,6 +220,10 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                                   .state = List<String>.from(
                                 _analiseIdsSelecionados,
                               );
+                              ref
+                                  .read(calculosSelectedCalibracaoIdProvider
+                                      .notifier)
+                                  .state = _calibracaoIdSelecionada;
                               ref.invalidate(recomendacaoProvider(request));
                               ref.read(recomendacaoProvider(request));
                             }

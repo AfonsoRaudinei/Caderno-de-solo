@@ -23,7 +23,7 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/analise/domain/formulas/fosforo_provider.dart';
-import 'package:soloforte/data/culturas_data.dart';
+import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // WIDGET PRINCIPAL
@@ -58,13 +58,13 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   final GlobalKey _cardKey = GlobalKey();
   ReferenciaP _ref = ReferenciaP.iacBol100;
   CamadaP _camada = CamadaP.c0a20;
-  ModoCalculo _modo = ModoCalculo.correcaoSolo;
+  bool _corrigirSolo = true;
+  String _reposicaoFosforo = 'nenhuma';
   FaixaArgila _faixa = FaixaArgila.f3; // 21–40% como padrão
 
   // Referência de Absorção bibliográfica (T3A)
   String _fosforoTipoFonte = 'Autores';
   String? _fosforoFonteNome;
-  String _fosforoModoAbsorcao = 'extracao';
   bool _ncModoManual = false;
 
   final _pSoloCtrl = TextEditingController(text: '0');
@@ -120,17 +120,15 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
 
     _ref = _referenciaFromString(source['referencia']?.toString());
     _camada = _camadaFromString(source['camada']?.toString());
-    _modo = _modoFromString(source['modoCalculo']?.toString());
+    _corrigirSolo = _corrigirSoloFromData(source);
+    _reposicaoFosforo = _reposicaoFromData(source);
     _faixa = _faixaFromString(source['faixaArgila']?.toString());
     _ncModoManual = source['ncModoManual'] as bool? ?? false;
     _fosforoTipoFonte = source['fosforoTipoFonte']?.toString() ?? 'Autores';
     _fosforoFonteNome = source['fosforoFonteNome']?.toString();
-    _fosforoModoAbsorcao =
-        source['fosforoModoAbsorcao']?.toString() ?? 'extracao';
-
     final usoPSolo = source['percentualUsoPSolo'];
     final usoPSoloTexto = usoPSolo == null
-        ? _defaultPercentualUsoPSolo(_modo).toString()
+        ? _defaultPercentualUsoPSolo(_reposicaoFosforo).toString()
         : usoPSolo.toString();
     _pSoloCtrl.text = usoPSoloTexto.replaceAll('.', ',');
     _syncNcControllerFromMode(source['nc']);
@@ -139,11 +137,15 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   void _emitChange() {
     if (widget.onChanged == null) return;
 
-    final percentualUsoPSolo = _percentualUsoPSoloParaModo(_modo);
+    final percentualUsoPSolo =
+        _percentualUsoPSoloParaReposicao(_reposicaoFosforo);
     final cultura =
         widget.cultura ?? _baseData['cultivar']?.toString() ?? 'Soja';
-    final tipoDadoCultivar =
-        _modo == ModoCalculo.exportacao ? 'Exportação' : 'Manutenção';
+    final tipoDadoCultivar = _reposicaoFosforo == 'exportacao'
+        ? 'Exportação'
+        : _reposicaoFosforo == 'extracao'
+            ? 'Extração'
+            : 'Nenhum';
 
     final payload = <String, dynamic>{
       ..._baseData,
@@ -154,7 +156,9 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
       'nc': _ncAtual ?? _nc ?? 30.0,
       'ncModoManual': _ncModoManual,
       'camada': _camada == CamadaP.c0a20 ? '0–20 cm' : '20–40 cm',
-      'modoCalculo': _modoLabelForPayload(_modo),
+      'corrigirSolo': _corrigirSolo,
+      'reposicaoFosforo': _reposicaoFosforo,
+      'modoCalculo': _modoLabelForPayload(),
       'cultivar': cultura,
       'tipoDadoCultivar': tipoDadoCultivar,
       'percentualUsoPSolo': percentualUsoPSolo,
@@ -163,7 +167,8 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
           (_fontesParaTipoP(_fosforoTipoFonte).isNotEmpty
               ? _fontesParaTipoP(_fosforoTipoFonte).first
               : ''),
-      'fosforoModoAbsorcao': _fosforoModoAbsorcao,
+      'fosforoModoAbsorcao':
+          _reposicaoFosforo == 'exportacao' ? 'exportacao' : 'extracao',
     };
 
     widget.onChanged!(payload);
@@ -187,12 +192,26 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     return value == '20–40 cm' ? CamadaP.c20a40 : CamadaP.c0a20;
   }
 
-  ModoCalculo _modoFromString(String? value) {
-    if (value == null) return ModoCalculo.correcaoSolo;
-    if (value.contains('Manutenção')) return ModoCalculo.manutencao;
-    if (value.contains('Exportação')) return ModoCalculo.exportacao;
-    if (value.contains('Extração')) return ModoCalculo.exportacao;
-    return ModoCalculo.correcaoSolo;
+  bool _corrigirSoloFromData(Map<String, dynamic> source) {
+    final explicit = source['corrigirSolo'];
+    if (explicit is bool) return explicit;
+    final modo = source['modoCalculo']?.toString() ?? 'Correção do solo';
+    return modo.contains('Correção');
+  }
+
+  String _reposicaoFromData(Map<String, dynamic> source) {
+    final explicit = source['reposicaoFosforo']?.toString();
+    if (explicit == 'nenhuma' ||
+        explicit == 'exportacao' ||
+        explicit == 'extracao') {
+      return explicit!;
+    }
+    final modo = source['modoCalculo']?.toString() ?? '';
+    if (modo.contains('Manutenção') || modo.contains('Exportação')) {
+      return 'exportacao';
+    }
+    if (modo.contains('Extração')) return 'extracao';
+    return 'nenhuma';
   }
 
   FaixaArgila _faixaFromString(String? value) {
@@ -211,33 +230,23 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     }
   }
 
-  String _modoLabelForPayload(ModoCalculo modo) {
-    switch (modo) {
-      case ModoCalculo.correcaoSolo:
-        return '① Correção do solo';
-      case ModoCalculo.manutencao:
-        return '② Manutenção / Extração';
-      case ModoCalculo.exportacao:
-        return '③ Exportação';
-    }
+  String _modoLabelForPayload() {
+    final parts = <String>[
+      if (_corrigirSolo) 'Correção do solo',
+      if (_reposicaoFosforo == 'exportacao') 'Exportação',
+      if (_reposicaoFosforo == 'extracao') 'Extração',
+    ];
+    return parts.isEmpty ? 'Sem fósforo' : parts.join(' + ');
   }
 
-  String _modoLabelResumo(ModoCalculo modo) {
-    switch (modo) {
-      case ModoCalculo.correcaoSolo:
-        return 'Correção do solo';
-      case ModoCalculo.manutencao:
-        return 'Manutenção / Extração';
-      case ModoCalculo.exportacao:
-        return 'Exportação';
-    }
+  String _modoLabelResumo() {
+    return _modoLabelForPayload();
   }
   // ── T3A: Helpers de Referência de Absorção ───────────────────────────────────────
 
   List<String> _fontesParaTipoP(String tipo) {
-    if (tipo == 'Guidorizzi') return kTecnologias.keys.toList();
-    if (tipo == 'Cultivar') return kCultivares.keys.toList();
-    return kAutores.keys.toList();
+    return AbsorcaoNutrientesData.nutrientData[tipo]?.keys.toList() ??
+        const <String>[];
   }
 
   Widget _buildAbsorcaoSecaoP() {
@@ -298,67 +307,18 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
           },
         ),
         const SizedBox(height: AppDimens.sm),
-        _lbl('Extração / Exportação'),
-        const SizedBox(height: AppDimens.xs),
-        _modoAbsorcaoToggleP(),
-      ],
-    );
-  }
-
-  Widget _modoAbsorcaoToggleP() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _toggleBtnP(
-          label: 'Extração',
-          selected: _fosforoModoAbsorcao == 'extracao',
-          onTap: () {
-            setState(() => _fosforoModoAbsorcao = 'extracao');
-            _emitChange();
-          },
-          isLeft: true,
-        ),
-        _toggleBtnP(
-          label: 'Exportação',
-          selected: _fosforoModoAbsorcao == 'exportacao',
-          onTap: () {
-            setState(() => _fosforoModoAbsorcao = 'exportacao');
-            _emitChange();
-          },
-          isLeft: false,
+        Text(
+          _reposicaoFosforo == 'exportacao'
+              ? 'Exportação selecionada: reposição do P removido no grão.'
+              : 'Extração selecionada: necessidade total da planta.',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+          ),
         ),
       ],
     );
   }
 
-  Widget _toggleBtnP({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-    required bool isLeft,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.borderSoft,
-          borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(8) : Radius.zero,
-            right: isLeft ? Radius.zero : const Radius.circular(8),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecond,
-          ),
-        ),
-      ),
-    );
-  }
   // ══════════════════════════════════════════════════════════════════════════
   // BUILD
   // ══════════════════════════════════════════════════════════════════════════
@@ -502,10 +462,10 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     final referencia = _d.label;
     final camada = _camada == CamadaP.c0a20 ? '0–20 cm' : '20–40 cm';
     final nc = _ncAtual;
-    final modoCalculo = _modoLabelResumo(_modo);
-    final percentualP = _percentualUsoPSoloParaModo(_modo);
+    final modoCalculo = _modoLabelResumo();
+    final percentualP = _percentualUsoPSoloParaReposicao(_reposicaoFosforo);
     final percentualSolo =
-        _modo == ModoCalculo.manutencao && (percentualP - 100).abs() > 0.001
+        _reposicaoFosforo == 'extracao' && (percentualP - 100).abs() > 0.001
             ? '${_fmtNumber(percentualP)}% solo'
             : '';
 
@@ -603,37 +563,22 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
           _argilaSegmented(),
         ],
         const SizedBox(height: AppDimens.sm),
-        _lbl('Modo de cálculo'),
+        _lbl('Composição do cálculo'),
         const SizedBox(height: AppDimens.xs),
-        _drop<ModoCalculo>(
-          value: _modo,
-          items: ModoCalculo.values,
-          labelOf: (m) {
-            switch (m) {
-              case ModoCalculo.correcaoSolo:
-                return '⓪  Correção do solo';
-              case ModoCalculo.manutencao:
-                return 'Manutenção / Extração';
-              case ModoCalculo.exportacao:
-                return 'Exportação';
-            }
-          },
-          onChanged: (v) => setState(() {
-            _onModoChanged(v!);
-            _emitChange();
-          }),
-        ),
+        _buildComposicaoCalculo(),
         const SizedBox(height: AppDimens.sm),
         _cultivarRow(),
         _buildCampoPercentualPSolo(),
-        const SizedBox(height: AppDimens.sm),
-        _buildAbsorcaoSecaoP(),
+        if (_reposicaoFosforo != 'nenhuma') ...[
+          const SizedBox(height: AppDimens.sm),
+          _buildAbsorcaoSecaoP(),
+        ],
       ],
     );
   }
 
   Widget _buildCampoPercentualPSolo() {
-    final mostrarCampo = _modo == ModoCalculo.manutencao;
+    final mostrarCampo = _reposicaoFosforo == 'extracao';
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
@@ -670,31 +615,104 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
     );
   }
 
-  void _onModoChanged(ModoCalculo modo) {
-    _modo = modo;
-    if (modo == ModoCalculo.correcaoSolo) {
-      _pSoloCtrl.text = '100';
-    } else if (modo == ModoCalculo.exportacao) {
-      _pSoloCtrl.text = '0';
-    } else if (_pSoloCtrl.text.trim().isEmpty ||
-        _parseDoubleOrNull(_pSoloCtrl.text) == 0) {
-      _pSoloCtrl.text = '100';
-    }
+  Widget _buildComposicaoCalculo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.bgPrimary,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Correção do solo',
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Switch.adaptive(
+                value: _corrigirSolo,
+                activeThumbColor: AppColors.primary,
+                onChanged: (value) {
+                  setState(() => _corrigirSolo = value);
+                  _emitChange();
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        _lbl('Reposição da planta'),
+        const SizedBox(height: AppDimens.xs),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _reposicaoChip('nenhuma', 'Sem reposição'),
+            _reposicaoChip('exportacao', 'Exportação'),
+            _reposicaoChip('extracao', 'Extração'),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Exportação = P que sai no grão. Extração = necessidade total da planta.',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+          ),
+        ),
+      ],
+    );
   }
 
-  double _percentualUsoPSoloParaModo(ModoCalculo modo) {
-    switch (modo) {
-      case ModoCalculo.correcaoSolo:
-        return 100.0;
-      case ModoCalculo.exportacao:
-        return 0.0;
-      case ModoCalculo.manutencao:
-        return _parseDoubleOrNull(_pSoloCtrl.text) ?? 100.0;
-    }
+  Widget _reposicaoChip(String value, String label) {
+    final selected = _reposicaoFosforo == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _reposicaoFosforo = value;
+          if (value == 'extracao' &&
+              (_pSoloCtrl.text.trim().isEmpty ||
+                  _parseDoubleOrNull(_pSoloCtrl.text) == 0)) {
+            _pSoloCtrl.text = '100';
+          }
+        });
+        _emitChange();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.borderSoft,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecond,
+          ),
+        ),
+      ),
+    );
   }
 
-  double _defaultPercentualUsoPSolo(ModoCalculo modo) {
-    return modo == ModoCalculo.exportacao ? 0.0 : 100.0;
+  double _percentualUsoPSoloParaReposicao(String reposicao) {
+    if (reposicao == 'extracao') {
+      return _parseDoubleOrNull(_pSoloCtrl.text) ?? 100.0;
+    }
+    return 0.0;
+  }
+
+  double _defaultPercentualUsoPSolo(String reposicao) {
+    return reposicao == 'extracao' ? 100.0 : 0.0;
   }
 
   void _syncNcControllerFromMode(dynamic savedNc) {

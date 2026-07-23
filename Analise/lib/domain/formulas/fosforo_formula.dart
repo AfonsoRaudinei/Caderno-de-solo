@@ -11,6 +11,30 @@ class LegacyPResultado {
   final double doseMinima;
 }
 
+enum ReposicaoFosforo {
+  nenhuma,
+  exportacao,
+  extracao,
+}
+
+class FosforoComponentesResultado {
+  const FosforoComponentesResultado({
+    required this.doseTotal,
+    required this.doseCorrecao,
+    required this.doseExportacao,
+    required this.doseExtracao,
+    required this.pSoloCreditadoP2O5,
+    required this.modoResumo,
+  });
+
+  final double doseTotal;
+  final double doseCorrecao;
+  final double doseExportacao;
+  final double doseExtracao;
+  final double pSoloCreditadoP2O5;
+  final String modoResumo;
+}
+
 class FosforoFormula {
   static String classeTextural(double argilaPercent) {
     if (argilaPercent < 15) return 'arenoso';
@@ -20,7 +44,8 @@ class FosforoFormula {
   }
 
   /// NC para Resina (IAC): 12/20/30/40 mg/dm³.
-  static double nivelCriticoResina(double argilaPercent, {double? overrideValue}) {
+  static double nivelCriticoResina(double argilaPercent,
+      {double? overrideValue}) {
     if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
@@ -36,7 +61,8 @@ class FosforoFormula {
   }
 
   /// NC para Mehlich-1: 8/12/18/25 mg/dm³.
-  static double nivelCriticoMehlich1(double argilaPercent, {double? overrideValue}) {
+  static double nivelCriticoMehlich1(double argilaPercent,
+      {double? overrideValue}) {
     if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
@@ -114,15 +140,20 @@ class FosforoFormula {
   /// dose_final = dose_base / (FEP/100)
   static FosforoResult recomendacaoCorrecao(FosforoInput input) {
     final deficit = (input.nc - input.pAtual).clamp(0.0, double.infinity);
-    if (deficit <= 0) return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
+    if (deficit <= 0) {
+      return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
+    }
 
     final fator = fatorSolo(input.argila);
     final doseBase = deficit * fator * (100.0 / 100.0);
     final fepUsado = fepBase(input.argila);
-    if (fepUsado <= 0) return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
-    return FosforoResult(doseRecomendada: doseBase / (fepUsado / 100.0), formula: input.referencia);
+    if (fepUsado <= 0) {
+      return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
+    }
+    return FosforoResult(
+        doseRecomendada: doseBase / (fepUsado / 100.0),
+        formula: input.referencia);
   }
-
 
   /// Modo 2 (extração).
   static double recomendacaoExtracao({
@@ -138,6 +169,83 @@ class FosforoFormula {
     final doseBase = (extracaoP2O5 - pSoloKg).clamp(0.0, double.infinity);
     if (fepFinal <= 0) return 0.0;
     return doseBase / (fepFinal / 100.0);
+  }
+
+  static double pSoloDisponivelP2O5({
+    required double pSolo,
+    required double percentualUsoSolo,
+    required double profundidadeCm,
+  }) {
+    final usoSolo = percentualUsoSolo.clamp(0.0, 100.0);
+    final pSoloUsado = pSolo * (usoSolo / 100.0);
+    return pSoloUsado * 2.0 * (profundidadeCm / 20.0) * 2.291;
+  }
+
+  static double recomendacaoExportacao({
+    required double exportacaoP2O5,
+    required double fepFinal,
+  }) {
+    if (fepFinal <= 0) return 0.0;
+    return exportacaoP2O5 / (fepFinal / 100.0);
+  }
+
+  static FosforoComponentesResultado recomendacaoComponentes({
+    required bool corrigirSolo,
+    required ReposicaoFosforo reposicao,
+    required FosforoInput correcaoInput,
+    required double pSolo,
+    required double percentualUsoSoloExtracao,
+    required double profundidadeCm,
+    required double exportacaoP2O5,
+    required double extracaoP2O5,
+    required double fepFinal,
+  }) {
+    final doseCorrecao = corrigirSolo
+        ? recomendacaoCorrecao(correcaoInput).doseRecomendada
+        : 0.0;
+    final doseExportacao = reposicao == ReposicaoFosforo.exportacao
+        ? recomendacaoExportacao(
+            exportacaoP2O5: exportacaoP2O5,
+            fepFinal: fepFinal,
+          )
+        : 0.0;
+    final pSoloCreditado = reposicao == ReposicaoFosforo.extracao
+        ? pSoloDisponivelP2O5(
+            pSolo: pSolo,
+            percentualUsoSolo: percentualUsoSoloExtracao,
+            profundidadeCm: profundidadeCm,
+          )
+        : 0.0;
+    final doseExtracao = reposicao == ReposicaoFosforo.extracao
+        ? recomendacaoExtracao(
+            pSolo: pSolo,
+            percentualUsoSolo: percentualUsoSoloExtracao,
+            profundidadeCm: profundidadeCm,
+            extracaoP2O5: extracaoP2O5,
+            fepFinal: fepFinal,
+          )
+        : 0.0;
+
+    return FosforoComponentesResultado(
+      doseTotal: doseCorrecao + doseExportacao + doseExtracao,
+      doseCorrecao: doseCorrecao,
+      doseExportacao: doseExportacao,
+      doseExtracao: doseExtracao,
+      pSoloCreditadoP2O5: pSoloCreditado,
+      modoResumo: _modoResumo(corrigirSolo, reposicao),
+    );
+  }
+
+  static String _modoResumo(
+    bool corrigirSolo,
+    ReposicaoFosforo reposicao,
+  ) {
+    final partes = <String>[
+      if (corrigirSolo) 'Correção do solo',
+      if (reposicao == ReposicaoFosforo.exportacao) 'Exportação',
+      if (reposicao == ReposicaoFosforo.extracao) 'Extração',
+    ];
+    return partes.isEmpty ? 'Sem fósforo' : partes.join(' + ');
   }
 
   /// Regra Legacy P:
@@ -167,13 +275,11 @@ class FosforoFormula {
     double? fep,
   }) {
     final pAtual = fosforo.valorParaCalculo;
-    return recomendacaoCorrecao(
-      FosforoInput(
-        argila: argilaPercent,
-        pAtual: pAtual,
-        nc: pCritico,
-        referencia: 'Metodo Correcao',
-      )
-    );
+    return recomendacaoCorrecao(FosforoInput(
+      argila: argilaPercent,
+      pAtual: pAtual,
+      nc: pCritico,
+      referencia: 'Metodo Correcao',
+    ));
   }
 }

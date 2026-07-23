@@ -58,6 +58,7 @@ void main() {
     testWidgets('exibe critério NC quando usarNivelCritico = true',
         (tester) async {
       final data = mergeCard(corretivosBase(), {
+        'metodoCalagem': '⑤ Albrecht',
         'usarNivelCritico': true,
         'ncCa': 1.5,
         'ncMg': 0.7,
@@ -71,6 +72,7 @@ void main() {
 
     testWidgets('exibe Meta quando usarNivelCritico = false', (tester) async {
       final data = mergeCard(corretivosBase(), {
+        'metodoCalagem': '⑤ Albrecht',
         'usarNivelCritico': false,
         'caDesejadoPct': 65.0,
         'mgDesejadoPct': 15.0,
@@ -89,13 +91,40 @@ void main() {
     });
   });
 
-  group('CorretivosCard — Toggle % CTC vs Nível Crítico', () {
-    testWidgets('textos dos toggles presentes no expandido', (tester) async {
+  group('CorretivosCard — Método de calagem e metas', () {
+    testWidgets('saturação por bases usa V₂ e não exibe nível crítico',
+        (tester) async {
       await pumpCard(tester, corretivosCard());
+      await expandCard(tester, 'Corretivos');
+
+      expect(find.text('V₂ desejado (%)'), findsOneWidget);
+      expect(find.text('% da CTC'), findsNothing);
+      expect(find.text('Nível Crítico'), findsNothing);
+    });
+
+    testWidgets('Albrecht exibe alternância entre % CTC e nível crítico',
+        (tester) async {
+      final data = mergeCard(corretivosBase(), {
+        'metodoCalagem': '⑤ Albrecht',
+      });
+      await pumpCard(tester, corretivosCard(corretivos: data));
       await expandCard(tester, 'Corretivos');
 
       expect(find.text('% da CTC'), findsOneWidget);
       expect(find.text('Nível Crítico'), findsOneWidget);
+    });
+
+    testWidgets('saturação por bases desabilita 2º calcário', (tester) async {
+      final data = mergeCard(corretivosBase(), {
+        'metodoCalagem': '① Saturação por Bases (V%)',
+        'usarSegundoCalcario': true,
+      });
+      await pumpCard(tester, corretivosCard(corretivos: data));
+      await expandCard(tester, 'Corretivos');
+
+      expect(find.text('Usar 2º calcário?'), findsOneWidget);
+      expect(find.text('CaO 2º (%)'), findsNothing);
+      expect(find.text('MgO 2º (%)'), findsNothing);
     });
   });
 
@@ -103,6 +132,7 @@ void main() {
     testWidgets('texto V% aparece quando Ca/Mg/K estão preenchidos',
         (tester) async {
       final data = mergeCard(corretivosBase(), {
+        'metodoCalagem': '⑤ Albrecht',
         'usarNivelCritico': false,
         'caDesejadoPct': 65.0,
         'mgDesejadoPct': 15.0,
