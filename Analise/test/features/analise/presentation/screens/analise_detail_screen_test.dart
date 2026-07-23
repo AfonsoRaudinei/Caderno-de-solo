@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/presentation/screens/analise_detail_screen.dart';
-import 'package:soloforte/features/analise/presentation/widgets/analise_form_content.dart';
 
 import '../../../../support/analise_test_factories.dart';
 
@@ -20,7 +19,7 @@ class _FakeAnaliseNotifier extends AnaliseNotifier {
 }
 
 void main() {
-  testWidgets('icone de editar ativa formulario inline na mesma tela', (
+  testWidgets('icone de editar mantem detalhe e habilita edicao por linha', (
     tester,
   ) async {
     final analise = makeAnalise(
@@ -30,6 +29,7 @@ void main() {
       fazenda: 'MOEMA',
       produtor: 'ANDRE LUIZ DE SIQUEIRA',
       laboratorio: 'Exata Brasil',
+      k: 0.31,
     );
 
     await tester.pumpWidget(
@@ -46,15 +46,23 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(AnaliseFormContent), findsNothing);
     expect(find.text('IDENTIFICAÇÃO DO LAUDO'), findsNothing);
+    expect(find.byKey(const ValueKey('edit_row_k')), findsNothing);
 
     await tester.tap(find.byIcon(Icons.edit));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AnaliseFormContent), findsOneWidget);
-    expect(find.text('IDENTIFICAÇÃO DO LAUDO'), findsOneWidget);
+    expect(find.text('IDENTIFICAÇÃO DO LAUDO'), findsNothing);
     expect(find.byIcon(Icons.check), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byKey(const ValueKey('edit_row_k')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const ValueKey('edit_row_k')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('edit_row_k')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Potássio (cmolc/dm³)'), findsWidgets);
+    final input = tester.widget<TextField>(find.byType(TextField));
+    expect(input.controller?.text, '0.310');
   });
 }
