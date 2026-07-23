@@ -63,3 +63,13 @@ Este agente orienta o fluxo de release iOS do app `Analise/`, com foco em discip
   - Build: `1.0.1+170`
   - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
   - Observação: build gerado via `./build_ios.sh 170`; upload de PDFs validado para Exata Brasil, IBRA, Sellar, Solum e MB em testes direcionados; `release_gate` voltou a reportar violações de import cruzado em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart` e `lib/features/clientes/presentation/talhao_form_screen.dart`, mas a IPA foi concluída com sucesso
+
+- 2026-07-21: IPA 171 concluída com sucesso.
+  - Build: `1.0.1+171`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 171`; correção defensiva de sessão/permissão em Clientes validada com analyzer e testes direcionados; `release_gate` voltou a reportar violações de import cruzado em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart` e `lib/features/clientes/presentation/talhao_form_screen.dart`, mas a IPA foi concluída com sucesso
+
+- 2026-07-23: IPA 172 concluída com sucesso.
+  - Build: `1.0.1+172`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 172`; edição de nutrientes direto na tela de detalhe validada com teste direcionado e analyzer da feature; `Info.plist` embutido confirmou `CFBundleVersion=172`, `CFBundleShortVersionString=1.0.1` e bundle `com.soloforte.soloforte`; `release_gate` voltou a reportar violações de import cruzado em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart` e `lib/features/clientes/presentation/talhao_form_screen.dart`, mas a IPA foi concluída com sucesso
