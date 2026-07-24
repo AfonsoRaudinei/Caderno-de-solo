@@ -25,6 +25,15 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
+  /// Autoriza explicitamente qualquer envio remoto de telemetria operacional.
+  ///
+  /// Sem esta flag, a aplicação mantém trilha apenas local e não publica
+  /// eventos para fora do app, mesmo em profile/release.
+  static const bool allowRemoteAnaliseTelemetry = bool.fromEnvironment(
+    'ALLOW_REMOTE_ANALISE_TELEMETRY',
+    defaultValue: false,
+  );
+
   /// Permite envio remoto também em debug (diagnóstico controlado).
   static const bool enableAnaliseTelemetryInDebug = bool.fromEnvironment(
     'ENABLE_ANALISE_TELEMETRY_IN_DEBUG',

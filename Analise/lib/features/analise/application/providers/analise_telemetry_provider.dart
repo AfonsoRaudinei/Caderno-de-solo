@@ -3,15 +3,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/core/config/app_config.dart';
 import 'package:soloforte/features/analise/application/observability/analise_telemetry.dart';
 
+class AnaliseTelemetryPolicy {
+  final bool allowRemote;
+  final bool allowRemoteInDebug;
+  final String endpoint;
+  final String apiKey;
+
+  const AnaliseTelemetryPolicy({
+    required this.allowRemote,
+    required this.allowRemoteInDebug,
+    required this.endpoint,
+    required this.apiKey,
+  });
+
+  bool get hasEndpoint => endpoint.trim().isNotEmpty;
+}
+
+final analiseTelemetryPolicyProvider = Provider<AnaliseTelemetryPolicy>(
+  (ref) {
+    return const AnaliseTelemetryPolicy(
+      allowRemote: AppConfig.allowRemoteAnaliseTelemetry,
+      allowRemoteInDebug: AppConfig.enableAnaliseTelemetryInDebug,
+      endpoint: AppConfig.analiseTelemetryEndpoint,
+      apiKey: AppConfig.analiseTelemetryApiKey,
+    );
+  },
+);
+
 final analiseTelemetryProvider = Provider<AnaliseTelemetry>(
   (ref) {
     final sinks = <AnaliseTelemetrySink>[];
-    final allowRemote = AppConfig.isRelease ||
-        AppConfig.isProfile ||
-        AppConfig.enableAnaliseTelemetryInDebug;
+    final policy = ref.watch(analiseTelemetryPolicyProvider);
+    final allowRemote = policy.allowRemote &&
+        (AppConfig.isRelease ||
+            AppConfig.isProfile ||
+            policy.allowRemoteInDebug);
 
-    if (allowRemote && AppConfig.hasAnaliseTelemetryEndpoint) {
-      final endpoint = Uri.tryParse(AppConfig.analiseTelemetryEndpoint.trim());
+    if (allowRemote && policy.hasEndpoint) {
+      final endpoint = Uri.tryParse(policy.endpoint.trim());
       if (endpoint != null && endpoint.hasScheme && endpoint.hasAuthority) {
         sinks.add(
           HttpAnaliseTelemetrySink(
@@ -23,13 +52,13 @@ final analiseTelemetryProvider = Provider<AnaliseTelemetry>(
               ),
             ),
             endpoint: endpoint,
-            apiKey: AppConfig.analiseTelemetryApiKey,
+            apiKey: policy.apiKey,
           ),
         );
       }
     }
 
-    // Mantém trilha local visível em debug e fallback explícito quando remoto não está configurado.
+    // Sem autorização explícita, eventos não saem do app.
     if (!AppConfig.isRelease || sinks.isEmpty) {
       sinks.add(const DebugPrintAnaliseTelemetrySink());
     }
