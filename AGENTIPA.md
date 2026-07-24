@@ -73,3 +73,8 @@ Este agente orienta o fluxo de release iOS do app `Analise/`, com foco em discip
   - Build: `1.0.1+172`
   - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
   - Observação: build gerado via `./build_ios.sh 172`; edição de nutrientes direto na tela de detalhe validada com teste direcionado e analyzer da feature; `Info.plist` embutido confirmou `CFBundleVersion=172`, `CFBundleShortVersionString=1.0.1` e bundle `com.soloforte.soloforte`; `release_gate` voltou a reportar violações de import cruzado em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart` e `lib/features/clientes/presentation/talhao_form_screen.dart`, mas a IPA foi concluída com sucesso
+
+- 2026-07-24: IPA 173 concluída com sucesso.
+  - Build: `1.0.1+173`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 173`; hardening do upload de laboratórios validado com regressões direcionadas para Exata Brasil, IBRA, Sellar, MB, Solum e fixtures estáveis do texto nativo; `Info.plist` embutido confirmou `CFBundleVersion=173`, `CFBundleShortVersionString=1.0.1` e bundle `com.soloforte.soloforte`; `release_gate` reportou a violação arquitetural pré-existente em `lib/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart`, mas a exportação da IPA concluiu com sucesso
