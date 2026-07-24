@@ -405,5 +405,94 @@ TALHÃO 2
       expect(talhao2['b'], 0.58);
       expect(talhao2['cu_meh'], 1.80);
     });
+
+    test('mapeia layout compacto com profundidade vazia e textura', () {
+      const text = '''
+Relatório de Ensaio Nº20573.2024.V0.U
+Razão Social: EDUARDO JOSE BRUXEL DE SA
+Propriedade/Município/Proprietário: SERROTE - NOVA ROSALANDIA/TO - EDUARDO JOSE BRUXEL DE SÁ
+Resultados
+Ca
+pH K
+Amostra Descrição da Amostra Profundidade Talhão + Ca Mg Al H + Al K
+(CaCl2) (NH4Cl)
+Mg
+Un cmolc/dm³ mg/dm³
+SBA24.124624 TALHÃO 1 5,74 4,15 2,94 1,21 0,0 1,73 0,17 67,94
+Amostra Descrição da Amostra Profundidade Talhão P (rem) S M.O. C.O. B Cu (meh) Fe (meh)
+(meh)
+Un mg/dm³ g/dm³ mg/dm³
+SBA24.124624 TALHÃO 1 5,68 29,19 3,40 20,78 12,05 0,34 1,99 46,37
+Mn
+Amostra Descrição da Amostra Profundidade Talhão Zn (meh) Na Argila Silte Areia T V
+(meh)
+Un mg/dm³ g/dm³ cmolc/dm³ %
+SBA24.124624 TALHÃO 1 26,07 1,59 3,07 419,0 54,00 527,0 6,05 71,40
+Amostra Descrição da Amostra Profundidade Talhão m Ca/CTC Mg/CTC K/CTC H+Al/CTC Ca/Mg Ca/K Mg/K
+Un %
+SBA24.124624 TALHÃO 1 0,7 48,60 20,00 2,81 28,60 2,43 17,29 7,12
+Cu
+Amostra Descrição da Amostra Profundidade Talhão Fe (DTPA) Mn (DTPA) Zn (DTPA)
+(DTPA)
+Un mg/dm³
+SBA24.124624 TALHÃO 1 1,02 10,68 2,46 0,75
+''';
+
+      final parsed = const LabPdfParserService().parse(
+        labId: 'exata_brasil',
+        text: text,
+        sourceName: 'exata-compacto.pdf',
+      );
+
+      final amostras =
+          (parsed.laudo['amostras'] as List).cast<Map<String, dynamic>>();
+      expect(amostras, hasLength(1));
+      final sample = amostras.single;
+      expect(sample['numeroAmostra'], 'SBA24.124624');
+      expect(sample['talhao'], 'TALHÃO 1');
+      expect(sample['profundidade'], '0-20');
+      expect(sample['phCaCl2'], 5.74);
+      expect(sample['ca'], 2.94);
+      expect(sample['mg'], 1.21);
+      expect(sample['pMehlich'], 5.68);
+      expect(sample['carbonoOrganico'], 12.05);
+      expect(sample['argila'], 419.0);
+      expect(sample['silte'], 54.0);
+      expect(sample['areiaTotal'], 527.0);
+      expect(sample['ctc'], 6.05);
+      expect(sample['vPercent'], 71.40);
+      expect(sample['mPercent'], 0.7);
+      expect(sample['cu_dtpa'], 1.02);
+      expect(sample['zn_dtpa'], 0.75);
+      expect(parsed.warnings, isEmpty);
+    });
+
+    test(
+        'emite warning quando encontra amostra em bloco compacto nao reconhecido',
+        () {
+      const text = '''
+Relatório de Ensaio Nº20573.2024.V0.U
+Amostra Descrição da Amostra Profundidade Talhão + Ca Mg Al H + Al K
+SBA24.124623 TALHÃO 0 5,60 4,00 2,50 1,10 0,0 1,50 0,12 46,92
+Amostra Descrição da Amostra Profundidade Talhão Campo X Campo Y Campo Z
+SBA24.124624 TALHÃO 1 5,74 4,15 2,94 1,21
+''';
+
+      final parsed = const LabPdfParserService().parse(
+        labId: 'exata_brasil',
+        text: text,
+        sourceName: 'exata-compacto-warning.pdf',
+      );
+
+      final amostras =
+          (parsed.laudo['amostras'] as List).cast<Map<String, dynamic>>();
+      expect(amostras, hasLength(1));
+      expect(
+        parsed.warnings,
+        contains(
+          'exata_inline_bloco_perdido:SBA24.124624:amostra descrição da amostra profundidade talhão campo x campo y campo z',
+        ),
+      );
+    });
   });
 }

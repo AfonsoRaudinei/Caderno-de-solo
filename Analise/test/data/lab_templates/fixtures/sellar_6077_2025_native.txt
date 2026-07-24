@@ -1,0 +1,182 @@
+
+
+Solicitante:
+JOSÉ AUGUSTO MIRANDA
+JOSÉ AUGUSTO MIRANDA
+Proprietário:
+Propriedade:
+FAZ. SANTO ANTÔNIO
+Santa Rita do Tocantins - TO
+Município:
+Convênio:
+PARTICULAR
+Laudo Nº
+6077/2025
+Entrada:
+11/08/2025
+Gerado:
+13/08/2025
+Laudo de Análise Solo
+
+
+Cultura:
+Análise Granulométrica
+54215
+54216
+54217
+5,4
+5,5
+5,8
+13,8
+4,9
+7,8
+51
+33
+57
+1,7
+1,7
+1,1
+0,7
+0,7
+0,6
+0,00
+0,00
+0,00
+2,00
+1,80
+1,50
+1,0
+1,1
+1,0
+2,53
+2,48
+1,85
+4,53
+4,28
+3,35
+56
+58
+55
+0
+0
+0
+0,12
+0,6
+24
+1,2
+0,5
+2,4
+13,1
+5,4
+0,13
+0,6
+15
+1,2
+0,5
+2,4
+21,3
+8,8
+0,14
+0,6
+12
+1,2
+0,4
+1,8
+7,3
+4,0
+775
+50
+175
+650
+50
+300
+750
+50
+200
+Média
+Média
+Média
+Determinação
+Unidade
+pH Água
+pH CaCl2
+P meh
+P resina
+K
+Ca
+Mg
+Al
+H+Al
+M.O.
+SB
+CTCT
+V
+m
+B
+Cu
+Fe
+Mn
+Zn
+Ca/Mg
+Ca/K
+Mg/K
+-
+-
+mg.dm-3
+Areia Total
+Silte
+Argila
+Classificação
+cmolc.dm-3
+dag.kg-1
+mg.dm-3
+cmolc.dm-3
+g.kg-1
+1
+2
+1
+Tipo de Solo (MAPA)
+MANOEL 1
+MANOEL 2
+TRÊS
+Identificação da Amostra
+38
+40
+33
+Ca/T
+16
+16
+18
+Mg/T
+3
+2
+4
+K/T
+%
+Número Sellar
+K
+0,13
+0,08
+0,15
+ S-SO4-2
+6
+4
+6
+0,6
+0,6
+0,6
+C.O.
+P Total
+%
+2,53
+2,48
+1,85
+CTCt
+
+Página 1
+CREA/CRQ: 124003422
+Responsável Técnico
+Observações:-O laboratório não responsabiliza porinterpretações dos resultados das análises.-Este laudo não tem fins jurídicos.-Após 45 dias todas as amostras serãodescartadas.-Tipo de análise (MAPA) de acordo com ainstrução normativa nº2, de 9 de outubro de2008(*).
+Weberson Ribeiro
+Extratores:P, K : Mehlich 1;Cu, Fe, Mn e Zn: DTPA;Ca, Mg e Al: KCI 1M;S: Fosfato monobásico de Cálcio;B: Água quente;P(Res): Resina;
+Simbologia:CTCt = CTC efetivaC.O. = Carbono Orgânico totalV% = Sat. Basesm% = Sat. AlumínioConversão de unidades:mg.dm-3 = ppmdag.kg-1 = %

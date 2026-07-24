@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 
-const _minTotalPdfs = 20;
+const _minTotalPdfs = 25;
 const _minByLab = 5;
 const _globalSuccessTarget = 0.95;
 const _labSuccessTarget = 0.90;
@@ -14,6 +14,7 @@ const _supportedLabs = <String>{
   'exata_brasil',
   'ibra',
   'mb',
+  'solum',
 };
 
 const _requiredColumns = <String>{
@@ -391,7 +392,12 @@ double _essentialCoverage(
 }) {
   final requiredFields = switch (labId) {
     'ibra' => const {'phCaCl2', 'pResina', 'k', 'ca', 'mg'},
-    'sellar' || 'exata_brasil' || 'mb' => const {'phCaCl2', 'k', 'ca', 'mg'},
+    'sellar' || 'exata_brasil' || 'mb' || 'solum' => const {
+        'phCaCl2',
+        'k',
+        'ca',
+        'mg'
+      },
     _ => const {'phCaCl2', 'k'},
   };
 

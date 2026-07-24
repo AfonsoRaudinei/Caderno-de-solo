@@ -40,6 +40,10 @@ void main() {
       expect(amostras[0].mg!, closeTo(1.02, 0.001));
       expect(amostras[0].al!, closeTo(0.0, 0.001));
       expect(amostras[0].hMaisAl!, closeTo(1.9, 0.001));
+      expect(amostras[0].ctc!, closeTo(5.96, 0.001));
+      expect(amostras[0].sb!, closeTo(4.06, 0.001));
+      expect(amostras[0].vPercent!, closeTo(68.13, 0.001));
+      expect(amostras[0].mPercent!, closeTo(0.0, 0.001));
     });
 
     test('K convertido de mg/dm³ para cmolc/dm³ (÷ 391)', () {
