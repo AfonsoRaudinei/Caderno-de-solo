@@ -30,4 +30,24 @@ void main() {
       expect(analiseExibeVinculoPendente(analise), isFalse);
     });
   });
+
+  test('contarAnalisesComVinculoPendente soma apenas vínculos pendentes', () {
+    final analises = [
+      makeAnalise(id: 'a1', talhao: 'T1'),
+      makeAnalise(id: 'a2', talhao: 'T2').copyWith(
+        clienteId: 'c1',
+        fazendaId: 'f1',
+        talhaoId: 't2',
+        vinculoStatus: AnaliseVinculoStatus.inferido,
+      ),
+      makeAnalise(id: 'a3', talhao: 'T3').copyWith(
+        clienteId: 'c1',
+        fazendaId: 'f1',
+        talhaoId: 't3',
+        vinculoStatus: AnaliseVinculoStatus.pendente,
+      ),
+    ];
+
+    expect(contarAnalisesComVinculoPendente(analises), 2);
+  });
 }

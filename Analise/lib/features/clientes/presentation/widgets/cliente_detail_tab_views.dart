@@ -206,6 +206,9 @@ class ClienteDetailPropriedadesTab extends StatelessWidget {
                 fazenda: fazenda,
                 isExpanded: expandedFazendas.contains(fazenda.id),
                 onToggle: () => onToggleFazenda(fazenda.id),
+                onEditar: () => context.push(
+                  AppRoutes.fazendaEditarPath(cliente.id, fazenda.id),
+                ),
                 onAdicionarTalhao: () => onAdicionarTalhao(fazenda.id),
                 onTapTalhao: (talhao) => onTapTalhao(fazenda, talhao),
               ),

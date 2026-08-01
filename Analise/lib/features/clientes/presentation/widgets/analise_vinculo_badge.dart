@@ -8,6 +8,10 @@ bool analiseExibeVinculoPendente(AnaliseSolo analise) {
       analise.vinculoStatus == AnaliseVinculoStatus.pendente;
 }
 
+int contarAnalisesComVinculoPendente(List<AnaliseSolo> analises) {
+  return analises.where(analiseExibeVinculoPendente).length;
+}
+
 class AnaliseVinculoBadge extends StatelessWidget {
   const AnaliseVinculoBadge({super.key});
 

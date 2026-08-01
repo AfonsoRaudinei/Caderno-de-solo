@@ -11,6 +11,7 @@ import 'package:soloforte/features/clientes/application/providers/cliente_provid
 import 'package:soloforte/features/clientes/domain/entities/fazenda_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
 import 'package:soloforte/features/clientes/presentation/cliente_detail_tab.dart';
+import 'package:soloforte/features/clientes/presentation/widgets/analise_vinculo_badge.dart';
 import 'package:soloforte/features/clientes/presentation/widgets/cliente_detail_tab_views.dart';
 import 'package:soloforte/features/historico/application/providers/historico_provider.dart';
 
@@ -55,6 +56,15 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant ClienteDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTab != widget.initialTab &&
+        _tabController.index != widget.initialTab.tabIndex) {
+      _tabController.animateTo(widget.initialTab.tabIndex);
+    }
+  }
+
   String _displayName(String nome) {
     final normalized = nome.trim();
     return normalized.isEmpty ? 'Cliente sem nome' : normalized;
@@ -65,6 +75,7 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
     final state = ref.watch(clienteProvider);
     final cliente = state.clienteSelecionado;
     final analises = ref.watch(analisesPorClienteProvider(widget.clienteId));
+    final pendentesCount = contarAnalisesComVinculoPendente(analises);
     final recomendacoesCount = ref
         .watch(recomendacoesPorClienteProvider(widget.clienteId))
         .maybeWhen(data: (items) => items.length, orElse: () => 0);
@@ -83,12 +94,26 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
                 controller: _tabController,
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
-                tabs: const [
-                  Tab(text: 'Resumo'),
-                  Tab(text: 'Propriedades'),
-                  Tab(text: 'Talhões'),
-                  Tab(text: 'Análises'),
-                  Tab(text: 'Recomendações'),
+                onTap: (index) => _navegarParaTab(
+                  ClienteDetailTab.values[index],
+                ),
+                tabs: [
+                  const Tab(text: 'Resumo'),
+                  const Tab(text: 'Propriedades'),
+                  const Tab(text: 'Talhões'),
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Análises'),
+                        if (pendentesCount > 0) ...[
+                          const SizedBox(width: 8),
+                          _PendingTabBadge(count: pendentesCount),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const Tab(text: 'Recomendações'),
                 ],
               ),
       ),
@@ -182,6 +207,16 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
     }
   }
 
+  void _navegarParaTab(ClienteDetailTab tab) {
+    final path = AppRoutes.clienteDetalheComAbaPath(
+      widget.clienteId,
+      tab: tab.name,
+    );
+    final currentLocation = GoRouterState.of(context).uri.toString();
+    if (currentLocation == path) return;
+    context.go(path);
+  }
+
   Future<void> _abrirNovoTalhao(String fazendaId) async {
     final changed = await context.push<bool>(
       AppRoutes.talhaoNovoPath(widget.clienteId, fazendaId),
@@ -270,6 +305,31 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PendingTabBadge extends StatelessWidget {
+  const _PendingTabBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+          color: AppColors.warning,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

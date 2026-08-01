@@ -14,6 +14,7 @@ class FazendaSectionWidget extends StatelessWidget {
     required this.fazenda,
     required this.isExpanded,
     required this.onToggle,
+    required this.onEditar,
     required this.onTapTalhao,
     required this.onAdicionarTalhao,
   });
@@ -21,6 +22,7 @@ class FazendaSectionWidget extends StatelessWidget {
   final FazendaEntity fazenda;
   final bool isExpanded;
   final VoidCallback onToggle;
+  final VoidCallback onEditar;
   final ValueChanged<TalhaoEntity> onTapTalhao;
   final VoidCallback onAdicionarTalhao;
 
@@ -75,6 +77,14 @@ class FazendaSectionWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Editar propriedade',
+                  onPressed: onEditar,
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    color: palette.textSecondary,
+                  ),
+                ),
                 AnimatedRotation(
                   turns: isExpanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 200),
