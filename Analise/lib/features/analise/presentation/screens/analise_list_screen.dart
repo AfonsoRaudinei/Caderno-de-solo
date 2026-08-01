@@ -10,7 +10,7 @@ import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/flows/importar_analise_pdf_flow.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/utils/analise_card_labels.dart';
+import 'package:soloforte/features/analise/domain/utils/analise_card_labels.dart';
 
 class AnaliseListScreen extends ConsumerStatefulWidget {
   const AnaliseListScreen({super.key});

@@ -9,7 +9,7 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/domain/usecases/calcular_calagem_calculos_usecase.dart';
-import 'package:soloforte/features/config/presentation/calculos/calculos_provider.dart';
+import 'package:soloforte/features/config/application/providers/calculos_provider.dart';
 import 'package:soloforte/features/config/presentation/calculos/widgets/tabela_analises_widget.dart';
 
 class CalculosPage extends ConsumerStatefulWidget {

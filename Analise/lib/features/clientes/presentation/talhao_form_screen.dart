@@ -7,7 +7,7 @@ import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
-import 'package:soloforte/features/analise/presentation/providers/location_provider.dart';
+import 'package:soloforte/features/analise/application/providers/location_provider.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
 

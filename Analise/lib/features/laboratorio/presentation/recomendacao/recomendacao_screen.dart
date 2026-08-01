@@ -12,7 +12,7 @@ import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
-import 'package:soloforte/features/config/presentation/calculos/calculos_provider.dart';
+import 'package:soloforte/features/config/application/providers/calculos_provider.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 

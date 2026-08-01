@@ -17,7 +17,7 @@ import 'package:soloforte/features/clientes/presentation/widgets/fazenda_section
 import 'package:soloforte/features/clientes/presentation/widgets/qr_token_widget.dart';
 import 'package:soloforte/features/clientes/presentation/widgets/talhao_row_widget.dart';
 import 'package:soloforte/features/historico/application/providers/historico_provider.dart';
-import 'package:soloforte/features/historico/presentation/historico_card_widget.dart';
+import 'package:soloforte/core/widgets/recomendacao_summary_card.dart';
 
 class ClienteDetailResumoTab extends StatelessWidget {
   const ClienteDetailResumoTab({
@@ -308,8 +308,7 @@ class _ClienteDetailAnalisesTabState
   @override
   Widget build(BuildContext context) {
     final palette = context.appPalette;
-    final analises =
-        ref.watch(analisesPorClienteProvider(widget.clienteId));
+    final analises = ref.watch(analisesPorClienteProvider(widget.clienteId));
 
     if (!_reparoVinculoExecutado) {
       _reparoVinculoExecutado = true;
@@ -395,7 +394,7 @@ class ClienteDetailRecomendacoesTab extends ConsumerWidget {
           itemCount: recomendacoes.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
-            return HistoricoCardWidget(recomendacao: recomendacoes[index]);
+            return RecomendacaoSummaryCard(recomendacao: recomendacoes[index]);
           },
         );
       },
@@ -424,7 +423,8 @@ class _ResumoStatsGrid extends StatelessWidget {
       showBorder: true,
       child: Row(
         children: [
-          _StatCell(label: 'Propriedades', value: propriedades, palette: palette),
+          _StatCell(
+              label: 'Propriedades', value: propriedades, palette: palette),
           _StatCell(label: 'Talhões', value: talhoes, palette: palette),
           _StatCell(label: 'Análises', value: analises, palette: palette),
           _StatCell(

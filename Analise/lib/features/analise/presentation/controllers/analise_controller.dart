@@ -1,6 +1,6 @@
 import 'package:soloforte/domain/models/location_data_model.dart';
 import 'package:soloforte/domain/services/location_service.dart';
-import 'package:soloforte/features/analise/presentation/providers/location_provider.dart';
+import 'package:soloforte/features/analise/application/providers/location_provider.dart';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

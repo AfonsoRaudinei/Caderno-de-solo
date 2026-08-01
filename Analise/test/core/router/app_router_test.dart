@@ -39,16 +39,19 @@ Set<String> _collectPaths(Iterable<RouteBase> routes) {
   return paths;
 }
 
-GoRoute? _findGoRouteByPath(Iterable<RouteBase> routes, String path) {
+GoRoute? _findGoRouteByPathWithRedirect(
+  Iterable<RouteBase> routes,
+  String path,
+) {
   for (final route in routes) {
     if (route is GoRoute) {
-      if (route.path == path) return route;
-      final nested = _findGoRouteByPath(route.routes, path);
+      if (route.path == path && route.redirect != null) return route;
+      final nested = _findGoRouteByPathWithRedirect(route.routes, path);
       if (nested != null) return nested;
     }
     if (route is StatefulShellRoute) {
       for (final branch in route.branches) {
-        final nested = _findGoRouteByPath(branch.routes, path);
+        final nested = _findGoRouteByPathWithRedirect(branch.routes, path);
         if (nested != null) return nested;
       }
     }
@@ -263,7 +266,7 @@ void main() {
     addTearDown(router.dispose);
 
     final editarRoute =
-        _findGoRouteByPath(router.configuration.routes, 'editar');
+        _findGoRouteByPathWithRedirect(router.configuration.routes, 'editar');
     expect(editarRoute, isNotNull);
     expect(editarRoute!.redirect, isNotNull);
   });

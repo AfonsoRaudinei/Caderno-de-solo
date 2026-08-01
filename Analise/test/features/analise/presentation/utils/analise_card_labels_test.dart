@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:soloforte/features/analise/presentation/utils/analise_card_labels.dart';
+import 'package:soloforte/features/analise/domain/utils/analise_card_labels.dart';
 
 import '../../../../support/analise_test_factories.dart';
 
