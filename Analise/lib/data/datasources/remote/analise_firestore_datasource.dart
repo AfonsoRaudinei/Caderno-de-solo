@@ -90,24 +90,34 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
     late final StreamController<List<AnaliseSoloModel>> controller;
     StreamSubscription<User?>? authSub;
     StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? querySub;
+    var bindSeq = 0;
 
     Future<void> bindUser(User? user) async {
+      final seq = ++bindSeq;
       await querySub?.cancel();
       querySub = null;
 
+      if (seq != bindSeq) return;
+
       if (user == null || user.uid != userId) {
-        if (!controller.isClosed) controller.add(const <AnaliseSoloModel>[]);
+        if (!controller.isClosed) {
+          controller.add(const <AnaliseSoloModel>[]);
+        }
         return;
       }
+
+      if (seq != bindSeq) return;
 
       querySub = _collection
           .where('userId', isEqualTo: userId)
           .snapshots()
           .listen((snapshot) {
-        if (!controller.isClosed) {
-          controller.add(_toCommittedAnalises(snapshot.docs));
-        }
-      }, onError: controller.addError);
+        if (seq != bindSeq || controller.isClosed) return;
+        controller.add(_toCommittedAnalises(snapshot.docs));
+      }, onError: (Object error) {
+        if (seq != bindSeq || controller.isClosed) return;
+        controller.addError(error);
+      });
     }
 
     controller = StreamController<List<AnaliseSoloModel>>(

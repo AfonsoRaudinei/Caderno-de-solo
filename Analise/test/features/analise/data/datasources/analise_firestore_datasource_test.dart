@@ -64,7 +64,7 @@ void main() {
 
     test('salva 1 analise com sucesso usando strategy atomic', () async {
       final res = await datasource.saveAnalisesBatch([analiseMock]);
-      
+
       expect(res.status, SaveBatchStatus.committed);
       expect(res.strategy, SaveStrategy.atomic);
       expect(res.savedCount, 1);
@@ -75,8 +75,11 @@ void main() {
       expect(data['userId'], mockAuth.currentUser?.uid);
       expect(data['talhao'], 'T01');
       expect(data['persistStatus'], SaveBatchStatus.committed.name);
-      
-      final batchSnap = await fakeFirestore.collection('analise_save_batches').doc('${mockAuth.currentUser?.uid}:${res.idempotencyKey}').get();
+
+      final batchSnap = await fakeFirestore
+          .collection('analise_save_batches')
+          .doc('${mockAuth.currentUser?.uid}:${res.idempotencyKey}')
+          .get();
       expect(batchSnap.exists, isTrue);
       expect(batchSnap.data()?['status'], SaveBatchStatus.committed.name);
     });
@@ -89,23 +92,28 @@ void main() {
       );
 
       final res = await datasource.saveAnalisesBatch([analiseMock]);
-      
+
       expect(res.status, SaveBatchStatus.committed);
       expect(res.strategy, SaveStrategy.compensating);
       expect(res.savedCount, 1);
 
       final snapshot = await fakeFirestore.collection('analises').get();
       expect(snapshot.docs.length, 1);
-      expect(snapshot.docs.first.data()['persistStatus'], SaveBatchStatus.committed.name);
+      expect(snapshot.docs.first.data()['persistStatus'],
+          SaveBatchStatus.committed.name);
     });
 
-    test('recoverPendingBatches compensa batches presos em persisting', () async {
+    test('recoverPendingBatches compensa batches presos em persisting',
+        () async {
       final uid = mockAuth.currentUser!.uid;
       const idempotencyKey = 'key-preso';
       const batchId = 'batch-preso';
 
       // Criar mock preso
-      await fakeFirestore.collection('analise_save_batches').doc('$uid:$idempotencyKey').set({
+      await fakeFirestore
+          .collection('analise_save_batches')
+          .doc('$uid:$idempotencyKey')
+          .set({
         'batchId': batchId,
         'userId': uid,
         'status': SaveBatchStatus.persisting.name,
@@ -120,13 +128,20 @@ void main() {
 
       // Simular delay antigo para mock updatedAt
       final now = DateTime.now();
-      await fakeFirestore.collection('analise_save_batches').doc('$uid:$idempotencyKey').update({
-        'updatedAt': Timestamp.fromDate(now.subtract(const Duration(minutes: 15))),
+      await fakeFirestore
+          .collection('analise_save_batches')
+          .doc('$uid:$idempotencyKey')
+          .update({
+        'updatedAt':
+            Timestamp.fromDate(now.subtract(const Duration(minutes: 15))),
       });
 
       await datasource.recoverPendingBatches();
 
-      final batchSnap = await fakeFirestore.collection('analise_save_batches').doc('$uid:$idempotencyKey').get();
+      final batchSnap = await fakeFirestore
+          .collection('analise_save_batches')
+          .doc('$uid:$idempotencyKey')
+          .get();
       expect(batchSnap.data()?['status'], SaveBatchStatus.compensated.name);
 
       final snap = await fakeFirestore.collection('analises').doc('A02').get();
@@ -135,7 +150,8 @@ void main() {
   });
 
   group('AnaliseFirestoreDatasource - watchAnalises', () {
-    test('reativa stream quando auth muda de null para usuário logado', () async {
+    test('reativa stream quando auth muda de null para usuário logado',
+        () async {
       final auth = _MockAuth();
       final user = _MockUser();
       final authController = StreamController<User?>.broadcast();
@@ -210,6 +226,47 @@ void main() {
       authController.add(null);
       await Future<void>.delayed(const Duration(milliseconds: 25));
       expect(values.last, isEmpty);
+
+      await sub.cancel();
+      await authController.close();
+    });
+
+    test('ignora eventos auth obsoletos quando chegam fora de ordem', () async {
+      final auth = _MockAuth();
+      final user = _MockUser();
+      final authController = StreamController<User?>.broadcast();
+      User? currentUser;
+
+      when(() => user.uid).thenReturn('uid-watch-race');
+      when(() => auth.currentUser).thenAnswer((_) => currentUser);
+      when(() => auth.authStateChanges())
+          .thenAnswer((_) => authController.stream);
+
+      final firestore = FakeFirebaseFirestore();
+      final data = analiseMock.toJson()
+        ..['userId'] = 'uid-watch-race'
+        ..['persistStatus'] = SaveBatchStatus.committed.name;
+      await firestore.collection('analises').doc('watch-race').set(data);
+
+      final ds = AnaliseFirestoreDatasource(
+        firestore: firestore,
+        auth: auth,
+      );
+
+      final values = <List<AnaliseSoloModel>>[];
+      final sub = ds.watchAnalises(userId: 'uid-watch-race').listen(values.add);
+
+      currentUser = user;
+      authController.add(user);
+      currentUser = null;
+      authController.add(null);
+      currentUser = user;
+      authController.add(user);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(values.last.length, 1);
+      expect(values.last.first.talhao, analiseMock.talhao);
 
       await sub.cancel();
       await authController.close();

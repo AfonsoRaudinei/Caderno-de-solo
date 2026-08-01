@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/config/app_config.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
@@ -84,6 +85,20 @@ String? resolveAppRedirect({
         : AppRoutes.login;
   }
 
+  return null;
+}
+
+@visibleForTesting
+String? resolveCalculosRedirect({
+  required String calculosAccessPassword,
+  required Object? navigationExtra,
+}) {
+  if (calculosAccessPassword.isEmpty) {
+    return AppRoutes.config;
+  }
+  if (navigationExtra != true) {
+    return AppRoutes.config;
+  }
   return null;
 }
 
@@ -279,12 +294,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: ':id',
-                    builder: (context, state) => ClienteDetailScreen(
-                      clienteId: state.pathParameters['id']!,
-                      initialTab: ClienteDetailTab.fromQuery(
-                        state.uri.queryParameters[AppRoutes.clienteTabQuery],
-                      ),
-                    ),
+                    builder: (context, state) {
+                      final clienteId = state.pathParameters['id']!;
+                      return ClienteDetailScreen(
+                        key: ValueKey('cliente-detail-$clienteId'),
+                        clienteId: clienteId,
+                        initialTab: ClienteDetailTab.fromQuery(
+                          state.uri.queryParameters[AppRoutes.clienteTabQuery],
+                        ),
+                      );
+                    },
                     routes: [
                       GoRoute(
                         path: 'editar',
@@ -294,10 +313,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'analises',
-                        builder: (context, state) => ClienteDetailScreen(
-                          clienteId: state.pathParameters['id']!,
-                          initialTab: ClienteDetailTab.analises,
-                        ),
+                        builder: (context, state) {
+                          final clienteId = state.pathParameters['id']!;
+                          return ClienteDetailScreen(
+                            key: ValueKey('cliente-detail-$clienteId-analises'),
+                            clienteId: clienteId,
+                            initialTab: ClienteDetailTab.analises,
+                          );
+                        },
                       ),
                       GoRoute(
                         path: 'fazenda/nova',
@@ -454,6 +477,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'calculos',
+                    redirect: (context, state) => resolveCalculosRedirect(
+                      calculosAccessPassword: AppConfig.calculosAccessPassword,
+                      navigationExtra: state.extra,
+                    ),
                     builder: (context, state) => const CalculosPage(),
                   ),
                   GoRoute(

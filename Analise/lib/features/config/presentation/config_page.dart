@@ -1098,7 +1098,7 @@ class _CalculosAccessVersionState extends State<_CalculosAccessVersion> {
 
     const expected = AppConfig.calculosAccessPassword;
     if (expected.isNotEmpty && senha == expected) {
-      context.go(AppRoutes.calculos);
+      context.go(AppRoutes.calculos, extra: true);
       return;
     }
 

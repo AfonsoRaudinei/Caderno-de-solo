@@ -172,6 +172,38 @@ void main() {
     expect(redirect, AppRoutes.login);
   });
 
+  group('resolveCalculosRedirect', () {
+    test('bloqueia quando senha não está configurada', () {
+      expect(
+        resolveCalculosRedirect(
+          calculosAccessPassword: '',
+          navigationExtra: true,
+        ),
+        AppRoutes.config,
+      );
+    });
+
+    test('bloqueia navegação direta sem desbloqueio', () {
+      expect(
+        resolveCalculosRedirect(
+          calculosAccessPassword: 'secret',
+          navigationExtra: null,
+        ),
+        AppRoutes.config,
+      );
+    });
+
+    test('permite acesso após desbloqueio via extra', () {
+      expect(
+        resolveCalculosRedirect(
+          calculosAccessPassword: 'secret',
+          navigationExtra: true,
+        ),
+        isNull,
+      );
+    });
+  });
+
   test('router provider registra rotas críticas do sistema', () {
     when(() => auth.currentUser).thenReturn(null);
 
