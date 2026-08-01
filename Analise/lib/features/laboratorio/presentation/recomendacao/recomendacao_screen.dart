@@ -1,20 +1,34 @@
-import 'package:flutter/cupertino.dart';
+import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
-import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
+import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
-import 'package:soloforte/core/widgets/app_input.dart';
-import 'package:soloforte/core/widgets/app_visual_components.dart';
-import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/features/config/application/providers/config_providers.dart';
+import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
+import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
-import 'package:soloforte/features/config/application/providers/calculos_provider.dart';
+import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/calcario_gesso_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/fosforo_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/graficos_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/micros_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/potassio_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/avisos_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/qualidade_solo_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_header_footer.dart';
+import 'package:uuid/uuid.dart';
 
 bool analiseMatchesProdutorBusca(AnaliseSolo analise, String busca) {
   final query = busca.trim();
@@ -30,7 +44,6 @@ bool analiseMatchesProdutorBusca(AnaliseSolo analise, String busca) {
 
 class RecomendacaoScreen extends ConsumerStatefulWidget {
   final String? analiseId;
-
   const RecomendacaoScreen({super.key, this.analiseId});
 
   @override
@@ -38,9 +51,13 @@ class RecomendacaoScreen extends ConsumerStatefulWidget {
 }
 
 class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
+  final _uuid = const Uuid();
   final _buscaProdutorController = TextEditingController();
   List<String> _analiseIdsSelecionados = [];
   String? _calibracaoIdSelecionada;
+  bool _salvando = false;
+  bool _exportando = false;
+  String _buscaProdutor = '';
 
   @override
   void initState() {
@@ -48,12 +65,6 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     if (widget.analiseId != null && widget.analiseId!.isNotEmpty) {
       _analiseIdsSelecionados = [widget.analiseId!];
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(calculosSelectedAnaliseIdsProvider.notifier).state =
-          List<String>.from(_analiseIdsSelecionados);
-      ref.read(calculosSelectedCalibracaoIdProvider.notifier).state =
-          _calibracaoIdSelecionada;
-    });
   }
 
   @override
@@ -62,227 +73,474 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     super.dispose();
   }
 
-  bool _isProfundidade0a20(AnaliseSolo analise) {
-    final profundidade =
-        analise.profundidade.replaceAll('–', '-').replaceAll(' ', '').trim();
-    return profundidade.isEmpty || profundidade == '0-20';
-  }
+  bool _analiseMatchesBusca(AnaliseSolo analise) =>
+      analiseMatchesProdutorBusca(analise, _buscaProdutor);
 
   @override
   Widget build(BuildContext context) {
     final calibracaoState = ref.watch(calibracaoControllerProvider);
+    final analisesAsync = ref.watch(analiseNotifierProvider);
     final analisesVisiveis = ref.watch(analisesVisiveisProvider);
-    final buscaProdutor = ref.watch(recomendacaoSearchQueryProvider);
     final perfis = calibracaoState.profiles;
 
-    final analisesRaw = analisesVisiveis.where(_isProfundidade0a20).toList(
-          growable: false,
-        );
-    final analisesFiltradas = analisesRaw
-        .where((analise) => analiseMatchesProdutorBusca(analise, buscaProdutor))
-        .toList(growable: false);
+    final analisesRaw = analisesVisiveis;
+    final analisesFiltradas =
+        analisesRaw.where(_analiseMatchesBusca).toList(growable: false);
     final opcoesAnalise = analisesFiltradas.map(_toAnaliseOption).toList();
-    final podeGerar =
-        _analiseIdsSelecionados.isNotEmpty && _calibracaoIdSelecionada != null;
+    final n = _analiseIdsSelecionados.length;
+    final labelBotao =
+        n > 1 ? '✦ Gerar Média de $n Amostras' : '✦ Gerar Recomendação';
     final request = RecomendacaoRequest(
       analiseIds: _analiseIdsSelecionados,
       calibracaoId: _calibracaoIdSelecionada,
     );
+    final result = ref.watch(recomendacaoProvider(request));
+    final resultado = result.recomendacao;
 
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgPrimary,
+        backgroundColor: AppColors.bgSecondary,
         elevation: 0,
-        centerTitle: true,
-        leading: context.canPop()
-            ? IconButton(
-                icon: const Icon(
-                  CupertinoIcons.chevron_back,
-                  color: AppColors.primary,
-                ),
-                onPressed: () => context.pop(),
-              )
-            : null,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
+            context.go(AppRoutes.lab);
+          },
+        ),
         title: Text(
           'Recomendação',
-          style: AppTextStyles.headline.copyWith(
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.headline.copyWith(color: AppColors.primary),
         ),
+        centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-              const _RecomendacaoHeaderCard(),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(left: 16, top: 24, bottom: 8),
-                child: Text(
-                  'SELEÇÃO',
-                  style: AppTextStyles.sectionLabel,
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: AppDimens.screenPadding,
-                ),
-                padding: const EdgeInsets.all(AppDimens.screenPadding),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-                  border: Border.all(color: AppColors.border, width: 0.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+        children: [
+          AppCardSection(
+            title: 'Seleção',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  key: const Key('filtro_produtor_recomendacao'),
+                  controller: _buscaProdutorController,
+                  onChanged: (value) {
+                    setState(() => _buscaProdutor = value.trim());
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Buscar produtor/cliente...',
+                    hintStyle: AppTextStyles.body.copyWith(
+                      color: AppColors.textTertiary,
                     ),
-                  ],
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: AppColors.textSecond,
+                      size: 20,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.bgPrimary,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.primary),
+                    ),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppInput(
-                      controller: _buscaProdutorController,
-                      hint: 'Buscar produtor...',
-                      prefixIcon: const Icon(
-                        Icons.search,
-                        color: AppColors.textSecond,
-                        size: 20,
-                      ),
-                      textInputAction: TextInputAction.search,
-                      textCapitalization: TextCapitalization.words,
-                      onChanged: (value) {
-                        ref
-                            .read(recomendacaoSearchQueryProvider.notifier)
-                            .state = value;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _AmostrasDropdown(
-                      analises: opcoesAnalise,
-                      selecionados: _analiseIdsSelecionados,
-                      onChanged: (ids) {
-                        setState(() {
-                          _analiseIdsSelecionados = ids;
-                        });
-                        ref
-                            .read(calculosSelectedAnaliseIdsProvider.notifier)
-                            .state = List<String>.from(ids);
-                        ref
-                            .read(calculosSelectedCalibracaoIdProvider.notifier)
-                            .state = _calibracaoIdSelecionada;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    AppDropdown<String>(
-                      label: 'Selecionar Calibração',
-                      hint: calibracaoState.loading
-                          ? 'Carregando calibrações...'
-                          : 'Selecione',
-                      value: _calibracaoIdSelecionada,
-                      items: perfis
-                          .map(
-                            (perfil) => AppDropdownItem<String>(
-                              value: perfil.id,
-                              label: perfil.nome.isEmpty
-                                  ? 'Sem nome'
-                                  : perfil.nome,
-                            ),
-                          )
-                          .toList(),
-                      onChanged: perfis.isEmpty
+                const SizedBox(height: 10),
+                _SeletorAmostras(
+                  analises: opcoesAnalise,
+                  selecionados: _analiseIdsSelecionados,
+                  onChanged: (ids) {
+                    setState(() {
+                      _analiseIdsSelecionados = ids;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                AppDropdown<String>(
+                  label: 'Selecionar Calibração',
+                  hint: calibracaoState.loading
+                      ? 'Carregando calibrações...'
+                      : 'Selecione',
+                  value: _calibracaoIdSelecionada,
+                  items: perfis
+                      .map(
+                        (perfil) => AppDropdownItem<String>(
+                          value: perfil.id,
+                          label: perfil.nome.isEmpty ? 'Sem nome' : perfil.nome,
+                        ),
+                      )
+                      .toList(),
+                  onChanged: perfis.isEmpty
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _calibracaoIdSelecionada = value;
+                          });
+                          ref
+                              .read(
+                                calibracaoUsadaNaRecomendacaoProvider.notifier,
+                              )
+                              .state = value;
+                        },
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  key: const Key('btn_gerar_recomendacao'),
+                  label: labelBotao,
+                  icon: Icons.auto_awesome_rounded,
+                  onPressed: (_analiseIdsSelecionados.isEmpty ||
+                          _calibracaoIdSelecionada == null)
+                      ? null
+                      : () {
+                          ref.invalidate(recomendacaoProvider(request));
+                        },
+                ),
+                if (analisesAsync.hasError) ...[
+                  const SizedBox(height: 10),
+                  const _Badge(
+                    icon: Icons.error_outline,
+                    color: AppColors.error,
+                    label: 'Não foi possível carregar análises salvas.',
+                  ),
+                ],
+                if (perfis.isEmpty && !calibracaoState.loading) ...[
+                  const SizedBox(height: 10),
+                  const _Badge(
+                    icon: Icons.info_outline,
+                    color: AppColors.warning,
+                    label:
+                        'Nenhuma calibração salva. Cadastre na aba Calibração.',
+                  ),
+                ],
+                if (opcoesAnalise.isEmpty &&
+                    !analisesAsync.isLoading &&
+                    !analisesAsync.hasError &&
+                    analisesRaw.isNotEmpty &&
+                    _buscaProdutor.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const _Badge(
+                    icon: Icons.search_off_outlined,
+                    color: AppColors.warning,
+                    label:
+                        'Nenhuma amostra encontrada para o produtor informado.',
+                  ),
+                ],
+                if (opcoesAnalise.isEmpty &&
+                    !analisesAsync.isLoading &&
+                    !analisesAsync.hasError &&
+                    analisesRaw.isEmpty) ...[
+                  const SizedBox(height: 10),
+                  const _Badge(
+                    icon: Icons.info_outline,
+                    color: AppColors.warning,
+                    label: 'Nenhuma análise salva. Cadastre em Análise.',
+                  ),
+                ],
+                if (!result.diagnostico.valido) ...[
+                  const SizedBox(height: 10),
+                  _Badge(
+                    icon: Icons.warning_amber_rounded,
+                    color: AppColors.warning,
+                    label: result.diagnostico.erros.join(' | '),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (resultado != null) ...[
+            const SizedBox(height: 14),
+            const RecomendacaoHeader(),
+            const SizedBox(height: 12),
+
+            // BLOCO 1 — Identificação
+            RecomendacaoIdentificacaoSection(resultado: resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 2 — Qualidade do Solo
+            RecomendacaoQualidadeSoloSection(resultado: resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 3 — Correções
+            RecomendacaoCalcarioGessoSection(resultado: resultado),
+            const SizedBox(height: 12),
+            RecomendacaoBasesDashboard(resultado: resultado),
+            const SizedBox(height: 12),
+            RecomendacaoGraficosSection(resultado: resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 4 — Nutrientes
+            RecomendacaoFosforoSection(resultado: resultado),
+            RecomendacaoPotassioSection(resultado: resultado),
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // BLOCO 5 — Micronutrientes por Aplicação
+            RecomendacaoMicrosUnificadosSection(resultado: resultado),
+
+            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+
+            // Avisos e Argumentos (mantidos no final)
+            RecomendacaoAvisosSection(resultado: resultado),
+            const SizedBox(height: 12),
+            RecomendacaoArgumentosSection(resultado: resultado),
+            const SizedBox(height: 12),
+            AppCardSection(
+              title: 'Ações',
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('btn_salvar_recomendacao'),
+                      onPressed: (_salvando || _exportando)
                           ? null
-                          : (value) {
-                              setState(() {
-                                _calibracaoIdSelecionada = value;
-                              });
-                              ref
-                                  .read(calculosSelectedCalibracaoIdProvider
-                                      .notifier)
-                                  .state = value;
-                            },
+                          : () => _salvarResultado(resultado),
+                      icon: const Icon(Icons.bookmark, size: 18),
+                      label: const Text(
+                        'Salvar',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    AppButton(
-                      key: const Key('btn_gerar_recomendacao'),
-                      label: '✦ Gerar Recomendação',
-                      icon: Icons.auto_awesome,
-                      onPressed: podeGerar
-                          ? () {
-                              ref
-                                  .read(calculosSelectedAnaliseIdsProvider
-                                      .notifier)
-                                  .state = List<String>.from(
-                                _analiseIdsSelecionados,
-                              );
-                              ref
-                                  .read(calculosSelectedCalibracaoIdProvider
-                                      .notifier)
-                                  .state = _calibracaoIdSelecionada;
-                              ref.invalidate(recomendacaoProvider(request));
-                              ref.read(recomendacaoProvider(request));
-                            }
-                          : null,
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      key: const Key('btn_compartilhar_recomendacao'),
+                      onPressed: (_salvando || _exportando)
+                          ? null
+                          : () => _compartilharRecomendacao(resultado),
+                      icon: const Icon(Icons.share_outlined, size: 18),
+                      label: const Text('Compartilhar'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF666666),
+                        side: const BorderSide(color: Color(0xFFD1D1D6)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
+            ),
+          ],
+        ],
       ),
+    );
+  }
+
+  _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
+    final data = DateFormat('dd/MM/yyyy').format(analise.dataCadastro);
+    final prefixoProdutor = analise.produtor.trim().isNotEmpty
+        ? '${analise.produtor.trim()} · '
+        : '';
+    final label =
+        '$prefixoProdutor${analise.talhao} · ${analise.numeroAmostra} · ${analise.laboratorio} · $data';
+    return _AnaliseOption(
+      id: analise.id,
+      label: label,
+      produtor: analise.produtor,
+      profundidade: analise.profundidade,
+      laboratorio: analise.laboratorio,
+    );
+  }
+
+  void _showMensagem(String mensagem) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+
+  Future<void> _salvarResultado(ResultadoRecomendacao resultado) async {
+    setState(() => _salvando = true);
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      final model = RecomendacaoModel(
+        id: const Uuid().v4(),
+        analiseId: resultado.analise.id,
+        userId: uid,
+        cultura: resultado.calibracao.nome,
+        necessidadeCalagem: resultado.doseCalcarioTHa,
+        prnt: 100.0,
+        doseCalcario: resultado.doseCalcarioTHa,
+        p2o5: 0.0,
+        k2o: 0.0,
+      );
+
+      await ref
+          .read(salvarRecomendacaoProvider.notifier)
+          .salvarRecomendacao(model);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Recomendação salva com sucesso'),
+          backgroundColor: const Color(0xFF34C759),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showMensagem('Erro ao salvar: $e');
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
+  }
+
+  Future<void> _compartilharRecomendacao(
+      ResultadoRecomendacao resultado) async {
+    setState(() => _exportando = true);
+    try {
+      final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
+      AnaliseSolo? analiseSolo;
+      for (final a in analises) {
+        if (a.id == resultado.analise.id) {
+          analiseSolo = a;
+          break;
+        }
+      }
+
+      final perfilAssets = ref.read(perfilAssetsProvider);
+      final perfil = await ref.read(getUserProfileUsecaseProvider).call();
+
+      final exportContext =
+          await const RecomendacaoExportContextBuilder().build(
+        resultado: resultado,
+        analiseSolo: analiseSolo,
+        perfil: perfil,
+        logoUrl: perfilAssets.logoUrl,
+      );
+
+      await const RecomendacaoHtmlExporter().exportar(exportContext);
+    } catch (e) {
+      if (!mounted) return;
+      _showMensagem('Erro ao compartilhar: $e');
+    } finally {
+      if (mounted) setState(() => _exportando = false);
+    }
+  }
+
+  // ignore: unused_element
+  LaudoRecomendacao _toLaudo(ResultadoRecomendacao resultado, String uid) {
+    return LaudoRecomendacao(
+      id: _uuid.v4(),
+      userId: uid,
+      analiseId: resultado.analise.id,
+      calibracaoId: resultado.calibracao.id,
+      talhao: resultado.calibracao.talhao,
+      fazenda: resultado.calibracao.fazenda,
+      cliente: resultado.calibracao.cliente,
+      cultura: resultado.calibracao.cultura,
+      safra: resultado.calibracao.safra,
+      laboratorio: resultado.analise.nome,
+      nomeCalibra: resultado.calibracao.nome,
+      geradaEm: resultado.geradaEm ?? DateTime.now(),
+      metodoCalagem: resultado.metodoCalagem,
+      doseCalcarioTHa: resultado.doseCalcarioTHa,
+      vAtual: resultado.analise.vPercent,
+      vEsperado: resultado.vEsperado,
+      caAtual: resultado.analise.ca,
+      caEsperado: resultado.caEsperado,
+      mgAtual: resultado.analise.mg,
+      mgEsperado: resultado.mgEsperado,
+      relacaoCaMg: resultado.relacaoCaMg,
+      parcelamento: resultado.parcelamento,
+      gessoIndicado: resultado.gesso.indicado,
+      gessoKgHa: resultado.gesso.doseKgHa.toDouble(),
+      modoFosforo: resultado.modoFosforo,
+      pSoloMgDm3: resultado.analise.p,
+      ncFosforo: resultado.ncFosforo,
+      doseP2O5KgHa: resultado.doseP2O5KgHa,
+      legacyP: resultado.legacyP,
+      criterioPotassio: resultado.criterioPotassio,
+      kSolo: resultado.analise.k,
+      ncPotassio: resultado.ncPotassio,
+      doseK2OKgHa: resultado.doseK2OKgHa,
+      micros: resultado.micros
+          .map(
+            (m) => {
+              'simbolo': m.elemento,
+              'via': m.via,
+              'fonte': m.fonte,
+              'doseElemento': m.dose,
+              'doseProduto': m.doseProduto,
+              'doseProdutoLabel': m.doseProdutoLabel,
+            },
+          )
+          .toList(),
+      avisos: resultado.avisos,
+      argumentos: resultado.argumentos,
+      status: LaudoStatus.completo,
     );
   }
 }
 
-class _RecomendacaoHeaderCard extends StatelessWidget {
-  const _RecomendacaoHeaderCard();
+class _Badge extends StatelessWidget {
+  const _Badge({required this.icon, required this.color, required this.label});
 
-  static const String _iconPath = 'assets/icons/recomendacao.png';
+  final IconData icon;
+  final Color color;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return AppSurface(
-      margin: const EdgeInsets.symmetric(horizontal: AppDimens.screenPadding),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.md,
-        vertical: AppDimens.sm,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      showBorder: true,
       child: Row(
         children: [
-          const AppIconFrame(
-            assetPath: _iconPath,
-            size: 44,
-            backgroundColor: Colors.transparent,
-          ),
-          const SizedBox(width: 12),
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Recomendação de Adubação',
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'SoloForte · ESALQ/USP',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecond,
-                  ),
-                ),
-              ],
+            child: Text(
+              label,
+              style: AppTextStyles.caption.copyWith(color: color),
             ),
           ),
         ],
@@ -291,8 +549,8 @@ class _RecomendacaoHeaderCard extends StatelessWidget {
   }
 }
 
-class _AmostrasDropdown extends StatelessWidget {
-  const _AmostrasDropdown({
+class _SeletorAmostras extends StatelessWidget {
+  const _SeletorAmostras({
     required this.analises,
     required this.selecionados,
     required this.onChanged,
@@ -302,36 +560,51 @@ class _AmostrasDropdown extends StatelessWidget {
   final List<String> selecionados;
   final ValueChanged<List<String>> onChanged;
 
+  String _normalizarProfundidade(String raw) {
+    final s = raw.trim();
+    return s.isEmpty ? '0-20' : s;
+  }
+
   @override
   Widget build(BuildContext context) {
+    String? profAtiva;
+    String? laboratorioAtivo;
+    if (selecionados.isNotEmpty) {
+      final primeira = analises.firstWhere(
+        (a) => a.id == selecionados.first,
+        orElse: () => const _AnaliseOption(id: '', label: ''),
+      );
+      if (primeira.id.isNotEmpty) {
+        profAtiva = _normalizarProfundidade(primeira.profundidade ?? '');
+        laboratorioAtivo = primeira.laboratorio;
+      }
+    }
+
     final resumo = selecionados.isEmpty
-        ? 'Nenhuma selecionada'
-        : '${selecionados.length} amostras selecionadas';
+        ? 'Selecione as amostras'
+        : selecionados.length == 1
+            ? _labelSelecionado(selecionados.first)
+            : '${selecionados.length} amostras selecionadas';
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: Material(
         color: AppColors.bgPrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-          side: const BorderSide(color: AppColors.border, width: 0.5),
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: AppColors.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
           key: const Key('seletor_amostras_dropdown'),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
           childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
           iconColor: AppColors.textSecond,
           collapsedIconColor: AppColors.textSecond,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Selecionar Amostras',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textSecond,
-                ),
-              ),
+              Text('Selecionar Amostras', style: AppTextStyles.label),
               const SizedBox(height: 4),
               Text(
                 resumo,
@@ -339,55 +612,175 @@ class _AmostrasDropdown extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.body.copyWith(
                   color: selecionados.isEmpty
-                      ? AppColors.textSecond
+                      ? AppColors.textTertiary
                       : AppColors.textPrimary,
                 ),
               ),
             ],
           ),
           children: [
-            if (analises.isEmpty)
+            if (profAtiva != null || laboratorioAtivo != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Nenhuma amostra encontrada.',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecond,
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  children: [
+                    if (profAtiva != null)
+                      _ContextLabel(
+                        icon: Icons.layers_outlined,
+                        label: 'Profundidade: $profAtiva',
+                      ),
+                    if (laboratorioAtivo != null)
+                      _ContextLabel(
+                        icon: Icons.science_outlined,
+                        label: 'Laboratório: $laboratorioAtivo',
+                      ),
+                  ],
+                ),
+              ),
+            ...analises.map((analise) {
+              final id = analise.id;
+              final label = analise.label;
+              final prof = _normalizarProfundidade(analise.profundidade ?? '');
+              final laboratorio = analise.laboratorio;
+
+              final isSelecionado = selecionados.contains(id);
+              final laboratorioDiferente = laboratorioAtivo != null &&
+                  !isSelecionado &&
+                  laboratorio != laboratorioAtivo;
+              final profundidadeDiferente =
+                  profAtiva != null && !isSelecionado && prof != profAtiva;
+              final isBloqueado = laboratorioDiferente || profundidadeDiferente;
+
+              return Opacity(
+                opacity: isBloqueado ? 0.35 : 1.0,
+                child: InkWell(
+                  key: Key('amostra_option_$id'),
+                  onTap: isBloqueado
+                      ? null
+                      : () {
+                          final novos = List<String>.from(selecionados);
+                          if (isSelecionado) {
+                            novos.remove(id);
+                          } else {
+                            novos.add(id);
+                          }
+                          onChanged(novos);
+                        },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelecionado
+                          ? const Color(0xFF007AFF).withValues(alpha: 0.08)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelecionado
+                            ? const Color(0xFF007AFF).withValues(alpha: 0.3)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelecionado
+                              ? Icons.check_circle
+                              : isBloqueado
+                                  ? Icons.remove_circle_outline
+                                  : Icons.radio_button_unchecked,
+                          size: 20,
+                          color: isSelecionado
+                              ? const Color(0xFF007AFF)
+                              : isBloqueado
+                                  ? const Color(0xFFC7C7CC)
+                                  : const Color(0xFF86868B),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isSelecionado
+                                  ? const Color(0xFF007AFF)
+                                  : const Color(0xFF1D1D1F),
+                              fontWeight: isSelecionado
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _DepthBadge(label: prof),
+                      ],
                     ),
                   ),
                 ),
-              )
-            else
-              ...analises.map((analise) {
-                final isSelecionada = selecionados.contains(analise.id);
-                return CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  value: isSelecionada,
-                  activeColor: AppColors.primary,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(
-                    analise.label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  onChanged: (_) {
-                    final next = List<String>.from(selecionados);
-                    if (isSelecionada) {
-                      next.remove(analise.id);
-                    } else {
-                      next.add(analise.id);
-                    }
-                    onChanged(next);
-                  },
-                );
-              }),
+              );
+            }),
           ],
+        ),
+      ),
+    );
+  }
+
+  String _labelSelecionado(String id) {
+    final selecionado = analises.firstWhere(
+      (a) => a.id == id,
+      orElse: () => const _AnaliseOption(id: '', label: ''),
+    );
+    return selecionado.id.isEmpty ? '1 amostra selecionada' : selecionado.label;
+  }
+}
+
+class _ContextLabel extends StatelessWidget {
+  const _ContextLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFF86868B)),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF86868B)),
+        ),
+      ],
+    );
+  }
+}
+
+class _DepthBadge extends StatelessWidget {
+  const _DepthBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5E5E7),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          color: Color(0xFF86868B),
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -398,21 +791,14 @@ class _AnaliseOption {
   const _AnaliseOption({
     required this.id,
     required this.label,
+    this.produtor,
+    this.profundidade,
+    this.laboratorio,
   });
 
   final String id;
   final String label;
-}
-
-_AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
-  final produtor = ProdutorResolucaoService.produtorEfetivo(analise);
-  final produtorLabel = produtor.isEmpty ? 'Produtor não informado' : produtor;
-  final amostra = analise.numeroAmostra.trim();
-  final amostraLabel = amostra.isEmpty ? '' : ' · $amostra';
-
-  return _AnaliseOption(
-    id: analise.id,
-    label:
-        '$produtorLabel · ${analise.fazenda} · ${analise.talhao}$amostraLabel',
-  );
+  final String? produtor;
+  final String? profundidade;
+  final String? laboratorio;
 }

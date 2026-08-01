@@ -248,26 +248,6 @@ Future<void> _pumpRecomendacao(
   await tester.pumpAndSettle();
 }
 
-Future<void> _expandAmostrasDropdown(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-  await tester.pumpAndSettle();
-}
-
-Future<void> _toggleAmostraPorLabel(
-  WidgetTester tester,
-  String label,
-) async {
-  await _expandAmostrasDropdown(tester);
-  await tester.tap(find.text(label));
-  await tester.pumpAndSettle();
-}
-
-Finder get _campoBuscaProdutor => find.byWidgetPredicate(
-      (widget) =>
-          widget is TextField &&
-          widget.decoration?.hintText == 'Buscar produtor...',
-    );
-
 Future<void> _setDropdownValue(
   WidgetTester tester, {
   required int dropdownIndex,
@@ -283,19 +263,22 @@ Future<void> _setDropdownValue(
 }
 
 void main() {
-  testWidgets('mostra estado vazio quando não há análise e calibração salvas', (
+  testWidgets('mostra avisos quando não há análise e calibração salvas', (
     tester,
   ) async {
     await _pumpRecomendacao(tester, profiles: const [], analises: const []);
 
-    expect(find.text('Nenhuma selecionada'), findsOneWidget);
-    expect(find.text('Selecionar Calibração'), findsOneWidget);
-
-    await _expandAmostrasDropdown(tester);
-    expect(find.text('Nenhuma amostra encontrada.'), findsOneWidget);
+    expect(
+      find.text('Nenhuma calibração salva. Cadastre na aba Calibração.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Nenhuma análise salva. Cadastre em Análise.'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('gera resultado válido para análise e calibração selecionadas', (
+  testWidgets('gera resultado e exibe acao de compartilhar', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(1200, 2400));
@@ -314,17 +297,17 @@ void main() {
       analises: [_analise()],
     );
 
-    await _toggleAmostraPorLabel(
-      tester,
-      'Produtor A · Fazenda A · Talhão A · 001',
-    );
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('amostra_option_a-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
     await _setDropdownValue(tester, dropdownIndex: 0, value: 'c-1');
 
     final container = ProviderScope.containerOf(
       tester.element(find.byType(RecomendacaoScreen)),
     );
-    await container.read(analiseNotifierProvider.future);
-    await container.read(tabelaMetricasProvider.future);
     final result = container.read(
       recomendacaoProvider(
         const RecomendacaoRequest(
@@ -335,10 +318,21 @@ void main() {
     );
     expect(result.recomendacao, isNotNull);
     expect(result.diagnostico.valido, isTrue);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('btn_compartilhar_recomendacao')),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Compartilhar'), findsOneWidget);
+    expect(find.text('Exportar HTML'), findsNothing);
+    expect(find.text('Exportar PDF'), findsNothing);
   });
 
   testWidgets(
-    'dropdown expande e permite selecionar várias amostras',
+    'dropdown expande e permite várias amostras do mesmo laboratório',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -355,23 +349,20 @@ void main() {
 
       expect(find.textContaining('002'), findsNothing);
 
-      await _expandAmostrasDropdown(tester);
-
-      await tester.tap(
-        find.text('Produtor A · Fazenda A · Talhão A · 001'),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.text('Produtor A · Fazenda A · Talhão A · 002'),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.text('Produtor A · Fazenda A · Talhão A · 003'),
-      );
+      await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
       await tester.pumpAndSettle();
 
-      expect(find.text('3 amostras selecionadas'), findsOneWidget);
-      expect(find.byType(CheckboxListTile), findsNWidgets(3));
+      await tester.tap(find.byKey(const Key('amostra_option_a-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('amostra_option_a-2')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('amostra_option_a-3')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 amostras selecionadas'), findsOneWidget);
+      expect(find.text('Laboratório: Lab A'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
     },
   );
 
@@ -486,19 +477,17 @@ void main() {
       ],
     );
 
-    await tester.enterText(_campoBuscaProdutor, 'ANDRE');
+    await tester.enterText(
+      find.byKey(const Key('filtro_produtor_recomendacao')),
+      'ANDRE',
+    );
     await tester.pumpAndSettle();
 
-    await _expandAmostrasDropdown(tester);
+    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+    await tester.pumpAndSettle();
 
-    expect(
-      find.text('ANDRE LUIZ DE SIQUEIRA · Fazenda A · Talhão A · 001'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('JOSE AUGUSTO MIRANDA · Fazenda A · Talhão A · 002'),
-      findsNothing,
-    );
+    expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
+    expect(find.byKey(const Key('amostra_option_a-2')), findsNothing);
   });
 
   testWidgets(
@@ -519,15 +508,16 @@ void main() {
         ],
       );
 
-      await tester.enterText(_campoBuscaProdutor, 'Andre Luiz');
+      await tester.enterText(
+        find.byKey(const Key('filtro_produtor_recomendacao')),
+        'Andre Luiz',
+      );
       await tester.pumpAndSettle();
 
-      await _expandAmostrasDropdown(tester);
+      await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+      await tester.pumpAndSettle();
 
-      expect(
-        find.text('ANDRE LUIZ DE SIQUEIRA · Fazenda A · Talhão A · 001'),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
       expect(
         find.textContaining('ANDRE LUIZ DE SIQUEIRA'),
         findsWidgets,
@@ -542,6 +532,7 @@ void main() {
     expect(analiseMatchesProdutorBusca(analise, 'cliente'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'fazenda'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'talhão'), isTrue);
+    expect(analiseMatchesProdutorBusca(analise, '001'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'inexistente'), isFalse);
   });
 
