@@ -120,7 +120,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
               width: 4,
               height: 20,
               decoration: BoxDecoration(
-                color: const Color(0xFF007AFF),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -156,7 +156,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
               curve: Curves.easeInOut,
               child: const Icon(
                 Icons.keyboard_arrow_down,
-                color: Color(0xFF86868B),
+                color: AppColors.textSecond,
                 size: 20,
               ),
             ),
@@ -920,7 +920,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: 24, thickness: 0.5, color: Color(0xFFE5E5E7)),
+        const Divider(height: 24, thickness: 0.5, color: AppColors.borderSoft),
         Text(
           'META DE CA, MG E K',
           style: AppTextStyles.caption.copyWith(
@@ -1093,9 +1093,8 @@ class _CorretivosCardState extends State<CorretivosCard> {
     final temValor = caValue > 0 || mgValue > 0 || kValue > 0;
     if (!temValor) return const SizedBox.shrink();
 
-    final color = soma >= 60 && soma <= 85
-        ? const Color(0xFF34C759)
-        : const Color(0xFFFF9500);
+    final color =
+        soma >= 60 && soma <= 85 ? AppColors.success : AppColors.warning;
     final somaText = _fmt(soma, decimals: 0);
     return Text(
       'Soma: $somaText% → V% esperado: $somaText%',
@@ -1164,16 +1163,16 @@ class _ToggleBtn extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF007AFF).withValues(alpha: 0.10)
+              ? AppColors.primary.withValues(alpha: 0.10)
               : enabled
-                  ? const Color(0xFFE5E5E7)
-                  : const Color(0xFFF2F2F7),
+                  ? AppColors.borderSoft
+                  : AppColors.bgSecondary,
           border: Border.all(
             color: selected
-                ? const Color(0xFF007AFF)
+                ? AppColors.primary
                 : enabled
-                    ? const Color(0xFFD1D1D6)
-                    : const Color(0xFFE5E5E7),
+                    ? AppColors.border
+                    : AppColors.borderSoft,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -1184,10 +1183,10 @@ class _ToggleBtn extends StatelessWidget {
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             color: selected
-                ? const Color(0xFF007AFF)
+                ? AppColors.primary
                 : enabled
-                    ? const Color(0xFF86868B)
-                    : const Color(0xFFC7C7CC),
+                    ? AppColors.textSecond
+                    : AppColors.textTertiary,
           ),
         ),
       ),

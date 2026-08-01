@@ -387,7 +387,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               width: 4,
               height: 20,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30),
+                color: AppColors.fosforo,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -423,7 +423,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               curve: Curves.easeInOut,
               child: const Icon(
                 Icons.keyboard_arrow_down,
-                color: Color(0xFF86868B),
+                color: AppColors.textSecond,
                 size: 20,
               ),
             ),
@@ -743,14 +743,14 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
         ? AppColors.bgPrimary
         : isOrange
             ? AppColors.bgWarning
-            : const Color(0xFF007AFF).withValues(alpha: 0.06);
+            : AppColors.primary.withValues(alpha: 0.06);
     final Color bdr = isOrange && !isManual
         ? AppColors.warning
         : isManual
             ? AppColors.border
-            : const Color(0xFFB8D4FF);
+            : AppColors.primary.withValues(alpha: 0.30);
     final Color valC =
-        isOrange && !isManual ? const Color(0xFFBF360C) : AppColors.primary;
+        isOrange && !isManual ? AppColors.warning : AppColors.primary;
 
     final String val = nc != null
         ? (nc == nc.truncateToDouble()
@@ -837,7 +837,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               child: Icon(
                 isManual ? Icons.edit_outlined : Icons.lock_outline,
                 size: 18,
-                color: isManual ? const Color(0xFF86868B) : AppColors.primary,
+                color: isManual ? AppColors.textSecond : AppColors.primary,
               ),
             ),
           ]),
@@ -868,7 +868,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   // ══════════════════════════════════════════════════════════════════════════
 
   Widget _argilaSegmented() {
-    final accent = _d.placeholder ? const Color(0xFFBF360C) : AppColors.primary;
+    final accent = _d.placeholder ? AppColors.warning : AppColors.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -953,7 +953,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               '* Valores provisórios — aguardando tabela CFSEMG/UFLA oficial.',
               style: TextStyle(
                   fontSize: 10,
-                  color: Color(0xFFBF360C),
+                  color: AppColors.warning,
                   fontStyle: FontStyle.italic),
             ),
           ),
@@ -1011,13 +1011,13 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
                 Container(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1D1D1F),
+                    color: AppColors.textPrimary,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                          color: Color(0x33000000),
+                          color: AppColors.textPrimary.withValues(alpha: 0.20),
                           blurRadius: 16,
-                          offset: Offset(0, 4)),
+                          offset: const Offset(0, 4)),
                     ],
                   ),
                   child: Text(msg,
@@ -1216,7 +1216,7 @@ class _ArrowDown extends CustomPainter {
         ..lineTo(s.width, 0)
         ..close(),
       Paint()
-        ..color = const Color(0xFF1D1D1F)
+        ..color = AppColors.textPrimary
         ..style = PaintingStyle.fill,
     );
   }

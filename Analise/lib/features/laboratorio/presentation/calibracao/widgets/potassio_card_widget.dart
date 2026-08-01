@@ -636,7 +636,7 @@ class _PotassioCardState extends State<PotassioCard> {
               width: 4,
               height: 20,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF9500),
+                color: AppColors.potassio,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -672,7 +672,7 @@ class _PotassioCardState extends State<PotassioCard> {
               curve: Curves.easeInOut,
               child: const Icon(
                 Icons.keyboard_arrow_down,
-                color: Color(0xFF86868B),
+                color: AppColors.textSecond,
                 size: 20,
               ),
             ),
@@ -960,7 +960,7 @@ class _PotassioCardState extends State<PotassioCard> {
               '* Valores NC provisórios — tabela CFSEMG/UFLA pendente.',
               style: TextStyle(
                 fontSize: 10.5,
-                color: Color(0xFFBF360C),
+                color: AppColors.warning,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -986,14 +986,14 @@ class _PotassioCardState extends State<PotassioCard> {
         ? AppColors.bgPrimary
         : isPlaceholder
             ? AppColors.bgWarning
-            : const Color(0xFF007AFF).withValues(alpha: 0.06);
+            : AppColors.primary.withValues(alpha: 0.06);
     final bdr = manual
-        ? const Color(0xFFD1D1D6)
+        ? AppColors.border
         : isPlaceholder
             ? AppColors.warning
-            : const Color(0xFF007AFF).withValues(alpha: 0.3);
+            : AppColors.primary.withValues(alpha: 0.3);
     final valC =
-        isPlaceholder && !manual ? const Color(0xFFBF360C) : AppColors.primary;
+        isPlaceholder && !manual ? AppColors.warning : AppColors.primary;
     final textValue = value == null ? '' : _fmtNumber(value);
 
     if (!manual && controller.text != textValue) {
@@ -1060,9 +1060,7 @@ class _PotassioCardState extends State<PotassioCard> {
                     manual ? Icons.edit_outlined : Icons.lock_outline,
                     key: ValueKey(manual),
                     size: 16,
-                    color: manual
-                        ? const Color(0xFF86868B)
-                        : const Color(0xFF007AFF),
+                    color: manual ? AppColors.textSecond : AppColors.primary,
                   ),
                 ),
               ),
@@ -1257,13 +1255,13 @@ class _PotassioCardState extends State<PotassioCard> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1D1D1F),
+                      color: AppColors.textPrimary,
                       borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Color(0x33000000),
+                          color: AppColors.textPrimary.withValues(alpha: 0.20),
                           blurRadius: 16,
-                          offset: Offset(0, 4),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -1398,7 +1396,7 @@ class _ArrowDown extends CustomPainter {
         ..lineTo(s.width, 0)
         ..close(),
       Paint()
-        ..color = const Color(0xFF1D1D1F)
+        ..color = AppColors.textPrimary
         ..style = PaintingStyle.fill,
     );
   }

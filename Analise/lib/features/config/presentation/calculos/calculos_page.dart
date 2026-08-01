@@ -7,6 +7,7 @@ import 'package:soloforte/domain/usecases/calcular_gesso_calculos_usecase.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/domain/usecases/calcular_calagem_calculos_usecase.dart';
 import 'package:soloforte/features/config/presentation/calculos/calculos_provider.dart';
 import 'package:soloforte/features/config/presentation/calculos/widgets/tabela_analises_widget.dart';
@@ -36,13 +37,13 @@ class _CalculosPageState extends ConsumerState<CalculosPage> {
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.bgPrimary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             CupertinoIcons.chevron_back,
             size: 18,
-            color: Color(0xFF1D1D1F),
+            color: AppColors.textPrimary,
           ),
           onPressed: () => context.pop(),
         ),
@@ -178,13 +179,10 @@ class _CalagemSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       padding: const EdgeInsets.all(AppDimens.screenPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
+      borderRadius: AppDimens.radiusLg,
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -404,13 +402,10 @@ class _GessoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       padding: const EdgeInsets.all(AppDimens.screenPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
+      borderRadius: AppDimens.radiusLg,
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -539,13 +534,10 @@ class _FosforoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       padding: const EdgeInsets.all(AppDimens.screenPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
+      borderRadius: AppDimens.radiusLg,
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

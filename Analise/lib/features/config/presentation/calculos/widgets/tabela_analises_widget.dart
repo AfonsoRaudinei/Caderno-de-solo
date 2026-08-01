@@ -100,7 +100,7 @@ class TabelaAnalisesWidget extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        color: Colors.white,
+        color: AppColors.bgPrimary,
         child: SingleChildScrollView(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -136,7 +136,7 @@ class TabelaAnalisesWidget extends StatelessWidget {
             width: _larguraLabel,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             alignment: Alignment.centerLeft,
-            color: const Color(0xFFF5F5F7),
+            color: AppColors.bgSecondary,
             child: Text(
               'PARÂMETRO',
               style: AppTextStyles.caption.copyWith(
@@ -158,7 +158,7 @@ class TabelaAnalisesWidget extends StatelessWidget {
               width: _larguraColuna,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               decoration: BoxDecoration(
-                color: isMedia ? AppColors.primary : Colors.white,
+                color: isMedia ? AppColors.primary : AppColors.bgPrimary,
                 border: Border(
                   left: BorderSide(
                     color: isMedia
@@ -177,7 +177,8 @@ class TabelaAnalisesWidget extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.caption.copyWith(
-                      color: isMedia ? Colors.white : AppColors.textPrimary,
+                      color:
+                          isMedia ? AppColors.bgPrimary : AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -189,7 +190,7 @@ class TabelaAnalisesWidget extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: AppTextStyles.caption.copyWith(
                       color: isMedia
-                          ? Colors.white.withValues(alpha: 0.86)
+                          ? AppColors.bgPrimary.withValues(alpha: 0.86)
                           : AppColors.textSecond,
                       fontSize: 11,
                     ),
@@ -208,7 +209,7 @@ class TabelaAnalisesWidget extends StatelessWidget {
     required List<AnaliseNormalizada> colunas,
     required bool sombreado,
   }) {
-    final background = sombreado ? const Color(0xFFF5F5F7) : Colors.white;
+    final background = sombreado ? AppColors.bgSecondary : AppColors.bgPrimary;
 
     return SizedBox(
       height: 48,

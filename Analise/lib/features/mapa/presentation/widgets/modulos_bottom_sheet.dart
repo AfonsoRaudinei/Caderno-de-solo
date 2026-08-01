@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
@@ -45,14 +44,14 @@ class ModulosBottomSheet extends ConsumerWidget {
     return Container(
       height: 430,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFE),
+        color: AppColors.bgSecondary,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimens.radius2xl),
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.78)),
+        border: Border.all(color: AppColors.bgPrimary.withValues(alpha: 0.78)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
+            color: AppColors.primary.withValues(alpha: 0.10),
             blurRadius: 30,
             offset: const Offset(0, -8),
           ),

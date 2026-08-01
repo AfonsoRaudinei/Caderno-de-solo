@@ -762,10 +762,10 @@ class _MapFloatingSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFFDFEFF),
+        color: AppColors.bgPrimary,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.76),
+          color: AppColors.bgPrimary.withValues(alpha: 0.76),
           width: 0.8,
         ),
         boxShadow: [
@@ -775,7 +775,7 @@ class _MapFloatingSurface extends StatelessWidget {
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -799,7 +799,7 @@ class _MapStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isError ? const Color(0xFFFFF3F0) : const Color(0xFFFDFEFF);
+    final bg = isError ? AppColors.bgError : AppColors.bgPrimary;
     final fg = isError ? AppColors.error : AppColors.textPrimary;
 
     return DecoratedBox(
@@ -809,7 +809,7 @@ class _MapStatusBadge extends StatelessWidget {
         border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.8)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -868,14 +868,16 @@ class _AnaliseMapSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFE),
+            color: AppColors.bgSecondary,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(AppDimens.radius2xl),
             ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.82)),
+            border: Border.all(
+              color: AppColors.bgPrimary.withValues(alpha: 0.82),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.10),
+                color: AppColors.primary.withValues(alpha: 0.10),
                 blurRadius: 30,
                 offset: const Offset(0, -8),
               ),
