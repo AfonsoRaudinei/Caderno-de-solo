@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:soloforte/core/utils/firestore_doc_id.dart';
 import 'package:soloforte/core/utils/token_generator.dart';
 import 'package:soloforte/features/clientes/data/models/cliente_model.dart';
@@ -8,6 +7,7 @@ import 'package:soloforte/features/clientes/data/models/talhao_model.dart';
 import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/fazenda_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
+import 'package:soloforte/features/clientes/domain/exceptions/cliente_session_exception.dart';
 import 'package:uuid/uuid.dart';
 
 class ClienteFirestoreDatasource {
@@ -15,36 +15,50 @@ class ClienteFirestoreDatasource {
     FirebaseFirestore? firestore,
   }) : _firestore = firestore ?? FirebaseFirestore.instance {
     _collection = _firestore.collection('clientes');
+    _tokens = _firestore.collection('cliente_tokens');
   }
 
   final FirebaseFirestore _firestore;
   final Uuid _uuid = const Uuid();
   late final CollectionReference<Map<String, dynamic>> _collection;
+  late final CollectionReference<Map<String, dynamic>> _tokens;
 
   // Fluxo de integração com o App Mapa:
   // 1. SoloForte cria o cliente e gera o token SF-AAAA-XXXX.
-  // 2. O produtor escaneia o QR no App Mapa.
-  // 3. O App Mapa chama buscarClientePorToken(token) para obter o clienteId.
-  // 4. Depois consulta análises vinculadas a esse clienteId e os talhões GPS.
+  // 2. Registra o token em cliente_tokens/{token} (lookup alinhado às rules).
+  // 3. O App Mapa lê cliente_tokens/{token} e depois o clienteId.
 
   Future<String> criarCliente(ClienteEntity cliente) async {
     try {
       final documentId = sanitizeFirestoreDocId(
         cliente.id.isEmpty ? _uuid.v4() : cliente.id,
       );
-      final token = await _resolveUniqueToken(cliente.token);
-      final payload = ClienteModel.fromEntity(
-        cliente.copyWith(
-          id: documentId,
-          token: token,
-          criadoEm: cliente.criadoEm,
-          atualizadoEm: cliente.atualizadoEm,
-        ),
-      ).toMap()
-        ..remove('fazendas');
+      await _firestore.runTransaction((transaction) async {
+        final allocation = await _allocateUniqueToken(
+          transaction: transaction,
+          preferred: cliente.token,
+          clienteId: documentId,
+          usuarioId: cliente.usuarioId,
+        );
+        final payload = ClienteModel.fromEntity(
+          cliente.copyWith(
+            id: documentId,
+            token: allocation.token,
+            criadoEm: cliente.criadoEm,
+            atualizadoEm: cliente.atualizadoEm,
+          ),
+        ).toMap()
+          ..remove('fazendas');
 
-      await _collection.doc(documentId).set(payload);
+        transaction
+          ..set(_collection.doc(documentId), payload)
+          ..set(allocation.ref, allocation.payload);
+      });
       return documentId;
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao criar cliente', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao criar cliente: $e');
     }
@@ -55,6 +69,11 @@ class ClienteFirestoreDatasource {
       final snapshot = await _collection.doc(id).get();
       if (!snapshot.exists) return null;
       return _hydrateCliente(snapshot);
+    } on FirebaseException catch (e) {
+      if (_isPermissionDenied(e)) {
+        throw const ClienteSessionException();
+      }
+      throw Exception('Erro ao buscar cliente: $e');
     } catch (e) {
       throw Exception('Erro ao buscar cliente: $e');
     }
@@ -62,10 +81,22 @@ class ClienteFirestoreDatasource {
 
   Future<ClienteEntity?> buscarClientePorToken(String token) async {
     try {
-      final query =
-          await _collection.where('token', isEqualTo: token).limit(1).get();
-      if (query.docs.isEmpty) return null;
-      return _hydrateCliente(query.docs.first);
+      final normalized = token.trim();
+      if (normalized.isEmpty) return null;
+
+      // Lookup por documentId — compatível com rules (get pontual).
+      final tokenSnap = await _tokens.doc(normalized).get();
+      if (!tokenSnap.exists) return null;
+      final clienteId = tokenSnap.data()?['clienteId'] as String?;
+      if (clienteId == null || clienteId.isEmpty) return null;
+      return buscarClientePorId(clienteId);
+    } on FirebaseException catch (e) {
+      if (_isPermissionDenied(e)) {
+        throw const ClienteSessionException();
+      }
+      throw Exception('Erro ao buscar cliente por token: $e');
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao buscar cliente por token: $e');
     }
@@ -78,6 +109,11 @@ class ClienteFirestoreDatasource {
           .orderBy('nome')
           .get();
       return Future.wait(query.docs.map(_hydrateCliente));
+    } on FirebaseException catch (e) {
+      if (_isPermissionDenied(e)) {
+        throw const ClienteSessionException();
+      }
+      throw Exception('Erro ao listar clientes: $e');
     } catch (e) {
       throw Exception('Erro ao listar clientes: $e');
     }
@@ -90,18 +126,52 @@ class ClienteFirestoreDatasource {
       ).toMap()
         ..remove('fazendas');
       await _collection.doc(cliente.id).update(payload);
+      if (cliente.token.isNotEmpty) {
+        await _tokens.doc(cliente.token).set({
+          'clienteId': cliente.id,
+          'usuarioId': cliente.usuarioId,
+          'token': cliente.token,
+        }, SetOptions(merge: true));
+      }
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao atualizar cliente', e);
     } catch (e) {
       throw Exception('Erro ao atualizar cliente: $e');
     }
   }
 
+  /// Registra o ID da análise no cliente sem duplicar entradas.
+  Future<void> adicionarAnaliseId(String clienteId, String analiseId) async {
+    final normalizedClienteId = clienteId.trim();
+    final normalizedAnaliseId = analiseId.trim();
+    if (normalizedClienteId.isEmpty || normalizedAnaliseId.isEmpty) return;
+
+    try {
+      await _collection.doc(normalizedClienteId).update({
+        'analiseIds': FieldValue.arrayUnion([normalizedAnaliseId]),
+        'atualizadoEm': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao vincular análise ao cliente', e);
+    } catch (e) {
+      throw Exception('Erro ao vincular análise ao cliente: $e');
+    }
+  }
+
   Future<void> deletarCliente(String clienteId) async {
     try {
+      final existing = await _collection.doc(clienteId).get();
+      final token = existing.data()?['token'] as String?;
       final fazendas = await listarFazendas(clienteId);
       for (final fazenda in fazendas) {
         await deletarFazenda(clienteId, fazenda.id);
       }
       await _collection.doc(clienteId).delete();
+      if (token != null && token.isNotEmpty) {
+        await _tokens.doc(token).delete();
+      }
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao deletar cliente', e);
     } catch (e) {
       throw Exception('Erro ao deletar cliente: $e');
     }
@@ -118,6 +188,10 @@ class ClienteFirestoreDatasource {
         ..remove('talhoes');
       await _fazendas(clienteId).doc(fazendaId).set(payload);
       return fazendaId;
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao adicionar fazenda', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao adicionar fazenda: $e');
     }
@@ -128,6 +202,10 @@ class ClienteFirestoreDatasource {
       final payload = FazendaModel.fromEntity(fazenda).toMap()
         ..remove('talhoes');
       await _fazendas(clienteId).doc(fazenda.id).update(payload);
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao atualizar fazenda', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao atualizar fazenda: $e');
     }
@@ -140,6 +218,10 @@ class ClienteFirestoreDatasource {
         await deletarTalhao(clienteId, fazendaId, talhao.id);
       }
       await _fazendas(clienteId).doc(fazendaId).delete();
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao deletar fazenda', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao deletar fazenda: $e');
     }
@@ -158,6 +240,8 @@ class ClienteFirestoreDatasource {
           talhoes = await listarTalhoes(clienteId, doc.id);
         } on FirebaseException catch (e) {
           if (!_isPermissionDenied(e)) rethrow;
+        } on ClienteSessionException {
+          // Nested permission-denied: keep fazenda with empty talhões.
         }
 
         data['id'] = doc.id;
@@ -166,6 +250,10 @@ class ClienteFirestoreDatasource {
       }
 
       return fazendas;
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao listar fazendas', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao listar fazendas: $e');
     }
@@ -184,6 +272,10 @@ class ClienteFirestoreDatasource {
       ).toMap();
       await _talhoes(clienteId, fazendaId).doc(talhaoId).set(payload);
       return talhaoId;
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao adicionar talhão', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao adicionar talhão: $e');
     }
@@ -198,6 +290,10 @@ class ClienteFirestoreDatasource {
       await _talhoes(clienteId, fazendaId).doc(talhao.id).update(
             TalhaoModel.fromEntity(talhao).toMap(),
           );
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao atualizar talhão', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao atualizar talhão: $e');
     }
@@ -210,6 +306,10 @@ class ClienteFirestoreDatasource {
   ) async {
     try {
       await _talhoes(clienteId, fazendaId).doc(talhaoId).delete();
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao deletar talhão', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao deletar talhão: $e');
     }
@@ -226,6 +326,10 @@ class ClienteFirestoreDatasource {
         data['id'] = doc.id;
         return TalhaoModel.fromMap(data);
       }).toList(growable: false);
+    } on FirebaseException catch (e) {
+      _throwClienteException('Erro ao listar talhões', e);
+    } on ClienteSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao listar talhões: $e');
     }
@@ -258,18 +362,42 @@ class ClienteFirestoreDatasource {
     return ClienteModel.fromMap(data);
   }
 
-  Future<String> _resolveUniqueToken(String currentToken) async {
-    var token =
-        currentToken.isNotEmpty ? currentToken : TokenGenerator.generate();
+  Future<_TokenAllocation> _allocateUniqueToken({
+    required Transaction transaction,
+    required String preferred,
+    required String clienteId,
+    required String usuarioId,
+  }) async {
+    var token = preferred.isNotEmpty ? preferred : TokenGenerator.generate();
 
-    for (var attempt = 0; attempt < 3; attempt++) {
-      final existing =
-          await _collection.where('token', isEqualTo: token).limit(1).get();
-      if (existing.docs.isEmpty) return token;
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final ref = _tokens.doc(token);
+      final existing = await transaction.get(ref);
+      final payload = {
+        'clienteId': clienteId,
+        'usuarioId': usuarioId,
+        'token': token,
+      };
+      if (!existing.exists) {
+        return _TokenAllocation(
+          token: token,
+          ref: ref,
+          payload: payload,
+        );
+      }
+
+      final owner = existing.data()?['usuarioId'] as String?;
+      final linkedCliente = existing.data()?['clienteId'] as String?;
+      if (owner == usuarioId && linkedCliente == clienteId) {
+        return _TokenAllocation(
+          token: token,
+          ref: ref,
+          payload: payload,
+        );
+      }
       token = TokenGenerator.generate();
     }
 
-    debugPrint('ClienteFirestoreDatasource: colisão repetida de token.');
     throw Exception('Não foi possível gerar um token único para o cliente.');
   }
 
@@ -277,4 +405,23 @@ class ClienteFirestoreDatasource {
     return error.code == 'permission-denied' ||
         error.code == 'missing-or-insufficient-permissions';
   }
+
+  Never _throwClienteException(String operation, FirebaseException error) {
+    if (_isPermissionDenied(error)) {
+      throw const ClienteSessionException();
+    }
+    throw Exception('$operation: $error');
+  }
+}
+
+class _TokenAllocation {
+  const _TokenAllocation({
+    required this.token,
+    required this.ref,
+    required this.payload,
+  });
+
+  final String token;
+  final DocumentReference<Map<String, dynamic>> ref;
+  final Map<String, dynamic> payload;
 }

@@ -6,6 +6,7 @@ import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/flows/importar_analise_pdf_flow.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
@@ -31,6 +32,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
   final Set<String> _selectedAnaliseIds = <String>{};
   String _searchQuery = '';
   bool _reparoProdutorExecutado = false;
+  bool _reparoVinculoExecutado = false;
   String? _selectedFolderHeaderTitle;
 
   void _importarPdf(BuildContext context) {
@@ -61,6 +63,13 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
       _reparoProdutorExecutado = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(analiseNotifierProvider.notifier).repararProdutoresLegados();
+      });
+    }
+
+    if (!_reparoVinculoExecutado) {
+      _reparoVinculoExecutado = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(analiseNotifierProvider.notifier).repararVinculosLegados();
       });
     }
 
@@ -305,7 +314,7 @@ class _AnaliseListScreenState extends ConsumerState<AnaliseListScreen> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 1.0,
+                      childAspectRatio: 0.92,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -1568,8 +1577,8 @@ class _CardSurfaceState extends State<_CardSurface> {
           boxShadow: [
             BoxShadow(
               color: shadowColor,
-              blurRadius: widget.isSelected ? 12 : 10,
-              offset: const Offset(0, 3),
+              blurRadius: widget.isSelected ? 18 : 14,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -1601,6 +1610,8 @@ class _PastaAnaliseCard extends StatelessWidget {
     required this.onLongPress,
   });
 
+  static const String _iconPath = 'assets/icons/pastas.png';
+
   final _AnaliseFolderSummary pasta;
   final bool isSelectionMode;
   final bool isSelected;
@@ -1618,7 +1629,7 @@ class _PastaAnaliseCard extends StatelessWidget {
       onLongPress: onLongPress,
       isSelected: isSelected,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1634,18 +1645,10 @@ class _PastaAnaliseCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
             ],
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.folder_open_rounded,
-                size: 32,
-                color: AppColors.primary,
-              ),
+            const AppIconFrame(
+              assetPath: _iconPath,
+              size: 64,
+              backgroundColor: Colors.transparent,
             ),
             const SizedBox(height: 12),
             Text(
@@ -1721,6 +1724,8 @@ class _AnaliseAmostraCard extends StatelessWidget {
     required this.onLongPress,
   });
 
+  static const String _iconPath = 'assets/icons/analises.png';
+
   final AnaliseSolo analise;
   final bool isSelectionMode;
   final bool isSelected;
@@ -1736,9 +1741,9 @@ class _AnaliseAmostraCard extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       isSelected: isSelected,
-      selectionColor: analise.cultura.color,
+      selectionColor: AppColors.primary,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1749,25 +1754,15 @@ class _AnaliseAmostraCard extends StatelessWidget {
                   isSelected
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color:
-                      isSelected ? analise.cultura.color : palette.textTertiary,
+                  color: isSelected ? AppColors.primary : palette.textTertiary,
                 ),
               ),
               const SizedBox(height: 6),
             ],
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: analise.cultura.color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Text(
-                  analise.cultura.emoji,
-                  style: const TextStyle(fontSize: 26),
-                ),
-              ),
+            const AppIconFrame(
+              assetPath: _iconPath,
+              size: 64,
+              backgroundColor: Colors.transparent,
             ),
             const SizedBox(height: 12),
             Text(
@@ -1789,7 +1784,7 @@ class _AnaliseAmostraCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTextStyles.caption.copyWith(
                 fontSize: 11,
-                color: AppColors.primaryDark,
+                color: AppColors.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1817,6 +1812,7 @@ class _AnaliseEmptyState extends StatelessWidget {
   const _AnaliseEmptyState({required this.onImport});
 
   final VoidCallback onImport;
+  static const String _iconPath = 'assets/icons/analises.png';
 
   @override
   Widget build(BuildContext context) {
@@ -1836,6 +1832,12 @@ class _AnaliseEmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            const AppIconFrame(
+              assetPath: _iconPath,
+              size: 82,
+              backgroundColor: Colors.transparent,
+            ),
+            const SizedBox(height: 16),
             Text(
               'Importe o PDF do laboratório para começar a organizar amostras por talhão.',
               textAlign: TextAlign.center,
@@ -1869,6 +1871,7 @@ class _ImportarPdfCard extends StatelessWidget {
   const _ImportarPdfCard({required this.onTap});
 
   final VoidCallback onTap;
+  static const String _iconPath = 'assets/icons/analises.png';
 
   @override
   Widget build(BuildContext context) {
@@ -1888,18 +1891,10 @@ class _ImportarPdfCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.upload_file_outlined,
-                  size: 28,
-                  color: AppColors.primary,
-                ),
+              const AppIconFrame(
+                assetPath: _iconPath,
+                size: 64,
+                backgroundColor: Colors.transparent,
               ),
               const SizedBox(height: 12),
               Text(

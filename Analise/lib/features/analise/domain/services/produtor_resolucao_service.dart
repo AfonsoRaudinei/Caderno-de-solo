@@ -79,13 +79,14 @@ class ProdutorResolucaoService {
     bool forcarProdutorConfigurado = false,
   }) {
     final configurado = produtorConfigurado.trim();
-    final produtorResolvido = forcarProdutorConfigurado && configurado.isNotEmpty
-        ? configurado
-        : resolver(
-            produtorAtual: analise.produtor,
-            laudoMetadata: analise.laudoMetadata,
-            produtorConfigurado: produtorConfigurado,
-          );
+    final produtorResolvido =
+        forcarProdutorConfigurado && configurado.isNotEmpty
+            ? configurado
+            : resolver(
+                produtorAtual: analise.produtor,
+                laudoMetadata: analise.laudoMetadata,
+                produtorConfigurado: produtorConfigurado,
+              );
 
     final consultorResolvido = firstNonEmpty([
       consultor,
@@ -99,97 +100,10 @@ class ProdutorResolucaoService {
       return analise;
     }
 
-    return AnaliseSolo(
-      id: analise.id,
-      fazenda: analise.fazenda,
+    return analise.copyWith(
       produtor: produtorResolvido,
-      talhao: analise.talhao,
-      numeroAmostra: analise.numeroAmostra,
-      cultura: analise.cultura,
-      safra: analise.safra,
-      laboratorio: analise.laboratorio,
-      dataCadastro: analise.dataCadastro,
-      profundidade: analise.profundidade,
-      latitude: analise.latitude,
-      longitude: analise.longitude,
-      descricaoLocal: analise.descricaoLocal,
-      argila: analise.argila,
-      silte: analise.silte,
-      areiaTotal: analise.areiaTotal,
-      phAgua: analise.phAgua,
-      phSmp: analise.phSmp,
-      phCaCl2: analise.phCaCl2,
-      materiaOrganica: analise.materiaOrganica,
-      carbonoOrganico: analise.carbonoOrganico,
-      pMehlich: analise.pMehlich,
-      pResina: analise.pResina,
-      pRem: analise.pRem,
-      s020: analise.s020,
-      s2040: analise.s2040,
-      k: analise.k,
-      ca: analise.ca,
-      mg: analise.mg,
-      al: analise.al,
-      hMaisAl: analise.hMaisAl,
-      na: analise.na,
-      b: analise.b,
-      cu: analise.cu,
-      fe: analise.fe,
-      mn: analise.mn,
-      zn: analise.zn,
-      ni: analise.ni,
-      mo: analise.mo,
-      se: analise.se,
-      co: analise.co,
-      cascalho: analise.cascalho,
-      areiaGrossa: analise.areiaGrossa,
-      areiaFina: analise.areiaFina,
-      municipio: analise.municipio,
-      responsavelTecnico: analise.responsavelTecnico,
-      cnpjCliente: analise.cnpjCliente,
-      pTotal: analise.pTotal,
-      classificacaoTextura: analise.classificacaoTextura,
-      tipoSoloMapa: analise.tipoSoloMapa,
-      solicitante: analise.solicitante,
-      convenio: analise.convenio,
-      creaResponsavel: analise.creaResponsavel,
-      cnpjLaboratorio: analise.cnpjLaboratorio,
-      dataInicioEnsaio: analise.dataInicioEnsaio,
-      dataFimEnsaio: analise.dataFimEnsaio,
-      matriculaImovel: analise.matriculaImovel,
-      codigoInterno: analise.codigoInterno,
-      codigoExternoAmostra: analise.codigoExternoAmostra,
-      caMaisMg: analise.caMaisMg,
-      kMgDm3: analise.kMgDm3,
-      cuMehlich: analise.cuMehlich,
-      feMehlich: analise.feMehlich,
-      mnMehlich: analise.mnMehlich,
-      znMehlich: analise.znMehlich,
-      cuDtpa: analise.cuDtpa,
-      feDtpa: analise.feDtpa,
-      mnDtpa: analise.mnDtpa,
-      znDtpa: analise.znDtpa,
-      dataRecebimento: analise.dataRecebimento,
-      numeroRelatorio: analise.numeroRelatorio,
-      codigoVerificacao: analise.codigoVerificacao,
-      codigoTalhao: analise.codigoTalhao,
-      totalAmostras: analise.totalAmostras,
-      pdfUrl: analise.pdfUrl,
-      laudoMetadata: analise.laudoMetadata,
-      h: analise.h,
-      ctcEfetiva: analise.ctcEfetiva,
-      ctc: analise.ctc,
-      sb: analise.sb,
-      vPercent: analise.vPercent,
-      mPercent: analise.mPercent,
-      osLaboratorio: analise.osLaboratorio,
-      dataEmissao: analise.dataEmissao,
       consultor:
           consultorResolvido.isEmpty ? analise.consultor : consultorResolvido,
-      labTemplateId: analise.labTemplateId,
-      unidadeNutrientes: analise.unidadeNutrientes,
-      unidadeMO: analise.unidadeMO,
-      unidadeTextura: analise.unidadeTextura,
     );
   }
 }

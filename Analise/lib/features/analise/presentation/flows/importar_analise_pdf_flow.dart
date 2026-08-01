@@ -143,6 +143,7 @@ class ImportarAnalisePdfFlow {
       await ref
           .read(analiseNotifierProvider.notifier)
           .repararProdutoresLegados();
+      await ref.read(analiseNotifierProvider.notifier).repararVinculosLegados();
     }
   }
 

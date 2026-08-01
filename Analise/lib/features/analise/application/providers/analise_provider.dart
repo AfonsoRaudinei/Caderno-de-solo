@@ -12,6 +12,10 @@ import 'package:soloforte/features/analise/domain/usecases/save_analise_usecase.
 import 'package:soloforte/features/analise/domain/usecases/delete_analise_usecase.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
+import 'package:soloforte/features/analise/application/mappers/cliente_hierarquia_mapper.dart';
+import 'package:soloforte/features/analise/domain/usecases/reparar_vinculos_legados_usecase.dart';
+import 'package:soloforte/features/clientes/data/repositories/cliente_repository.dart';
+import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 import 'package:soloforte/features/analise/domain/repositories/analise_repository.dart';
 import 'package:soloforte/features/analise/data/repositories/analise_repository_impl.dart';
 import 'package:soloforte/features/analise/data/datasources/analise_local_datasource.dart';
@@ -160,6 +164,41 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     }
   }
 
+  /// Infere FKs Cliente → Fazenda → Talhão em análises legadas e sincroniza
+  /// `cliente.analiseIds` quando houver correspondência por nome.
+  Future<void> repararVinculosLegados() async {
+    final uid = ref.read(currentUserIdProvider);
+    if (uid == null || uid.isEmpty) return;
+
+    List<ClienteEntity> clientes;
+    try {
+      clientes = await ref.read(clienteRepositoryProvider).listarClientes(uid);
+    } catch (_) {
+      return;
+    }
+    if (clientes.isEmpty) return;
+
+    final snapshots = mapClientesParaHierarquia(clientes);
+    final lista = state.valueOrNull ?? const <AnaliseSolo>[];
+    final reparos = const RepararVinculosLegadosUsecase()(
+      analises: lista,
+      clientes: snapshots,
+    );
+
+    for (final analise in reparos) {
+      await atualizarAnalise(analise);
+      final clienteId = analise.clienteId?.trim() ?? '';
+      if (clienteId.isEmpty) continue;
+      try {
+        await ref
+            .read(clienteRepositoryProvider)
+            .adicionarAnaliseId(clienteId, analise.id);
+      } catch (_) {
+        // Falha no índice denormalizado não deve bloquear o vínculo na análise.
+      }
+    }
+  }
+
   Future<void> deletar(String id) async {
     await ref.read(deleteAnaliseUsecaseProvider).call(id);
   }
@@ -228,48 +267,8 @@ class AnaliseNotifier extends _$AnaliseNotifier {
       metadataAtual.remove('analise');
     }
 
-    final analiseAtualizada = AnaliseSolo(
-      id: original.id,
-      fazenda: original.fazenda,
-      produtor: original.produtor,
-      talhao: original.talhao,
-      numeroAmostra: original.numeroAmostra,
-      cultura: original.cultura,
-      safra: original.safra,
+    final analiseAtualizada = original.copyWith(
       laboratorio: destinoLaboratorio,
-      dataCadastro: original.dataCadastro,
-      profundidade: original.profundidade,
-      latitude: original.latitude,
-      longitude: original.longitude,
-      descricaoLocal: original.descricaoLocal,
-      argila: original.argila,
-      silte: original.silte,
-      areiaTotal: original.areiaTotal,
-      phAgua: original.phAgua,
-      phSmp: original.phSmp,
-      phCaCl2: original.phCaCl2,
-      materiaOrganica: original.materiaOrganica,
-      carbonoOrganico: original.carbonoOrganico,
-      pMehlich: original.pMehlich,
-      pResina: original.pResina,
-      pRem: original.pRem,
-      s020: original.s020,
-      s2040: original.s2040,
-      k: original.k,
-      ca: original.ca,
-      mg: original.mg,
-      al: original.al,
-      hMaisAl: original.hMaisAl,
-      na: original.na,
-      b: original.b,
-      cu: original.cu,
-      fe: original.fe,
-      mn: original.mn,
-      zn: original.zn,
-      ni: original.ni,
-      mo: original.mo,
-      se: original.se,
-      pdfUrl: original.pdfUrl,
       laudoMetadata: metadataAtual.isEmpty ? null : metadataAtual,
     );
 
@@ -302,48 +301,8 @@ class AnaliseNotifier extends _$AnaliseNotifier {
         metadataAtual['groupTitle'] = novoNome;
       }
 
-      return AnaliseSolo(
-        id: analise.id,
-        fazenda: analise.fazenda,
-        produtor: analise.produtor,
-        talhao: analise.talhao,
-        numeroAmostra: analise.numeroAmostra,
-        cultura: analise.cultura,
-        safra: analise.safra,
+      return analise.copyWith(
         laboratorio: novoNome,
-        dataCadastro: analise.dataCadastro,
-        profundidade: analise.profundidade,
-        latitude: analise.latitude,
-        longitude: analise.longitude,
-        descricaoLocal: analise.descricaoLocal,
-        argila: analise.argila,
-        silte: analise.silte,
-        areiaTotal: analise.areiaTotal,
-        phAgua: analise.phAgua,
-        phSmp: analise.phSmp,
-        phCaCl2: analise.phCaCl2,
-        materiaOrganica: analise.materiaOrganica,
-        carbonoOrganico: analise.carbonoOrganico,
-        pMehlich: analise.pMehlich,
-        pResina: analise.pResina,
-        pRem: analise.pRem,
-        s020: analise.s020,
-        s2040: analise.s2040,
-        k: analise.k,
-        ca: analise.ca,
-        mg: analise.mg,
-        al: analise.al,
-        hMaisAl: analise.hMaisAl,
-        na: analise.na,
-        b: analise.b,
-        cu: analise.cu,
-        fe: analise.fe,
-        mn: analise.mn,
-        zn: analise.zn,
-        ni: analise.ni,
-        mo: analise.mo,
-        se: analise.se,
-        pdfUrl: analise.pdfUrl,
         laudoMetadata: metadataAtual.isEmpty ? null : metadataAtual,
       );
     }).toList(growable: false);
@@ -397,6 +356,30 @@ final analisesVisiveisProvider = Provider<List<AnaliseSolo>>((ref) {
           configurado,
         ),
       )
+      .toList(growable: false);
+});
+
+/// Análises vinculadas a um cliente (por FK ou fallback futuro na UI).
+final analisesPorClienteProvider =
+    Provider.family<List<AnaliseSolo>, String>((ref, clienteId) {
+  final normalizedId = clienteId.trim();
+  if (normalizedId.isEmpty) return const [];
+
+  final analises = ref.watch(analisesVisiveisProvider);
+  return analises
+      .where((analise) => analise.clienteId == normalizedId)
+      .toList(growable: false);
+});
+
+/// Análises vinculadas a um talhão específico.
+final analisesPorTalhaoProvider =
+    Provider.family<List<AnaliseSolo>, String>((ref, talhaoId) {
+  final normalizedId = talhaoId.trim();
+  if (normalizedId.isEmpty) return const [];
+
+  final analises = ref.watch(analisesVisiveisProvider);
+  return analises
+      .where((analise) => analise.talhaoId == normalizedId)
       .toList(growable: false);
 });
 

@@ -37,6 +37,10 @@ class ClienteRepository {
     return _datasource.atualizarCliente(cliente);
   }
 
+  Future<void> adicionarAnaliseId(String clienteId, String analiseId) {
+    return _datasource.adicionarAnaliseId(clienteId, analiseId);
+  }
+
   Future<void> deletarCliente(String clienteId) {
     return _datasource.deletarCliente(clienteId);
   }

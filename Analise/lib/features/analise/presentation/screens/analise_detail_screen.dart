@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/presentation/formatters/analise_number_formatter.dart';
+import 'package:soloforte/features/analise/presentation/formatters/coordinate_formatter.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/widgets/map_preview_widget.dart';
 
 class AnaliseDetailScreen extends ConsumerStatefulWidget {
   final String analiseId;
@@ -20,6 +26,8 @@ class AnaliseDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
+  static const String _analiseIcon = 'assets/icons/analises.png';
+
   bool _isEditing = false;
 
   void _toggleEditMode() => setState(() => _isEditing = !_isEditing);
@@ -48,6 +56,7 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: context.appPalette.background,
         appBar: AppBar(
           title: Text(analise.talhao),
           actions: [
@@ -84,124 +93,156 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            elevation: 0,
-            color: analise.cultura.color.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          AppSurface(
+            showBorder: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppIconFrame(
+                  assetPath: _analiseIcon,
+                  size: AppDimens.cardIconSize,
+                  backgroundColor: Colors.transparent,
+                ),
+                const SizedBox(width: AppDimens.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        analise.cultura.emoji,
-                        style: const TextStyle(fontSize: 24),
+                        analise.talhao.trim().isEmpty
+                            ? 'Amostra de solo'
+                            : analise.talhao,
+                        style: AppTextStyles.headline.copyWith(
+                          fontSize: 20,
+                          color: palette.valueText,
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: AppDimens.xs),
                       Text(
                         analise.cultura.label,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: analise.cultura.color,
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
                         ),
+                      ),
+                      const SizedBox(height: AppDimens.sm),
+                      _HeaderInfoLine(
+                        label: 'Produtor',
+                        value: analise.produtor,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Fazenda',
+                        value: analise.fazenda,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Nº Amostra',
+                        value: analise.numeroAmostra,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Safra',
+                        value: analise.safra,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Laboratório',
+                        value: analise.laboratorio,
+                        color: palette.mutedText,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Produtor: ${analise.produtor}',
-                    style: TextStyle(color: palette.mutedText),
-                  ),
-                  Text(
-                    'Fazenda: ${analise.fazenda}',
-                    style: TextStyle(color: palette.mutedText),
-                  ),
-                  Text(
-                    'Nº Amostra: ${analise.numeroAmostra}',
-                    style: TextStyle(color: palette.mutedText),
-                  ),
-                  Text(
-                    'Safra: ${analise.safra}',
-                    style: TextStyle(color: palette.mutedText),
-                  ),
-                  Text(
-                    'Laboratório: ${analise.laboratorio}',
-                    style: TextStyle(color: palette.mutedText),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.spaceEvenly,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ActionButton(
-                icon: Icons.science,
-                label: 'Recomendar',
-                color: Colors.green,
-                onTap: () {
-                  context.go(
-                    AppRoutes.labRecomendacao,
-                    extra: analise.id,
-                  );
-                },
-              ),
-              _ActionButton(
-                icon: Icons.picture_as_pdf,
-                label: 'PDF',
-                color: Colors.red,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Baixando ou abrindo laudo anexado'),
-                    ),
-                  );
-                },
-              ),
-              _ActionButton(
-                icon: Icons.map,
-                label: 'Mapa',
-                color: Colors.blue,
-                onTap: () {
-                  context.go(
-                    '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
-                  );
-                },
-              ),
-            ],
+          AppSurface(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.sm,
+              vertical: AppDimens.xs,
+            ),
+            showBorder: true,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.science_outlined,
+                    label: 'Recomendar',
+                    color: AppColors.success,
+                    onTap: () {
+                      context.go(
+                        AppRoutes.labRecomendacao,
+                        extra: analise.id,
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.picture_as_pdf_outlined,
+                    label: 'PDF',
+                    color: AppColors.error,
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Baixando ou abrindo laudo anexado'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.map_outlined,
+                    label: 'Mapa',
+                    color: AppColors.primary,
+                    onTap: () => _openMapForView(analise),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
-          if (analise.latitude != null && analise.longitude != null) ...[
-            _buildSectionTitle('Localização', palette),
-            const SizedBox(height: 8),
-            MapPreviewWidget(
-              latitude: analise.latitude!,
-              longitude: analise.longitude!,
-              onOpenMap: () {
-                context.go(
-                  '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
-                );
-              },
+          AppSurface(
+            showBorder: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildSectionTitle('Localização', palette),
+                const SizedBox(height: 8),
+                _buildDataRow(
+                  'Lat/Long',
+                  CoordinateFormatter.formatCombined(
+                    analise.latitude,
+                    analise.longitude,
+                  ),
+                  palette,
+                  fieldKey: 'latLong',
+                  analise: analise,
+                  isText: true,
+                ),
+                _buildMapActionRow(
+                  'Ir ao mapa',
+                  analise.latitude == null || analise.longitude == null
+                      ? 'Selecionar ponto'
+                      : 'Alterar ponto',
+                  palette,
+                  onTap: () => _openMapForSelection(analise),
+                ),
+                _buildDataRow(
+                  'Descrição',
+                  analise.descricaoLocal ?? '-',
+                  palette,
+                  fieldKey: 'descricaoLocal',
+                  analise: analise,
+                  isText: true,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-          ],
-          _buildSectionTitle('Localização', palette),
-          const SizedBox(height: 8),
-          _buildDataRow('Latitude', _fmt(analise.latitude), palette,
-              fieldKey: 'latitude', analise: analise),
-          _buildDataRow('Longitude', _fmt(analise.longitude), palette,
-              fieldKey: 'longitude', analise: analise),
-          _buildDataRow('Descrição', analise.descricaoLocal ?? '-', palette,
-              fieldKey: 'descricaoLocal', analise: analise, isText: true),
-          Divider(color: palette.divider),
+          ),
+          const SizedBox(height: 20),
           _buildSectionTitle('Composição Física', palette),
           const SizedBox(height: 8),
           _buildDataRow('Argila (g/kg)', _fmt(analise.argila), palette,
@@ -234,6 +275,8 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
           const SizedBox(height: 8),
           _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich), palette,
               fieldKey: 'pMehlich', analise: analise),
+          _buildDataRow('P Total (%)', _fmt(analise.pTotal), palette,
+              fieldKey: 'pTotal', analise: analise),
           _buildDataRow('P Resina (mg/dm³)', _fmt(analise.pResina), palette,
               fieldKey: 'pResina', analise: analise),
           _buildDataRow('P-rem (mg/L)', _fmt(analise.pRem), palette,
@@ -263,27 +306,38 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
           Divider(color: palette.divider),
           _buildSectionTitle('Bases e CTC', palette),
           const SizedBox(height: 8),
-          _buildDataRow('SB (cmolc/dm³)', _fmt(derivados['sb']), palette),
+          _buildDataRow('SB (cmolc/dm³)',
+              _fmt(_labOrDerived(analise.sb, derivados['sb'])), palette),
+          _buildDataRow('CTC(T) (cmolc/dm³)',
+              _fmt(_labOrDerived(analise.ctc, derivados['ctcTotal'])), palette),
           _buildDataRow(
-              'CTC(T) (cmolc/dm³)', _fmt(derivados['ctcTotal']), palette),
+              'CTC(e) (cmolc/dm³)',
+              _fmt(_labOrDerived(analise.ctcEfetiva, derivados['ctcEfetiva'])),
+              palette),
           _buildDataRow(
-              'CTC(e) (cmolc/dm³)', _fmt(derivados['ctcEfetiva']), palette),
-          _buildDataRow('V% (%)', _fmt(derivados['vPct']), palette),
-          _buildDataRow('m% (%)', _fmt(derivados['mPct']), palette),
+              'V% (%)',
+              _fmtPercent(_labOrDerived(analise.vPercent, derivados['vPct'])),
+              palette),
+          _buildDataRow(
+              'm% (%)',
+              _fmtPercent(_labOrDerived(analise.mPercent, derivados['mPct'])),
+              palette),
           Divider(color: palette.divider),
           _buildSectionTitle('Saturação das Bases', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Ca/T (%)', _fmt(derivados['caPctT']), palette),
-          _buildDataRow('Mg/T (%)', _fmt(derivados['mgPctT']), palette),
-          _buildDataRow('K/T (%)', _fmt(derivados['kPctT']), palette),
-          _buildDataRow('H+Al/T (%)', _fmt(derivados['hAlPctT']), palette),
+          _buildDataRow('Ca/T (%)', _fmtPercent(derivados['caPctT']), palette),
+          _buildDataRow('Mg/T (%)', _fmtPercent(derivados['mgPctT']), palette),
+          _buildDataRow('K/T (%)', _fmtPercent(derivados['kPctT']), palette),
+          _buildDataRow(
+              'H+Al/T (%)', _fmtPercent(derivados['hAlPctT']), palette),
           Divider(color: palette.divider),
           _buildSectionTitle('Relações entre Bases', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Ca/Mg', _fmt(derivados['relCaMg']), palette),
-          _buildDataRow('Ca/K', _fmt(derivados['relCaK']), palette),
-          _buildDataRow('Mg/K', _fmt(derivados['relMgK']), palette),
-          _buildDataRow('(Ca+Mg)/T (%)', _fmt(derivados['relCaMgT']), palette),
+          _buildDataRow('Ca/Mg', _fmtRatio(derivados['relCaMg']), palette),
+          _buildDataRow('Ca/K', _fmtRatio(derivados['relCaK']), palette),
+          _buildDataRow('Mg/K', _fmtRatio(derivados['relMgK']), palette),
+          _buildDataRow(
+              '(Ca+Mg)/T (%)', _fmtPercent(derivados['relCaMgT']), palette),
           Divider(color: palette.divider),
           _buildSectionTitle('Micronutrientes (mg/dm³)', palette),
           const SizedBox(height: 8),
@@ -334,12 +388,15 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
   }
 
   Widget _buildSectionTitle(String title, _AnaliseDetailPalette palette) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: palette.sectionText,
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Text(
+        title,
+        style: AppTextStyles.label.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: palette.sectionText,
+        ),
       ),
     );
   }
@@ -356,23 +413,29 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
         value == '-' || value.isEmpty || value == 'N/A' || value == 'null';
     final canEdit = _isEditing && fieldKey != null && analise != null;
     final row = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Text(
               label,
-              style: TextStyle(color: palette.mutedText),
+              style: AppTextStyles.caption.copyWith(
+                color: palette.mutedText,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            isVazio ? 'Não informado' : value,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isVazio ? Colors.orange : palette.valueText,
+          Flexible(
+            child: Text(
+              isVazio ? 'Não informado' : value,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.body.copyWith(
+                fontWeight: FontWeight.w700,
+                color: isVazio ? Colors.orange : palette.valueText,
+              ),
             ),
           ),
           if (canEdit) ...[
@@ -387,7 +450,7 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
 
     return InkWell(
       key: ValueKey('edit_row_$fieldKey'),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       onTap: () => _editField(
         analise: analise,
         fieldKey: fieldKey,
@@ -399,7 +462,88 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
     );
   }
 
+  Widget _buildMapActionRow(
+    String label,
+    String value,
+    _AnaliseDetailPalette palette, {
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      key: const ValueKey('select_location_on_map'),
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.caption.copyWith(
+                  color: palette.mutedText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: AppTextStyles.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: palette.valueText,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.map_outlined, size: 16, color: palette.editIcon),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _fmt(num? value) => AnaliseNumberFormatter.formatDecimal(value);
+  String _fmtPercent(num? value) =>
+      AnaliseNumberFormatter.formatDecimal(value, decimals: 0);
+  String _fmtRatio(num? value) =>
+      AnaliseNumberFormatter.formatDecimal(value, decimals: 1);
+
+  double? _labOrDerived(num? labValue, num? derivedValue) =>
+      labValue?.toDouble() ?? derivedValue?.toDouble();
+
+  String _mapRoute(AnaliseSolo analise, {bool selectionMode = false}) {
+    final params = {
+      'analiseId': analise.id,
+      if (selectionMode) 'selectionMode': 'true',
+    };
+    final query = Uri(queryParameters: params).query;
+    return '${AppRoutes.mapa}?$query';
+  }
+
+  void _openMapForView(AnaliseSolo analise) {
+    context.go(_mapRoute(analise));
+  }
+
+  Future<void> _openMapForSelection(AnaliseSolo analise) async {
+    final result = await context.push<LatLng>(
+      _mapRoute(analise, selectionMode: true),
+    );
+    if (result == null) return;
+
+    await _saveEditedAnalise(
+      _copyWithEditedCoordinates(
+        analise,
+        CoordinatePair(
+          latitude: result.latitude,
+          longitude: result.longitude,
+        ),
+      ),
+    );
+  }
 
   Future<void> _editField({
     required AnaliseSolo analise,
@@ -463,12 +607,31 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
 
     if (newValue == null) return;
 
-    final updated = _copyWithEditedField(
-      analise,
-      fieldKey,
-      isText ? newValue : _parseNullableDouble(newValue),
-    );
+    final AnaliseSolo updated;
+    if (fieldKey == 'latLong') {
+      final coordinates = CoordinateFormatter.parseCombined(newValue);
+      if (newValue.trim().isNotEmpty && coordinates == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Informe Lat/Long no formato -10.510193, -48.315852'),
+          ),
+        );
+        return;
+      }
+      updated = _copyWithEditedCoordinates(analise, coordinates);
+    } else {
+      updated = _copyWithEditedField(
+        analise,
+        fieldKey,
+        isText ? newValue : _parseNullableDouble(newValue),
+      );
+    }
 
+    await _saveEditedAnalise(updated);
+  }
+
+  Future<void> _saveEditedAnalise(AnaliseSolo updated) async {
     try {
       await ref
           .read(analiseNotifierProvider.notifier)
@@ -483,6 +646,17 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
         SnackBar(content: Text('Erro ao salvar: $e')),
       );
     }
+  }
+
+  AnaliseSolo _copyWithEditedCoordinates(
+    AnaliseSolo original,
+    CoordinatePair? coordinates,
+  ) {
+    return _copyWithEditedField(
+      _copyWithEditedField(original, 'latitude', coordinates?.latitude),
+      'longitude',
+      coordinates?.longitude,
+    );
   }
 
   double? _parseNullableDouble(String value) {
@@ -593,6 +767,10 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
       unidadeNutrientes: original.unidadeNutrientes,
       unidadeMO: original.unidadeMO,
       unidadeTextura: original.unidadeTextura,
+      clienteId: original.clienteId,
+      fazendaId: original.fazendaId,
+      talhaoId: original.talhaoId,
+      vinculoStatus: original.vinculoStatus,
     );
   }
 }
@@ -631,6 +809,36 @@ extension on String {
   }
 }
 
+class _HeaderInfoLine extends StatelessWidget {
+  const _HeaderInfoLine({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValue = value.trim().isEmpty ? 'Não informado' : value.trim();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Text(
+        '$label: $displayValue',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -646,24 +854,38 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.caption.copyWith(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

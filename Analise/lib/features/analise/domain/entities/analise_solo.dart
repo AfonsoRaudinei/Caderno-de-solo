@@ -2,6 +2,30 @@ import 'package:flutter/material.dart';
 
 enum Cultura { soja, milho, feijao, algodao, arroz, sorgo }
 
+/// Estado do vínculo hierárquico Cliente → Fazenda → Talhão.
+enum AnaliseVinculoStatus {
+  /// Vínculo escolhido explicitamente pelo usuário.
+  manual,
+
+  /// Vínculo inferido por correspondência de nomes em registros legados.
+  inferido,
+
+  /// Sem correspondência encontrada; análise permanece acessível por strings.
+  pendente,
+}
+
+extension AnaliseVinculoStatusX on AnaliseVinculoStatus {
+  String get firestoreValue => name;
+
+  static AnaliseVinculoStatus? fromFirestore(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    for (final status in AnaliseVinculoStatus.values) {
+      if (status.name == value) return status;
+    }
+    return null;
+  }
+}
+
 extension CulturaExtension on Cultura {
   String get label {
     switch (this) {
@@ -162,7 +186,7 @@ class AnaliseSolo {
   final Map<String, dynamic>? laudoMetadata;
 
   // Acidez detalhada
-  final double? h;          // Hidrogenio puro (separado de H+Al)
+  final double? h; // Hidrogenio puro (separado de H+Al)
   final double? ctcEfetiva; // CTC efetiva (t) = SB + Al
 
   // Valores entregues pelo lab (extraidos, nao recalculados)
@@ -181,6 +205,19 @@ class AnaliseSolo {
   final String? unidadeNutrientes;
   final String? unidadeMO;
   final String? unidadeTextura;
+
+  /// FK opcional para `clientes/{clienteId}`.
+  final String? clienteId;
+
+  /// FK opcional para `clientes/{clienteId}/fazendas/{fazendaId}`.
+  final String? fazendaId;
+
+  /// FK opcional para
+  /// `clientes/{clienteId}/fazendas/{fazendaId}/talhoes/{talhaoId}`.
+  final String? talhaoId;
+
+  /// Indica como a análise foi vinculada à hierarquia de clientes.
+  final AnaliseVinculoStatus? vinculoStatus;
 
   const AnaliseSolo({
     required this.id,
@@ -278,5 +315,206 @@ class AnaliseSolo {
     this.unidadeNutrientes,
     this.unidadeMO,
     this.unidadeTextura,
+    this.clienteId,
+    this.fazendaId,
+    this.talhaoId,
+    this.vinculoStatus,
   });
+
+  bool get possuiVinculoHierarquico =>
+      (clienteId?.trim().isNotEmpty ?? false) &&
+      (fazendaId?.trim().isNotEmpty ?? false) &&
+      (talhaoId?.trim().isNotEmpty ?? false);
+
+  AnaliseSolo copyWith({
+    String? id,
+    String? fazenda,
+    String? produtor,
+    String? talhao,
+    String? numeroAmostra,
+    Cultura? cultura,
+    String? safra,
+    String? laboratorio,
+    DateTime? dataCadastro,
+    String? profundidade,
+    double? latitude,
+    double? longitude,
+    String? descricaoLocal,
+    double? argila,
+    double? silte,
+    double? areiaTotal,
+    double? phAgua,
+    double? phSmp,
+    double? phCaCl2,
+    double? materiaOrganica,
+    double? carbonoOrganico,
+    double? pMehlich,
+    double? pResina,
+    double? pRem,
+    double? s020,
+    double? s2040,
+    double? k,
+    double? ca,
+    double? mg,
+    double? al,
+    double? hMaisAl,
+    double? na,
+    double? b,
+    double? cu,
+    double? fe,
+    double? mn,
+    double? zn,
+    double? ni,
+    double? mo,
+    double? se,
+    double? co,
+    double? cascalho,
+    double? areiaGrossa,
+    double? areiaFina,
+    String? municipio,
+    String? responsavelTecnico,
+    String? cnpjCliente,
+    double? pTotal,
+    String? classificacaoTextura,
+    int? tipoSoloMapa,
+    String? solicitante,
+    String? convenio,
+    String? creaResponsavel,
+    String? cnpjLaboratorio,
+    String? dataInicioEnsaio,
+    String? dataFimEnsaio,
+    String? matriculaImovel,
+    String? codigoInterno,
+    String? codigoExternoAmostra,
+    double? caMaisMg,
+    double? kMgDm3,
+    double? cuMehlich,
+    double? feMehlich,
+    double? mnMehlich,
+    double? znMehlich,
+    double? cuDtpa,
+    double? feDtpa,
+    double? mnDtpa,
+    double? znDtpa,
+    String? dataRecebimento,
+    String? numeroRelatorio,
+    String? codigoVerificacao,
+    String? codigoTalhao,
+    int? totalAmostras,
+    String? pdfUrl,
+    Map<String, dynamic>? laudoMetadata,
+    double? h,
+    double? ctcEfetiva,
+    double? ctc,
+    double? sb,
+    double? vPercent,
+    double? mPercent,
+    String? osLaboratorio,
+    String? dataEmissao,
+    String? consultor,
+    String? labTemplateId,
+    String? unidadeNutrientes,
+    String? unidadeMO,
+    String? unidadeTextura,
+    String? clienteId,
+    String? fazendaId,
+    String? talhaoId,
+    AnaliseVinculoStatus? vinculoStatus,
+  }) {
+    return AnaliseSolo(
+      id: id ?? this.id,
+      fazenda: fazenda ?? this.fazenda,
+      produtor: produtor ?? this.produtor,
+      talhao: talhao ?? this.talhao,
+      numeroAmostra: numeroAmostra ?? this.numeroAmostra,
+      cultura: cultura ?? this.cultura,
+      safra: safra ?? this.safra,
+      laboratorio: laboratorio ?? this.laboratorio,
+      dataCadastro: dataCadastro ?? this.dataCadastro,
+      profundidade: profundidade ?? this.profundidade,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      descricaoLocal: descricaoLocal ?? this.descricaoLocal,
+      argila: argila ?? this.argila,
+      silte: silte ?? this.silte,
+      areiaTotal: areiaTotal ?? this.areiaTotal,
+      phAgua: phAgua ?? this.phAgua,
+      phSmp: phSmp ?? this.phSmp,
+      phCaCl2: phCaCl2 ?? this.phCaCl2,
+      materiaOrganica: materiaOrganica ?? this.materiaOrganica,
+      carbonoOrganico: carbonoOrganico ?? this.carbonoOrganico,
+      pMehlich: pMehlich ?? this.pMehlich,
+      pResina: pResina ?? this.pResina,
+      pRem: pRem ?? this.pRem,
+      s020: s020 ?? this.s020,
+      s2040: s2040 ?? this.s2040,
+      k: k ?? this.k,
+      ca: ca ?? this.ca,
+      mg: mg ?? this.mg,
+      al: al ?? this.al,
+      hMaisAl: hMaisAl ?? this.hMaisAl,
+      na: na ?? this.na,
+      b: b ?? this.b,
+      cu: cu ?? this.cu,
+      fe: fe ?? this.fe,
+      mn: mn ?? this.mn,
+      zn: zn ?? this.zn,
+      ni: ni ?? this.ni,
+      mo: mo ?? this.mo,
+      se: se ?? this.se,
+      co: co ?? this.co,
+      cascalho: cascalho ?? this.cascalho,
+      areiaGrossa: areiaGrossa ?? this.areiaGrossa,
+      areiaFina: areiaFina ?? this.areiaFina,
+      municipio: municipio ?? this.municipio,
+      responsavelTecnico: responsavelTecnico ?? this.responsavelTecnico,
+      cnpjCliente: cnpjCliente ?? this.cnpjCliente,
+      pTotal: pTotal ?? this.pTotal,
+      classificacaoTextura: classificacaoTextura ?? this.classificacaoTextura,
+      tipoSoloMapa: tipoSoloMapa ?? this.tipoSoloMapa,
+      solicitante: solicitante ?? this.solicitante,
+      convenio: convenio ?? this.convenio,
+      creaResponsavel: creaResponsavel ?? this.creaResponsavel,
+      cnpjLaboratorio: cnpjLaboratorio ?? this.cnpjLaboratorio,
+      dataInicioEnsaio: dataInicioEnsaio ?? this.dataInicioEnsaio,
+      dataFimEnsaio: dataFimEnsaio ?? this.dataFimEnsaio,
+      matriculaImovel: matriculaImovel ?? this.matriculaImovel,
+      codigoInterno: codigoInterno ?? this.codigoInterno,
+      codigoExternoAmostra: codigoExternoAmostra ?? this.codigoExternoAmostra,
+      caMaisMg: caMaisMg ?? this.caMaisMg,
+      kMgDm3: kMgDm3 ?? this.kMgDm3,
+      cuMehlich: cuMehlich ?? this.cuMehlich,
+      feMehlich: feMehlich ?? this.feMehlich,
+      mnMehlich: mnMehlich ?? this.mnMehlich,
+      znMehlich: znMehlich ?? this.znMehlich,
+      cuDtpa: cuDtpa ?? this.cuDtpa,
+      feDtpa: feDtpa ?? this.feDtpa,
+      mnDtpa: mnDtpa ?? this.mnDtpa,
+      znDtpa: znDtpa ?? this.znDtpa,
+      dataRecebimento: dataRecebimento ?? this.dataRecebimento,
+      numeroRelatorio: numeroRelatorio ?? this.numeroRelatorio,
+      codigoVerificacao: codigoVerificacao ?? this.codigoVerificacao,
+      codigoTalhao: codigoTalhao ?? this.codigoTalhao,
+      totalAmostras: totalAmostras ?? this.totalAmostras,
+      pdfUrl: pdfUrl ?? this.pdfUrl,
+      laudoMetadata: laudoMetadata ?? this.laudoMetadata,
+      h: h ?? this.h,
+      ctcEfetiva: ctcEfetiva ?? this.ctcEfetiva,
+      ctc: ctc ?? this.ctc,
+      sb: sb ?? this.sb,
+      vPercent: vPercent ?? this.vPercent,
+      mPercent: mPercent ?? this.mPercent,
+      osLaboratorio: osLaboratorio ?? this.osLaboratorio,
+      dataEmissao: dataEmissao ?? this.dataEmissao,
+      consultor: consultor ?? this.consultor,
+      labTemplateId: labTemplateId ?? this.labTemplateId,
+      unidadeNutrientes: unidadeNutrientes ?? this.unidadeNutrientes,
+      unidadeMO: unidadeMO ?? this.unidadeMO,
+      unidadeTextura: unidadeTextura ?? this.unidadeTextura,
+      clienteId: clienteId ?? this.clienteId,
+      fazendaId: fazendaId ?? this.fazendaId,
+      talhaoId: talhaoId ?? this.talhaoId,
+      vinculoStatus: vinculoStatus ?? this.vinculoStatus,
+    );
+  }
 }
