@@ -10,8 +10,7 @@ import 'package:soloforte/features/analise/application/providers/analise_provide
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/domain/entities/fazenda_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
-import 'package:soloforte/features/clientes/presentation/fazenda_form_screen.dart';
-import 'package:soloforte/features/clientes/presentation/talhao_form_screen.dart';
+import 'package:soloforte/features/clientes/presentation/cliente_detail_tab.dart';
 import 'package:soloforte/features/clientes/presentation/widgets/cliente_detail_tab_views.dart';
 import 'package:soloforte/features/historico/application/providers/historico_provider.dart';
 
@@ -19,9 +18,11 @@ class ClienteDetailScreen extends ConsumerStatefulWidget {
   const ClienteDetailScreen({
     super.key,
     required this.clienteId,
+    this.initialTab = ClienteDetailTab.resumo,
   });
 
   final String clienteId;
+  final ClienteDetailTab initialTab;
 
   @override
   ConsumerState<ClienteDetailScreen> createState() =>
@@ -36,7 +37,11 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(
+      length: 5,
+      vsync: this,
+      initialIndex: widget.initialTab.tabIndex,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(clienteProvider.notifier)
@@ -167,10 +172,8 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
   }
 
   Future<void> _abrirNovaFazenda() async {
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => FazendaFormScreen(clienteId: widget.clienteId),
-      ),
+    final changed = await context.push<bool>(
+      AppRoutes.fazendaNovaPath(widget.clienteId),
     );
     if (changed == true) {
       await ref
@@ -219,13 +222,11 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
     if (!mounted) return;
 
     if (confirmed == 'edit') {
-      final changed = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => TalhaoFormScreen(
-            clienteId: widget.clienteId,
-            fazendaId: fazenda.id,
-            talhaoId: talhao.id,
-          ),
+      final changed = await context.push<bool>(
+        AppRoutes.talhaoEditarPath(
+          widget.clienteId,
+          fazenda.id,
+          talhao.id,
         ),
       );
       if (changed == true) {

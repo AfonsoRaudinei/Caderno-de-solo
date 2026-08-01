@@ -36,7 +36,34 @@ Fields: userId ASC, talhaoId ASC, safra DESC
 
 Queries atuais por `userId` continuam funcionando sem índice adicional.
 
+## UI — Detalhe do cliente (Etapa 4)
+
+`ClienteDetailScreen` organizada em abas:
+
+| Aba | Conteúdo |
+| --- | --- |
+| Resumo | Dados do cliente, QR token, contadores |
+| Propriedades | CRUD de fazendas (expandível) |
+| Talhões | Lista plana de todos os talhões |
+| Análises | `analisesPorClienteProvider` + badge de vínculo pendente |
+| Recomendações | `recomendacoesPorClienteProvider` via `analiseIds` das análises filtradas |
+
+## Rotas go_router (Etapa 5)
+
+Toda navegação Cliente → Fazenda → Talhão usa `go_router` (sem `MaterialPageRoute`).
+
+| Rota | Tela |
+| --- | --- |
+| `/clientes/:id` | Detalhe (`?tab=` opcional: propriedades, talhoes, recomendacoes) |
+| `/clientes/:id/analises` | Detalhe na aba Análises |
+| `/clientes/:id/fazenda/nova` | Nova propriedade |
+| `/clientes/:id/fazenda/:fazendaId/editar` | Editar propriedade |
+| `/clientes/:id/fazenda/:fazendaId/talhao/novo` | Novo talhão |
+| `/clientes/:id/fazenda/:fazendaId/talhao/:talhaoId/editar` | Editar talhão |
+
+Helpers: `AppRoutes.clienteAnalisesPath`, `fazendaEditarPath`, `talhaoEditarPath`, `clienteDetalheComAbaPath`.
+
 ## Fallback de leitura
 
 - FK ausente → UI usa `produtor` / `fazenda` / `talhao` (strings).
-- FK parcial → tratar como não vinculado; exibir badge "Vínculo pendente" (Etapa 4).
+- FK parcial → tratar como não vinculado; exibir badge "Vínculo pendente" na aba Análises do detalhe do cliente (Etapa 4).

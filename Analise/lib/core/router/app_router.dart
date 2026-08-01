@@ -5,6 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/widgets/app_button.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
+import 'package:soloforte/data/datasources/remote/auth_datasource.dart';
 import 'package:soloforte/features/auth/presentation/login/login_page.dart';
 
 import 'package:soloforte/features/auth/presentation/cadastro/cadastro_page.dart';
@@ -12,6 +18,7 @@ import 'package:soloforte/features/auth/presentation/cadastro/cadastro_page.dart
 import 'package:soloforte/features/auth/presentation/recuperar_senha/recuperar_senha_page.dart';
 
 import 'package:soloforte/features/main/presentation/main_page.dart';
+import 'package:soloforte/features/clientes/presentation/cliente_detail_tab.dart';
 import 'package:soloforte/features/clientes/presentation/cliente_detail_screen.dart';
 import 'package:soloforte/features/clientes/presentation/cliente_form_screen.dart';
 import 'package:soloforte/features/clientes/presentation/fazenda_form_screen.dart';
@@ -274,6 +281,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: ':id',
                     builder: (context, state) => ClienteDetailScreen(
                       clienteId: state.pathParameters['id']!,
+                      initialTab: ClienteDetailTab.fromQuery(
+                        state.uri.queryParameters[AppRoutes.clienteTabQuery],
+                      ),
                     ),
                     routes: [
                       GoRoute(
@@ -283,9 +293,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                         ),
                       ),
                       GoRoute(
+                        path: 'analises',
+                        builder: (context, state) => ClienteDetailScreen(
+                          clienteId: state.pathParameters['id']!,
+                          initialTab: ClienteDetailTab.analises,
+                        ),
+                      ),
+                      GoRoute(
                         path: 'fazenda/nova',
                         builder: (context, state) => FazendaFormScreen(
                           clienteId: state.pathParameters['id']!,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'fazenda/:fazendaId/editar',
+                        builder: (context, state) => FazendaFormScreen(
+                          clienteId: state.pathParameters['id']!,
+                          fazendaId: state.pathParameters['fazendaId'],
                         ),
                       ),
                       GoRoute(
@@ -293,6 +317,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) => TalhaoFormScreen(
                           clienteId: state.pathParameters['id']!,
                           fazendaId: state.pathParameters['fazendaId']!,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'fazenda/:fazendaId/talhao/:talhaoId/editar',
+                        builder: (context, state) => TalhaoFormScreen(
+                          clienteId: state.pathParameters['id']!,
+                          fazendaId: state.pathParameters['fazendaId']!,
+                          talhaoId: state.pathParameters['talhaoId'],
                         ),
                       ),
                     ],
@@ -404,6 +436,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.mapa,
                 builder: (context, state) => MapaPage(
                   initialAnaliseId: state.uri.queryParameters['analiseId'],
+                  selectionMode:
+                      state.uri.queryParameters['selectionMode'] == 'true',
                 ),
               ),
             ],
@@ -452,8 +486,18 @@ class _AuthBootstrapPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      backgroundColor: AppColors.bgSecondary,
       body: Center(
-        child: CircularProgressIndicator(),
+        child: AppSurface(
+          borderRadius: AppDimens.radiusXl,
+          child: SizedBox(
+            width: 88,
+            height: 88,
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -512,47 +556,63 @@ class _EmailVerificationPage extends ConsumerWidget {
     }
 
     Future<void> signOut() async {
-      await auth.signOut();
+      await ref.read(authDatasourceProvider).signOut();
       if (context.mounted) context.go(AppRoutes.login);
     }
 
     return Scaffold(
+      backgroundColor: AppColors.bgSecondary,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(Icons.mark_email_unread_outlined, size: 56),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Verifique seu e-mail',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Enviamos um link para $email. Confirme o endereço antes de acessar o app.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: checkVerification,
-                    child: const Text('Já verifiquei'),
-                  ),
-                  TextButton(
-                    onPressed: resendEmail,
-                    child: const Text('Reenviar e-mail'),
-                  ),
-                  TextButton(
-                    onPressed: signOut,
-                    child: const Text('Sair'),
-                  ),
-                ],
+              child: AppSurface(
+                borderRadius: AppDimens.radius2xl,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const AppIconFrame(
+                      icon: Icons.mark_email_unread_rounded,
+                      size: 72,
+                      iconSize: 38,
+                    ),
+                    const SizedBox(height: AppDimens.lg),
+                    Text(
+                      'Verifique seu e-mail',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.headline,
+                    ),
+                    const SizedBox(height: AppDimens.sm),
+                    Text(
+                      'Enviamos um link para $email. Confirme o endereço antes de acessar o app.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecond,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimens.xl),
+                    AppButton(
+                      label: 'Já verifiquei',
+                      icon: Icons.verified_rounded,
+                      onPressed: checkVerification,
+                    ),
+                    const SizedBox(height: AppDimens.sm),
+                    AppButtonSecondary(
+                      label: 'Reenviar e-mail',
+                      icon: Icons.refresh_rounded,
+                      onPressed: resendEmail,
+                    ),
+                    const SizedBox(height: AppDimens.sm),
+                    TextButton.icon(
+                      onPressed: signOut,
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Sair'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
