@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/presentation/screens/analise_detail_screen.dart';
 
 import '../../../../support/analise_test_factories.dart';
+import '../../../../support/analise_test_harness.dart';
 
 class _FakeAnaliseNotifier extends AnaliseNotifier {
   _FakeAnaliseNotifier(this._analises);
@@ -16,6 +18,18 @@ class _FakeAnaliseNotifier extends AnaliseNotifier {
   Stream<List<AnaliseSolo>> build() async* {
     yield _analises;
   }
+}
+
+Widget _buildApp({
+  required ProviderContainer container,
+  required String analiseId,
+}) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: MaterialApp(
+      home: AnaliseDetailScreen(analiseId: analiseId),
+    ),
+  );
 }
 
 void main() {
@@ -32,18 +46,20 @@ void main() {
       k: 0.31,
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          analiseNotifierProvider.overrideWith(
-            () => _FakeAnaliseNotifier([analise]),
-          ),
-        ],
-        child: const MaterialApp(
-          home: AnaliseDetailScreen(analiseId: 'det-1'),
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier([analise]),
         ),
-      ),
+        analisePersistenceGatewayProvider.overrideWithValue(
+          InMemoryBatchGateway(),
+        ),
+      ],
     );
+    addTearDown(container.dispose);
+
+    await tester
+        .pumpWidget(_buildApp(container: container, analiseId: 'det-1'));
     await tester.pumpAndSettle();
 
     expect(find.text('IDENTIFICAÇÃO DO LAUDO'), findsNothing);
@@ -78,18 +94,20 @@ void main() {
       longitude: -48.315852,
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          analiseNotifierProvider.overrideWith(
-            () => _FakeAnaliseNotifier([analise]),
-          ),
-        ],
-        child: const MaterialApp(
-          home: AnaliseDetailScreen(analiseId: 'det-1'),
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier([analise]),
         ),
-      ),
+        analisePersistenceGatewayProvider.overrideWithValue(
+          InMemoryBatchGateway(),
+        ),
+      ],
     );
+    addTearDown(container.dispose);
+
+    await tester
+        .pumpWidget(_buildApp(container: container, analiseId: 'det-1'));
     await tester.pumpAndSettle();
 
     expect(find.text('Lat/Long'), findsOneWidget);
@@ -99,5 +117,35 @@ void main() {
         find.byKey(const ValueKey('select_location_on_map')), findsOneWidget);
     expect(find.text('Latitude'), findsNothing);
     expect(find.text('Longitude'), findsNothing);
+  });
+
+  testWidgets('concluir edicao volta ao modo visualizacao', (tester) async {
+    final analise = makeAnalise(id: 'det-1', talhao: 'T01');
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier([analise]),
+        ),
+        analisePersistenceGatewayProvider.overrideWithValue(
+          InMemoryBatchGateway(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester
+        .pumpWidget(_buildApp(container: container, analiseId: 'det-1'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.edit));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('edit_row_profundidade')), findsOneWidget);
+    expect(find.text('IDENTIFICAÇÃO DO LAUDO'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Composição Física'), findsOneWidget);
+    expect(find.byKey(const ValueKey('edit_row_profundidade')), findsNothing);
   });
 }
