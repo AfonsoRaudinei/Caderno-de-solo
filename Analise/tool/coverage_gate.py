@@ -68,7 +68,7 @@ def main() -> int:
             float(os.getenv("QUALITY_MIN_LAUDO_REPOSITORY_COVERAGE", "85")),
         ),
         (
-            "lib/features/laboratorio/presentation/providers/laudo_provider.dart",
+            "lib/features/laboratorio/application/providers/laudo_provider.dart",
             float(os.getenv("QUALITY_MIN_LAUDO_PROVIDER_COVERAGE", "50")),
         ),
         (
