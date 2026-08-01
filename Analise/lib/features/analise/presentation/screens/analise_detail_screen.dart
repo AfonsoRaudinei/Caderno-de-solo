@@ -553,57 +553,63 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
     required bool isText,
   }) async {
     final controller = TextEditingController(text: currentValue);
-    final newValue = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20, 18, 20, bottomInset + 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: isText
-                    ? TextInputType.text
-                    : const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Deixe vazio para marcar como não informado',
+    String? newValue;
+    try {
+      newValue = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(20, 18, 20, bottomInset + 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  keyboardType: isText
+                      ? TextInputType.text
+                      : const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Deixe vazio para marcar como não informado',
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () =>
-                        Navigator.pop(context, controller.text.trim()),
-                    child: const Text('Salvar'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    controller.dispose();
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () =>
+                          Navigator.pop(context, controller.text.trim()),
+                      child: const Text('Salvar'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.dispose();
+      });
+    }
 
     if (newValue == null) return;
 

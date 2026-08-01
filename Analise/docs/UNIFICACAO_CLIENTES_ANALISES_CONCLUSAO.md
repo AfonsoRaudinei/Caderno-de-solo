@@ -40,12 +40,30 @@ Cliente → Propriedade/Fazenda → Talhão → Análises → Recomendações
 - [x] `tool/quality_gate.sh` — step dedicado à unificação
 - [x] Build Android debug — Gradle 8.13 (wrapper atualizado)
 
-## Pendências conhecidas (fora do escopo desta entrega)
+## Pendências operacionais (pós-entrega)
 
-- Formulário manual de nova análise ainda sem seletor hierárquico (rota `/analise/nova` redireciona)
-- Índices Firestore compostos recomendados — criar manualmente no console Firebase
-- Revisão formal do agente revisor Flutter não executada como subagente
-- Violações pré-existentes de import cross-feature em outras features (laboratorio, clientes) — não introduzidas por esta PR
+- Índices Firestore compostos — criar manualmente no console Firebase quando consultas compostas forem usadas em produção
+- Build iOS — validar em ambiente macOS/Xcode (não executado nesta etapa)
+
+## Revisão técnica (agente revisor) — PR #13
+
+| Item | Corrigido |
+| --- | --- |
+| Bugbot: `ClienteDetailScreen` stale sem `ValueKey` por `:id` | ✅ |
+| Bugbot: rota `/config/calculos` sem gate de senha | ✅ |
+| Bugbot: race em `watchAnalises` / `bindUser` | ✅ |
+| Conflito de merge `analise_detail_screen_test.dart` | ✅ |
+| Violações cross-feature (arch gate) | ✅ |
+| `recomendacao_screen` regressão + testes GoRouter | ✅ |
+| Quality gate Gate E (cobertura crítica) | ✅ |
+| CI GitHub Actions (workflow na raiz do repo) | ✅ |
+| Dispose prematuro de `TextEditingController` no detalhe | ✅ |
+| Seletor hierárquico no save manual/import do formulário | ✅ |
+| Formulário `/analise/nova` (rota redireciona para lista; fluxo via formulário embutido) | ✅ |
+| Índices Firestore no console Firebase | ❌ (manual, infra) |
+| Build iOS release | ❌ (ambiente) |
+
+**Veredito:** Aprovado com ressalvas — pendências restantes são operacionais/infra, não bloqueiam merge funcional.
 
 ## Comandos de verificação
 

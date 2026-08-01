@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
-import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
-import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/domain/usecases/aplicar_hierarquia_analises_usecase.dart';
-import 'package:soloforte/features/analise/domain/value_objects/hierarquia_selecao_sugestao.dart';
-import 'package:soloforte/features/analise/presentation/widgets/hierarquia_selecao_sheet.dart';
+import 'package:soloforte/features/analise/presentation/flows/vincular_hierarquia_salvar_flow.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
-import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 
 /// Fluxo reutilizável de importação de PDF + persistência atômica.
 class ImportarAnalisePdfFlow {
@@ -109,30 +104,13 @@ class ImportarAnalisePdfFlow {
     List<AnaliseSolo> analises, {
     required bool popOnSuccess,
   }) async {
-    final configuradoAtual =
-        ref.read(produtorConfiguradoProvider).valueOrNull ?? '';
-    final sugestao = HierarquiaSelecaoSugestao.fromAnalises(
-      analises,
-      produtorConfigurado: configuradoAtual,
-    );
-    if (!context.mounted) return;
-
-    final selecao = await showHierarquiaSelecaoSheet(
+    final analisesVinculadas =
+        await VincularHierarquiaSalvarFlow.solicitarEVincular(
       context,
       ref,
-      sugestao: sugestao,
-    );
-    if (selecao == null || !context.mounted) return;
-
-    await ref
-        .read(produtorConfiguradoProvider.notifier)
-        .salvar(selecao.clienteNome);
-    if (!context.mounted) return;
-
-    final analisesVinculadas = const AplicarHierarquiaAnalisesUsecase()(
       analises: analises,
-      selecao: selecao,
     );
+    if (analisesVinculadas == null || !context.mounted) return;
 
     await _salvarImportadas(
       context,
@@ -142,13 +120,10 @@ class ImportarAnalisePdfFlow {
     );
 
     if (context.mounted) {
-      await ref
-          .read(analiseNotifierProvider.notifier)
-          .registrarVinculosPosSalvar(analisesVinculadas);
-      await ref.read(clienteProvider.notifier).carregarClientes();
-      await ref
-          .read(analiseNotifierProvider.notifier)
-          .repararProdutoresLegados();
+      await VincularHierarquiaSalvarFlow.sincronizarPosSalvar(
+        ref,
+        analisesVinculadas,
+      );
     }
   }
 

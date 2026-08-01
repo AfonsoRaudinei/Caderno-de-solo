@@ -11,6 +11,7 @@ import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
+import 'package:soloforte/features/analise/presentation/flows/vincular_hierarquia_salvar_flow.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_table_widget.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
@@ -388,10 +389,36 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     final ctrlProvider = novaAnaliseControllerProvider(widget.analiseInicial);
     final ctrl = ref.read(ctrlProvider.notifier);
     final snackBottomMargin = MediaQuery.of(context).viewPadding.bottom + 92;
-    final ok = await ctrl.salvar();
+
+    final erroValidacao = ctrl.validarParaSalvar();
+    if (erroValidacao != null) {
+      if (!mounted) return;
+      ctrl.destacarProximaCelulaInvalida();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(erroValidacao),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
+        ),
+      );
+      return;
+    }
+
+    final rascunhos = ctrl.montarAnalisesParaSalvar();
+    final vinculadas = await VincularHierarquiaSalvarFlow.solicitarEVincular(
+      context,
+      ref,
+      analises: rascunhos,
+    );
+    if (vinculadas == null || !mounted) return;
+
+    final ok = await ctrl.salvar(analisesPreparadas: vinculadas);
     if (!mounted) return;
 
     if (ok) {
+      await VincularHierarquiaSalvarFlow.sincronizarPosSalvar(ref, vinculadas);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Análise salva com sucesso'),
@@ -493,8 +520,18 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     NovaAnaliseController ctrl,
     List<AnaliseSolo> analises,
   ) async {
+    final vinculadas = await VincularHierarquiaSalvarFlow.solicitarEVincular(
+      context,
+      ref,
+      analises: analises,
+    );
+    if (vinculadas == null || !mounted) return;
+
     try {
-      final result = await ctrl.salvarImportadas(analises);
+      final result = await ctrl.salvarImportadas(vinculadas);
+      if (!mounted) return;
+
+      await VincularHierarquiaSalvarFlow.sincronizarPosSalvar(ref, vinculadas);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
