@@ -18,8 +18,9 @@ Os campos legados `produtor`, `fazenda` e `talhao` **permanecem** para retrocomp
 1. **Registros antigos:** nunca apagados. Leitura funciona sem FKs.
 2. **Reparo lazy:** `AnaliseNotifier.repararVinculosLegados()` infere vínculos por nome quando Cliente/Fazenda/Talhão existem no cadastro.
 3. **Status `pendente`:** gravado quando não há correspondência; a análise continua visível na aba Análise.
-4. **`cliente.analiseIds`:** atualizado via `FieldValue.arrayUnion` após vínculo inferido ou manual (Etapa 3).
-5. **IDs preservados:** nenhum documento é recriado; apenas `update` com campos novos.
+4. **`cliente.analiseIds`:** atualizado via `FieldValue.arrayUnion` após vínculo inferido ou manual.
+5. **Importação PDF (Etapa 3):** `showHierarquiaSelecaoSheet` exige Cliente → Propriedade → Talhão antes do save; `AplicarHierarquiaAnalisesUsecase` grava FKs com `vinculoStatus: manual`; `registrarVinculosPosSalvar` sincroniza `analiseIds`.
+6. **IDs preservados:** nenhum documento é recriado; apenas `update` com campos novos.
 
 ## Índices Firestore recomendados
 

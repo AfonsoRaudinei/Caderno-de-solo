@@ -10,10 +10,12 @@ import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/usecases/get_analises_usecase.dart';
 import 'package:soloforte/features/analise/domain/usecases/save_analise_usecase.dart';
 import 'package:soloforte/features/analise/domain/usecases/delete_analise_usecase.dart';
+import 'package:soloforte/features/analise/domain/services/cliente_analises_filter.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
 import 'package:soloforte/features/analise/application/mappers/cliente_hierarquia_mapper.dart';
 import 'package:soloforte/features/analise/domain/usecases/reparar_vinculos_legados_usecase.dart';
+import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/data/repositories/cliente_repository.dart';
 import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 import 'package:soloforte/features/analise/domain/repositories/analise_repository.dart';
@@ -372,16 +374,23 @@ final analisesVisiveisProvider = Provider<List<AnaliseSolo>>((ref) {
       .toList(growable: false);
 });
 
-/// Análises vinculadas a um cliente (por FK ou fallback futuro na UI).
+/// Análises vinculadas a um cliente (FK, índice `analiseIds` ou nome compatível).
 final analisesPorClienteProvider =
     Provider.family<List<AnaliseSolo>, String>((ref, clienteId) {
+  final analises =
+      ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
+  final cliente = ref.watch(clienteProvider).clienteSelecionado;
   final normalizedId = clienteId.trim();
-  if (normalizedId.isEmpty) return const [];
+  final analiseIds = cliente?.id == normalizedId ? cliente!.analiseIds : const [];
+  final clienteNome =
+      cliente?.id == normalizedId ? cliente!.nome : '';
 
-  final analises = ref.watch(analisesVisiveisProvider);
-  return analises
-      .where((analise) => analise.clienteId == normalizedId)
-      .toList(growable: false);
+  return ClienteAnalisesFilter.filtrar(
+    analises: analises,
+    clienteId: normalizedId,
+    analiseIds: Set<String>.from(analiseIds),
+    clienteNome: clienteNome,
+  );
 });
 
 /// Análises vinculadas a um talhão específico.
@@ -390,7 +399,7 @@ final analisesPorTalhaoProvider =
   final normalizedId = talhaoId.trim();
   if (normalizedId.isEmpty) return const [];
 
-  final analises = ref.watch(analisesVisiveisProvider);
+  final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
   return analises
       .where((analise) => analise.talhaoId == normalizedId)
       .toList(growable: false);

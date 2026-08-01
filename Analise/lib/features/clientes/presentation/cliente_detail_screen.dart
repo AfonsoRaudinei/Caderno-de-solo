@@ -5,16 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
-import 'package:soloforte/core/theme/app_text_styles.dart';
-import 'package:soloforte/core/widgets/app_button.dart';
-import 'package:soloforte/core/widgets/app_card.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/domain/entities/fazenda_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
 import 'package:soloforte/features/clientes/presentation/fazenda_form_screen.dart';
 import 'package:soloforte/features/clientes/presentation/talhao_form_screen.dart';
-import 'package:soloforte/features/clientes/presentation/widgets/fazenda_section_widget.dart';
-import 'package:soloforte/features/clientes/presentation/widgets/qr_token_widget.dart';
+import 'package:soloforte/features/clientes/presentation/widgets/cliente_detail_tab_views.dart';
+import 'package:soloforte/features/historico/application/providers/historico_provider.dart';
 
 class ClienteDetailScreen extends ConsumerStatefulWidget {
   const ClienteDetailScreen({
@@ -29,12 +28,15 @@ class ClienteDetailScreen extends ConsumerStatefulWidget {
       _ClienteDetailScreenState();
 }
 
-class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
+class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   final Set<String> _expandedFazendas = <String>{};
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 5, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(clienteProvider.notifier)
@@ -43,14 +45,47 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  String _displayName(String nome) {
+    final normalized = nome.trim();
+    return normalized.isEmpty ? 'Cliente sem nome' : normalized;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(clienteProvider);
     final cliente = state.clienteSelecionado;
+    final analises = ref.watch(analisesPorClienteProvider(widget.clienteId));
+    final recomendacoesCount = ref
+        .watch(recomendacoesPorClienteProvider(widget.clienteId))
+        .maybeWhen(data: (items) => items.length, orElse: () => 0);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: context.appPalette.background,
       appBar: AppBar(
-        title: const Text('Detalhe'),
+        title: Text(
+          cliente == null ? 'Detalhe' : _displayName(cliente.nome),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        bottom: cliente == null
+            ? null
+            : TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: const [
+                  Tab(text: 'Resumo'),
+                  Tab(text: 'Propriedades'),
+                  Tab(text: 'Talhões'),
+                  Tab(text: 'Análises'),
+                  Tab(text: 'Recomendações'),
+                ],
+              ),
       ),
       body: Builder(
         builder: (context) {
@@ -64,35 +99,15 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
             return const Center(child: Text('Cliente não encontrado.'));
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return TabBarView(
+            controller: _tabController,
             children: [
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(cliente.nome, style: AppTextStyles.headline),
-                    const SizedBox(height: 12),
-                    _DetailLine(
-                        icon: Icons.phone_outlined, text: cliente.telefone),
-                    _DetailLine(icon: Icons.mail_outline, text: cliente.email),
-                    _DetailLine(
-                      icon: Icons.location_on_outlined,
-                      text: '${cliente.cidade} — ${cliente.estado}',
-                    ),
-                    if ((cliente.observacoes ?? '').isNotEmpty)
-                      _DetailLine(
-                        icon: Icons.description_outlined,
-                        text: cliente.observacoes!,
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              QrTokenWidget(
-                token: cliente.token,
-                onCompartilhar: () => Share.share(cliente.token),
-                onCopiar: () async {
+              ClienteDetailResumoTab(
+                cliente: cliente,
+                totalAnalises: analises.length,
+                totalRecomendacoes: recomendacoesCount,
+                onCompartilharToken: () => Share.share(cliente.token),
+                onCopiarToken: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   await Clipboard.setData(ClipboardData(text: cliente.token));
                   if (!mounted) return;
@@ -100,59 +115,7 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
                     const SnackBar(content: Text('Token copiado!')),
                   );
                 },
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'FAZENDAS',
-                style: AppTextStyles.sectionLabel.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 10),
-              for (final fazenda in cliente.fazendas)
-                Dismissible(
-                  key: ValueKey('fazenda-${fazenda.id}'),
-                  direction: DismissDirection.endToStart,
-                  confirmDismiss: (_) => _confirmarExclusao(
-                    'Excluir fazenda?',
-                    'Essa ação remove também os talhões cadastrados.',
-                  ),
-                  onDismissed: (_) => ref
-                      .read(clienteProvider.notifier)
-                      .deletarFazenda(cliente.id, fazenda.id),
-                  background: _dismissBackground(),
-                  child: FazendaSectionWidget(
-                    fazenda: fazenda.copyWith(
-                      talhoes: fazenda.talhoes,
-                    ),
-                    isExpanded: _expandedFazendas.contains(fazenda.id),
-                    onToggle: () {
-                      setState(() {
-                        if (_expandedFazendas.contains(fazenda.id)) {
-                          _expandedFazendas.remove(fazenda.id);
-                        } else {
-                          _expandedFazendas.add(fazenda.id);
-                        }
-                      });
-                    },
-                    onAdicionarTalhao: () => _abrirNovoTalhao(fazenda.id),
-                    onTapTalhao: (talhao) =>
-                        _abrirTalhaoEdicao(fazenda, talhao),
-                  ),
-                ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: AppButtonText(
-                  label: '+ Adicionar Fazenda',
-                  onPressed: _abrirNovaFazenda,
-                ),
-              ),
-              const SizedBox(height: 20),
-              AppButtonSecondary(
-                label: 'Editar Cliente',
-                icon: Icons.edit_outlined,
-                onPressed: () async {
+                onEditarCliente: () async {
                   final changed = await context.push<bool>(
                     AppRoutes.clienteEditarPath(cliente.id),
                   );
@@ -163,6 +126,39 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
                   }
                 },
               ),
+              ClienteDetailPropriedadesTab(
+                cliente: cliente,
+                expandedFazendas: _expandedFazendas,
+                onToggleFazenda: (fazendaId) {
+                  setState(() {
+                    if (_expandedFazendas.contains(fazendaId)) {
+                      _expandedFazendas.remove(fazendaId);
+                    } else {
+                      _expandedFazendas.add(fazendaId);
+                    }
+                  });
+                },
+                onAdicionarFazenda: _abrirNovaFazenda,
+                onAdicionarTalhao: _abrirNovoTalhao,
+                onTapTalhao: _abrirTalhaoEdicao,
+                onDismissFazenda: (fazendaId) => _confirmarExclusao(
+                  'Excluir propriedade?',
+                  'Essa ação remove também os talhões cadastrados.',
+                ).then((allowed) {
+                  if (allowed == true) {
+                    ref
+                        .read(clienteProvider.notifier)
+                        .deletarFazenda(cliente.id, fazendaId);
+                  }
+                  return allowed;
+                }),
+              ),
+              ClienteDetailTalhoesTab(
+                cliente: cliente,
+                onTapTalhao: _abrirTalhaoEdicao,
+              ),
+              ClienteDetailAnalisesTab(clienteId: widget.clienteId),
+              ClienteDetailRecomendacoesTab(clienteId: widget.clienteId),
             ],
           );
         },
@@ -254,18 +250,6 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
     }
   }
 
-  Widget _dismissBackground() {
-    return Container(
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Icon(Icons.delete_outline, color: AppColors.error),
-    );
-  }
-
   Future<bool?> _confirmarExclusao(String title, String message) {
     return showDialog<bool>(
       context: context,
@@ -282,36 +266,6 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen> {
             child: const Text(
               'Excluir',
               style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailLine extends StatelessWidget {
-  const _DetailLine({
-    required this.icon,
-    required this.text,
-  });
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.textSecond),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
             ),
           ),
         ],
