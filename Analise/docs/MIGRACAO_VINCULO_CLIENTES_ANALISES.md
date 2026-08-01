@@ -1,6 +1,6 @@
 # Migração — Vínculo Clientes ↔ Análises
 
-> Etapa 2 da unificação hierárquica Cliente → Fazenda → Talhão → Análises.
+> Etapas 2–3 da unificação hierárquica Cliente → Fazenda → Talhão → Análises.
 
 ## Campos adicionados em `analises/{id}`
 

@@ -4,11 +4,14 @@ import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
-import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/analise/application/providers/analise_persistence_gateway.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/domain/usecases/aplicar_hierarquia_analises_usecase.dart';
+import 'package:soloforte/features/analise/domain/value_objects/hierarquia_selecao_sugestao.dart';
+import 'package:soloforte/features/analise/presentation/widgets/hierarquia_selecao_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
+import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 
 /// Fluxo reutilizável de importação de PDF + persistência atômica.
 class ImportarAnalisePdfFlow {
@@ -108,59 +111,45 @@ class ImportarAnalisePdfFlow {
   }) async {
     final configuradoAtual =
         ref.read(produtorConfiguradoProvider).valueOrNull ?? '';
-    final sugestao = _sugerirProdutor(analises, configuradoAtual);
+    final sugestao = HierarquiaSelecaoSugestao.fromAnalises(
+      analises,
+      produtorConfigurado: configuradoAtual,
+    );
     if (!context.mounted) return;
 
-    final produtorConfigurado = await showProdutorConfiguradoImportSheet(
+    final selecao = await showHierarquiaSelecaoSheet(
       context,
-      valorInicial: sugestao,
+      ref,
+      sugestao: sugestao,
     );
-    if (produtorConfigurado == null || !context.mounted) return;
+    if (selecao == null || !context.mounted) return;
 
     await ref
         .read(produtorConfiguradoProvider.notifier)
-        .salvar(produtorConfigurado);
+        .salvar(selecao.clienteNome);
     if (!context.mounted) return;
 
-    final analisesNormalizadas = analises
-        .map(
-          (analise) => ProdutorResolucaoService.aplicarProdutorConfigurado(
-            analise,
-            produtorConfigurado,
-            forcarProdutorConfigurado: true,
-          ),
-        )
-        .toList(growable: false);
+    final analisesVinculadas = const AplicarHierarquiaAnalisesUsecase()(
+      analises: analises,
+      selecao: selecao,
+    );
 
     await _salvarImportadas(
       context,
       ref,
-      analisesNormalizadas,
+      analisesVinculadas,
       popOnSuccess: popOnSuccess,
     );
 
     if (context.mounted) {
       await ref
           .read(analiseNotifierProvider.notifier)
+          .registrarVinculosPosSalvar(analisesVinculadas);
+      await ref.read(clienteProvider.notifier).carregarClientes();
+      await ref
+          .read(analiseNotifierProvider.notifier)
           .repararProdutoresLegados();
-      await ref.read(analiseNotifierProvider.notifier).repararVinculosLegados();
     }
-  }
-
-  static String _sugerirProdutor(
-    List<AnaliseSolo> analises,
-    String configuradoAtual,
-  ) {
-    if (configuradoAtual.trim().isNotEmpty) return configuradoAtual.trim();
-    for (final analise in analises) {
-      final candidato = ProdutorResolucaoService.resolver(
-        produtorAtual: analise.produtor,
-        laudoMetadata: analise.laudoMetadata,
-        produtorConfigurado: '',
-      );
-      if (candidato.isNotEmpty) return candidato;
-    }
-    return '';
   }
 
   static Future<void> _salvarImportadas(
@@ -238,111 +227,6 @@ class ImportarAnalisePdfFlow {
     final raw = erro.toString().replaceFirst('Exception: ', '').trim();
     return 'Falha ao salvar a importação: $raw';
   }
-}
-
-Future<String?> showProdutorConfiguradoImportSheet(
-  BuildContext context, {
-  required String valorInicial,
-}) {
-  final controller = TextEditingController(text: valorInicial);
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (sheetContext) {
-      var erro = '';
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-            ),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD1D1D6),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Produtor configurado',
-                        style: Theme.of(sheetContext)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Informe o produtor/cliente desta importação. '
-                        'Somente análises deste produtor ficarão visíveis.',
-                        style: Theme.of(sheetContext)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: const Color(0xFF6E6E73)),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: controller,
-                        autofocus: true,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                          labelText: 'Produtor / Cliente',
-                          hintText: 'Ex: Rogério de Paiva Moura',
-                          errorText: erro.isEmpty ? null : erro,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: () {
-                          final produtor = controller.text.trim();
-                          if (ProdutorResolucaoService.isProdutorInvalido(
-                            produtor,
-                          )) {
-                            setState(() {
-                              erro =
-                                  'Informe o nome do produtor/cliente da análise.';
-                            });
-                            return;
-                          }
-                          Navigator.of(sheetContext).pop(produtor);
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Confirmar e importar'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    },
-  ).whenComplete(controller.dispose);
 }
 
 /// Inicia importação de PDF a partir da lista de análises.

@@ -164,8 +164,6 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     }
   }
 
-  /// Infere FKs Cliente → Fazenda → Talhão em análises legadas e sincroniza
-  /// `cliente.analiseIds` quando houver correspondência por nome.
   Future<void> repararVinculosLegados() async {
     final uid = ref.read(currentUserIdProvider);
     if (uid == null || uid.isEmpty) return;
@@ -195,6 +193,21 @@ class AnaliseNotifier extends _$AnaliseNotifier {
             .adicionarAnaliseId(clienteId, analise.id);
       } catch (_) {
         // Falha no índice denormalizado não deve bloquear o vínculo na análise.
+      }
+    }
+  }
+
+  /// Atualiza `cliente.analiseIds` após save com FKs já definidas.
+  Future<void> registrarVinculosPosSalvar(List<AnaliseSolo> analises) async {
+    for (final analise in analises) {
+      final clienteId = analise.clienteId?.trim() ?? '';
+      if (clienteId.isEmpty) continue;
+      try {
+        await ref
+            .read(clienteRepositoryProvider)
+            .adicionarAnaliseId(clienteId, analise.id);
+      } catch (_) {
+        // Índice denormalizado não bloqueia persistência da análise.
       }
     }
   }
