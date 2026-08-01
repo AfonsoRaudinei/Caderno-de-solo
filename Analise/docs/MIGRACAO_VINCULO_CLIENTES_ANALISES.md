@@ -1,6 +1,6 @@
 # Migração — Vínculo Clientes ↔ Análises
 
-> Etapas 2–3 da unificação hierárquica Cliente → Fazenda → Talhão → Análises.
+> Etapas 2–6 da unificação hierárquica Cliente → Fazenda → Talhão → Análises.
 
 ## Campos adicionados em `analises/{id}`
 
@@ -21,6 +21,18 @@ Os campos legados `produtor`, `fazenda` e `talhao` **permanecem** para retrocomp
 4. **`cliente.analiseIds`:** atualizado via `FieldValue.arrayUnion` após vínculo inferido ou manual.
 5. **Importação PDF (Etapa 3):** `showHierarquiaSelecaoSheet` exige Cliente → Propriedade → Talhão antes do save; `AplicarHierarquiaAnalisesUsecase` grava FKs com `vinculoStatus: manual`; `registrarVinculosPosSalvar` sincroniza `analiseIds`.
 6. **IDs preservados:** nenhum documento é recriado; apenas `update` com campos novos.
+7. **Migração em massa (Etapa 6):** `AnaliseNotifier.executarMigracaoVinculosLegados()` — job opcional acionado em Config → Sincronização de dados; infere FKs e marca `pendente` quando não há match; sincroniza `analiseIds`.
+
+## Migração em massa (Etapa 6)
+
+| Modo | Quando roda | Marca `pendente` |
+| --- | --- | --- |
+| **Lazy** | Lista de análises / aba Análises do cliente | Não |
+| **Massa** | Config → “Vincular análises legadas” (confirmação) | Sim |
+
+Use case: `MigrarVinculosLegadosUsecase` (planejamento) + persistência no `AnaliseNotifier`.
+
+Resultado exposto em `MigracaoVinculosResult`: total, já vinculadas, reparadas, pendentes, falhas.
 
 ## Índices Firestore recomendados
 

@@ -2,10 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/config/app_config.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/utils/image_source_resolver.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
+import 'package:soloforte/features/analise/presentation/widgets/migracao_vinculos_action_tile.dart';
 import 'package:soloforte/features/config/application/providers/app_theme_mode_provider.dart';
 import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
@@ -13,9 +18,6 @@ import 'package:soloforte/features/config/application/providers/perfil_assets_pr
 
 export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
-
-// Senha de acesso ao módulo Cálculos — alterar em cada release.
-const String _kCalculosAccessPassword = 'S-@oloforte';
 
 /// Bottom sheet iOS para edição de campo de texto.
 Future<void> _showEditSheet(
@@ -201,23 +203,47 @@ class ConfigPage extends ConsumerWidget {
                 const _SectionLabel('IDENTIDADE VISUAL'),
                 const _IdentidadeVisualCard(),
                 const SizedBox(height: 24),
-                const _SectionLabel('GERENCIAMENTO'),
+                const _SectionLabel('APARÊNCIA'),
+                const _CardSection(
+                  children: [
+                    _ThemeModeRow(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const _SectionLabel('MODELOS E COMUNICAÇÃO'),
                 _CardSection(
                   children: [
-                    const _ThemeModeRow(),
-                    const _Divider(),
                     _ProfileChevronRow(
                       label: 'Modelos de Laboratório',
+                      subtitle: 'Unidades, campos e leitura de PDFs',
+                      icon: CupertinoIcons.lab_flask,
                       onTap: () => context.push(AppRoutes.configLabTemplates),
                     ),
                     const _Divider(),
                     _ProfileChevronRow(
                       label: 'Enviar Feedback',
+                      subtitle: 'Bug, sugestão, elogio ou melhoria',
+                      icon: CupertinoIcons.chat_bubble_text,
                       onTap: () => context.push(AppRoutes.feedback),
                     ),
-                    const _Divider(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const _SectionLabel('SINCRONIZAÇÃO DE DADOS'),
+                const _CardSection(
+                  children: [
+                    MigracaoVinculosActionTile(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const _SectionLabel('DADOS DO DISPOSITIVO'),
+                _CardSection(
+                  children: [
                     _ProfileChevronRow(
                       label: 'Limpar Dados Locais',
+                      subtitle: 'Remove apenas dados salvos neste aparelho',
+                      icon: CupertinoIcons.trash,
+                      isDestructive: true,
                       onTap: () async {
                         final confirmar = await showCupertinoDialog<bool>(
                           context: context,
@@ -251,6 +277,7 @@ class ConfigPage extends ConsumerWidget {
                             content:
                                 Text('Dados locais removidos com sucesso.'),
                             backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
@@ -261,204 +288,172 @@ class ConfigPage extends ConsumerWidget {
                 const _SectionLabel('ZONA DE PERIGO'),
                 _CardSection(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      child: GestureDetector(
-                        onTap: () async {
-                          // Passo 1: alerta de consequências
-                          final prosseguir = await showCupertinoDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title:
-                                  const Text('Excluir conta permanentemente?'),
-                              content: const Text(
-                                'Todos os seus dados, análises e configurações serão deletados e não poderão ser recuperados.',
+                    _ProfileChevronRow(
+                      label: 'Excluir Conta',
+                      subtitle: 'Remove conta e dados permanentemente',
+                      icon: CupertinoIcons.delete,
+                      isDestructive: true,
+                      onTap: () async {
+                        // Passo 1: alerta de consequências
+                        final prosseguir = await showCupertinoDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: const Text('Excluir conta permanentemente?'),
+                            content: const Text(
+                              'Todos os seus dados, análises e configurações serão deletados e não poderão ser recuperados.',
+                            ),
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancelar'),
                               ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: const Text('Cancelar'),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text('Continuar'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (prosseguir != true || !context.mounted) return;
+
+                        // Passo 2: senha + EXCLUIR para confirmar
+                        final confirmController = TextEditingController();
+                        final passwordController = TextEditingController();
+                        final confirmado = await showCupertinoDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: const Text('Confirmação final'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Digite sua senha atual e EXCLUIR para confirmar:',
                                 ),
-                                CupertinoDialogAction(
-                                  isDestructiveAction: true,
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(true),
-                                  child: const Text('Continuar'),
+                                const SizedBox(height: 12),
+                                CupertinoTextField(
+                                  controller: passwordController,
+                                  placeholder: 'Senha atual',
+                                  obscureText: true,
+                                  autofocus: true,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text('Digite EXCLUIR para confirmar:'),
+                                const SizedBox(height: 12),
+                                CupertinoTextField(
+                                  controller: confirmController,
+                                  placeholder: 'EXCLUIR',
                                 ),
                               ],
                             ),
-                          );
-                          if (prosseguir != true || !context.mounted) return;
-
-                          // Passo 2: senha + EXCLUIR para confirmar
-                          final confirmController = TextEditingController();
-                          final passwordController = TextEditingController();
-                          final confirmado = await showCupertinoDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title: const Text('Confirmação final'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Digite sua senha atual e EXCLUIR para confirmar:',
-                                  ),
-                                  const SizedBox(height: 12),
-                                  CupertinoTextField(
-                                    controller: passwordController,
-                                    placeholder: 'Senha atual',
-                                    obscureText: true,
-                                    autofocus: true,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Text('Digite EXCLUIR para confirmar:'),
-                                  const SizedBox(height: 12),
-                                  CupertinoTextField(
-                                    controller: confirmController,
-                                    placeholder: 'EXCLUIR',
-                                  ),
-                                ],
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancelar'),
                               ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                CupertinoDialogAction(
-                                  isDestructiveAction: true,
-                                  onPressed: () {
-                                    final ok = confirmController.text.trim() ==
-                                            'EXCLUIR' &&
-                                        passwordController.text.isNotEmpty;
-                                    Navigator.of(dialogContext).pop(ok);
-                                  },
-                                  child: const Text('Excluir conta'),
-                                ),
-                              ],
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () {
+                                  final ok = confirmController.text.trim() ==
+                                          'EXCLUIR' &&
+                                      passwordController.text.isNotEmpty;
+                                  Navigator.of(dialogContext).pop(ok);
+                                },
+                                child: const Text('Excluir conta'),
+                              ),
+                            ],
+                          ),
+                        );
+                        final password = passwordController.text;
+                        confirmController.dispose();
+                        passwordController.dispose();
+                        if (confirmado != true || !context.mounted) return;
+
+                        try {
+                          await ref
+                              .read(configControllerProvider.notifier)
+                              .excluirConta(
+                                password: password,
+                              );
+                          if (context.mounted) context.go(AppRoutes.login);
+                        } on ConfigActionException catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(e.message),
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
                             ),
                           );
-                          final password = passwordController.text;
-                          confirmController.dispose();
-                          passwordController.dispose();
-                          if (confirmado != true || !context.mounted) return;
-
-                          try {
-                            await ref
-                                .read(configControllerProvider.notifier)
-                                .excluirConta(
-                                  password: password,
-                                );
-                            if (context.mounted) context.go(AppRoutes.login);
-                          } on ConfigActionException catch (e) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.message),
-                                backgroundColor: AppColors.error,
+                        } catch (_) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Erro ao excluir conta. Tente novamente.',
                               ),
-                            );
-                          } catch (_) {
-                            if (!context.mounted) return;
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    const _Divider(),
+                    _ProfileChevronRow(
+                      label: 'Sair da Conta',
+                      subtitle: 'Desconecta este dispositivo',
+                      icon: CupertinoIcons.square_arrow_right,
+                      isDestructive: true,
+                      onTap: () async {
+                        final confirmar = await showCupertinoDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: const Text('Sair da conta?'),
+                            content: const Text(
+                              'Você será desconectado do aplicativo.',
+                            ),
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancelar'),
+                              ),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text('Sair'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirmar != true) return;
+
+                        try {
+                          await ref
+                              .read(configControllerProvider.notifier)
+                              .logout();
+                          if (context.mounted) {
+                            context.go(AppRoutes.login);
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Erro ao excluir conta. Tente novamente.',
+                                  'Erro ao sair. Tente novamente.',
                                 ),
-                                backgroundColor: AppColors.error,
+                                behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
-                        },
-                        child: const Row(
-                          children: [
-                            Icon(
-                              CupertinoIcons.delete,
-                              size: 18,
-                              color: AppColors.error,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Excluir Conta',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.error,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _CardSection(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      child: GestureDetector(
-                        onTap: () async {
-                          final confirmar = await showCupertinoDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title: const Text('Sair da conta?'),
-                              content: const Text(
-                                'Você será desconectado do aplicativo.',
-                              ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                CupertinoDialogAction(
-                                  isDestructiveAction: true,
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(true),
-                                  child: const Text('Sair'),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirmar != true) return;
-
-                          try {
-                            await ref
-                                .read(configControllerProvider.notifier)
-                                .logout();
-                            if (context.mounted) {
-                              context.go(AppRoutes.login);
-                            }
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Erro ao sair. Tente novamente.',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        child: const Text(
-                          'Sair da Conta',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -487,19 +482,9 @@ class _IdentidadeVisualCard extends ConsumerWidget {
     final notifier = ref.read(perfilAssetsProvider.notifier);
     final AppThemePalette palette = context.appPalette;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: palette.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppSurface(
+      padding: EdgeInsets.zero,
+      showBorder: true,
       child: Column(
         children: [
           _ImageUploadRow(
@@ -588,6 +573,8 @@ class _ImageUploadRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
     final AppThemePalette palette = context.appPalette;
+    final imageProvider = ImageSourceResolver.imageProvider(imageUrl);
+    final hasRenderableImage = hasImage && imageProvider != null;
 
     final double thumbW = shape == _ImageShape.wide ? 80 : 52;
     final double thumbH = shape == _ImageShape.wide ? 40 : 52;
@@ -632,17 +619,12 @@ class _ImageUploadRow extends StatelessWidget {
                           ),
                         ),
                       )
-                    : hasImage
-                        ? Image.network(
-                            imageUrl!,
+                    : hasRenderableImage
+                        ? Image(
+                            image: imageProvider,
                             fit: shape == _ImageShape.wide
                                 ? BoxFit.contain
                                 : BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
-                              icon,
-                              size: 22,
-                              color: palette.textTertiary,
-                            ),
                           )
                         : Icon(
                             icon,
@@ -782,21 +764,9 @@ class _CardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppThemePalette palette = context.appPalette;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: palette.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppSurface(
+      padding: EdgeInsets.zero,
+      showBorder: true,
       child: Column(children: children),
     );
   }
@@ -974,16 +944,24 @@ class _ProfileRow extends StatelessWidget {
 
 class _ProfileChevronRow extends StatelessWidget {
   final String label;
+  final String? subtitle;
+  final IconData? icon;
+  final bool isDestructive;
   final VoidCallback? onTap;
 
   const _ProfileChevronRow({
     required this.label,
+    this.subtitle,
+    this.icon,
+    this.isDestructive = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final AppThemePalette palette = context.appPalette;
+    final color = isDestructive ? AppColors.error : palette.textPrimary;
+    final iconColor = isDestructive ? AppColors.error : AppColors.primary;
 
     return InkWell(
       onTap: onTap,
@@ -992,14 +970,44 @@ class _ProfileChevronRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: palette.textPrimary,
+            if (icon != null) ...[
+              AppIconFrame(
+                icon: icon,
+                size: 38,
+                iconSize: 19,
+                backgroundColor: iconColor.withValues(alpha: 0.10),
+                iconColor: iconColor,
+              ),
+              const SizedBox(width: AppDimens.md),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 10),
             Icon(
               CupertinoIcons.chevron_right,
               size: 16,
@@ -1087,15 +1095,20 @@ class _CalculosAccessVersionState extends State<_CalculosAccessVersion> {
   void _validarSenha(BuildContext dialogContext, String senha) {
     Navigator.of(dialogContext).pop();
 
-    if (senha == _kCalculosAccessPassword) {
+    const expected = AppConfig.calculosAccessPassword;
+    if (expected.isNotEmpty && senha == expected) {
       context.go(AppRoutes.calculos);
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Senha incorreta'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(
+          expected.isEmpty
+              ? 'Acesso ao módulo Cálculos não configurado neste build.'
+              : 'Senha incorreta',
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

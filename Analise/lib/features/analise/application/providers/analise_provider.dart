@@ -14,7 +14,9 @@ import 'package:soloforte/features/analise/domain/services/cliente_analises_filt
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/analise/application/providers/produtor_configurado_provider.dart';
 import 'package:soloforte/features/analise/application/mappers/cliente_hierarquia_mapper.dart';
-import 'package:soloforte/features/analise/domain/usecases/reparar_vinculos_legados_usecase.dart';
+import 'package:soloforte/features/analise/domain/usecases/migrar_vinculos_legados_usecase.dart';
+import 'package:soloforte/features/analise/domain/value_objects/migracao_vinculos_plan.dart';
+import 'package:soloforte/features/analise/domain/value_objects/migracao_vinculos_result.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/data/repositories/cliente_repository.dart';
 import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
@@ -167,50 +169,107 @@ class AnaliseNotifier extends _$AnaliseNotifier {
   }
 
   Future<void> repararVinculosLegados() async {
+    final plan = await _planejarMigracaoVinculos(marcarPendentes: false);
+    if (plan == null) return;
+    await _persistirMigracaoVinculos(plan.reparos, const []);
+  }
+
+  /// Migração em massa: infere FKs completas e marca pendentes quando não há match.
+  Future<MigracaoVinculosResult> executarMigracaoVinculosLegados() async {
+    final lista = state.valueOrNull ?? const <AnaliseSolo>[];
+    final plan = await _planejarMigracaoVinculos(marcarPendentes: true);
+    if (plan == null) {
+      return MigracaoVinculosResult.naoExecutada(totalAnalises: lista.length);
+    }
+
+    final persistencia = await _persistirMigracaoVinculos(
+      plan.reparos,
+      plan.pendentes,
+    );
+
+    return MigracaoVinculosResult(
+      totalAnalises: lista.length,
+      jaVinculadas: plan.jaVinculadas,
+      reparadas: persistencia.reparadas,
+      marcadasPendentes: persistencia.pendentes,
+      falhas: persistencia.falhas,
+      executada: true,
+    );
+  }
+
+  Future<MigracaoVinculosPlan?> _planejarMigracaoVinculos({
+    required bool marcarPendentes,
+  }) async {
     final uid = ref.read(currentUserIdProvider);
-    if (uid == null || uid.isEmpty) return;
+    if (uid == null || uid.isEmpty) return null;
 
     List<ClienteEntity> clientes;
     try {
       clientes = await ref.read(clienteRepositoryProvider).listarClientes(uid);
     } catch (_) {
-      return;
+      return null;
     }
-    if (clientes.isEmpty) return;
+    if (clientes.isEmpty) return null;
 
     final snapshots = mapClientesParaHierarquia(clientes);
     final lista = state.valueOrNull ?? const <AnaliseSolo>[];
-    final reparos = const RepararVinculosLegadosUsecase()(
+    return const MigrarVinculosLegadosUsecase()(
       analises: lista,
       clientes: snapshots,
+      marcarPendentes: marcarPendentes,
     );
+  }
+
+  Future<({int reparadas, int pendentes, int falhas})> _persistirMigracaoVinculos(
+    List<AnaliseSolo> reparos,
+    List<AnaliseSolo> pendentes,
+  ) async {
+    var reparadas = 0;
+    var marcadasPendentes = 0;
+    var falhas = 0;
 
     for (final analise in reparos) {
-      await atualizarAnalise(analise);
-      final clienteId = analise.clienteId?.trim() ?? '';
-      if (clienteId.isEmpty) continue;
       try {
-        await ref
-            .read(clienteRepositoryProvider)
-            .adicionarAnaliseId(clienteId, analise.id);
+        await atualizarAnalise(analise);
+        reparadas++;
+        await _sincronizarAnaliseIdNoCliente(analise);
       } catch (_) {
-        // Falha no índice denormalizado não deve bloquear o vínculo na análise.
+        falhas++;
       }
+    }
+
+    for (final analise in pendentes) {
+      try {
+        await atualizarAnalise(analise);
+        marcadasPendentes++;
+      } catch (_) {
+        falhas++;
+      }
+    }
+
+    return (
+      reparadas: reparadas,
+      pendentes: marcadasPendentes,
+      falhas: falhas,
+    );
+  }
+
+  Future<void> _sincronizarAnaliseIdNoCliente(AnaliseSolo analise) async {
+    final clienteId = analise.clienteId?.trim() ?? '';
+    if (clienteId.isEmpty) return;
+    try {
+      await ref
+          .read(clienteRepositoryProvider)
+          .adicionarAnaliseId(clienteId, analise.id);
+    } catch (_) {
+      // Índice denormalizado não bloqueia vínculo na análise.
     }
   }
 
   /// Atualiza `cliente.analiseIds` após save com FKs já definidas.
   Future<void> registrarVinculosPosSalvar(List<AnaliseSolo> analises) async {
     for (final analise in analises) {
-      final clienteId = analise.clienteId?.trim() ?? '';
-      if (clienteId.isEmpty) continue;
-      try {
-        await ref
-            .read(clienteRepositoryProvider)
-            .adicionarAnaliseId(clienteId, analise.id);
-      } catch (_) {
-        // Índice denormalizado não bloqueia persistência da análise.
-      }
+      await _sincronizarAnaliseIdNoCliente(analise);
     }
   }
 
