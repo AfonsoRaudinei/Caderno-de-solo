@@ -95,7 +95,17 @@ flutter test --reporter compact \
   test/features/analise/presentation/widgets/analise_table_widget_test.dart \
   test/features/analise/data/datasources/analise_local_datasource_batch_test.dart
 
-echo "[GATE E] 7/9 - Golden and integration tests"
+echo "[GATE E] 7/10 - Unificação Clientes ↔ Análises"
+flutter test --reporter compact \
+  test/features/analise/domain/services/analise_vinculo_service_test.dart \
+  test/features/analise/domain/services/cliente_analises_filter_test.dart \
+  test/features/analise/domain/usecases/aplicar_hierarquia_analises_usecase_test.dart \
+  test/features/analise/domain/usecases/migrar_vinculos_legados_usecase_test.dart \
+  test/features/analise/application/providers/hierarquia_selecao_provider_test.dart \
+  test/features/clientes/presentation/analise_vinculo_badge_test.dart \
+  test/core/constants/app_routes_cliente_test.dart
+
+echo "[GATE E] 8/10 - Golden and integration tests"
 flutter test --reporter compact test/features/analise/integration/nova_analise_flow_test.dart
 
 if [[ "${QUALITY_RUN_FULL_TESTS:-false}" == "true" ]]; then
@@ -103,10 +113,10 @@ if [[ "${QUALITY_RUN_FULL_TESTS:-false}" == "true" ]]; then
   flutter test --reporter compact
 fi
 
-echo "[GATE E] 8/9 - Coverage thresholds"
+echo "[GATE E] 9/10 - Coverage thresholds"
 python3 tool/coverage_gate.py coverage/lcov.info
 
-echo "[GATE E] 9/9 - Observability gate"
+echo "[GATE E] 10/10 - Observability gate"
 ./tool/observability_gate.sh
 
 echo "[GATE E] Quality gate PASSED"

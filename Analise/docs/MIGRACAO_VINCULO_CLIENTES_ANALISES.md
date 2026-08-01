@@ -75,6 +75,10 @@ Toda navegação Cliente → Fazenda → Talhão usa `go_router` (sem `MaterialP
 
 Helpers: `AppRoutes.clienteAnalisesPath`, `fazendaEditarPath`, `talhaoEditarPath`, `clienteDetalheComAbaPath`.
 
+## Etapa 7 — Validação final
+
+Ver relatório completo: [UNIFICACAO_CLIENTES_ANALISES_CONCLUSAO.md](./UNIFICACAO_CLIENTES_ANALISES_CONCLUSAO.md)
+
 ## Fallback de leitura
 
 - FK ausente → UI usa `produtor` / `fazenda` / `talhao` (strings).

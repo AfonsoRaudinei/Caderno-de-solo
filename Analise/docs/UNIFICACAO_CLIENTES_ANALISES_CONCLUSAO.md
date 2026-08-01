@@ -1,0 +1,62 @@
+# Conclusão — Unificação Clientes ↔ Análises de Solo
+
+> Etapa 7 — validação final. Branch: `cursor/unificar-clientes-analises-9607` · PR #13.
+
+## Percentual de conclusão: **100%**
+
+| Etapa | Escopo | Status |
+| --- | --- | --- |
+| 1 | Diagnóstico e mapeamento | ✅ |
+| 2 | Domínio + Firestore (FKs, reparo lazy) | ✅ |
+| 3 | Controllers + import PDF hierárquico | ✅ |
+| 4 | UI detalhe cliente (5 abas) | ✅ |
+| 5 | Rotas go_router unificadas | ✅ |
+| 6 | Migração em massa opcional | ✅ |
+| 7 | Testes, quality gate, build | ✅ |
+
+## Hierarquia entregue
+
+```text
+Cliente → Propriedade/Fazenda → Talhão → Análises → Recomendações
+```
+
+## Checklist funcional
+
+- [x] FKs opcionais em `analises/{id}` (`clienteId`, `fazendaId`, `talhaoId`, `vinculoStatus`)
+- [x] Strings legadas preservadas (`produtor`, `fazenda`, `talhao`)
+- [x] Import PDF exige seleção hierárquica antes do save
+- [x] `cliente.analiseIds[]` sincronizado após vínculo
+- [x] Reparo lazy na lista de análises
+- [x] Migração em massa em Config → Sincronização de dados
+- [x] Detalhe do cliente com abas Resumo / Propriedades / Talhões / Análises / Recomendações
+- [x] Badge "Vínculo pendente" na aba Análises
+- [x] Rotas `/clientes/:id/analises` e CRUD fazenda/talhão via go_router
+- [x] Testes unitários da unificação no quality gate
+
+## Checklist de qualidade (Etapa 7)
+
+- [x] `flutter analyze` — sem issues
+- [x] Suite unificação — 55+ testes passando
+- [x] `tool/quality_gate.sh` — step dedicado à unificação
+- [x] Build Android debug — Gradle 8.13 (wrapper atualizado)
+
+## Pendências conhecidas (fora do escopo desta entrega)
+
+- Formulário manual de nova análise ainda sem seletor hierárquico (rota `/analise/nova` redireciona)
+- Índices Firestore compostos recomendados — criar manualmente no console Firebase
+- Revisão formal do agente revisor Flutter não executada como subagente
+- Violações pré-existentes de import cross-feature em outras features (laboratorio, clientes) — não introduzidas por esta PR
+
+## Comandos de verificação
+
+```bash
+cd Analise
+flutter analyze
+flutter test test/features/analise/domain test/features/clientes test/core/constants/app_routes_cliente_test.dart test/core/router/app_router_test.dart
+./tool/quality_gate.sh
+flutter build apk --debug
+```
+
+## Documentação relacionada
+
+- [MIGRACAO_VINCULO_CLIENTES_ANALISES.md](./MIGRACAO_VINCULO_CLIENTES_ANALISES.md)
