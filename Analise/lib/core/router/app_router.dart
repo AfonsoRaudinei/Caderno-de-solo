@@ -89,6 +89,50 @@ String? resolveAppRedirect({
 }
 
 @visibleForTesting
+String? resolveRouterRedirect({
+  required bool isBootstrapping,
+  required String path,
+  required User? currentUser,
+}) {
+  if (isBootstrapping) {
+    return path == AppRoutes.authBootstrap ? null : AppRoutes.authBootstrap;
+  }
+
+  if (path == AppRoutes.authBootstrap) {
+    if (currentUser == null) {
+      return AppRoutes.login;
+    }
+    return currentUser.emailVerified
+        ? AppRoutes.analise
+        : AppRoutes.verificarEmail;
+  }
+
+  return resolveAppRedirect(
+    path: path,
+    currentUser: currentUser,
+  );
+}
+
+@visibleForTesting
+String? resolveRouterRedirectWithLog({
+  required bool isBootstrapping,
+  required String path,
+  required User? currentUser,
+}) {
+  final target = resolveRouterRedirect(
+    isBootstrapping: isBootstrapping,
+    path: path,
+    currentUser: currentUser,
+  );
+
+  _authRouterLog(
+    'redirect path=$path bootstrap=$isBootstrapping ${_authUserTag(currentUser)} -> ${target ?? 'stay'}',
+  );
+
+  return target;
+}
+
+@visibleForTesting
 String? resolveCalculosRedirect({
   required String calculosAccessPassword,
   required Object? navigationExtra,
@@ -189,31 +233,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final path = state.uri.path;
       final currentUser = auth.currentUser;
-      String? target;
-
-      if (authRefresh.isBootstrapping) {
-        if (path == AppRoutes.authBootstrap) {
-          target = null;
-        } else {
-          target = AppRoutes.authBootstrap;
-        }
-      } else if (path == AppRoutes.authBootstrap) {
-        if (currentUser == null) {
-          target = AppRoutes.login;
-        } else {
-          target = currentUser.emailVerified
-              ? AppRoutes.analise
-              : AppRoutes.verificarEmail;
-        }
-      } else {
-        target = resolveAppRedirect(
-          path: path,
-          currentUser: currentUser,
-        );
-      }
-
-      _authRouterLog(
-        'redirect path=$path bootstrap=${authRefresh.isBootstrapping} ${_authUserTag(currentUser)} -> ${target ?? 'stay'}',
+      final target = resolveRouterRedirectWithLog(
+        isBootstrapping: authRefresh.isBootstrapping,
+        path: path,
+        currentUser: currentUser,
       );
 
       return target;

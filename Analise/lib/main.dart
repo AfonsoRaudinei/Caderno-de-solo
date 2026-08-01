@@ -65,6 +65,9 @@ Future<void> _initDefaultLabTemplates() async {
   }
 }
 
+@visibleForTesting
+Future<void> initDefaultLabTemplatesForTesting() => _initDefaultLabTemplates();
+
 Future<void> _activateFirebaseAppCheck() async {
   await FirebaseAppCheck.instance.activate(
     providerAndroid: AppConfig.isRelease

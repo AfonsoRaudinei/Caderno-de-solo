@@ -72,6 +72,92 @@ void main() {
         .thenAnswer((_) => const Stream<User?>.empty());
   });
 
+  test('permite rota de recuperação sem sessão no Firebase', () {
+    final redirect = resolveAppRedirect(
+      path: AppRoutes.recuperarSenha,
+      currentUser: null,
+    );
+
+    expect(redirect, isNull);
+  });
+
+  test('bloqueia verificação de e-mail sem autenticação', () {
+    final redirect = resolveAppRedirect(
+      path: AppRoutes.verificarEmail,
+      currentUser: null,
+    );
+
+    expect(redirect, AppRoutes.login);
+  });
+
+  group('GoRouterAuthRefreshNotifier', () {
+    test('inicia sem bootstrap quando usuário já existe', () {
+      final notifier = GoRouterAuthRefreshNotifier(
+        const Stream<User?>.empty(),
+        initialUser: user,
+      );
+      addTearDown(notifier.dispose);
+
+      expect(notifier.isBootstrapping, isFalse);
+    });
+
+    test('encerra bootstrap após timeout', () async {
+      final notifier = GoRouterAuthRefreshNotifier(
+        const Stream<User?>.empty(),
+        initialUser: null,
+        bootstrapTimeout: const Duration(milliseconds: 20),
+      );
+      addTearDown(notifier.dispose);
+
+      expect(notifier.isBootstrapping, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(notifier.isBootstrapping, isFalse);
+    });
+
+    test('encerra bootstrap quando stream emite erro', () async {
+      final controller = StreamController<User?>();
+      final notifier = GoRouterAuthRefreshNotifier(
+        controller.stream,
+        initialUser: null,
+      );
+      addTearDown(() async {
+        await controller.close();
+        notifier.dispose();
+      });
+
+      expect(notifier.isBootstrapping, isTrue);
+      controller.addError(Exception('auth stream failed'));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(notifier.isBootstrapping, isFalse);
+    });
+
+    test('dispose cancela timer e subscription', () {
+      final controller = StreamController<User?>();
+      final notifier = GoRouterAuthRefreshNotifier(
+        controller.stream,
+        initialUser: null,
+      );
+
+      notifier.dispose();
+      controller.close();
+    });
+
+    test('log usa uid abreviado quando sessão tem id longo', () {
+      final longUidUser = MockUser();
+      when(() => longUidUser.uid).thenReturn('0123456789abcdef');
+      when(() => longUidUser.emailVerified).thenReturn(true);
+
+      final notifier = GoRouterAuthRefreshNotifier(
+        const Stream<User?>.empty(),
+        initialUser: longUidUser,
+      );
+      addTearDown(notifier.dispose);
+
+      expect(notifier.isBootstrapping, isFalse);
+    });
+  });
+
   test('redirect para login quando não autenticado em rota protegida', () {
     final redirect = resolveAppRedirect(
       path: AppRoutes.analise,
@@ -207,6 +293,88 @@ void main() {
     });
   });
 
+  group('resolveRouterRedirect', () {
+    test('mantém bootstrap durante inicialização', () {
+      expect(
+        resolveRouterRedirect(
+          isBootstrapping: true,
+          path: AppRoutes.authBootstrap,
+          currentUser: null,
+        ),
+        isNull,
+      );
+    });
+
+    test('redireciona rotas protegidas para bootstrap durante inicialização',
+        () {
+      expect(
+        resolveRouterRedirect(
+          isBootstrapping: true,
+          path: AppRoutes.analise,
+          currentUser: null,
+        ),
+        AppRoutes.authBootstrap,
+      );
+    });
+
+    test('auth-bootstrap sem sessão vai para login', () {
+      expect(
+        resolveRouterRedirect(
+          isBootstrapping: false,
+          path: AppRoutes.authBootstrap,
+          currentUser: null,
+        ),
+        AppRoutes.login,
+      );
+    });
+
+    test('auth-bootstrap com sessão verificada vai para análise', () {
+      expect(
+        resolveRouterRedirect(
+          isBootstrapping: false,
+          path: AppRoutes.authBootstrap,
+          currentUser: user,
+        ),
+        AppRoutes.analise,
+      );
+    });
+
+    test('auth-bootstrap com e-mail pendente vai para verificação', () {
+      when(() => user.emailVerified).thenReturn(false);
+
+      expect(
+        resolveRouterRedirect(
+          isBootstrapping: false,
+          path: AppRoutes.authBootstrap,
+          currentUser: user,
+        ),
+        AppRoutes.verificarEmail,
+      );
+    });
+
+    test('delega redirect padrão após bootstrap', () {
+      expect(
+        resolveRouterRedirect(
+          isBootstrapping: false,
+          path: AppRoutes.historico,
+          currentUser: user,
+        ),
+        isNull,
+      );
+    });
+
+    test('registra log ao resolver redirect', () {
+      expect(
+        resolveRouterRedirectWithLog(
+          isBootstrapping: false,
+          path: AppRoutes.authBootstrap,
+          currentUser: user,
+        ),
+        AppRoutes.analise,
+      );
+    });
+  });
+
   test('router provider registra rotas críticas do sistema', () {
     when(() => auth.currentUser).thenReturn(null);
 
@@ -238,12 +406,17 @@ void main() {
         AppRoutes.baseDadosDetalhe,
         AppRoutes.tabelaMetricas,
         AppRoutes.analise,
-        'nova',
-        'detalhe/:id',
+        AppRoutes.clientes,
+        'novo',
+        ':id',
         'editar',
         'analises',
+        'fazenda/nova',
         'fazenda/:fazendaId/editar',
+        'fazenda/:fazendaId/talhao/novo',
         'fazenda/:fazendaId/talhao/:talhaoId/editar',
+        'nova',
+        'detalhe/:id',
         AppRoutes.lab,
         'historico',
         AppRoutes.config,

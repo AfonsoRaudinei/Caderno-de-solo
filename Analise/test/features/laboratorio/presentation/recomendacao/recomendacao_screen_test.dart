@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
@@ -544,5 +545,54 @@ void main() {
     );
 
     expect(analiseMatchesProdutorBusca(analise, 'andre luiz'), isTrue);
+  });
+
+  testWidgets('botao voltar navega para laboratorio quando nao ha stack', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final router = GoRouter(
+      initialLocation: '/recomendacao',
+      routes: [
+        GoRoute(
+          path: AppRoutes.lab,
+          builder: (_, __) => const Scaffold(body: Text('LAB_OK')),
+        ),
+        GoRoute(
+          path: '/recomendacao',
+          builder: (_, __) => const RecomendacaoScreen(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          calibracaoControllerProvider.overrideWith(
+            (ref) => _FakeCalibracaoController(profiles: const []),
+          ),
+          analiseNotifierProvider.overrideWith(
+            () => _FakeAnaliseNotifier(const []),
+          ),
+          tabelaMetricasProvider.overrideWith(
+            () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
+          ),
+          perfilAssetsProvider
+              .overrideWith((ref) => _FakePerfilAssetsNotifier()),
+          analisesVisiveisProvider.overrideWith(
+            (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LAB_OK'), findsOneWidget);
   });
 }
