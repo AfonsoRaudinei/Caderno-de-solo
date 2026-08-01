@@ -18,8 +18,10 @@ void main() {
         referencia: 'teste',
       );
 
-      final doseBaixo = FosforoFormula.recomendacaoCorrecao(baixoP).doseRecomendada;
-      final doseAlto = FosforoFormula.recomendacaoCorrecao(altoP).doseRecomendada;
+      final doseBaixo =
+          FosforoFormula.recomendacaoCorrecao(baixoP).doseRecomendada;
+      final doseAlto =
+          FosforoFormula.recomendacaoCorrecao(altoP).doseRecomendada;
 
       expect(doseBaixo, greaterThan(doseAlto));
       expect(doseBaixo, greaterThan(0.0));
@@ -38,4 +40,3 @@ void main() {
     });
   });
 }
-

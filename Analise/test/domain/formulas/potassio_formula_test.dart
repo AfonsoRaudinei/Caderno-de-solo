@@ -16,6 +16,21 @@ void main() {
       expect(participacao, 0.0);
     });
 
+    test('Participação na CTC fica clamped em 0–100%', () {
+      expect(
+        PotassioFormula.participacaoAtual(kAtual: 2.0, ctc: 1.0),
+        100.0,
+      );
+      expect(
+        PotassioFormula.participacaoAtual(kAtual: -1.0, ctc: 10.0),
+        0.0,
+      );
+      expect(
+        PotassioFormula.participacaoAtual(kAtual: 0.3, ctc: -5.0),
+        0.0,
+      );
+    });
+
     test('Deve calcular recomendação de K2O quando déficit existe', () {
       // CTC = 10.0, K Atual = 0.2 (2%), Desejado = 5.0 (5%)
       // K Desejado = 0.5. Déficit = 0.3 cmolc/dm3.

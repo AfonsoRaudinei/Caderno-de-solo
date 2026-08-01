@@ -7,8 +7,8 @@ import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
-import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/auth/presentation/recuperar_senha/recuperar_senha_controller.dart';
 
 /// Tela de Recuperar Senha
@@ -74,21 +74,34 @@ class RecuperarSenhaPage extends HookConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Esqueceu sua senha?',
-                        style: AppTextStyles.headline,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Informe seu e-mail cadastrado. Enviaremos um link para você redefinir sua senha.',
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.textSecond,
+                      AppSurface(
+                        borderRadius: AppDimens.radiusXl,
+                        child: Column(
+                          children: [
+                            const AppIconFrame(
+                              icon: Icons.lock_reset_rounded,
+                              size: 64,
+                              iconSize: 34,
+                            ),
+                            const SizedBox(height: AppDimens.md),
+                            Text(
+                              'Esqueceu sua senha?',
+                              style: AppTextStyles.headline,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: AppDimens.sm),
+                            Text(
+                              'Informe seu e-mail cadastrado. Enviaremos um link para você redefinir sua senha.',
+                              style: AppTextStyles.body,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: AppDimens.section),
-                      AppCard(
+                      const SizedBox(height: AppDimens.lg),
+                      AppSurface(
+                        showShadow: false,
+                        showBorder: true,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -119,9 +132,10 @@ class RecuperarSenhaPage extends HookConsumerWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: AppDimens.section),
+                      const SizedBox(height: AppDimens.lg),
                       AppButton(
                         label: AppStrings.enviarLink,
+                        icon: Icons.mail_outline_rounded,
                         isLoading: state.isLoading,
                         onPressed: () {
                           if (formKey.currentState!.validate()) {
@@ -149,27 +163,36 @@ class _SucessoView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: AppDimens.xxl),
-        const Icon(
-          Icons.mark_email_read_rounded,
-          color: AppColors.success,
-          size: 80,
+        AppSurface(
+          borderRadius: AppDimens.radiusXl,
+          child: Column(
+            children: [
+              const AppIconFrame(
+                icon: Icons.mark_email_read_rounded,
+                size: 72,
+                iconSize: 38,
+                iconColor: AppColors.success,
+                backgroundColor: Color(0x1A34C759),
+              ),
+              const SizedBox(height: AppDimens.lg),
+              Text(
+                'E-mail enviado!',
+                style: AppTextStyles.headline,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppDimens.sm),
+              Text(
+                'Verifique sua caixa de entrada (e a pasta de spam) para redefinir sua senha.',
+                style: AppTextStyles.body,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: AppDimens.section),
-        Text(
-          'E-mail enviado!',
-          style: AppTextStyles.headline,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Verifique sua caixa de entrada (e a pasta de spam) para redefinir sua senha.',
-          style: AppTextStyles.body.copyWith(color: AppColors.textSecond),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppDimens.section * 2),
+        const SizedBox(height: AppDimens.xl),
         AppButtonSecondary(
           label: AppStrings.voltarLogin,
+          icon: Icons.arrow_back_rounded,
           onPressed: () => context.pop(),
         ),
       ],

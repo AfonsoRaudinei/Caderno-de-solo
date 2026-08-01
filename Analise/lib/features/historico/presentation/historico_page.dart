@@ -4,6 +4,7 @@ import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:soloforte/features/historico/presentation/historico_card_widget.dart';
 import 'package:soloforte/features/historico/presentation/historico_provider.dart';
@@ -14,10 +15,8 @@ class HistoricoPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historicoAsync = ref.watch(historicoProvider);
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Histórico'),
         actions: [
@@ -68,7 +67,7 @@ class HistoricoPage extends ConsumerWidget {
           ),
           data: (itens) {
             if (itens.isEmpty) {
-              return _EmptyState();
+              return const _EmptyState();
             }
 
             final grupos = _agruparPorMes(itens);
@@ -80,7 +79,7 @@ class HistoricoPage extends ConsumerWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
                   AppDimens.lg,
-                  AppDimens.md,
+                  AppDimens.lg,
                   AppDimens.lg,
                   AppDimens.xl,
                 ),
@@ -93,15 +92,26 @@ class HistoricoPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(bottom: AppDimens.sm),
-                        child: Text(
-                          chave.toUpperCase(),
-                          style: AppTextStyles.caption.copyWith(
-                            fontSize: 12,
-                            letterSpacing: 0.5,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        padding: const EdgeInsets.only(
+                          bottom: AppDimens.sm,
+                          top: AppDimens.xs,
+                        ),
+                        child: Row(
+                          children: [
+                            const AppIconFrame(
+                              icon: Icons.history_rounded,
+                              size: 32,
+                              iconSize: 18,
+                            ),
+                            const SizedBox(width: AppDimens.sm),
+                            Text(
+                              chave.toUpperCase(),
+                              style: AppTextStyles.sectionLabel.copyWith(
+                                color: AppColors.textSecond,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       ...lista.map(
@@ -157,34 +167,17 @@ class HistoricoPage extends ConsumerWidget {
 }
 
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppDimens.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history_outlined,
-              size: 72,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: AppDimens.md),
-            Text(
-              'Nenhuma recomendação salva ainda',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.label.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: AppDimens.xs),
-            Text(
-              'Gere uma recomendação na aba Lab',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+    return const Padding(
+      padding: EdgeInsets.all(AppDimens.lg),
+      child: Center(
+        child: AppEmptyState(
+          icon: Icons.history_rounded,
+          title: 'Nenhuma recomendação salva ainda',
+          message: 'Gere uma recomendação na aba Lab',
         ),
       ),
     );

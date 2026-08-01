@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/domain/entities/fazenda_entity.dart';
 
@@ -60,6 +62,7 @@ class _FazendaFormScreenState extends ConsumerState<FazendaFormScreen> {
     }
 
     return Scaffold(
+      backgroundColor: context.appPalette.background,
       appBar: AppBar(
         title: Text(_isEdicao ? 'Editar Fazenda' : 'Nova Fazenda'),
       ),
@@ -70,21 +73,30 @@ class _FazendaFormScreenState extends ConsumerState<FazendaFormScreen> {
             key: _formKey,
             child: Column(
               children: [
-                AppInput(
-                  controller: _nomeController,
-                  label: 'Nome da fazenda*',
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if ((value?.trim() ?? '').isEmpty) return 'Informe o nome.';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                AppInputNumerico(
-                  controller: _areaController,
-                  label: 'Área total (ha)*',
-                  suffixText: 'ha',
-                  onChanged: (_) => setState(() {}),
+                AppSurface(
+                  showBorder: true,
+                  child: Column(
+                    children: [
+                      AppInput(
+                        controller: _nomeController,
+                        label: 'Nome da fazenda*',
+                        textCapitalization: TextCapitalization.words,
+                        validator: (value) {
+                          if ((value?.trim() ?? '').isEmpty) {
+                            return 'Informe o nome.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      AppInputNumerico(
+                        controller: _areaController,
+                        label: 'Área total (ha)*',
+                        suffixText: 'ha',
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 AppButton(

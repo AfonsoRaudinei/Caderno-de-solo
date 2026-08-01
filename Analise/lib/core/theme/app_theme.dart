@@ -366,6 +366,8 @@ class AppDimens {
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
   static const double radiusXl = 20.0;
+  static const double radius2xl = 24.0;
+  static const double radiusPill = 999.0;
 
   // Tamanhos fixos
   static const double buttonHeight = 50.0;
@@ -374,5 +376,9 @@ class AppDimens {
   static const double screenPadding = 16.0;
   static const double iconSize = 24.0;
   static const double iconSizeSm = 20.0;
+  static const double listIconSize = 40.0;
+  static const double cardIconSize = 72.0;
+  static const double bottomTabBarHeight = 64.0;
+  static const double bottomTabItemWidth = 64.0;
   static const double avatarSize = 48.0;
 }

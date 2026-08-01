@@ -154,10 +154,10 @@ class _DarkBackground extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF030907),
-                Color(0xFF06110E),
-                Color(0xFF071814),
-                Color(0xFF020706),
+                Color(0xFFF7FAFF),
+                Color(0xFFEFF6FF),
+                Color(0xFFF8FBFF),
+                Color(0xFFFFFFFF),
               ],
               stops: [0.0, 0.35, 0.7, 1.0],
             ),
@@ -169,7 +169,7 @@ class _DarkBackground extends StatelessWidget {
           right: -70,
           child: _AmbientGlow(
             size: 300,
-            color: Color(0x3355C66A),
+            color: Color(0x263B82F6),
           ),
         ),
         Positioned(
@@ -177,7 +177,7 @@ class _DarkBackground extends StatelessWidget {
           left: -80,
           child: _AmbientGlow(
             size: 250,
-            color: Color(0x224BC15A),
+            color: Color(0x167ACC49),
           ),
         ),
         Positioned(
@@ -185,7 +185,7 @@ class _DarkBackground extends StatelessWidget {
           right: -30,
           child: _AmbientGlow(
             size: 260,
-            color: Color(0x1E3EA84D),
+            color: Color(0x183B82F6),
           ),
         ),
         Positioned.fill(child: _LeafDetailLayer()),
@@ -255,21 +255,21 @@ class _DevBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       margin: const EdgeInsets.only(bottom: AppDimens.xl),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A3324),
+        color: Colors.white.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0x3342B75A)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF8FD39D), size: 16),
+          const Icon(Icons.info_outline, color: AppColors.primary, size: 16),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               'Modo Dev: Qualquer login válido',
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.caption.copyWith(
-                color: const Color(0xFF8FD39D),
+                color: AppColors.textSecond,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -383,15 +383,16 @@ class _BrandCopy extends StatelessWidget {
               fontSize: 43 * scale,
               height: 1.0,
               fontWeight: FontWeight.w800,
-              letterSpacing: -1.0,
+              letterSpacing: 0,
             ),
             children: const [
               TextSpan(
                   text: 'Caderno\n',
-                  style: TextStyle(color: Color(0xFFE8ECEC))),
-              TextSpan(text: 'de ', style: TextStyle(color: Color(0xFFE8ECEC))),
+                  style: TextStyle(color: AppColors.textPrimary)),
               TextSpan(
-                  text: 'Solo', style: TextStyle(color: Color(0xFF7ACC49))),
+                  text: 'de ', style: TextStyle(color: AppColors.textPrimary)),
+              TextSpan(
+                  text: 'Solo', style: TextStyle(color: AppColors.primary)),
             ],
           ),
         ),
@@ -400,7 +401,7 @@ class _BrandCopy extends StatelessWidget {
           width: 50 * scale,
           height: 3.6 * scale,
           decoration: BoxDecoration(
-            color: const Color(0xFF79C84A),
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(99),
           ),
         ),
@@ -505,7 +506,7 @@ class _BrandMessageCarousel extends HookWidget {
                 Text(
                   _messages[currentIndex.value].highlight,
                   style: AppTextStyles.label.copyWith(
-                    color: const Color(0xFF73C847),
+                    color: AppColors.primary,
                     fontSize: 13 * scale,
                     fontWeight: FontWeight.w600,
                   ),
@@ -514,7 +515,7 @@ class _BrandMessageCarousel extends HookWidget {
                 Text(
                   _messages[currentIndex.value].description,
                   style: AppTextStyles.body.copyWith(
-                    color: const Color(0xFFA8B4B0),
+                    color: AppColors.textSecond,
                     fontSize: 14 * scale,
                     height: 1.35,
                   ),
@@ -533,8 +534,8 @@ class _BrandMessageCarousel extends HookWidget {
                 margin: EdgeInsets.only(right: 6 * scale),
                 decoration: BoxDecoration(
                   color: currentIndex.value == index
-                      ? const Color(0xFF7BC94A)
-                      : const Color(0xFF62706A),
+                      ? AppColors.primary
+                      : AppColors.border,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -562,9 +563,16 @@ class _AuthSegmentedControl extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(4 * scale),
       decoration: BoxDecoration(
-        color: const Color(0xD0111E1A),
+        color: Colors.white.withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(14 * scale),
-        border: Border.all(color: const Color(0x33436152)),
+        border: Border.all(color: AppColors.borderSoft),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -573,16 +581,12 @@ class _AuthSegmentedControl extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 10 * scale),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(11 * scale),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF5FBF3F), Color(0xFF3F8E28)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                boxShadow: const [
+                color: AppColors.primary,
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x2E70C64A),
+                    color: AppColors.primary.withValues(alpha: 0.20),
                     blurRadius: 12,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -607,7 +611,7 @@ class _AuthSegmentedControl extends StatelessWidget {
                   AppStrings.cadastro,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.label.copyWith(
-                    color: const Color(0xFF8E9B96),
+                    color: AppColors.textSecond,
                     fontSize: 13 * scale,
                     fontWeight: FontWeight.w600,
                   ),
@@ -641,23 +645,22 @@ class _DarkLoginCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28 * scale),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xDD091311),
+            color: Colors.white.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(28 * scale),
-            border: Border.all(color: const Color(0x335BC852), width: 1.2),
-            boxShadow: const [
+            border: Border.all(color: Colors.white, width: 1.2),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 26,
-                offset: Offset(0, 14),
+                color: AppColors.primary.withValues(alpha: 0.10),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
               ),
               BoxShadow(
-                color: Color(0x1C5AB74D),
-                blurRadius: 24,
-                spreadRadius: -7,
-                offset: Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -675,16 +678,16 @@ class _DarkLoginCard extends StatelessWidget {
                   style: AppTextStyles.headline.copyWith(
                     fontSize: 22 * scale,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
+                    letterSpacing: 0,
                   ),
                   children: const [
                     TextSpan(
                       text: 'Bem-vindo',
-                      style: TextStyle(color: Color(0xFF7ECD49)),
+                      style: TextStyle(color: AppColors.primary),
                     ),
                     TextSpan(
                       text: ' de volta!',
-                      style: TextStyle(color: Color(0xFFE7ECEA)),
+                      style: TextStyle(color: AppColors.textPrimary),
                     ),
                   ],
                 ),
@@ -693,7 +696,7 @@ class _DarkLoginCard extends StatelessWidget {
               Text(
                 'Faça login para continuar',
                 style: AppTextStyles.body.copyWith(
-                  color: const Color(0xFFADB6B2),
+                  color: AppColors.textSecond,
                   fontSize: 15 * scale,
                 ),
               ),
@@ -743,7 +746,7 @@ class _DarkLoginCard extends StatelessWidget {
                 child: TextButton(
                   onPressed: () => context.push(AppRoutes.recuperarSenha),
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF79C84A),
+                    foregroundColor: AppColors.primary,
                     padding: EdgeInsets.symmetric(
                       horizontal: 4 * scale,
                       vertical: 7 * scale,
@@ -752,7 +755,7 @@ class _DarkLoginCard extends StatelessWidget {
                   child: Text(
                     AppStrings.esqueceuSenha,
                     style: AppTextStyles.label.copyWith(
-                      color: const Color(0xFF79C84A),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -774,7 +777,7 @@ class _DarkLoginCard extends StatelessWidget {
                   Text(
                     'Novo por aqui?',
                     style: AppTextStyles.body.copyWith(
-                      color: const Color(0xFFA6B0AC),
+                      color: AppColors.textSecond,
                       fontSize: 14 * scale,
                     ),
                   ),
@@ -784,7 +787,7 @@ class _DarkLoginCard extends StatelessWidget {
                     child: Text(
                       'Criar conta',
                       style: AppTextStyles.body.copyWith(
-                        color: const Color(0xFF79C84A),
+                        color: AppColors.primary,
                         fontSize: 14 * scale,
                         fontWeight: FontWeight.w700,
                       ),
@@ -856,8 +859,7 @@ class _DarkInputFieldState extends State<_DarkInputField> {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor =
-        _focused ? const Color(0xFF76C84A) : const Color(0xFF34413D);
+    final borderColor = _focused ? AppColors.primary : AppColors.borderSoft;
 
     return TextFormField(
       controller: widget.controller,
@@ -870,22 +872,22 @@ class _DarkInputFieldState extends State<_DarkInputField> {
       onFieldSubmitted: widget.onSubmitted,
       validator: widget.validator,
       style: AppTextStyles.input.copyWith(
-        color: const Color(0xFFE8EEEA),
+        color: AppColors.textPrimary,
         fontSize: 16 * widget.fontScale,
       ),
       decoration: InputDecoration(
         hintText: widget.hint,
         hintStyle: AppTextStyles.input.copyWith(
-          color: const Color(0xFF6D7A74),
+          color: AppColors.textTertiary,
           fontSize: 16 * widget.fontScale,
         ),
         filled: true,
-        fillColor: const Color(0xFF0D1714),
+        fillColor: const Color(0xFFF5F7FA),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         prefixIcon: Icon(
           widget.prefixIcon,
-          color: const Color(0xFF74C84A),
+          color: AppColors.primary,
           size: 22,
         ),
         suffixIcon: widget.obscureText
@@ -895,7 +897,7 @@ class _DarkInputFieldState extends State<_DarkInputField> {
                   _obscured
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
-                  color: const Color(0xFF8A9591),
+                  color: AppColors.textTertiary,
                   size: 22,
                 ),
               )
@@ -906,7 +908,7 @@ class _DarkInputFieldState extends State<_DarkInputField> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF76C84A), width: 1.4),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -916,8 +918,7 @@ class _DarkInputFieldState extends State<_DarkInputField> {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFE75A63), width: 1.4),
         ),
-        errorStyle:
-            AppTextStyles.error.copyWith(color: const Color(0xFFF18088)),
+        errorStyle: AppTextStyles.error.copyWith(color: AppColors.error),
       ),
     );
   }
@@ -953,16 +954,12 @@ class _PremiumLoginButtonState extends State<_PremiumLoginButton> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(34 * widget.scale),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF74C945), Color(0xFF3E9228)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: const [
+          color: AppColors.primary,
+          boxShadow: [
             BoxShadow(
-              color: Color(0x3E72C94A),
+              color: AppColors.primary.withValues(alpha: 0.24),
               blurRadius: 18,
-              offset: Offset(0, 9),
+              offset: const Offset(0, 9),
             ),
           ],
         ),
@@ -994,8 +991,8 @@ class _PremiumLoginButtonState extends State<_PremiumLoginButton> {
                           Opacity(
                             opacity: 0.35,
                             child: Icon(
-                              Icons.spa_rounded,
-                              color: const Color(0xFFBAE69C),
+                              Icons.lock_open_rounded,
+                              color: Colors.white,
                               size: 20 * widget.scale,
                             ),
                           ),
@@ -1006,7 +1003,7 @@ class _PremiumLoginButtonState extends State<_PremiumLoginButton> {
                               color: Colors.white,
                               fontSize: 20 * widget.scale,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
+                              letterSpacing: 0,
                             ),
                           ),
                           SizedBox(width: 14 * widget.scale),

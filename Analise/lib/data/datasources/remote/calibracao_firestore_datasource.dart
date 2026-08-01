@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:soloforte/domain/exceptions/permission_denied_exception.dart';
 
 class CalibracaoFirestoreDatasource {
   CalibracaoFirestoreDatasource(this._firestore);
@@ -10,22 +11,42 @@ class CalibracaoFirestoreDatasource {
   }
 
   Future<List<Map<String, dynamic>>> getProfiles(String userId) async {
-    final snapshot = await _collection(userId).get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return data;
-    }).toList();
+    try {
+      final snapshot = await _collection(userId).get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao listar calibrações', e);
+    }
   }
 
   Future<void> upsertProfile(
       String userId, Map<String, dynamic> profile) async {
-    final id = (profile['id'] ?? '').toString();
-    if (id.isEmpty) return;
-    await _collection(userId).doc(id).set(profile, SetOptions(merge: true));
+    try {
+      final id = (profile['id'] ?? '').toString();
+      if (id.isEmpty) return;
+      await _collection(userId).doc(id).set(profile, SetOptions(merge: true));
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao salvar calibração', e);
+    }
   }
 
   Future<void> deleteProfile(String userId, String profileId) async {
-    await _collection(userId).doc(profileId).delete();
+    try {
+      await _collection(userId).doc(profileId).delete();
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao excluir calibração', e);
+    }
+  }
+
+  Never _rethrowMapped(String operation, FirebaseException error) {
+    if (error.code == 'permission-denied' ||
+        error.code == 'missing-or-insufficient-permissions') {
+      throw const PermissionDeniedException();
+    }
+    throw Exception('$operation: $error');
   }
 }

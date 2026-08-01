@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/domain/entities/citacao_calibracao_model.dart';
+import 'package:soloforte/domain/exceptions/permission_denied_exception.dart';
 
 final recomendacaoDatasourceProvider =
     Provider<RecomendacaoFirestoreDatasource>((ref) {
@@ -26,6 +27,10 @@ class RecomendacaoFirestoreDatasource {
         'ERRO: Campo de citação não serializado. Chamar .toJson() antes de salvar.',
       );
       await _collection.add(firestoreData);
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao salvar recomendação', e);
+    } on PermissionDeniedException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao salvar recomendação: $e');
     }
@@ -63,8 +68,20 @@ class RecomendacaoFirestoreDatasource {
         data['id'] = doc.id;
         return data;
       }).toList();
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao listar recomendações da análise', e);
+    } on PermissionDeniedException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao listar recomendações da análise: $e');
     }
+  }
+
+  Never _rethrowMapped(String operation, FirebaseException error) {
+    if (error.code == 'permission-denied' ||
+        error.code == 'missing-or-insufficient-permissions') {
+      throw const PermissionDeniedException();
+    }
+    throw Exception('$operation: $error');
   }
 }

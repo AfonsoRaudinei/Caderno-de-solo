@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
@@ -23,6 +25,8 @@ class AbsorcaoNutrientesReferenciaPage extends StatefulWidget {
 
 class _AbsorcaoNutrientesReferenciaPageState
     extends State<AbsorcaoNutrientesReferenciaPage> {
+  static const String _iconPath = 'assets/icons/absorcao.png';
+
   final TextEditingController _yieldController = TextEditingController(
     text: '4.2',
   );
@@ -196,31 +200,44 @@ class _AbsorcaoNutrientesReferenciaPageState
         color: AbsorcaoNutrientesCores.greenDark,
       ),
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'REFERÊNCIA TÉCNICA',
-            style: AppTextStyles.caption.copyWith(
-              color: AbsorcaoNutrientesCores.greenAccent,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
+          const AppIconFrame(
+            assetPath: _iconPath,
+            size: AppDimens.cardIconSize,
+            backgroundColor: Colors.transparent,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Absorção de Nutrientes em Soja',
-            style: AppTextStyles.headline.copyWith(
-              color: Colors.white,
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Análise por estádio fenológico para apoiar recomendação agronômica.',
-            style: AppTextStyles.body.copyWith(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+          const SizedBox(width: AppDimens.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'REFERÊNCIA TÉCNICA',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AbsorcaoNutrientesCores.greenAccent,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Absorção de Nutrientes em Soja',
+                  style: AppTextStyles.headline.copyWith(
+                    color: Colors.white,
+                    fontSize: 20,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Análise por estádio fenológico para apoiar recomendação agronômica.',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

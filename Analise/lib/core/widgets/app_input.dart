@@ -119,7 +119,10 @@ class _AppInputState extends State<AppInput> {
   @override
   Widget build(BuildContext context) {
     final palette = context.appPalette;
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    final externalError =
+        widget.errorText != null && widget.errorText!.isNotEmpty
+            ? widget.errorText
+            : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +139,7 @@ class _AppInputState extends State<AppInput> {
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            boxShadow: _isFocused && !hasError
+            boxShadow: _isFocused && externalError == null
                 ? [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.12),
@@ -164,9 +167,14 @@ class _AppInputState extends State<AppInput> {
               color:
                   widget.enabled ? palette.textPrimary : palette.textSecondary,
             ),
-            onChanged: widget.onChanged,
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              // Atualiza borda/sombra quando o validator limpa o erro.
+              setState(() {});
+            },
             onFieldSubmitted: widget.onSubmitted,
             validator: widget.validator,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: AppTextStyles.input.copyWith(
@@ -200,13 +208,17 @@ class _AppInputState extends State<AppInput> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: hasError ? AppColors.error : palette.borderStrong,
+                  color: externalError != null
+                      ? AppColors.error
+                      : palette.borderStrong,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: hasError ? AppColors.error : AppColors.primary,
+                  color: externalError != null
+                      ? AppColors.error
+                      : AppColors.primary,
                   width: 1.5,
                 ),
               ),
@@ -223,15 +235,12 @@ class _AppInputState extends State<AppInput> {
                 borderSide:
                     const BorderSide(color: AppColors.error, width: 1.5),
               ),
-              // Sem errorText aqui — exibimos manualmente abaixo para controle total
-              errorText: null,
+              // Expõe erro externo e deixa o FormField sobrescrever com o validator.
+              errorText: externalError,
+              errorStyle: AppTextStyles.error,
             ),
           ),
         ),
-        if (hasError) ...[
-          const SizedBox(height: 4),
-          Text(widget.errorText!, style: AppTextStyles.error),
-        ],
       ],
     );
   }

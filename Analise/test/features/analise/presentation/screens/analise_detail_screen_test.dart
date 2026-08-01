@@ -65,4 +65,39 @@ void main() {
     final input = tester.widget<TextField>(find.byType(TextField));
     expect(input.controller?.text, '0.310');
   });
+
+  testWidgets('localizacao usa Lat/Long unico e acao de mapa', (tester) async {
+    final analise = makeAnalise(
+      id: 'det-1',
+      talhao: 'T01',
+      numeroAmostra: 'SBA25.147294',
+      fazenda: 'MOEMA',
+      produtor: 'ANDRE LUIZ DE SIQUEIRA',
+      laboratorio: 'Exata Brasil',
+      latitude: -10.510193,
+      longitude: -48.315852,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          analiseNotifierProvider.overrideWith(
+            () => _FakeAnaliseNotifier([analise]),
+          ),
+        ],
+        child: const MaterialApp(
+          home: AnaliseDetailScreen(analiseId: 'det-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lat/Long'), findsOneWidget);
+    expect(find.text('-10.510193, -48.315852'), findsOneWidget);
+    expect(find.text('Ir ao mapa'), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('select_location_on_map')), findsOneWidget);
+    expect(find.text('Latitude'), findsNothing);
+    expect(find.text('Longitude'), findsNothing);
+  });
 }

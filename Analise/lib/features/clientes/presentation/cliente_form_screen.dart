@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 
@@ -30,7 +33,6 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
   final _observacoesController = TextEditingController();
 
   String? _estado;
-  String? _estadoError;
   bool _initialized = false;
 
   bool get _isEdicao =>
@@ -60,8 +62,10 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(clienteProvider);
-    final cliente = _isEdicao ? state.clienteSelecionado : null;
+    final isLoading = ref.watch(clienteProvider.select((s) => s.isLoading));
+    final cliente = _isEdicao
+        ? ref.watch(clienteProvider.select((s) => s.clienteSelecionado))
+        : null;
 
     if (!_initialized && cliente != null) {
       _nomeController.text = cliente.nome;
@@ -74,7 +78,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: context.appPalette.background,
       appBar: AppBar(
         title: Text(_isEdicao ? 'Editar Cliente' : 'Novo Cliente'),
       ),
@@ -86,93 +90,88 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionLabel('Dados Pessoais'),
-                AppInput(
-                  controller: _nomeController,
-                  label: 'Nome completo*',
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-                    if (text.length < 3) {
-                      return 'Informe pelo menos 3 caracteres.';
-                    }
-                    return null;
-                  },
+                AppSurface(
+                  showBorder: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('Dados Pessoais'),
+                      AppInput(
+                        controller: _nomeController,
+                        label: 'Nome completo',
+                        textInputAction: TextInputAction.next,
+                        textCapitalization: TextCapitalization.words,
+                        validator: ClienteFormValidators.nome,
+                      ),
+                      const SizedBox(height: 12),
+                      AppInput(
+                        controller: _telefoneController,
+                        label: 'Telefone / WhatsApp',
+                        keyboardType: TextInputType.phone,
+                        textInputAction: TextInputAction.next,
+                        inputFormatters: const [_PhoneInputFormatter()],
+                        validator: ClienteFormValidators.telefone,
+                      ),
+                      const SizedBox(height: 12),
+                      AppInput(
+                        controller: _emailController,
+                        label: 'E-mail',
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        validator: ClienteFormValidators.email,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                AppInput(
-                  controller: _telefoneController,
-                  label: 'Telefone / WhatsApp*',
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  inputFormatters: const [_PhoneInputFormatter()],
-                  validator: (value) {
-                    final digits =
-                        (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-                    if (digits.length < 10) {
-                      return 'Informe um telefone válido.';
-                    }
-                    return null;
-                  },
+                const SizedBox(height: 16),
+                AppSurface(
+                  showBorder: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('Localização'),
+                      AppInput(
+                        controller: _cidadeController,
+                        label: 'Cidade',
+                        textInputAction: TextInputAction.next,
+                        textCapitalization: TextCapitalization.words,
+                        validator: ClienteFormValidators.cidade,
+                      ),
+                      const SizedBox(height: 12),
+                      AppDropdown<String>(
+                        label: 'Estado',
+                        hint: 'Selecione a UF',
+                        items: estadosBrasileiros
+                            .map((item) => AppDropdownItem(
+                                  value: item.value,
+                                  label: '${item.value} · ${item.label}',
+                                ))
+                            .toList(growable: false),
+                        value: _estado,
+                        onChanged: (value) => setState(() => _estado = value),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                AppInput(
-                  controller: _emailController,
-                  label: 'E-mail*',
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-                    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                    if (!regex.hasMatch(text)) {
-                      return 'Informe um e-mail válido.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                const _SectionLabel('Localização'),
-                AppInput(
-                  controller: _cidadeController,
-                  label: 'Cidade*',
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if ((value?.trim() ?? '').isEmpty) {
-                      return 'Informe a cidade.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                AppDropdown<String>(
-                  label: 'Estado*',
-                  hint: 'Selecione a UF',
-                  items: estadosBrasileiros
-                      .map((item) => AppDropdownItem(
-                            value: item.value,
-                            label: '${item.value} · ${item.label}',
-                          ))
-                      .toList(growable: false),
-                  value: _estado,
-                  errorText: _estadoError,
-                  onChanged: (value) => setState(() {
-                    _estado = value;
-                    _estadoError = null;
-                  }),
-                ),
-                const SizedBox(height: 20),
-                const _SectionLabel('Observações'),
-                AppTextArea(
-                  controller: _observacoesController,
-                  label: 'Campo livre',
-                  maxLines: 4,
+                const SizedBox(height: 16),
+                AppSurface(
+                  showBorder: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('Observações'),
+                      AppTextArea(
+                        controller: _observacoesController,
+                        label: 'Campo livre',
+                        maxLines: 4,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 AppButton(
                   label: 'Salvar Cliente',
-                  isLoading: state.isLoading,
+                  isLoading: isLoading,
                   onPressed: _salvar,
                 ),
                 if (_isEdicao) ...[
@@ -181,7 +180,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
                     width: double.infinity,
                     height: 50,
                     child: OutlinedButton(
-                      onPressed: state.isLoading ? null : _confirmarExclusao,
+                      onPressed: isLoading ? null : _confirmarExclusao,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: const BorderSide(color: AppColors.error),
@@ -202,10 +201,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
   }
 
   Future<void> _salvar() async {
-    setState(() {
-      _estadoError = _estado == null ? 'Selecione o estado.' : null;
-    });
-    if (!_formKey.currentState!.validate() || _estado == null) return;
+    if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(clienteProvider.notifier);
     final base = ClienteEntity(
@@ -215,7 +211,7 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       telefone: _telefoneController.text.trim(),
       email: _emailController.text.trim(),
       cidade: _cidadeController.text.trim(),
-      estado: _estado!,
+      estado: _estado?.trim() ?? '',
       observacoes: _observacoesController.text.trim().isEmpty
           ? null
           : _observacoesController.text.trim(),
@@ -224,10 +220,11 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       atualizadoEm: DateTime.now(),
     );
 
+    var salvou = false;
     if (_isEdicao) {
       final atual = ref.read(clienteProvider).clienteSelecionado;
       if (atual == null) return;
-      await notifier.atualizarCliente(
+      salvou = await notifier.atualizarCliente(
         base.copyWith(
           token: atual.token,
           usuarioId: atual.usuarioId,
@@ -237,10 +234,29 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
         ),
       );
     } else {
-      await notifier.criarCliente(base);
+      final id = await notifier.criarCliente(base);
+      salvou = id != null && id.isNotEmpty;
     }
 
-    if (mounted) context.pop(true);
+    if (!mounted) return;
+    if (!salvou) {
+      final state = ref.read(clienteProvider);
+      if (state.requiresLogin) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        context.go(AppRoutes.login);
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(state.erro ?? 'Não foi possível salvar o cliente.'),
+          ),
+        );
+      return;
+    }
+    context.pop(true);
   }
 
   Future<void> _confirmarExclusao() async {
@@ -271,6 +287,34 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     if (!confirmed) return;
     await ref.read(clienteProvider.notifier).deletarCliente(widget.clienteId!);
     if (mounted) context.pop(true);
+  }
+}
+
+/// Validações do formulário de cliente (testáveis fora da árvore de widgets).
+class ClienteFormValidators {
+  ClienteFormValidators._();
+
+  static String? nome(String? value) => null;
+
+  static String? cidade(String? value) => null;
+
+  static String? telefone(String? value) {
+    final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return null;
+    if (digits.length < 10) {
+      return 'Informe um telefone válido.';
+    }
+    return null;
+  }
+
+  static String? email(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!regex.hasMatch(text)) {
+      return 'Informe um e-mail válido.';
+    }
+    return null;
   }
 }
 

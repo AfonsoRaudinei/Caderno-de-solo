@@ -193,8 +193,11 @@ class _CorretivosCardState extends State<CorretivosCard> {
     final calcario1 = _asMap(widget.corretivos['calcario1']);
     final albrecht = _asMap(widget.corretivos['albrecht']);
     final metodoCalagem = _labelMetodo(widget.corretivos['metodoCalagem']);
+    final metaCaMgK =
+        _metaCaMgKConfig(_string(widget.corretivos['metodoCalagem']));
     final tipoCalcario = _string(widget.corretivos['tipoCalcario']);
-    final usarNivelCritico = _bool(widget.corretivos['usarNivelCritico']);
+    final usarNivelCritico = metaCaMgK.permiteNivelCritico &&
+        _bool(widget.corretivos['usarNivelCritico']);
 
     final caDesejadoPct = _numOrNull(widget.corretivos['caDesejadoPct']) ??
         _numOrNull(albrecht['caAlvo']);
@@ -230,7 +233,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
         _percentSegment('CaO', calcario1['caO']),
         _percentSegment('MgO', calcario1['mgO']),
       ]),
-      if (criterio.isNotEmpty)
+      if (metaCaMgK.visivel && criterio.isNotEmpty)
         usarNivelCritico ? 'NC: $criterio cmolc/dm³' : 'Meta: $criterio',
     ].where((line) => line.isNotEmpty).toList();
   }
@@ -250,6 +253,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
     final calcario1 = _asMap(widget.corretivos['calcario1']);
     final calcario2 = _asMap(widget.corretivos['calcario2']);
     final usarSegundoCalcario = _bool(widget.corretivos['usarSegundoCalcario']);
+    final permiteSegundoCalcario = _permiteSegundoCalcario(metodoCalagem);
     final proporcao1 =
         _num(widget.corretivos['proporcaoCalcario1'], fallback: 50);
     final proporcao2 = (100 - proporcao1).clamp(0, 100).toDouble();
@@ -274,7 +278,9 @@ class _CorretivosCardState extends State<CorretivosCard> {
 
     final gesso = _asMap(widget.corretivos['gesso']);
     final usarGesso = _bool(gesso['usarGesso']);
-    final usarNivelCritico = _bool(widget.corretivos['usarNivelCritico']);
+    final metaCaMgK = _metaCaMgKConfig(metodoCalagem);
+    final usarNivelCritico = metaCaMgK.permiteNivelCritico &&
+        _bool(widget.corretivos['usarNivelCritico']);
 
     final qualidade = _qualidadeCalcario(prnt1);
     final scoreBars = (qualidade / 20).clamp(0, 5).toInt();
@@ -429,24 +435,21 @@ class _CorretivosCardState extends State<CorretivosCard> {
           ),
         ),
         const SizedBox(height: 10),
-        _buildMetaCaMgKSection(
-          usarNivelCritico: usarNivelCritico,
-          albrecht: albrecht,
-        ),
-        const SizedBox(height: 10),
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           title: const Text('Usar 2º calcário?'),
-          value: usarSegundoCalcario,
-          onChanged: (value) {
-            final atualizado = {
-              ...widget.corretivos,
-              'usarSegundoCalcario': value
-            };
-            widget.onChanged(atualizado);
-          },
+          value: permiteSegundoCalcario && usarSegundoCalcario,
+          onChanged: permiteSegundoCalcario
+              ? (value) {
+                  final atualizado = {
+                    ...widget.corretivos,
+                    'usarSegundoCalcario': value,
+                  };
+                  widget.onChanged(atualizado);
+                }
+              : null,
         ),
-        if (usarSegundoCalcario) ...[
+        if (permiteSegundoCalcario && usarSegundoCalcario) ...[
           _buildNumericPair(
             left: _buildNumericInput(
               keyValue: '${widget.draftKey}-c2-cao',
@@ -538,13 +541,22 @@ class _CorretivosCardState extends State<CorretivosCard> {
           onChanged: (value) {
             final atualizado = {
               ...widget.corretivos,
-              'metodoCalagem': value ?? metodos.first
+              'metodoCalagem': value ?? metodos.first,
             };
+            if (!_metaCaMgKConfig(atualizado['metodoCalagem'] as String)
+                .permiteNivelCritico) {
+              atualizado['usarNivelCritico'] = false;
+            }
+            if (!_permiteSegundoCalcario(
+              atualizado['metodoCalagem'] as String,
+            )) {
+              atualizado['usarSegundoCalcario'] = false;
+            }
             widget.onChanged(atualizado);
           },
         ),
         const SizedBox(height: 10),
-        if (metodoCalagem.startsWith('Saturação'))
+        if (metodoCalagem.startsWith('①'))
           _buildNumericInput(
             keyValue: '${widget.draftKey}-v2',
             label: 'V₂ desejado (%)',
@@ -555,6 +567,14 @@ class _CorretivosCardState extends State<CorretivosCard> {
               widget.onChanged(atualizado);
             },
           ),
+        if (metaCaMgK.visivel) ...[
+          _buildMetaCaMgKSection(
+            config: metaCaMgK,
+            usarNivelCritico: usarNivelCritico,
+            albrecht: albrecht,
+          ),
+          const SizedBox(height: 10),
+        ],
         if (metodoCalagem.startsWith('②'))
           _buildNumericInput(
             keyValue: '${widget.draftKey}-hal',
@@ -893,6 +913,7 @@ class _CorretivosCardState extends State<CorretivosCard> {
   }
 
   Widget _buildMetaCaMgKSection({
+    required _MetaCaMgKConfig config,
     required bool usarNivelCritico,
     required Map<String, dynamic> albrecht,
   }) {
@@ -923,7 +944,10 @@ class _CorretivosCardState extends State<CorretivosCard> {
               child: _ToggleBtn(
                 label: 'Nível Crítico',
                 selected: usarNivelCritico,
-                onTap: () => _updateCorretivoValue('usarNivelCritico', true),
+                enabled: config.permiteNivelCritico,
+                onTap: config.permiteNivelCritico
+                    ? () => _updateCorretivoValue('usarNivelCritico', true)
+                    : null,
               ),
             ),
           ],
@@ -1123,25 +1147,33 @@ class _ToggleBtn extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.enabled = true,
   });
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         height: 36,
         decoration: BoxDecoration(
           color: selected
               ? const Color(0xFF007AFF).withValues(alpha: 0.10)
-              : const Color(0xFFE5E5E7),
+              : enabled
+                  ? const Color(0xFFE5E5E7)
+                  : const Color(0xFFF2F2F7),
           border: Border.all(
-            color: selected ? const Color(0xFF007AFF) : const Color(0xFFD1D1D6),
+            color: selected
+                ? const Color(0xFF007AFF)
+                : enabled
+                    ? const Color(0xFFD1D1D6)
+                    : const Color(0xFFE5E5E7),
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -1151,7 +1183,11 @@ class _ToggleBtn extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? const Color(0xFF007AFF) : const Color(0xFF86868B),
+            color: selected
+                ? const Color(0xFF007AFF)
+                : enabled
+                    ? const Color(0xFF86868B)
+                    : const Color(0xFFC7C7CC),
           ),
         ),
       ),
@@ -1200,6 +1236,39 @@ class _LabeledInput extends StatelessWidget {
       ],
     );
   }
+}
+
+class _MetaCaMgKConfig {
+  const _MetaCaMgKConfig({
+    required this.visivel,
+    required this.permiteNivelCritico,
+  });
+
+  final bool visivel;
+  final bool permiteNivelCritico;
+}
+
+_MetaCaMgKConfig _metaCaMgKConfig(String metodoCalagem) {
+  if (metodoCalagem.startsWith('⑤') || metodoCalagem.startsWith('⑥')) {
+    return const _MetaCaMgKConfig(
+      visivel: true,
+      permiteNivelCritico: true,
+    );
+  }
+  if (metodoCalagem.startsWith('①')) {
+    return const _MetaCaMgKConfig(
+      visivel: false,
+      permiteNivelCritico: false,
+    );
+  }
+  return const _MetaCaMgKConfig(
+    visivel: false,
+    permiteNivelCritico: false,
+  );
+}
+
+bool _permiteSegundoCalcario(String metodoCalagem) {
+  return !metodoCalagem.startsWith('①');
 }
 
 // ── Constantes ──────────────────────────────────────────────────────────────

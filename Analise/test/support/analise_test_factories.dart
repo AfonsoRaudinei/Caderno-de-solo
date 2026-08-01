@@ -13,6 +13,8 @@ AnaliseSolo makeAnalise({
   double? k = 0.31,
   double? ca = 3.1,
   double? mg = 1.2,
+  double? latitude,
+  double? longitude,
   Map<String, dynamic>? laudoMetadata,
 }) {
   return AnaliseSolo(
@@ -26,6 +28,8 @@ AnaliseSolo makeAnalise({
     laboratorio: laboratorio,
     dataCadastro: DateTime(2026, 4, 6, 10, 0),
     profundidade: profundidade,
+    latitude: latitude,
+    longitude: longitude,
     phCaCl2: phCaCl2,
     k: k,
     ca: ca,

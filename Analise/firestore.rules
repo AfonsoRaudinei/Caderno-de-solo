@@ -78,7 +78,15 @@ service cloud.firestore {
 
     match /clientes/{clienteId} {
       allow create: if signedIn() && keepsClienteOwner(request.auth.uid);
-      allow read, delete: if signedIn() && resource.data.usuarioId == request.auth.uid;
+      // get: dono OU cliente com token registrado (App Mapa após lookup).
+      allow get: if signedIn() && (
+          resource.data.usuarioId == request.auth.uid ||
+          (resource.data.token is string &&
+            exists(/databases/$(database)/documents/cliente_tokens/$(resource.data.token)))
+        );
+      // list: somente dono — queries devem filtrar usuarioId.
+      allow list: if signedIn() && resource.data.usuarioId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.usuarioId == request.auth.uid;
       allow update: if signedIn() &&
           resource.data.usuarioId == request.auth.uid &&
           keepsClienteOwner(request.auth.uid);
@@ -90,6 +98,20 @@ service cloud.firestore {
           allow read, write: if signedIn() && clienteOwner(clienteId);
         }
       }
+    }
+
+    // Registro de tokens SF-AAAA-XXXX para lookup pontual (App Mapa).
+    // Usa get por documentId — não exige query collection-wide em `clientes`.
+    match /cliente_tokens/{token} {
+      allow get: if signedIn();
+      allow create: if signedIn() &&
+          request.resource.data.usuarioId == request.auth.uid &&
+          request.resource.data.keys().hasAll(['clienteId', 'usuarioId', 'token']);
+      allow update: if signedIn() &&
+          resource.data.usuarioId == request.auth.uid &&
+          request.resource.data.usuarioId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.usuarioId == request.auth.uid;
+      allow list: if false;
     }
   }
 }

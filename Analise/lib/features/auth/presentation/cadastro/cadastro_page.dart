@@ -10,7 +10,7 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/features/auth/presentation/cadastro/cadastro_controller.dart';
 
-/// Tela de Cadastro em 3 etapas (visual dark premium)
+/// Tela de Cadastro em 3 etapas.
 class CadastroPage extends HookConsumerWidget {
   const CadastroPage({super.key});
 
@@ -350,10 +350,10 @@ class _CadastroDarkBackground extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF030907),
-                Color(0xFF06110E),
-                Color(0xFF071814),
-                Color(0xFF020706),
+                Color(0xFFF7FAFF),
+                Color(0xFFEFF6FF),
+                Color(0xFFF8FBFF),
+                Color(0xFFFFFFFF),
               ],
               stops: [0.0, 0.35, 0.7, 1.0],
             ),
@@ -363,12 +363,12 @@ class _CadastroDarkBackground extends StatelessWidget {
         const Positioned(
           top: -120,
           right: -80,
-          child: _AmbientGlow(size: 290, color: Color(0x2B59C563)),
+          child: _AmbientGlow(size: 290, color: Color(0x263B82F6)),
         ),
         const Positioned(
           bottom: -100,
           left: -70,
-          child: _AmbientGlow(size: 260, color: Color(0x1C4FA05C)),
+          child: _AmbientGlow(size: 260, color: Color(0x167ACC49)),
         ),
         Positioned.fill(
           child: IgnorePointer(
@@ -446,7 +446,7 @@ class _CadastroHeader extends StatelessWidget {
             onPressed: onBack,
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFFE7ECE9),
+              color: AppColors.textPrimary,
             ),
           ),
           Expanded(
@@ -454,7 +454,7 @@ class _CadastroHeader extends StatelessWidget {
               'Cadastro (${step + 1}/3)',
               textAlign: TextAlign.center,
               style: AppTextStyles.value.copyWith(
-                color: const Color(0xFFE7ECE9),
+                color: AppColors.textPrimary,
                 fontSize: 20 * scale,
                 fontWeight: FontWeight.w700,
               ),
@@ -485,8 +485,7 @@ class _StepProgressBar extends StatelessWidget {
               margin: EdgeInsets.only(right: index < 2 ? 7 * scale : 0),
               height: 5 * scale,
               decoration: BoxDecoration(
-                color:
-                    active ? const Color(0xFF76C84A) : const Color(0xFF2B3A36),
+                color: active ? AppColors.primary : AppColors.borderSoft,
                 borderRadius: BorderRadius.circular(99),
               ),
             ),
@@ -529,17 +528,22 @@ class _CadastroCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28 * scale),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 11, sigmaY: 11),
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xDD091311),
+            color: Colors.white.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(28 * scale),
-            border: Border.all(color: const Color(0x335BC852), width: 1.1),
-            boxShadow: const [
+            border: Border.all(color: Colors.white, width: 1.1),
+            boxShadow: [
               BoxShadow(
-                color: Color(0x55000000),
-                blurRadius: 24,
-                offset: Offset(0, 10),
+                color: AppColors.primary.withValues(alpha: 0.10),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -575,17 +579,17 @@ class _StepTitle extends StatelessWidget {
         Text(
           title,
           style: AppTextStyles.headline.copyWith(
-            color: const Color(0xFFE7ECEA),
+            color: AppColors.textPrimary,
             fontSize: 28 * scale,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+            letterSpacing: 0,
           ),
         ),
         SizedBox(height: 6 * scale),
         Text(
           subtitle,
           style: AppTextStyles.body.copyWith(
-            color: const Color(0xFFABB5B1),
+            color: AppColors.textSecond,
             fontSize: 15 * scale,
             height: 1.32,
           ),
@@ -655,7 +659,7 @@ class _DarkTextFieldState extends State<_DarkTextField> {
         Text(
           widget.label,
           style: AppTextStyles.label.copyWith(
-            color: const Color(0xFFC4CECA),
+            color: AppColors.textSecond,
             fontSize: 13 * scale,
             fontWeight: FontWeight.w500,
           ),
@@ -670,22 +674,22 @@ class _DarkTextFieldState extends State<_DarkTextField> {
           validator: widget.validator,
           onFieldSubmitted: widget.onSubmitted,
           style: AppTextStyles.input.copyWith(
-            color: const Color(0xFFE8EEEA),
+            color: AppColors.textPrimary,
             fontSize: 16 * scale,
           ),
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: AppTextStyles.input.copyWith(
-              color: const Color(0xFF6D7A74),
+              color: AppColors.textTertiary,
               fontSize: 16 * scale,
             ),
             filled: true,
-            fillColor: const Color(0xFF0D1714),
+            fillColor: const Color(0xFFF5F7FA),
             contentPadding: EdgeInsets.symmetric(
                 horizontal: 14 * scale, vertical: 14 * scale),
             prefixIcon: Icon(
               widget.prefixIcon,
-              color: const Color(0xFF74C84A),
+              color: AppColors.primary,
               size: 21 * scale,
             ),
             suffixIcon: widget.obscureText
@@ -695,7 +699,7 @@ class _DarkTextFieldState extends State<_DarkTextField> {
                       _obscured
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      color: const Color(0xFF8A9591),
+                      color: AppColors.textTertiary,
                       size: 21 * scale,
                     ),
                   )
@@ -703,16 +707,14 @@ class _DarkTextFieldState extends State<_DarkTextField> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16 * scale),
               borderSide: BorderSide(
-                color: _focused
-                    ? const Color(0xFF76C84A)
-                    : const Color(0xFF34413D),
+                color: _focused ? AppColors.primary : AppColors.borderSoft,
                 width: 1.15,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16 * scale),
               borderSide:
-                  const BorderSide(color: Color(0xFF76C84A), width: 1.3),
+                  const BorderSide(color: AppColors.primary, width: 1.3),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16 * scale),
@@ -724,8 +726,7 @@ class _DarkTextFieldState extends State<_DarkTextField> {
               borderSide:
                   const BorderSide(color: Color(0xFFE75A63), width: 1.35),
             ),
-            errorStyle:
-                AppTextStyles.error.copyWith(color: const Color(0xFFF18088)),
+            errorStyle: AppTextStyles.error.copyWith(color: AppColors.error),
           ),
         ),
       ],
@@ -760,7 +761,7 @@ class _DarkDropdownField<T> extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.label.copyWith(
-            color: const Color(0xFFC4CECA),
+            color: AppColors.textSecond,
             fontSize: 13 * scale,
             fontWeight: FontWeight.w500,
           ),
@@ -775,7 +776,7 @@ class _DarkDropdownField<T> extends StatelessWidget {
                   child: Text(
                     item.label,
                     style: AppTextStyles.body.copyWith(
-                      color: const Color(0xFFE8EEEA),
+                      color: AppColors.textPrimary,
                       fontSize: 15 * scale,
                     ),
                   ),
@@ -783,40 +784,40 @@ class _DarkDropdownField<T> extends StatelessWidget {
               )
               .toList(),
           onChanged: onChanged,
-          dropdownColor: const Color(0xFF12201C),
+          dropdownColor: Colors.white,
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: const Color(0xFF8A9591),
+            color: AppColors.textTertiary,
             size: 22 * scale,
           ),
           style: AppTextStyles.body.copyWith(
-            color: const Color(0xFFE8EEEA),
+            color: AppColors.textPrimary,
             fontSize: 15 * scale,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: AppTextStyles.body.copyWith(
-              color: const Color(0xFF6D7A74),
+              color: AppColors.textTertiary,
               fontSize: 15 * scale,
             ),
             filled: true,
-            fillColor: const Color(0xFF0D1714),
+            fillColor: const Color(0xFFF5F7FA),
             contentPadding: EdgeInsets.symmetric(
                 horizontal: 14 * scale, vertical: 14 * scale),
             prefixIcon: Icon(
               prefixIcon,
-              color: const Color(0xFF74C84A),
+              color: AppColors.primary,
               size: 21 * scale,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16 * scale),
               borderSide:
-                  const BorderSide(color: Color(0xFF34413D), width: 1.15),
+                  const BorderSide(color: AppColors.borderSoft, width: 1.15),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16 * scale),
               borderSide:
-                  const BorderSide(color: Color(0xFF76C84A), width: 1.3),
+                  const BorderSide(color: AppColors.primary, width: 1.3),
             ),
           ),
         ),
@@ -855,16 +856,12 @@ class _GreenGradientButtonState extends State<_GreenGradientButton> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30 * widget.scale),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF74C945), Color(0xFF3E9228)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: const [
+          color: AppColors.primary,
+          boxShadow: [
             BoxShadow(
-              color: Color(0x3D72C94A),
+              color: AppColors.primary.withValues(alpha: 0.24),
               blurRadius: 16,
-              offset: Offset(0, 8),
+              offset: const Offset(0, 8),
             ),
           ],
         ),

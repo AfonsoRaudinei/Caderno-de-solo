@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/features/laboratorio/domain/models/absorcao_data_quality.dart';
 import 'package:soloforte/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart';
-import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
 
 void main() {
   group('AbsorcaoNutrientesResolver', () {
@@ -15,7 +15,7 @@ void main() {
       );
 
       expect(resolved.valuePerTon, 3.4);
-      expect(resolved.quality, DataQuality.original);
+      expect(resolved.quality, AbsorcaoDataQuality.original);
     });
 
     test('calcula valor por índice quando o dado direto está ausente', () {
@@ -27,7 +27,7 @@ void main() {
       );
 
       expect(resolved.valuePerTon, closeTo(4.7875, 0.0001));
-      expect(resolved.quality, DataQuality.calculated);
+      expect(resolved.quality, AbsorcaoDataQuality.calculated);
     });
 
     test('retorna indisponível para fonte inexistente', () {
@@ -39,7 +39,7 @@ void main() {
       );
 
       expect(resolved.valuePerTon, 0);
-      expect(resolved.quality, DataQuality.unavailable);
+      expect(resolved.quality, AbsorcaoDataQuality.unavailable);
     });
   });
 }

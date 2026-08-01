@@ -4,6 +4,7 @@ import 'package:soloforte/data/lab_templates/ibra_template.dart';
 import 'package:soloforte/data/lab_templates/mb_template.dart';
 import 'package:soloforte/data/lab_templates/sellar_template.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
+import 'package:soloforte/features/analise/presentation/formatters/coordinate_formatter.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_calc_cell.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_input_cell.dart';
 
@@ -553,9 +554,9 @@ class AnaliseTableWidget extends StatelessWidget {
     final issue = validation.issueForCell(index, field.key);
 
     final initialValue = field.key == 'latitude'
-        ? _composeCoordinates(
-            analises[index]['latitude']?.toString(),
-            analises[index]['longitude']?.toString(),
+        ? CoordinateFormatter.formatCombined(
+            _parseNullableNumber(analises[index]['latitude']),
+            _parseNullableNumber(analises[index]['longitude']),
           )
         : analises[index][field.key]?.toString() ?? '';
 
@@ -574,12 +575,10 @@ class AnaliseTableWidget extends StatelessWidget {
     );
   }
 
-  String _composeCoordinates(String? latRaw, String? lngRaw) {
-    final lat = (latRaw ?? '').trim();
-    final lng = (lngRaw ?? '').trim();
-    if (lat.isEmpty && lng.isEmpty) return '';
-    if (lat.isNotEmpty && lng.isNotEmpty) return '$lat, $lng';
-    return lat.isNotEmpty ? lat : lng;
+  num? _parseNullableNumber(Object? raw) {
+    final value = raw?.toString().trim();
+    if (value == null || value.isEmpty) return null;
+    return num.tryParse(value.replaceAll(',', '.'));
   }
 
   List<_RenderedRow> _buildRowsForLaboratorio(String laboratorioAtual) {

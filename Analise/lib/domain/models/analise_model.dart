@@ -1,5 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:soloforte/domain/converters/timestamp_converter.dart';
+
+export 'package:soloforte/domain/converters/timestamp_converter.dart';
 
 part 'analise_model.freezed.dart';
 part 'analise_model.g.dart';
@@ -106,25 +108,25 @@ class AnaliseModel with _$AnaliseModel {
     @TimestampConverter() DateTime? updatedAt,
 
     // ── Acidez detalhada ───────────────────────────────────────────────────
-    double? h,          // Hidrogenio puro (separado de H+Al)
+    double? h, // Hidrogenio puro (separado de H+Al)
     double? ctcEfetiva, // CTC efetiva (t) = SB + Al
 
     // ── Valores entregues pelo lab (NAO recalcular) ────────────────────────
-    double? ctc,      // C.T.C. extraida do laudo
-    double? sb,       // Soma de Bases extraida do laudo
+    double? ctc, // C.T.C. extraida do laudo
+    double? sb, // Soma de Bases extraida do laudo
     double? vPercent, // Saturacao por Bases V% extraida do laudo
     double? mPercent, // Saturacao por Al m% extraida do laudo
 
     // ── Metadados do laudo ─────────────────────────────────────────────────
-    String? osLaboratorio,    // Numero da O.S. do laboratorio
-    String? dataEmissao,      // Data de emissao do laudo
-    String? consultor,        // Empresa consultora
-    String? labTemplateId,    // ID do template usado na importacao
+    String? osLaboratorio, // Numero da O.S. do laboratorio
+    String? dataEmissao, // Data de emissao do laudo
+    String? consultor, // Empresa consultora
+    String? labTemplateId, // ID do template usado na importacao
 
     // ── Unidades (para exibicao e conversao) ──────────────────────────────
     String? unidadeNutrientes, // "mmolc/dm3" ou "cmolc/dm3"
-    String? unidadeMO,         // "g/dm3", "dag/kg" ou "%"
-    String? unidadeTextura,    // "g/kg", "g/dm3" ou "%"
+    String? unidadeMO, // "g/dm3", "dag/kg" ou "%"
+    String? unidadeTextura, // "g/kg", "g/dm3" ou "%"
 
     // ── Textura detalhada (MB separa areia grossa/fina) ───────────────────
     double? cascalho,
@@ -132,7 +134,7 @@ class AnaliseModel with _$AnaliseModel {
     double? areiaFina,
 
     // ── Micronutrientes adicionais ─────────────────────────────────────────
-    double? co,              // Cobalto (mg/dm3) -- MB
+    double? co, // Cobalto (mg/dm3) -- MB
 
     // ── Metadados adicionais do laudo ──────────────────────────────────────
     String? municipio,
@@ -140,11 +142,11 @@ class AnaliseModel with _$AnaliseModel {
     String? cnpjCliente,
 
     // ── Fosforo adicional ─────────────────────────────────────────────────
-    double? pTotal,           // P Total em % -- Sellar
+    double? pTotal, // P Total em % -- Sellar
 
     // ── Textura adicional ─────────────────────────────────────────────
-    String? classificacaoTextura,  // 'Media', 'Argilosa', 'Arenosa'
-    int? tipoSoloMapa,             // Tipo MAPA (1, 2, 3) -- IN02/2008
+    String? classificacaoTextura, // 'Media', 'Argilosa', 'Arenosa'
+    int? tipoSoloMapa, // Tipo MAPA (1, 2, 3) -- IN02/2008
 
     // ── Metadados adicionais Sellar ───────────────────────────────────────
     String? solicitante,
@@ -153,50 +155,49 @@ class AnaliseModel with _$AnaliseModel {
     String? cnpjLaboratorio,
 
     // ── Campos Solum ──────────────────────────────────────────────────────
-    String? dataInicioEnsaio,       // Data de inicio dos ensaios
-    String? dataFimEnsaio,          // Data de fim dos ensaios
-    String? matriculaImovel,        // Matricula do imovel (SIGEF/SNCR)
-    String? codigoInterno,          // Codigo interno Solum
-    String? codigoExternoAmostra,   // Codigo externo da amostra
+    String? dataInicioEnsaio, // Data de inicio dos ensaios
+    String? dataFimEnsaio, // Data de fim dos ensaios
+    String? matriculaImovel, // Matricula do imovel (SIGEF/SNCR)
+    String? codigoInterno, // Codigo interno Solum
+    String? codigoExternoAmostra, // Codigo externo da amostra
 
     // ── Campos Exata Brasil ───────────────────────────────────────────────
-    double? caMaisMg,         // Ca+Mg somado (campo separado Exata)
-    double? kMgDm3,           // K em mg/dm3 por NH4Cl (Exata)
+    double? caMaisMg, // Ca+Mg somado (campo separado Exata)
+    double? kMgDm3, // K em mg/dm3 por NH4Cl (Exata)
 
     // Micronutrientes por Mehlich I
-    double? cuMehlich,        // Cobre por Mehlich
-    double? feMehlich,        // Ferro por Mehlich
-    double? mnMehlich,        // Manganes por Mehlich
-    double? znMehlich,        // Zinco por Mehlich
+    double? cuMehlich, // Cobre por Mehlich
+    double? feMehlich, // Ferro por Mehlich
+    double? mnMehlich, // Manganes por Mehlich
+    double? znMehlich, // Zinco por Mehlich
 
     // Micronutrientes por DTPA
-    double? cuDtpa,           // Cobre por DTPA
-    double? feDtpa,           // Ferro por DTPA
-    double? mnDtpa,           // Manganes por DTPA
-    double? znDtpa,           // Zinco por DTPA
+    double? cuDtpa, // Cobre por DTPA
+    double? feDtpa, // Ferro por DTPA
+    double? mnDtpa, // Manganes por DTPA
+    double? znDtpa, // Zinco por DTPA
 
     // Metadados adicionais do laudo (Exata)
-    String? dataRecebimento,  // Data de recebimento da amostra no lab
-    String? numeroRelatorio,  // No do relatorio (ex: 16738.2025.V0.U)
-    String? codigoVerificacao,// Codigo de verificacao do laudo digital
-    String? codigoTalhao,     // Codigo do talhao (T01, T02, 274)
-    int? totalAmostras,       // Total de pontos amostrados no laudo
+    String? dataRecebimento, // Data de recebimento da amostra no lab
+    String? numeroRelatorio, // No do relatorio (ex: 16738.2025.V0.U)
+    String? codigoVerificacao, // Codigo de verificacao do laudo digital
+    String? codigoTalhao, // Codigo do talhao (T01, T02, 274)
+    int? totalAmostras, // Total de pontos amostrados no laudo
   }) = _AnaliseModel;
 
-  factory AnaliseModel.fromJson(Map<String, dynamic> json) =>
-      AnaliseModel(
+  factory AnaliseModel.fromJson(Map<String, dynamic> json) => AnaliseModel(
         id: (json['id'] ?? '') as String,
         userId: (json['userId'] ?? json['user_id'] ?? '') as String,
         fazenda: (json['fazenda'] ??
-                json['fazenda_nome'] ??
-                json['fazendaNome'] ??
-                json['propriedade'] ??
-                '') as String,
+            json['fazenda_nome'] ??
+            json['fazendaNome'] ??
+            json['propriedade'] ??
+            '') as String,
         produtor: (json['produtor'] ?? '') as String,
         talhao: (json['talhao'] ??
-                json['talhao_nome'] ??
-                json['talhaoNome'] ??
-                '') as String,
+            json['talhao_nome'] ??
+            json['talhaoNome'] ??
+            '') as String,
         numeroAmostra:
             (json['numeroAmostra'] ?? json['numero_amostra'] ?? '') as String,
         laboratorio: (json['laboratorio'] ?? '') as String,
@@ -207,7 +208,8 @@ class AnaliseModel with _$AnaliseModel {
         safra: (json['safra'] ?? '') as String,
         latitude: (json['latitude'] as num?)?.toDouble(),
         longitude: (json['longitude'] as num?)?.toDouble(),
-        descricaoLocal: (json['descricao_local'] ?? json['descricaoLocal']) as String?,
+        descricaoLocal:
+            (json['descricao_local'] ?? json['descricaoLocal']) as String?,
         pdfUrl: (json['pdf_url'] ?? json['pdfUrl']) as String?,
         argila: (json['argila'] as num?)?.toDouble(),
         silte: (json['silte'] as num?)?.toDouble(),
@@ -217,9 +219,9 @@ class AnaliseModel with _$AnaliseModel {
         phCaCl2: (json['phCaCl2'] as num?)?.toDouble(),
         materiaOrganica: (json['materiaOrganica'] as num?)?.toDouble(),
         carbonoOrganico: (json['carbonoOrganico'] as num?)?.toDouble(),
-        pMehlich: ((json['p_mehlich'] ?? json['pMehlich'] ?? json['fosforo'])
-                as num?)
-            ?.toDouble(),
+        pMehlich:
+            ((json['p_mehlich'] ?? json['pMehlich'] ?? json['fosforo']) as num?)
+                ?.toDouble(),
         pResina: (json['pResina'] as num?)?.toDouble(),
         pRem: (json['pRem'] as num?)?.toDouble(),
         s020: (json['s020'] as num?)?.toDouble(),
@@ -245,11 +247,18 @@ class AnaliseModel with _$AnaliseModel {
         createdAt: const TimestampConverter().fromJson(json['createdAt']),
         updatedAt: const TimestampConverter().fromJson(json['updatedAt']),
         h: ((json['h'] ?? json['hidrogenio']) as num?)?.toDouble(),
-        ctcEfetiva: ((json['ctcEfetiva'] ?? json['ctc_efetiva']) as num?)?.toDouble(),
-        ctc: ((json['ctc'] ?? json['CTC'] ?? json['ctcTotal']) as num?)?.toDouble(),
-        sb: ((json['sb'] ?? json['SB'] ?? json['somaBasesLaudo']) as num?)?.toDouble(),
-        vPercent: ((json['vPercent'] ?? json['v%'] ?? json['saturacaoBases']) as num?)?.toDouble(),
-        mPercent: ((json['mPercent'] ?? json['m%'] ?? json['saturacaoAl']) as num?)?.toDouble(),
+        ctcEfetiva:
+            ((json['ctcEfetiva'] ?? json['ctc_efetiva']) as num?)?.toDouble(),
+        ctc: ((json['ctc'] ?? json['CTC'] ?? json['ctcTotal']) as num?)
+            ?.toDouble(),
+        sb: ((json['sb'] ?? json['SB'] ?? json['somaBasesLaudo']) as num?)
+            ?.toDouble(),
+        vPercent:
+            ((json['vPercent'] ?? json['v%'] ?? json['saturacaoBases']) as num?)
+                ?.toDouble(),
+        mPercent:
+            ((json['mPercent'] ?? json['m%'] ?? json['saturacaoAl']) as num?)
+                ?.toDouble(),
         osLaboratorio: json['osLaboratorio'] as String?,
         dataEmissao: json['dataEmissao'] as String?,
         consultor: json['consultor'] as String?,
@@ -258,8 +267,10 @@ class AnaliseModel with _$AnaliseModel {
         unidadeMO: json['unidadeMO'] as String?,
         unidadeTextura: json['unidadeTextura'] as String?,
         cascalho: (json['cascalho'] as num?)?.toDouble(),
-        areiaGrossa: ((json['areiaGrossa'] ?? json['areia_grossa']) as num?)?.toDouble(),
-        areiaFina: ((json['areiaFina'] ?? json['areia_fina']) as num?)?.toDouble(),
+        areiaGrossa:
+            ((json['areiaGrossa'] ?? json['areia_grossa']) as num?)?.toDouble(),
+        areiaFina:
+            ((json['areiaFina'] ?? json['areia_fina']) as num?)?.toDouble(),
         co: ((json['co'] ?? json['cobalto']) as num?)?.toDouble(),
         municipio: json['municipio'] as String?,
         responsavelTecnico: json['responsavelTecnico'] as String?,
@@ -276,16 +287,27 @@ class AnaliseModel with _$AnaliseModel {
         matriculaImovel: json['matriculaImovel'] as String?,
         codigoInterno: json['codigoInterno'] as String?,
         codigoExternoAmostra: json['codigoExternoAmostra'] as String?,
-        caMaisMg: ((json['caMaisMg'] ?? json['ca_mais_mg'] ?? json['caMg']) as num?)?.toDouble(),
-        kMgDm3: ((json['kMgDm3'] ?? json['k_nh4cl'] ?? json['kNH4Cl']) as num?)?.toDouble(),
-        cuMehlich: ((json['cuMehlich'] ?? json['cu_mehlich']) as num?)?.toDouble(),
-        feMehlich: ((json['feMehlich'] ?? json['fe_mehlich']) as num?)?.toDouble(),
-        mnMehlich: ((json['mnMehlich'] ?? json['mn_mehlich']) as num?)?.toDouble(),
-        znMehlich: ((json['znMehlich'] ?? json['zn_mehlich']) as num?)?.toDouble(),
-        cuDtpa: ((json['cuDtpa'] ?? json['cu_dtpa'] ?? json['cuDTPA']) as num?)?.toDouble(),
-        feDtpa: ((json['feDtpa'] ?? json['fe_dtpa'] ?? json['feDTPA']) as num?)?.toDouble(),
-        mnDtpa: ((json['mnDtpa'] ?? json['mn_dtpa'] ?? json['mnDTPA']) as num?)?.toDouble(),
-        znDtpa: ((json['znDtpa'] ?? json['zn_dtpa'] ?? json['znDTPA']) as num?)?.toDouble(),
+        caMaisMg:
+            ((json['caMaisMg'] ?? json['ca_mais_mg'] ?? json['caMg']) as num?)
+                ?.toDouble(),
+        kMgDm3: ((json['kMgDm3'] ?? json['k_nh4cl'] ?? json['kNH4Cl']) as num?)
+            ?.toDouble(),
+        cuMehlich:
+            ((json['cuMehlich'] ?? json['cu_mehlich']) as num?)?.toDouble(),
+        feMehlich:
+            ((json['feMehlich'] ?? json['fe_mehlich']) as num?)?.toDouble(),
+        mnMehlich:
+            ((json['mnMehlich'] ?? json['mn_mehlich']) as num?)?.toDouble(),
+        znMehlich:
+            ((json['znMehlich'] ?? json['zn_mehlich']) as num?)?.toDouble(),
+        cuDtpa: ((json['cuDtpa'] ?? json['cu_dtpa'] ?? json['cuDTPA']) as num?)
+            ?.toDouble(),
+        feDtpa: ((json['feDtpa'] ?? json['fe_dtpa'] ?? json['feDTPA']) as num?)
+            ?.toDouble(),
+        mnDtpa: ((json['mnDtpa'] ?? json['mn_dtpa'] ?? json['mnDTPA']) as num?)
+            ?.toDouble(),
+        znDtpa: ((json['znDtpa'] ?? json['zn_dtpa'] ?? json['znDTPA']) as num?)
+            ?.toDouble(),
         dataRecebimento: json['dataRecebimento'] as String?,
         numeroRelatorio: json['numeroRelatorio'] as String?,
         codigoVerificacao: json['codigoVerificacao'] as String?,
@@ -427,17 +449,18 @@ class AnaliseModel with _$AnaliseModel {
   double get argilaPercent => (argila ?? 0) / 10.0;
 
   // ── Saturacao das bases na CTC ────────────────────────────────────────────
-  double get kNaCTC   => ctcFinal > 0 && k        != null ? (k!        / ctcFinal) * 100 : 0;
-  double get caNaCTC  => ctcFinal > 0 && ca       != null ? (ca!       / ctcFinal) * 100 : 0;
-  double get mgNaCTC  => ctcFinal > 0 && mg       != null ? (mg!       / ctcFinal) * 100 : 0;
-  double get naNaCTC  => ctcFinal > 0 && na       != null ? (na!       / ctcFinal) * 100 : 0;
-  double get alNaCTC  => ctcFinal > 0 && al       != null ? (al!       / ctcFinal) * 100 : 0;
-  double get hNaCTC   => ctcFinal > 0 && hMaisAl  != null ? (hMaisAl!  / ctcFinal) * 100 : 0;
+  double get kNaCTC => ctcFinal > 0 && k != null ? (k! / ctcFinal) * 100 : 0;
+  double get caNaCTC => ctcFinal > 0 && ca != null ? (ca! / ctcFinal) * 100 : 0;
+  double get mgNaCTC => ctcFinal > 0 && mg != null ? (mg! / ctcFinal) * 100 : 0;
+  double get naNaCTC => ctcFinal > 0 && na != null ? (na! / ctcFinal) * 100 : 0;
+  double get alNaCTC => ctcFinal > 0 && al != null ? (al! / ctcFinal) * 100 : 0;
+  double get hNaCTC =>
+      ctcFinal > 0 && hMaisAl != null ? (hMaisAl! / ctcFinal) * 100 : 0;
 
   // ── Relacoes entre bases ──────────────────────────────────────────────────
-  double get relCaK  => k  != null && k!  > 0 && ca != null ? ca! / k!  : 0;
+  double get relCaK => k != null && k! > 0 && ca != null ? ca! / k! : 0;
   double get relCaMg => mg != null && mg! > 0 && ca != null ? ca! / mg! : 0;
-  double get relMgK  => k  != null && k!  > 0 && mg != null ? mg! / k!  : 0;
+  double get relMgK => k != null && k! > 0 && mg != null ? mg! / k! : 0;
 
   // ── CTC efetiva ────────────────────────────────────────────────────────────
   /// CTCt extraida do laudo (Sellar), ou calculada como SB + Al
@@ -473,22 +496,4 @@ class AnaliseModel with _$AnaliseModel {
         pRemanescente: pRem,
         fontePrincipal: fontePrincipalP,
       );
-}
-
-class TimestampConverter implements JsonConverter<DateTime?, Object?> {
-  const TimestampConverter();
-
-  @override
-  DateTime? fromJson(Object? json) {
-    if (json == null) return null;
-    if (json is Timestamp) return json.toDate();
-    if (json is String) return DateTime.tryParse(json);
-    return null;
-  }
-
-  @override
-  Object? toJson(DateTime? object) {
-    if (object == null) return null;
-    return Timestamp.fromDate(object);
-  }
 }

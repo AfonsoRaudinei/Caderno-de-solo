@@ -8,6 +8,7 @@ import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
@@ -244,30 +245,23 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 class _RecomendacaoHeaderCard extends StatelessWidget {
   const _RecomendacaoHeaderCard();
 
+  static const String _iconPath = 'assets/icons/recomendacao.png';
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       margin: const EdgeInsets.symmetric(horizontal: AppDimens.screenPadding),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        border: Border.all(color: AppColors.borderSoft, width: 0.5),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.md,
+        vertical: AppDimens.sm,
       ),
+      showBorder: true,
       child: Row(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.science,
-              color: AppColors.primary,
-              size: 20,
-            ),
+          const AppIconFrame(
+            assetPath: _iconPath,
+            size: 44,
+            backgroundColor: Colors.transparent,
           ),
           const SizedBox(width: 12),
           Expanded(

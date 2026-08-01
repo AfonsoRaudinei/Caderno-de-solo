@@ -1,22 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/core/utils/token_generator.dart';
+import 'package:soloforte/data/repositories/auth_repository_impl.dart';
 import 'package:soloforte/features/auth/application/providers/auth_usecase_providers.dart';
 import 'package:soloforte/features/clientes/data/repositories/cliente_repository.dart';
 import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/fazenda_entity.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
+import 'package:soloforte/features/clientes/domain/exceptions/cliente_session_exception.dart';
 
 class ClienteState {
   final List<ClienteEntity> clientes;
   final ClienteEntity? clienteSelecionado;
   final bool isLoading;
   final String? erro;
+  final bool requiresLogin;
 
   const ClienteState({
     this.clientes = const [],
     this.clienteSelecionado,
     this.isLoading = false,
     this.erro,
+    this.requiresLogin = false,
   });
 
   ClienteState copyWith({
@@ -24,6 +28,7 @@ class ClienteState {
     ClienteEntity? clienteSelecionado,
     bool? isLoading,
     String? erro,
+    bool? requiresLogin,
     bool clearErro = false,
     bool clearSelecionado = false,
   }) {
@@ -34,16 +39,20 @@ class ClienteState {
           : clienteSelecionado ?? this.clienteSelecionado,
       isLoading: isLoading ?? this.isLoading,
       erro: clearErro ? null : erro ?? this.erro,
+      requiresLogin: requiresLogin ?? this.requiresLogin,
     );
   }
 }
 
 final clienteProvider =
     StateNotifierProvider<ClienteNotifier, ClienteState>((ref) {
-  final getCurrentUserIdUsecase = ref.read(getCurrentUserIdUsecaseProvider);
+  final waitForCurrentUserIdUsecase =
+      ref.read(waitForCurrentUserIdUsecaseProvider);
+  final authRepository = ref.read(authRepositoryProvider);
   return ClienteNotifier(
     repository: ref.read(clienteRepositoryProvider),
-    getCurrentUserId: getCurrentUserIdUsecase.call,
+    waitForCurrentUserId: waitForCurrentUserIdUsecase.call,
+    signOut: authRepository.logout,
   )..carregarClientes();
 });
 
@@ -58,27 +67,40 @@ final clienteSelecionadoProvider = Provider<ClienteEntity?>((ref) {
 class ClienteNotifier extends StateNotifier<ClienteState> {
   ClienteNotifier({
     required ClienteRepository repository,
-    required String? Function() getCurrentUserId,
+    required Future<String?> Function({Duration timeout}) waitForCurrentUserId,
+    required Future<void> Function() signOut,
   })  : _repository = repository,
-        _getCurrentUserId = getCurrentUserId,
+        _waitForCurrentUserId = waitForCurrentUserId,
+        _signOut = signOut,
         super(const ClienteState());
 
   final ClienteRepository _repository;
-  final String? Function() _getCurrentUserId;
+  final Future<String?> Function({Duration timeout}) _waitForCurrentUserId;
+  final Future<void> Function() _signOut;
+
+  Future<void> _markRequiresLogin({bool signOut = false}) async {
+    if (signOut) {
+      try {
+        await _signOut();
+      } catch (_) {}
+    }
+    state = state.copyWith(
+      clientes: const [],
+      isLoading: false,
+      requiresLogin: true,
+      clearSelecionado: true,
+      clearErro: true,
+    );
+  }
 
   Future<void> carregarClientes() async {
-    final usuarioId = _getCurrentUserId();
+    state = state.copyWith(isLoading: true, clearErro: true);
+    final usuarioId = await _waitForCurrentUserId();
     if (usuarioId == null || usuarioId.isEmpty) {
-      state = state.copyWith(
-        clientes: const [],
-        isLoading: false,
-        erro: 'Usuário não autenticado.',
-        clearSelecionado: true,
-      );
+      await _markRequiresLogin();
       return;
     }
 
-    state = state.copyWith(isLoading: true, clearErro: true);
     try {
       final clientes = await _repository.listarClientes(usuarioId);
       final selecionadoId = state.clienteSelecionado?.id;
@@ -89,8 +111,11 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
         clientes: clientes,
         clienteSelecionado: selecionado,
         isLoading: false,
+        requiresLogin: false,
         clearErro: true,
       );
+    } on ClienteSessionException {
+      await _markRequiresLogin(signOut: true);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -100,9 +125,9 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
   }
 
   Future<String?> criarCliente(ClienteEntity cliente) async {
-    final usuarioId = _getCurrentUserId();
+    final usuarioId = await _waitForCurrentUserId();
     if (usuarioId == null || usuarioId.isEmpty) {
-      state = state.copyWith(erro: 'Usuário não autenticado.');
+      await _markRequiresLogin();
       return null;
     }
 
@@ -116,12 +141,39 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
         atualizadoEm: now,
       );
       final id = await _repository.criarCliente(created);
-      await carregarClientes();
-      final saved = await _repository.buscarClientePorId(id);
-      if (saved != null) {
-        state = state.copyWith(clienteSelecionado: saved);
+      final createdWithId = created.copyWith(id: id);
+      state = state.copyWith(
+        clientes: _upsertCliente(state.clientes, createdWithId),
+        clienteSelecionado: createdWithId,
+        isLoading: false,
+        requiresLogin: false,
+        clearErro: true,
+      );
+
+      // Reload não pode invalidar um create já persistido.
+      try {
+        final clientes = await _repository.listarClientes(usuarioId);
+        final saved = await _repository.buscarClientePorId(id) ?? createdWithId;
+        state = state.copyWith(
+          clientes: _upsertCliente(clientes, saved),
+          clienteSelecionado: saved,
+          isLoading: false,
+          requiresLogin: false,
+          clearErro: true,
+        );
+      } catch (e) {
+        state = state.copyWith(
+          isLoading: false,
+          clientes: _upsertCliente(state.clientes, createdWithId),
+          clienteSelecionado: createdWithId,
+          erro:
+              'Cliente salvo e disponível localmente. Puxe para atualizar a lista.',
+        );
       }
       return id;
+    } on ClienteSessionException {
+      await _markRequiresLogin(signOut: true);
+      return null;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -131,19 +183,33 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
     }
   }
 
-  Future<void> atualizarCliente(ClienteEntity cliente) async {
+  Future<bool> atualizarCliente(ClienteEntity cliente) async {
     state = state.copyWith(isLoading: true, clearErro: true);
     try {
       await _repository.atualizarCliente(
         cliente.copyWith(atualizadoEm: DateTime.now()),
       );
-      await carregarClientes();
-      await carregarClienteDetalhe(cliente.id);
+
+      // Reload não pode inverter o sucesso do update.
+      try {
+        await carregarClientes();
+        await carregarClienteDetalhe(cliente.id);
+      } catch (e) {
+        state = state.copyWith(
+          isLoading: false,
+          erro: 'Cliente atualizado, mas a tela não recarregou: $e',
+        );
+      }
+      return true;
+    } on ClienteSessionException {
+      await _markRequiresLogin(signOut: true);
+      return false;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         erro: 'Erro ao atualizar cliente: $e',
       );
+      return false;
     }
   }
 
@@ -280,5 +346,21 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
 
   void limparErro() {
     state = state.copyWith(clearErro: true);
+  }
+
+  List<ClienteEntity> _upsertCliente(
+    List<ClienteEntity> current,
+    ClienteEntity cliente,
+  ) {
+    final byId = {
+      for (final item in current)
+        if (item.id.isNotEmpty) item.id: item,
+    };
+    if (cliente.id.isNotEmpty) {
+      byId[cliente.id] = cliente;
+    }
+    final updated = byId.values.toList(growable: false)
+      ..sort((a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()));
+    return updated;
   }
 }

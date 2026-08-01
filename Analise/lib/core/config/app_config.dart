@@ -25,6 +25,14 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
+  /// Senha de acesso ao módulo Cálculos (gate interno).
+  /// Definir em build/CI via `--dart-define=CALCULOS_ACCESS_PASSWORD=...`.
+  /// Quando vazia, o acesso é negado.
+  static const String calculosAccessPassword = String.fromEnvironment(
+    'CALCULOS_ACCESS_PASSWORD',
+    defaultValue: '',
+  );
+
   /// Autoriza explicitamente qualquer envio remoto de telemetria operacional.
   ///
   /// Sem esta flag, a aplicação mantém trilha apenas local e não publica

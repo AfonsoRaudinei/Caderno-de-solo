@@ -69,6 +69,45 @@ void main() {
       expect(find.text('novo cliente'), findsOneWidget);
     });
 
+    testWidgets('recarrega lista quando cadastro retorna sucesso',
+        (tester) async {
+      final notifier = _FakeClienteNotifier(const ClienteState());
+      final router = GoRouter(
+        initialLocation: AppRoutes.clientes,
+        routes: [
+          GoRoute(
+            path: AppRoutes.clientes,
+            builder: (_, __) => const ClientesListScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.clienteNovo,
+            builder: (context, __) => Scaffold(
+              body: TextButton(
+                onPressed: () => context.pop(true),
+                child: const Text('salvar fake'),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clienteProvider.overrideWith((ref) => notifier),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('salvar fake'));
+      await tester.pumpAndSettle();
+
+      expect(notifier.carregarClientesCount, 1);
+    });
+
     testWidgets('campo de busca filtra por nome', (tester) async {
       await tester.pumpWidget(
         _buildApp(
@@ -102,10 +141,31 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
+
+    testWidgets('redireciona para login quando sessão é inválida',
+        (tester) async {
+      final notifier = _FakeClienteNotifier(const ClienteState());
+
+      await tester.pumpWidget(
+        _buildApp(
+          notifier: notifier,
+          includeLoginRoute: true,
+        ),
+      );
+
+      notifier.exigirLogin();
+      await tester.pumpAndSettle();
+
+      expect(find.text('login'), findsOneWidget);
+      expect(find.textContaining('permission-denied'), findsNothing);
+    });
   });
 }
 
-Widget _buildApp({required _FakeClienteNotifier notifier}) {
+Widget _buildApp({
+  required _FakeClienteNotifier notifier,
+  bool includeLoginRoute = false,
+}) {
   final router = GoRouter(
     initialLocation: AppRoutes.clientes,
     routes: [
@@ -117,6 +177,11 @@ Widget _buildApp({required _FakeClienteNotifier notifier}) {
         path: AppRoutes.clienteNovo,
         builder: (_, __) => const Scaffold(body: Text('novo cliente')),
       ),
+      if (includeLoginRoute)
+        GoRoute(
+          path: AppRoutes.login,
+          builder: (_, __) => const Scaffold(body: Text('login')),
+        ),
     ],
   );
 
@@ -132,13 +197,23 @@ class _FakeClienteNotifier extends ClienteNotifier {
   _FakeClienteNotifier(ClienteState initialState)
       : super(
           repository: _NoopClienteRepository(),
-          getCurrentUserId: () => 'test-user',
+          waitForCurrentUserId:
+              ({timeout = const Duration(seconds: 5)}) async => 'test-user',
+          signOut: () async {},
         ) {
     state = initialState;
   }
 
+  int carregarClientesCount = 0;
+
   @override
-  Future<void> carregarClientes() async {}
+  Future<void> carregarClientes() async {
+    carregarClientesCount++;
+  }
+
+  void exigirLogin() {
+    state = state.copyWith(requiresLogin: true);
+  }
 }
 
 class _NoopClienteRepository extends ClienteRepository {

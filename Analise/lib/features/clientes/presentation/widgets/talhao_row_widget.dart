@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
 
 class TalhaoRowWidget extends StatelessWidget {
@@ -16,16 +18,19 @@ class TalhaoRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasGps = talhao.latitude != null && talhao.longitude != null;
+    final palette = context.appPalette;
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: AppDimens.sm),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
+            Icon(
               Icons.crop_square_rounded,
               size: 18,
-              color: AppColors.textSecond,
+              color: palette.textSecondary,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -34,12 +39,21 @@ class TalhaoRowWidget extends StatelessWidget {
                 children: [
                   Text(
                     talhao.nome,
-                    style: AppTextStyles.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.label.copyWith(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if ((talhao.culturaPrincipal ?? '').isNotEmpty)
                     Text(
                       talhao.culturaPrincipal!,
-                      style: AppTextStyles.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption.copyWith(
+                        color: palette.textSecondary,
+                      ),
                     ),
                 ],
               ),
@@ -48,7 +62,8 @@ class TalhaoRowWidget extends StatelessWidget {
             Text(
               '${_formatArea(talhao.area)} ha',
               style: AppTextStyles.caption.copyWith(
-                color: AppColors.textPrimary,
+                color: palette.textPrimary,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(width: 10),

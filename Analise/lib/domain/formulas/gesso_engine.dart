@@ -66,7 +66,7 @@ class GessoEngine {
     final doseKg = switch (argilaPercent) {
       < 15.0 => 700.0,
       >= 15.0 && <= 35.0 => 1200.0,
-      >= 36.0 && <= 60.0 => 2200.0,
+      > 35.0 && <= 60.0 => 2200.0,
       _ => 3200.0,
     };
 
@@ -103,7 +103,8 @@ class GessoEngine {
 
   /// Método ④ — CTC efetiva e Ca (UEPG/Caires).
   /// NG(t/ha) = (0,60 × CTCe_sub − Ca_sub) × 6,4
-  static ResultadoGesso metodo4CTCeCa(GessoInput input, {DiagnosticoGesso? diagnostico}) {
+  static ResultadoGesso metodo4CTCeCa(GessoInput input,
+      {DiagnosticoGesso? diagnostico}) {
     final doseTHa = (0.60 * input.ctcEfetiva - input.ca) * 6.4;
     final doseKg = Conversoes.tHaToKgHa(doseTHa.clamp(0.0, double.infinity));
     return _buildResultado(

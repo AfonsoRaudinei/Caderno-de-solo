@@ -9,6 +9,7 @@ import 'package:soloforte/features/analise/application/providers/analise_persist
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
+import 'package:soloforte/features/analise/presentation/formatters/coordinate_formatter.dart';
 import 'package:uuid/uuid.dart';
 
 /// Estado do controller da tabela de nova análise
@@ -121,13 +122,23 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
 
   void atualizarCampo(int index, String campo, dynamic valor) {
     final texto = valor?.toString() ?? '';
-    final coordenadas = _parseCoordenadasCombinadas(texto);
+    final coordenadas = CoordinateFormatter.parseCombined(texto);
 
     final updated = [...state.analises];
-    if (coordenadas != null && (campo == 'latitude' || campo == 'longitude')) {
+    if (texto.trim().isEmpty && (campo == 'latitude' || campo == 'longitude')) {
+      updated[index] =
+          updated[index].withField('latitude', '').withField('longitude', '');
+    } else if (coordenadas != null &&
+        (campo == 'latitude' || campo == 'longitude')) {
       updated[index] = updated[index]
-          .withField('latitude', coordenadas.latitude)
-          .withField('longitude', coordenadas.longitude);
+          .withField(
+            'latitude',
+            coordenadas.latitude.toStringAsFixed(8),
+          )
+          .withField(
+            'longitude',
+            coordenadas.longitude.toStringAsFixed(8),
+          );
     } else {
       updated[index] = updated[index].withField(campo, texto);
     }
@@ -136,27 +147,6 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
       clearError: true,
     );
     _refreshValidation();
-  }
-
-  ({String latitude, String longitude})? _parseCoordenadasCombinadas(
-      String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) return null;
-
-    final match = RegExp(
-      r'^\s*([+-]?\d+(?:[\.,]\d+)?)\s*[,;]\s*([+-]?\d+(?:[\.,]\d+)?)\s*$',
-    ).firstMatch(trimmed);
-    if (match == null) return null;
-
-    final lat = double.tryParse(match.group(1)!.replaceAll(',', '.'));
-    final lng = double.tryParse(match.group(2)!.replaceAll(',', '.'));
-    if (lat == null || lng == null) return null;
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-
-    return (
-      latitude: lat.toStringAsFixed(8),
-      longitude: lng.toStringAsFixed(8),
-    );
   }
 
   void atualizarLaudoProdutor(String valor) {

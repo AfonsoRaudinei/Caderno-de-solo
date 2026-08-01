@@ -1,5 +1,5 @@
-import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
-import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
+import 'package:soloforte/features/laboratorio/domain/data/absorcao_nutrientes_catalog.dart';
+import 'package:soloforte/features/laboratorio/domain/models/absorcao_data_quality.dart';
 
 class AbsorcaoNutrientesResolvedValue {
   const AbsorcaoNutrientesResolvedValue({
@@ -12,7 +12,7 @@ class AbsorcaoNutrientesResolvedValue {
   });
 
   final double valuePerTon;
-  final DataQuality quality;
+  final AbsorcaoDataQuality quality;
   final String sourceType;
   final String sourceName;
   final String dataType;
@@ -39,7 +39,7 @@ class AbsorcaoNutrientesResolver {
     if (source == null) {
       return AbsorcaoNutrientesResolvedValue(
         valuePerTon: 0,
-        quality: DataQuality.unavailable,
+        quality: AbsorcaoDataQuality.unavailable,
         sourceType: sourceType,
         sourceName: sourceName,
         dataType: dataType,
@@ -51,7 +51,7 @@ class AbsorcaoNutrientesResolver {
     if (selectedValue > 0) {
       return AbsorcaoNutrientesResolvedValue(
         valuePerTon: selectedValue,
-        quality: DataQuality.original,
+        quality: AbsorcaoDataQuality.original,
         sourceType: sourceType,
         sourceName: sourceName,
         dataType: dataType,
@@ -65,7 +65,7 @@ class AbsorcaoNutrientesResolver {
     if (oppositeValue <= 0 || index <= 0) {
       return AbsorcaoNutrientesResolvedValue(
         valuePerTon: 0,
-        quality: DataQuality.unavailable,
+        quality: AbsorcaoDataQuality.unavailable,
         sourceType: sourceType,
         sourceName: sourceName,
         dataType: dataType,
@@ -78,7 +78,7 @@ class AbsorcaoNutrientesResolver {
         : oppositeValue / index;
     return AbsorcaoNutrientesResolvedValue(
       valuePerTon: calculated,
-      quality: DataQuality.calculated,
+      quality: AbsorcaoDataQuality.calculated,
       sourceType: sourceType,
       sourceName: sourceName,
       dataType: dataType,

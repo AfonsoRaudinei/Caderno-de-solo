@@ -21,6 +21,10 @@ Antes de alterar qualquer coisa:
 5. Preserve alteracoes locais que nao foram feitas por voce.
 6. Nao altere dados, textos, campos ou arquivos que nao tenham sido citados no prompt ou no pedido atual.
 
+## Agentes locais
+
+- `.agents/flutter-code-reviewer.md`: revisor senior Flutter/Dart para parecer tecnico. Use quando o pedido mencionar agente revisor, revisao de codigo ou validacao tecnica das mudancas.
+
 ## Raiz do app
 
 O projeto Flutter fica em `Analise/`, nao na raiz do repositorio.

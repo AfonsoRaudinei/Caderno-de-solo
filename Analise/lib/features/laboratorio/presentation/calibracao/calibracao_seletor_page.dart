@@ -11,7 +11,9 @@ import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_state.dart';
@@ -139,6 +141,8 @@ class _CalibracaoCard extends StatelessWidget {
     required this.onExcluir,
   });
 
+  static const String _iconPath = 'assets/icons/calibracao.png';
+
   final CalibracaoProfile profile;
   final VoidCallback onTap;
   final VoidCallback onEditar;
@@ -151,59 +155,44 @@ class _CalibracaoCard extends StatelessWidget {
     final nome = profile.nome.isEmpty ? 'Sem nome' : profile.nome;
     final cultura = profile.cultura;
 
-    return GestureDetector(
+    return AppSurface(
       onTap: onTap,
       onLongPress: () => _showContextMenu(context),
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.card,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: palette.shadow,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      padding: const EdgeInsets.all(AppDimens.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const AppIconFrame(
+            assetPath: _iconPath,
+            size: AppDimens.cardIconSize,
+            backgroundColor: Colors.transparent,
+          ),
+          const SizedBox(height: AppDimens.sm),
+          Text(
+            nome,
+            style: AppTextStyles.label.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: palette.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (cultura.isNotEmpty) ...[
+            const SizedBox(height: AppDimens.xs),
+            Text(
+              cultura,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 11,
+                color: palette.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.extension,
-                size: 48,
-                color: AppColors.primary,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                nome,
-                style: AppTextStyles.label.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: palette.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (cultura.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  cultura,
-                  style: AppTextStyles.caption.copyWith(
-                    fontSize: 11,
-                    color: palette.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -247,53 +236,37 @@ class _CalibracaoCard extends StatelessWidget {
 class _NovaCalibracaoCard extends StatelessWidget {
   const _NovaCalibracaoCard({required this.onTap});
 
+  static const String _iconPath = 'assets/icons/nova_calibracao.png';
+
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.appPalette;
 
-    return GestureDetector(
+    return AppSurface(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: palette.borderStrong,
-            width: 2,
-            style: BorderStyle.solid,
+      showBorder: true,
+      padding: const EdgeInsets.all(AppDimens.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const AppIconFrame(
+            assetPath: _iconPath,
+            size: AppDimens.cardIconSize,
+            backgroundColor: Colors.transparent,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: palette.shadow,
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+          const SizedBox(height: AppDimens.sm),
+          Text(
+            'Nova calibragem',
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 13,
+              color: palette.textSecondary,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.add_circle,
-                size: 48,
-                color: AppColors.success,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Nova calibragem',
-                style: AppTextStyles.caption.copyWith(
-                  fontSize: 13,
-                  color: palette.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            textAlign: TextAlign.center,
           ),
-        ),
+        ],
       ),
     );
   }

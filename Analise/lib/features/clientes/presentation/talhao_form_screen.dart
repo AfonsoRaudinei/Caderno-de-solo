@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/presentation/providers/location_provider.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/domain/entities/talhao_entity.dart';
@@ -95,7 +98,10 @@ class _TalhaoFormScreenState extends ConsumerState<TalhaoFormScreen> {
     final locationState = ref.watch(locationNotifierProvider);
     final isCapturando = locationState is LocationLoading;
 
+    final palette = context.appPalette;
+
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: Text(_isEdicao ? 'Editar Talhão' : 'Novo Talhão'),
       ),
@@ -106,53 +112,74 @@ class _TalhaoFormScreenState extends ConsumerState<TalhaoFormScreen> {
             key: _formKey,
             child: Column(
               children: [
-                AppInput(
-                  controller: _nomeController,
-                  label: 'Nome do talhão*',
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if ((value?.trim() ?? '').isEmpty) return 'Informe o nome.';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                AppInputNumerico(
-                  controller: _areaController,
-                  label: 'Área (ha)*',
-                  suffixText: 'ha',
-                ),
-                const SizedBox(height: 12),
-                AppInput(
-                  controller: _culturaController,
-                  label: 'Cultura principal',
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: isCapturando
-                        ? null
-                        : () => ref
-                            .read(locationNotifierProvider.notifier)
-                            .capturar(),
-                    icon: isCapturando
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.my_location_rounded),
-                    label: const Text('Capturar GPS'),
+                AppSurface(
+                  showBorder: true,
+                  child: Column(
+                    children: [
+                      AppInput(
+                        controller: _nomeController,
+                        label: 'Nome do talhão*',
+                        textCapitalization: TextCapitalization.words,
+                        validator: (value) {
+                          if ((value?.trim() ?? '').isEmpty) {
+                            return 'Informe o nome.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      AppInputNumerico(
+                        controller: _areaController,
+                        label: 'Área (ha)*',
+                        suffixText: 'ha',
+                      ),
+                      const SizedBox(height: 12),
+                      AppInput(
+                        controller: _culturaController,
+                        label: 'Cultura principal',
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _latitude != null && _longitude != null
-                        ? '📍 ${_latitude!.toStringAsFixed(4)}, ${_longitude!.toStringAsFixed(4)}'
-                        : 'GPS ainda não capturado',
+                const SizedBox(height: 16),
+                AppSurface(
+                  showBorder: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: isCapturando
+                              ? null
+                              : () => ref
+                                  .read(locationNotifierProvider.notifier)
+                                  .capturar(),
+                          icon: isCapturando
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.my_location_rounded),
+                          label: const Text('Capturar GPS'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _latitude != null && _longitude != null
+                            ? '${_latitude!.toStringAsFixed(4)}, ${_longitude!.toStringAsFixed(4)}'
+                            : 'GPS ainda não capturado',
+                        style: AppTextStyles.caption.copyWith(
+                          color: _latitude != null && _longitude != null
+                              ? AppColors.success
+                              : palette.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),

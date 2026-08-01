@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Relatório técnico de recomendação agronômica gerado pelo Caderno de Solo.">
+<meta name="color-scheme" content="light">
+<title>Recomendação · SoloForte</title>
+<style>
+  :root {
+    --blue:#007AFF;--blue-dark:#0051D5;--green:#34C759;--red:#FF3B30;
+    --orange:#FF9500;--yellow:#FFD60A;--purple:#AF52DE;--teal:#5AC8FA;
+    --indigo:#5856D6;--ink:#1D1D1F;--ink2:#3C3C43;--ink3:#86868B;
+    --ink4:#C7C7CC;--border:#D1D1D6;--border-soft:#E5E5E7;
+    --bg:#F5F5F7;--bg2:#FFFFFF;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.04);
+    --shadow-lg:0 4px 20px rgba(0,0,0,.09),0 16px 48px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+    background:linear-gradient(180deg,#F5F5F7 0%,#EFEFF4 100%);
+    color:var(--ink);font-size:15px;line-height:1.55;
+    min-height:100vh;padding-bottom:64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .hero{
+    background:linear-gradient(135deg,#007AFF 0%,#0051D5 100%);
+    color:#fff;padding:36px 24px 72px;text-align:center;position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:'';position:absolute;left:50%;bottom:-32px;transform:translateX(-50%);
+    width:130%;height:64px;
+    background:linear-gradient(180deg,#EFEFF4 0%,#F5F5F7 100%);
+    border-radius:50% 50% 0 0;
+  }
+  .hero-brand{font-size:18px;font-weight:700;letter-spacing:.3px;line-height:1.3;}
+  .hero-sub{font-size:13px;font-weight:500;opacity:.75;margin-top:2px;}
+  .container{max-width:720px;margin:0 auto;padding:0 16px;}
+  .consult-card{
+    background:#fff;border-radius:20px;box-shadow:var(--shadow-lg);
+    margin-top:-40px;position:relative;z-index:2;overflow:hidden;
+  }
+  .consult-top{
+    display:flex;align-items:center;gap:16px;
+    padding:20px 24px;border-bottom:1px solid var(--border-soft);
+  }
+  .logo-ph{
+    width:56px;height:56px;border-radius:14px;
+    background:linear-gradient(135deg,#E8E8EC,#D6D6DA);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;border:1.5px dashed var(--border);
+    overflow:hidden;
+  }
+  .logo-ph img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+  .c-name{font-size:16px;font-weight:700;color:var(--ink);}
+  .c-crea{font-size:12px;color:var(--ink3);margin-top:2px;}
+  .c-badge{
+    margin-left:auto;background:rgba(0,122,255,.08);
+    border:1px solid rgba(0,122,255,.18);border-radius:10px;
+    padding:6px 12px;font-size:11px;font-weight:600;color:var(--blue);
+    flex-shrink:0;text-align:center;line-height:1.3;
+  }
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;}
+  .info-cell{padding:12px 20px;border-bottom:1px solid var(--border-soft);}
+  .info-cell:nth-child(odd){border-right:1px solid var(--border-soft);}
+  .info-cell:nth-last-child(-n+2){border-bottom:none;}
+  .info-lbl{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+  .info-val{font-size:14px;font-weight:600;color:var(--ink);line-height:1.3;}
+  .info-val .sm{font-size:12px;font-weight:500;color:var(--ink3);}
+  .section{margin-top:52px;}
+  .section-num{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--blue);text-transform:uppercase;margin-bottom:3px;}
+  .section-title{font-size:24px;font-weight:700;letter-spacing:-.4px;color:var(--ink);margin-bottom:6px;}
+  .section-desc{font-size:13px;color:var(--ink3);margin-bottom:18px;line-height:1.5;}
+  .big-card{background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:24px;overflow:hidden;}
+  .big-card+.big-card{margin-top:14px;}
+  .metric-hero{display:flex;align-items:flex-end;gap:12px;margin-bottom:4px;}
+  .metric-num{font-size:48px;font-weight:700;line-height:1;letter-spacing:-1.5px;}
+  .metric-unit{font-size:14px;color:var(--ink3);font-weight:500;padding-bottom:6px;}
+  .pill{display:inline-block;padding:4px 12px;border-radius:14px;font-size:11px;font-weight:600;letter-spacing:.2px;}
+  .pill-red{background:#FFEBEE;color:#C62828;}
+  .pill-orange{background:#FFF3E0;color:#E65100;}
+  .pill-yellow{background:#FFFDE7;color:#B58900;}
+  .pill-green{background:#E8F5E9;color:#2E7D32;}
+  .pill-blue{background:rgba(0,122,255,.10);color:var(--blue);}
+  .grad-wrap{margin:18px 0 6px;}
+  .grad-bar{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#FF3B30 0%,#FF9500 25%,#FFD60A 50%,#34C759 75%,#007AFF 100%);}
+  .grad-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;background:#1D1D1F;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+  .grad-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--ink4);margin-top:8px;font-weight:500;}
+  .dose-block{background:var(--bg);border-radius:14px;padding:18px 20px;margin-top:20px;display:flex;align-items:baseline;gap:10px;}
+  .dose-lbl{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;}
+  .dose-num{font-size:32px;font-weight:700;letter-spacing:-.8px;margin-left:auto;}
+  .dose-unit{font-size:13px;color:var(--ink3);padding-bottom:3px;}
+  .kv-list{margin-top:16px;}
+  .kv{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border-soft);font-size:13px;}
+  .kv:last-child{border-bottom:none;}
+  .kv-l{color:var(--ink3);}
+  .kv-v{font-weight:600;color:var(--ink);}
+  .kv-arrow{color:var(--ink4);margin:0 6px;}
+  .vrow{display:flex;align-items:center;gap:14px;padding:16px;background:var(--bg);border-radius:14px;margin-top:20px;}
+  .vrow-item{flex:1;text-align:center;}
+  .vrow-lbl{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600;}
+  .vrow-num{font-size:24px;font-weight:700;}
+  .parc{background:var(--bg);border-radius:14px;padding:16px 20px;margin-top:18px;}
+  .parc-head{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+  .parc-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:13px;}
+  .parc-row:last-child{border-bottom:none;}
+  .parc-pct{color:var(--blue);font-weight:700;}
+  .ba-legend{display:flex;gap:18px;margin-bottom:18px;font-size:11px;color:var(--ink3);font-weight:500;}
+  .ba-legend span{display:flex;align-items:center;gap:6px;}
+  .ba-dot{width:10px;height:10px;border-radius:3px;}
+  .ba{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .ba-group{text-align:center;}
+  .ba-bars-pair{display:flex;gap:5px;align-items:flex-end;justify-content:center;height:110px;}
+  .ba-bar{width:26px;border-radius:4px 4px 0 0;position:relative;}
+  .ba-val{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--ink2);white-space:nowrap;}
+  .ba-name{font-size:12px;color:var(--ink2);font-weight:600;margin-top:8px;}
+  .ba-note{font-size:11px;color:var(--ink4);text-align:center;margin-top:14px;font-style:italic;}
+  .radar-wrap{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;}
+  svg.radar{overflow:visible;}
+  .micro-card{background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:12px;}
+  .micro-card:last-child{margin-bottom:0;}
+  .micro-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .micro-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+  .micro-name{font-size:17px;font-weight:700;color:var(--ink);}
+  .micro-status-pill{margin-left:4px;}
+  .micro-val{margin-left:auto;font-size:14px;font-weight:600;color:var(--ink2);}
+  .micro-val .u{font-size:11px;color:var(--ink3);font-weight:400;}
+  .micro-nc{font-size:11px;color:var(--ink3);margin-bottom:8px;}
+  .micro-doses{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid var(--border-soft);}
+  .micro-dose{padding:10px 14px;background:#fff;}
+  .micro-dose:first-child{border-right:1px solid var(--border-soft);}
+  .micro-dose-l{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:3px;}
+  .micro-dose-v{font-size:14px;color:var(--ink);font-weight:600;}
+  .micro-dose-v.na{color:var(--ink4);font-style:italic;font-size:12px;}
+  .micro-warn{font-size:11px;color:var(--orange);margin-top:8px;}
+  .warn{background:#FFF8E8;border-left:3px solid var(--orange);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:13px;color:#5C3A00;line-height:1.5;}
+  .warn:last-child{margin-bottom:0;}
+  .footer{text-align:center;margin-top:56px;padding:20px;font-size:11px;color:var(--ink4);line-height:1.7;}
+  .footer strong{color:var(--ink3);font-weight:600;}
+  @media print{
+    body{background:#fff;padding-bottom:0;}
+    .big-card,.consult-card{box-shadow:none;border:1px solid var(--border-soft);}
+    .hero{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .section{break-inside:avoid-page;}
+  }
+  @media(max-width:440px){.info-grid{grid-template-columns:1fr;}.info-cell:nth-child(odd){border-right:none;}.ba{grid-template-columns:1fr 1fr;}.metric-num{font-size:40px;}.consult-top{flex-wrap:wrap;}.c-badge{margin-left:0;}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-brand">SoloForte</div>
+  <div class="hero-sub">Caderno de Solo</div>
+</div>
+<div class="container">
+<div class="consult-card">
+  <div class="consult-top">
+    <div class="logo-ph"></div>
+    <div>
+      <div class="c-name">Consultor</div>
+      <div class="c-crea"></div>
+    </div>
+    <div class="c-badge">Saturação<br>por<br>bases<br>(V%)</div>
+  </div>
+  <div class="info-grid">
+    <div class="info-cell"><div class="info-lbl">Produtor</div><div class="info-val">Variedo</div></div>
+    <div class="info-cell"><div class="info-lbl">Fazenda</div><div class="info-val"></div></div>
+    <div class="info-cell"><div class="info-lbl">Cidade / UF</div><div class="info-val">MOEMA</div></div>
+    <div class="info-cell"><div class="info-lbl">Talhão</div><div class="info-val"></div></div>
+    <div class="info-cell"><div class="info-lbl">Cultura · Safra</div><div class="info-val">Soja <span class="sm">· 2026/2027</span></div></div>
+    <div class="info-cell"><div class="info-lbl">Laboratório</div><div class="info-val">Média de 2 amostras</div></div>
+    <div class="info-cell"><div class="info-lbl">Data do Laudo</div><div class="info-val">—</div></div>
+    <div class="info-cell"><div class="info-lbl">Recomendação</div><div class="info-val">10/07/2026 <span class="sm">13:32</span></div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">01 · Diagnóstico</div>
+  <div class="section-title">Qualidade do Solo</div>
+  <div class="section-desc">Visão integrada da fertilidade e ocupação da CTC.</div>
+  <div class="big-card">
+    <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">Disponibilidade de Nutrientes</div>
+    <div style="font-size:13px;color:var(--ink3);margin-bottom:6px;">pH do solo: <strong style="color:var(--blue);font-size:16px;">5,9</strong> <span style="font-size:12px;">(CaCl2)</span></div>
+    <div style="font-size:11px;color:var(--red);font-weight:500;margin-bottom:20px;">Al = Toxicidade; quanto maior, pior.</div>
+    <div class="radar-wrap"><svg class="radar" width="300" height="300" viewBox="-150 -150 300 300">
+  <polygon points="0,-120 103.9,-60 103.9,60 0,120 -103.9,60 -103.9,-60" fill="none" stroke="#E5E5E7" stroke-width="1"/>
+  <polygon points="0,-90 77.9,-45 77.9,45 0,90 -77.9,45 -77.9,-45" fill="none" stroke="#E5E5E7" stroke-width="1"/>
+  <polygon points="0,-60 52,-30 52,30 0,60 -52,30 -52,-30" fill="none" stroke="#E5E5E7" stroke-width="1"/>
+  <polygon points="0,-30 26,-15 26,15 0,30 -26,15 -26,-15" fill="none" stroke="#E5E5E7" stroke-width="1"/>
+  <line x1="0" y1="0" x2="0" y2="-120" stroke="#D1D1D6" stroke-width="1"/>
+  <line x1="0" y1="0" x2="103.9" y2="-60" stroke="#D1D1D6" stroke-width="1"/>
+  <line x1="0" y1="0" x2="103.9" y2="60" stroke="#D1D1D6" stroke-width="1"/>
+  <line x1="0" y1="0" x2="0" y2="120" stroke="#D1D1D6" stroke-width="1"/>
+  <line x1="0" y1="0" x2="-103.9" y2="60" stroke="#D1D1D6" stroke-width="1"/>
+  <line x1="0" y1="0" x2="-103.9" y2="-60" stroke="#D1D1D6" stroke-width="1"/>
+  <polygon points="0.0,-120.0 91.7,-53.0 71.0,41.0 0.0,15.6 -64.4,37.2 -97.2,-56.1" fill="rgba(0,122,255,0.12)" stroke="#007AFF" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="0.0" cy="-120.0" r="5" fill="#007AFF" stroke="#fff" stroke-width="2"/>
+  <circle cx="91.7" cy="-53.0" r="5" fill="#34C759" stroke="#fff" stroke-width="2"/>
+  <circle cx="71.0" cy="41.0" r="5" fill="#7ED321" stroke="#fff" stroke-width="2"/>
+  <circle cx="0.0" cy="15.6" r="5" fill="#FF3B30" stroke="#fff" stroke-width="2"/>
+  <circle cx="-64.4" cy="37.2" r="5" fill="#5856D6" stroke="#fff" stroke-width="2"/>
+  <circle cx="-97.2" cy="-56.1" r="5" fill="#5AC8FA" stroke="#fff" stroke-width="2"/>
+  <text x="4.0" y="-138.0" text-anchor="middle" font-size="11" font-weight="700" fill="#007AFF">Bases 100</text>
+<text x="4.0" y="-126.0" text-anchor="middle" font-size="9" fill="#86868B">K · Ca · Mg</text>
+  <text x="118.3" y="-72.0" text-anchor="start" font-size="11" font-weight="700" fill="#34C759">P 88</text>
+<text x="118.3" y="-60.0" text-anchor="start" font-size="9" fill="#86868B">Fosforo</text>
+  <text x="118.3" y="60.0" text-anchor="start" font-size="11" font-weight="700" fill="#7ED321">Micros 68</text>
+<text x="118.3" y="72.0" text-anchor="start" font-size="9" fill="#86868B">Mn Cu Fe Zn</text>
+  <text x="4.0" y="126.0" text-anchor="middle" font-size="11" font-weight="700" fill="#FF3B30">Al 13</text>
+<text x="4.0" y="138.0" text-anchor="middle" font-size="9" fill="#86868B">Toxicidade</text>
+  <text x="-118.3" y="60.0" text-anchor="end" font-size="11" font-weight="700" fill="#5856D6">Mo Cl 62</text>
+<text x="-118.3" y="72.0" text-anchor="end" font-size="9" fill="#86868B">Molibdenio</text>
+  <text x="-118.3" y="-72.0" text-anchor="end" font-size="11" font-weight="700" fill="#5AC8FA">N S B 94</text>
+<text x="-118.3" y="-60.0" text-anchor="end" font-size="9" fill="#86868B">N · Enxofre · Boro</text>
+</svg></div>
+  </div>
+  <div class="big-card" style="margin-top:14px;">
+    <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Ocupação da CTC</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:18px;">Distribuição dos cátions na CTC do solo.</div>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+      <div style="flex-shrink:0;"><svg width="180" height="220" viewBox="0 0 220 260">
+  <defs><clipPath id="bClip"><path d="M50,25 C20,75 20,185 50,235 L170,235 C200,185 200,75 170,25 Z"/></clipPath></defs>
+  <ellipse cx="110" cy="248" rx="65" ry="10" fill="rgba(0,0,0,.06)"/>
+  <path d="M50,25 C20,75 20,185 50,235 L170,235 C200,185 200,75 170,25 Z" fill="#F0F0F2" stroke="#C8C8CC" stroke-width="2"/>
+  <g clip-path="url(#bClip)">
+    <rect x="15" y="173.948705229351" width="190" height="61.051294770649" fill="#FF3B30" opacity=".85"/>
+    <rect x="15" y="171.948705229351" width="190" height="2" fill="#FF9500" opacity=".9"/>
+    <rect x="15" y="166.14850393474606" width="190" height="5.800201294604928" fill="#FFD60A" opacity=".9"/>
+    <rect x="15" y="133.40033541735485" width="190" height="32.748168517391214" fill="#34C759" opacity=".9"/>
+    <rect x="15" y="77.15694350382978" width="190" height="56.243391913525066" fill="#007AFF" opacity=".9"/>
+  </g>
+  <path d="M50,25 C20,75 20,185 50,235 L170,235 C200,185 200,75 170,25 Z" fill="none" stroke="#B0B0B4" stroke-width="2"/>
+  <ellipse cx="110" cy="25" rx="60" ry="16" fill="#E8E8EC" stroke="#C0C0C4" stroke-width="1.5"/>
+  <ellipse cx="110" cy="235" rx="60" ry="16" fill="#D4D4D8" stroke="#B8B8BC" stroke-width="1.5"/>
+  <text x="110" y="138" text-anchor="middle" font-size="28" font-weight="700" fill="#fff" style="text-shadow:0 1px 4px rgba(0,0,0,.3);">71%</text>
+  <text x="110" y="155" text-anchor="middle" font-size="10" font-weight="500" fill="rgba(255,255,255,.85)">V% atual</text>
+</svg></div>
+      <div style="flex:1;min-width:200px;">
+        <div style="margin-bottom:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink);">Calcio (Ca)</span>
+    <span style="font-size:12px;color:var(--ink3);">3,1 mmolc · <strong style="color:var(--ink);">26,8%</strong></span>
+  </div>
+  <div style="position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#FF3B30 0%,#FF9500 25%,#FFD60A 50%,#34C759 75%,#007AFF 100%);">
+    <div style="position:absolute;top:50%;left:26.8%;transform:translate(-50%,-50%);width:16px;height:16px;background:#1D1D1F;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>
+  </div>
+  
+</div>
+        <div style="margin-bottom:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink);">Magnesio (Mg)</span>
+    <span style="font-size:12px;color:var(--ink3);">1,8 mmolc · <strong style="color:var(--ink);">15,6%</strong></span>
+  </div>
+  <div style="position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#FF3B30 0%,#FF9500 25%,#FFD60A 50%,#34C759 75%,#007AFF 100%);">
+    <div style="position:absolute;top:50%;left:15.6%;transform:translate(-50%,-50%);width:16px;height:16px;background:#1D1D1F;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>
+  </div>
+  
+</div>
+        <div style="margin-bottom:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink);">Potássio (K)</span>
+    <span style="font-size:12px;color:var(--ink3);">0,3 mmolc · <strong style="color:var(--ink);">2,8%</strong></span>
+  </div>
+  <div style="position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#FF3B30 0%,#FF9500 25%,#FFD60A 50%,#34C759 75%,#007AFF 100%);">
+    <div style="position:absolute;top:50%;left:2.8%;transform:translate(-50%,-50%);width:16px;height:16px;background:#1D1D1F;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>
+  </div>
+  
+</div>
+        <div style="margin-bottom:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink);">H + Al (acidez)</span>
+    <span style="font-size:12px;color:var(--ink3);">3,4 mmolc · <strong style="color:var(--ink);">29,1%</strong></span>
+  </div>
+  <div style="position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#34C759 0%,#FFD60A 25%,#FF9500 50%,#FF3B30 75%,#C62828 100%);">
+    <div style="position:absolute;top:50%;left:29.1%;transform:translate(-50%,-50%);width:16px;height:16px;background:#1D1D1F;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);margin-top:4px;font-weight:500;"><span>Baixo</span><span>Medio</span><span>Alto</span></div>
+</div>
+        <div style="margin-bottom:14px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+    <span style="font-size:13px;font-weight:600;color:var(--ink);">Aluminio (Al)</span>
+    <span style="font-size:12px;color:var(--ink3);">0,1 mmolc · <strong style="color:var(--ink);">0,9%</strong></span>
+  </div>
+  <div style="position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,#34C759 0%,#FFD60A 25%,#FF9500 50%,#FF3B30 75%,#C62828 100%);">
+    <div style="position:absolute;top:50%;left:0.9%;transform:translate(-50%,-50%);width:16px;height:16px;background:#1D1D1F;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);"></div>
+  </div>
+  
+</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:24px;">
+  <div style="background:var(--bg);border:1px solid #E0F0E0;border-radius:10px;padding:10px 8px;text-align:center;">
+    <div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">SB</div>
+    <div style="font-size:18px;font-weight:700;color:var(--ink);">8,21</div>
+    <div style="font-size:9px;color:var(--ink4);">cmolc/dm3</div>
+  </div>
+  <div style="background:var(--bg);border:1px solid #D4EAF8;border-radius:10px;padding:10px 8px;text-align:center;">
+    <div style="font-size:10px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">CTC</div>
+    <div style="font-size:18px;font-weight:700;color:var(--blue);">11,57</div>
+    <div style="font-size:9px;color:var(--ink4);">cmolc/dm3</div>
+  </div>
+  <div style="background:#E8F5E9;border:1px solid #C8E6C9;border-radius:10px;padding:10px 8px;text-align:center;">
+    <div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">V%</div>
+    <div style="font-size:18px;font-weight:700;color:#34C759;">71%</div>
+  </div>
+  <div style="background:#E8F5E9;border:1px solid #C8E6C9;border-radius:10px;padding:10px 8px;text-align:center;">
+    <div style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">Al%</div>
+    <div style="font-size:18px;font-weight:700;color:#34C759;">1%</div>
+  </div>
+</div>
+    <div style="margin-top:20px;">
+  <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;">Relacoes de Bases</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+    <div style="text-align:center;">
+  <div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">Ca/Mg</div>
+  <div style="font-size:20px;font-weight:700;color:#FF9500;">1,7</div>
+  <div style="font-size:9px;color:var(--ink4);border-top:2px solid #FF9500;display:inline-block;padding-top:3px;margin-top:3px;">3–5</div>
+</div>
+    <div style="text-align:center;">
+  <div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">Ca/K</div>
+  <div style="font-size:20px;font-weight:700;color:#FF9500;">9,7</div>
+  <div style="font-size:9px;color:var(--ink4);border-top:2px solid #FF9500;display:inline-block;padding-top:3px;margin-top:3px;">10–30</div>
+</div>
+    <div style="text-align:center;">
+  <div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">Mg/K</div>
+  <div style="font-size:20px;font-weight:700;color:#34C759;">5,6</div>
+  <div style="font-size:9px;color:var(--ink4);border-top:2px solid #34C759;display:inline-block;padding-top:3px;margin-top:3px;">3–10</div>
+</div>
+  </div>
+</div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">02 · Correção</div>
+  <div class="section-title">Calcário</div>
+  <div class="section-desc">Calagem para elevar V% e equilibrar Ca/Mg do solo.</div>
+  <div class="big-card">
+    <div class="metric-hero">
+      <span class="metric-num" style="color:var(--blue);">—</span>
+      <span class="metric-unit">t/ha</span>
+    </div>
+    <div class="vrow">
+      <div class="vrow-item"><div class="vrow-lbl">V% Atual</div><div class="vrow-num" style="color:var(--red);">71%</div></div>
+      <div style="color:var(--ink4);font-size:22px;flex-shrink:0;">→</div>
+      <div class="vrow-item"><div class="vrow-lbl">V% Esperado</div><div class="vrow-num" style="color:var(--green);">45%</div></div>
+    </div>
+    <div class="kv-list">
+      <div class="kv"><span class="kv-l">Calcio (Ca)</span><span class="kv-v">3,10 <span class="kv-arrow">→</span> 3,10 <span style="font-weight:400;color:var(--ink3);font-size:11px;">cmolc/dm3</span></span></div>
+      <div class="kv"><span class="kv-l">Magnesio (Mg)</span><span class="kv-v">1,80 <span class="kv-arrow">→</span> 1,80 <span style="font-weight:400;color:var(--ink3);font-size:11px;">cmolc/dm3</span></span></div>
+      <div class="kv"><span class="kv-l">Relacao Ca : Mg</span><span class="kv-v">1,7 : 1</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;">
+      <div style="background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center;"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">CaO</div><div style="font-size:22px;font-weight:700;color:var(--blue);">30%</div></div>
+      <div style="background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center;"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">MgO</div><div style="font-size:22px;font-weight:700;color:var(--green);">16%</div></div>
+      <div style="background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center;"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">PRNT</div><div style="font-size:22px;font-weight:700;color:var(--ink2);">80%</div></div>
+    </div>
+    
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">03 · Projeção</div>
+  <div class="section-title">Antes e Depois da Correção</div>
+  <div class="section-desc">Valores projetados após aplicação do calcário recomendado.</div>
+  <div class="big-card">
+    <div class="ba-legend">
+      <span><span class="ba-dot" style="background:#FF9500;"></span> Antes</span>
+      <span><span class="ba-dot" style="background:#34C759;"></span> Depois</span>
+    </div>
+    <div class="ba"><div class="ba-group"><div class="ba-bars-pair">
+  <div class="ba-bar" style="background:#FF9500;height:5px;"><div class="ba-val">3,1</div></div>
+  <div class="ba-bar" style="background:#34C759;height:5px;"><div class="ba-val">3,1</div></div>
+</div><div class="ba-name">Ca</div></div><div class="ba-group"><div class="ba-bars-pair">
+  <div class="ba-bar" style="background:#FF9500;height:4px;"><div class="ba-val">1,8</div></div>
+  <div class="ba-bar" style="background:#34C759;height:4px;"><div class="ba-val">1,8</div></div>
+</div><div class="ba-name">Mg</div></div><div class="ba-group"><div class="ba-bars-pair">
+  <div class="ba-bar" style="background:#FF9500;height:4px;"><div class="ba-val">0,32</div></div>
+  <div class="ba-bar" style="background:#34C759;height:4px;"><div class="ba-val">0,32</div></div>
+</div><div class="ba-name">K</div></div><div class="ba-group"><div class="ba-bars-pair">
+  <div class="ba-bar" style="background:#FF9500;height:110px;"><div class="ba-val">71%</div></div>
+  <div class="ba-bar" style="background:#34C759;height:70px;"><div class="ba-val">45%</div></div>
+</div><div class="ba-name">V%</div></div></div>
+    <div class="ba-note">* K calculado separadamente — sem alteracao via calagem</div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">04 · Macronutriente</div>
+  <div class="section-title">Fósforo (P)</div>
+  <div class="section-desc">Extrator Mehlich · Modo ② Manutenção · Embrapa Cerrado.</div>
+  <div class="big-card">
+    <div class="metric-hero">
+      <span class="metric-num" style="color:#34C759;">5,22</span>
+      <span class="metric-unit">mg/dm3</span>
+      <span style="margin-left:auto;padding-bottom:8px;"><span class="pill pill-orange">Baixo · 131% NC</span></span>
+    </div>
+    <div class="grad-wrap">
+  <div class="grad-bar"><div class="grad-marker" style="left:17.4%;"></div></div>
+  <div class="grad-scale"><span>Muito Baixo</span><span>Baixo</span><span>Medio</span><span>Alto</span><span>Muito Alto</span></div>
+</div>
+    <div class="kv-list" style="margin-top:18px;">
+      <div class="kv"><span class="kv-l">Nivel Critico (NC)</span><span class="kv-v">4,00 mg/dm3</span></div>
+      <div class="kv"><span class="kv-l">Modo de calculo</span><span class="kv-v">② Manutenção</span></div>
+      <div class="kv"><span class="kv-l">Referencia tecnica</span><span class="kv-v">Embrapa Cerrado</span></div>
+    </div>
+    <div class="dose-block">
+  <span class="dose-lbl">Dose recomendada</span>
+  <span class="dose-num" style="color:#34C759;">507,1</span>
+  <span class="dose-unit">kg P2O5 / ha</span>
+</div>
+    <div style="margin-top:14px;"><div class="warn">Fosforo acima do NC — aplicado <strong>piso de manutencao</strong>.</div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">05 · Macronutriente</div>
+  <div class="section-title">Potássio (K)</div>
+  <div class="section-desc">Critério "Teor absoluto" · Embrapa Cerrado.</div>
+  <div class="big-card">
+    <div class="metric-hero">
+      <span class="metric-num" style="color:var(--orange);">0,32</span>
+      <span class="metric-unit">cmolc/dm3</span>
+      <span style="margin-left:auto;padding-bottom:8px;"><span class="pill pill-green">Adequado</span></span>
+    </div>
+    <div style="font-size:13px;color:var(--ink3);margin-bottom:4px;">125 mg/dm3</div>
+    <div class="grad-wrap">
+  <div class="grad-bar"><div class="grad-marker" style="left:40.0%;"></div></div>
+  <div class="grad-scale"><span>Muito Baixo</span><span>Baixo</span><span>Medio</span><span>Alto</span><span>Muito Alto</span></div>
+</div>
+    <div class="kv-list" style="margin-top:18px;">
+      <div class="kv"><span class="kv-l">Nível Crítico (NC)</span><span class="kv-v">46,00 cmolc/dm3</span></div>
+      <div class="kv"><span class="kv-l">Critério</span><span class="kv-v">Teor absoluto</span></div>
+      <div class="kv"><span class="kv-l">Referência técnica</span><span class="kv-v">Embrapa Cerrado</span></div>
+    </div>
+    <div class="dose-block">
+  <span class="dose-lbl">Dose recomendada</span>
+  <span class="dose-num" style="color:var(--orange);">137,5</span>
+  <span class="dose-unit">kg K2O / ha</span>
+</div>
+    <div style="margin-top:18px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Relações iônicas</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center;"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">K % CTC</div><div style="font-size:20px;font-weight:700;color:var(--orange);">2,8%</div></div>
+        <div style="background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center;"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">K : Mg</div><div style="font-size:20px;font-weight:700;color:var(--ink2);">0,18</div></div>
+        <div style="background:var(--bg);border-radius:10px;padding:14px 10px;text-align:center;"><div style="font-size:10px;color:var(--ink3);margin-bottom:4px;">K : Ca</div><div style="font-size:20px;font-weight:700;color:var(--ink2);">0,10</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">06 · Macronutriente Secundário</div>
+  <div class="section-title">Enxofre (S)</div>
+  <div class="section-desc">Camada 0-20 cm · camada 20-40 cm não disponível nesta análise.</div>
+  <div class="big-card">
+    <div class="metric-hero">
+      <span class="metric-num" style="color:var(--red);">0,0</span>
+      <span class="metric-unit">mg/dm3</span>
+      <span style="margin-left:auto;padding-bottom:8px;"><span class="pill pill-red">Muito Baixo</span></span>
+    </div>
+    <div class="grad-wrap">
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Muito Baixo</span><span>Baixo</span><span>Medio</span><span>Alto</span><span>Muito Alto</span></div>
+</div>
+    <div class="dose-block">
+  <span class="dose-lbl">Dose recomendada</span>
+  <span class="dose-num" style="color:var(--red);">20</span>
+  <span class="dose-unit">kg S / ha</span>
+</div>
+    <div class="kv-list" style="margin-top:18px;">
+      <div class="kv"><span class="kv-l">Referência técnica</span><span class="kv-v">05 — Enxofre (S): Motor de Cálculo</span></div>
+    </div>
+    <div style="margin-top:14px;"><div class="warn">Nível muito baixo — aplicar <strong>enxofre elementar</strong> ou sulfato. Camada 20-40 cm não disponível nesta análise.</div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-num">07 · Micronutrientes</div>
+  <div class="section-title">Micronutrientes</div>
+  <div class="section-desc">Cada elemento avaliado contra seu NC · doses Solo (primeiro) e Foliar.</div>
+  <div class="big-card"><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#FFD60A;"></div>
+    <div class="micro-name">Boro (B)</div>
+    <span class="micro-status-pill"><span class="pill pill-red">Deficiente</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 1,00 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 1,0</span><span>Adequado</span><span>Alto</span></div>
+  <div class="micro-warn">B não analisado — dose não calculada.</div>
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v na">Nao analisado</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Nao analisado</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#FF9500;"></div>
+    <div class="micro-name">Cobre (Cu)</div>
+    <span class="micro-status-pill"><span class="pill pill-red">Deficiente</span></span>
+    <div class="micro-val">0,10 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,80 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:6.3%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,80</span><span>Adequado</span><span>Alto</span></div>
+  
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v">1,40 kg/ha produto</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Via nao ativa</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#5856D6;"></div>
+    <div class="micro-name">Molibdenio (Mo)</div>
+    <span class="micro-status-pill"><span class="pill pill-red">Deficiente</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,10 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,10</span><span>Adequado</span><span>Alto</span></div>
+  
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v">73,3 g/ha produto</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Via nao ativa</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#8E8E93;"></div>
+    <div class="micro-name">Cobalto (Co)</div>
+    <span class="micro-status-pill"><span class="pill pill-red">Deficiente</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,05 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,05</span><span>Adequado</span><span>Alto</span></div>
+  
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v">95,2 g/ha produto</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Via nao ativa</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#1D1D1F;"></div>
+    <div class="micro-name">Niquel (Ni)</div>
+    <span class="micro-status-pill"><span class="pill pill-red">Deficiente</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,10 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,10</span><span>Adequado</span><span>Alto</span></div>
+  
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v">181,8 g/ha produto</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Via nao ativa</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#34C759;"></div>
+    <div class="micro-name">Selenio (Se)</div>
+    <span class="micro-status-pill"><span class="pill pill-red">Deficiente</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,05 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,05</span><span>Adequado</span><span>Alto</span></div>
+  
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v">44,4 g/ha produto</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Via nao ativa</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#1D1D1F;"></div>
+    <div class="micro-name">Niquel (Ni)</div>
+    <span class="micro-status-pill"><span class="pill pill-green">Adequado</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,10 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,10</span><span>Adequado</span><span>Alto</span></div>
+  <div class="micro-warn">Micronutriente Ni sem teor na análise.</div>
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v na">Nao analisado</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Nao analisado</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#5856D6;"></div>
+    <div class="micro-name">Molibdenio (Mo)</div>
+    <span class="micro-status-pill"><span class="pill pill-green">Adequado</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,10 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,10</span><span>Adequado</span><span>Alto</span></div>
+  <div class="micro-warn">Micronutriente Mo sem teor na análise.</div>
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v na">Nao analisado</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Nao analisado</div></div>
+  </div>
+</div><div class="micro-card">
+  <div class="micro-head">
+    <div class="micro-dot" style="background:#34C759;"></div>
+    <div class="micro-name">Selenio (Se)</div>
+    <span class="micro-status-pill"><span class="pill pill-green">Adequado</span></span>
+    <div class="micro-val">0,00 <span class="u">mg/dm3</span></div>
+  </div>
+  <div class="micro-nc">NC: 0,05 mg/dm3</div>
+  <div class="grad-bar"><div class="grad-marker" style="left:0.0%;"></div></div>
+  <div class="grad-scale"><span>Def.</span><span>Baixo</span><span>NC 0,05</span><span>Adequado</span><span>Alto</span></div>
+  <div class="micro-warn">Micronutriente Se sem teor na análise.</div>
+  <div class="micro-doses">
+    <div class="micro-dose"><div class="micro-dose-l">Solo</div><div class="micro-dose-v na">Nao analisado</div></div>
+    <div class="micro-dose"><div class="micro-dose-l">Foliar</div><div class="micro-dose-v na">Nao analisado</div></div>
+  </div>
+</div></div>
+</div>
+<div class="section">
+  <div class="section-num">08 · Atencao</div>
+  <div class="section-title">Avisos Técnicos</div>
+  <div class="section-desc">Pontos que afetam a precisao do calculo ou exigem manejo cuidadoso.</div>
+  <div class="big-card"><div class="warn">Fósforo acima do NC: aplicado piso de manutenção.</div><div class="warn">Dose &gt; 500 kg/ha: monitorar Mo e possível lixiviação de B.</div><div class="warn">Enxofre (S) não analisado; cálculo seguirá com S=0,0 mg/dm³.</div><div class="warn">Matéria orgânica não analisada; cálculo seguirá com M.O.=0,0.</div><div class="warn">B não analisado — dose não calculada.</div><div class="warn">Enxofre (estrutura ativa): sem S 0-20/20-40 na análise para cálculo.</div></div>
+</div>
+<div class="section">
+  <div class="section-num">09 · Fundamentacao</div>
+  <div class="section-title">Argumentos Técnicos</div>
+  <div class="section-desc">Criterios e referencias utilizados na recomendacao.</div>
+  <div class="big-card">
+    <p style="font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:16px;">A recomendação cruza a análise selecionada com as regras da calibração. Calcário foi calculado por ① Saturação por Bases (V%) com V% alvo de 45,1. Fósforo foi calculado no modo ② Manutenção com NC 4,0 mg/dm³ e FEP configurado. Potássio considerou o critério &quot;Teor absoluto&quot; e FEK da calibração. Micronutrientes foram gerados apenas para doses positivas e agrupados conforme os grupos ativos.</p>
+    <div class="kv-list">
+      <div class="kv"><span class="kv-l">Calcario</span><span class="kv-v">01 — Calagem: Motor de Cálculo</span></div>
+      <div class="kv"><span class="kv-l">Gesso</span><span class="kv-v">01 — Calagem: Motor de Cálculo</span></div>
+      <div class="kv"><span class="kv-l">Fosforo</span><span class="kv-v">Embrapa Cerrado</span></div>
+      <div class="kv"><span class="kv-l">Potassio</span><span class="kv-v">Embrapa Cerrado</span></div>
+      <div class="kv"><span class="kv-l">Micronutrientes</span><span class="kv-v">06 — Micronutrientes: Motor de Cálculo</span></div>
+      <div class="kv"><span class="kv-l">Enxofre</span><span class="kv-v">05 — Enxofre (S): Motor de Cálculo</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="footer">
+  <strong>SoloForte · Caderno de Solo</strong><br>
+  Gerado em 10/07/2026 as 13:32 · Consultor<br>
+  <span style="font-size:10px;">Documento tecnico de uso exclusivo. Consulte sempre um Engenheiro Agronomo habilitado.</span>
+</div>
+
+</body>
+</html>

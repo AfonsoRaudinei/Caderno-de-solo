@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/features/laboratorio/domain/models/absorcao_data_quality.dart';
+
+export 'package:soloforte/features/laboratorio/domain/models/absorcao_data_quality.dart';
 
 // Modelos de dados e enums da tela AbsorcaoNutrientesReferenciaPage.
 // Extraído de absorcao_nutrientes_referencia_page.dart — FASE 2A.
-// Nenhuma lógica de UI neste arquivo.
 
 enum ReferenceSection {
   painel,
@@ -72,11 +74,11 @@ class DataValue {
   });
 
   final double valuePerTon;
-  final DataQuality quality;
+  final AbsorcaoDataQuality quality;
 
   DataValue copyWith({
     double? valuePerTon,
-    DataQuality? quality,
+    AbsorcaoDataQuality? quality,
   }) {
     return DataValue(
       valuePerTon: valuePerTon ?? this.valuePerTon,
@@ -85,32 +87,13 @@ class DataValue {
   }
 }
 
-class DataQuality {
-  const DataQuality._({
-    required this.title,
-    required this.subtitle,
-    required this.color,
-  });
+/// Alias de UI para a qualidade de domínio (mantém API antiga nas telas).
+typedef DataQuality = AbsorcaoDataQuality;
 
-  static const original = DataQuality._(
-    title: 'Original',
-    subtitle: 'Valor direto da fonte selecionada',
-    color: Color(0xFF0D2818),
-  );
-
-  static const calculated = DataQuality._(
-    title: 'Calculado',
-    subtitle: 'Estimado por índice de exportação',
-    color: Color(0xFF3DD68C),
-  );
-
-  static const unavailable = DataQuality._(
-    title: 'Indisponível',
-    subtitle: 'Sem base para calcular este nutriente',
-    color: AppColors.warning,
-  );
-
-  final String title;
-  final String subtitle;
-  final Color color;
+extension AbsorcaoDataQualityUi on AbsorcaoDataQuality {
+  Color get color => switch (this) {
+        AbsorcaoDataQuality.original => const Color(0xFF0D2818),
+        AbsorcaoDataQuality.calculated => const Color(0xFF3DD68C),
+        AbsorcaoDataQuality.unavailable => AppColors.warning,
+      };
 }

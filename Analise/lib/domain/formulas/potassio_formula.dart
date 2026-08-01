@@ -13,14 +13,15 @@ class PotassioFormula {
     required double kAtual,
     required double ctc,
   }) {
-    if (ctc == 0) return 0.0;
-    return (kAtual / ctc) * 100.0;
+    if (ctc <= 0) return 0.0;
+    return ((kAtual / ctc) * 100.0).clamp(0.0, 100.0);
   }
 
   static double kMgDm3ToCmolc(double kMgDm3) => kMgDm3 / 391.0;
 
   /// NC absoluto de K (mg/dm³) por textura.
-  static double nivelCriticoTeorAbsoluto(double argilaPercent, {double? overrideValue}) {
+  static double nivelCriticoTeorAbsoluto(double argilaPercent,
+      {double? overrideValue}) {
     if (overrideValue != null) return overrideValue;
     if (argilaPercent < 15) return 40.0;
     if (argilaPercent <= 35) return 60.0;
@@ -62,13 +63,13 @@ class PotassioFormula {
     double percentualCorrecao = 100.0,
     double? ncOverride,
   }) {
-    final nc = nivelCriticoTeorAbsoluto(argilaPercent, overrideValue: ncOverride);
+    final nc =
+        nivelCriticoTeorAbsoluto(argilaPercent, overrideValue: ncOverride);
     final deficitMgDm3 = (nc - kAtualMgDm3).clamp(0.0, double.infinity);
     if (deficitMgDm3 <= 0) return 0.0;
     final deficitCmolc = deficitMgDm3 / 391.0;
     return deficitCmolc * _fatorCmolcParaK2O * (percentualCorrecao / 100.0);
   }
-
 
   /// Calcula a recomendação de Potássio em kg/ha de K2O
   /// Para atingir a participação desejada na CTC
@@ -160,5 +161,4 @@ class PotassioFormula {
       avisoKCa: relKCa > limiteKCa,
     );
   }
-
 }

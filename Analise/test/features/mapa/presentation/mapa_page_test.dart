@@ -34,6 +34,7 @@ class _FakeMapEngine implements MapEngine {
       child: Column(
         children: [
           Text('selected:${selectedPinId ?? 'none'}'),
+          Text('pins:${pins.map((pin) => pin.id).join(',')}'),
           Text('polygons:${polygons.length}'),
           Text(
               'vertices:${polygons.isEmpty ? 0 : polygons.first.points.length}'),
@@ -129,8 +130,6 @@ void main() {
               _analise(
                 id: 'a1',
                 talhao: 'T-01',
-                latitude: -10.1234,
-                longitude: -48.9876,
               ),
               _analise(
                 id: 'a2',
@@ -217,5 +216,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Editando vertices'), findsNothing);
     expect(find.text('polygons:1'), findsOneWidget);
+  });
+
+  testWidgets('modo selecao mostra pin unico e retorna ponto tocado',
+      (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier(
+            [
+              _analise(
+                id: 'a1',
+                talhao: 'T-01',
+                latitude: -10.1234,
+                longitude: -48.9876,
+              ),
+              _analise(
+                id: 'a2',
+                talhao: 'T-02',
+                latitude: -10.2234,
+                longitude: -48.8876,
+              ),
+            ],
+          ),
+        ),
+        mapEngineProvider.overrideWithValue(_FakeMapEngine()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    LatLng? selected;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return TextButton(
+                key: const Key('open-selection'),
+                onPressed: () async {
+                  selected = await Navigator.of(context).push<LatLng>(
+                    MaterialPageRoute(
+                      builder: (_) => const MapaPage(
+                        initialAnaliseId: 'a1',
+                        selectionMode: true,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('open-selection')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('pins:a1,a2'), findsNothing);
+    expect(find.byKey(const Key('fake-map-tap')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('fake-map-tap')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('pins:a1'), findsOneWidget);
+    expect(find.text('Ponto selecionado'), findsOneWidget);
+    await tester.tap(find.text('Usar ponto'));
+    await tester.pumpAndSettle();
+
+    expect(selected, isNotNull);
+    final selectedPoint = selected!;
+    expect(selectedPoint.latitude, -10.1);
+    expect(selectedPoint.longitude, -48.1);
   });
 }

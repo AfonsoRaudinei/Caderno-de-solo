@@ -6,7 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
-import 'package:soloforte/core/widgets/app_card.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:soloforte/features/historico/presentation/historico_provider.dart';
 
@@ -22,6 +22,7 @@ class HistoricoDetalheScreen extends ConsumerWidget {
     final dataFmt = DateFormat('dd/MM/yyyy HH:mm').format(data);
 
     return Scaffold(
+      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text(titulo),
         actions: [
@@ -42,6 +43,39 @@ class HistoricoDetalheScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              AppSurface(
+                borderRadius: AppDimens.radiusXl,
+                child: Row(
+                  children: [
+                    const AppIconFrame(
+                      icon: Icons.history_rounded,
+                      size: 48,
+                    ),
+                    const SizedBox(width: AppDimens.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            titulo,
+                            style: AppTextStyles.headline.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimens.xs),
+                          Text(
+                            'Gerado em $dataFmt',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecond,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppDimens.md),
               _NutrienteCard(
                 titulo: 'Calcário',
                 valor:
@@ -62,11 +96,17 @@ class HistoricoDetalheScreen extends ConsumerWidget {
                 titulo: 'Micronutrientes',
                 valor: recomendacao.citacaoMicronutrientes.metodo,
               ),
-              const SizedBox(height: AppDimens.lg),
-              Text(
-                'Calibração: ${recomendacao.citacaoCalagem.metodo} · Gerado em: $dataFmt',
-                style:
-                    AppTextStyles.caption.copyWith(color: AppColors.textSecond),
+              const SizedBox(height: AppDimens.md),
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
+                padding: const EdgeInsets.all(AppDimens.md),
+                child: Text(
+                  'Calibração: ${recomendacao.citacaoCalagem.metodo}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond,
+                  ),
+                ),
               ),
             ],
           ),
@@ -134,16 +174,32 @@ class _NutrienteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSurface(
+      showShadow: false,
+      showBorder: true,
+      padding: const EdgeInsets.all(AppDimens.md),
+      child: Row(
         children: [
-          Text(
-            titulo,
-            style: AppTextStyles.label.copyWith(fontWeight: FontWeight.w700),
+          const AppIconFrame(
+            icon: Icons.eco_rounded,
+            size: 36,
+            iconSize: 20,
           ),
-          const SizedBox(height: AppDimens.xs),
-          Text(valor, style: AppTextStyles.body),
+          const SizedBox(width: AppDimens.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style:
+                      AppTextStyles.label.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AppDimens.xs),
+                Text(valor, style: AppTextStyles.body),
+              ],
+            ),
+          ),
         ],
       ),
     );

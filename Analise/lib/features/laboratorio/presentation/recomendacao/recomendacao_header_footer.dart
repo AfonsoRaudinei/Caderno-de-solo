@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/utils/image_source_resolver.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 
 class RecomendacaoHeader extends ConsumerWidget {
@@ -12,7 +13,8 @@ class RecomendacaoHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(perfilAssetsProvider);
-    final hasLogo = assets.logoUrl != null && assets.logoUrl!.isNotEmpty;
+    final logoProvider = ImageSourceResolver.imageProvider(assets.logoUrl);
+    final hasLogo = logoProvider != null;
     final palette = context.appPalette;
 
     return Container(
@@ -32,12 +34,11 @@ class RecomendacaoHeader extends ConsumerWidget {
                 ? ClipRRect(
                     key: const ValueKey('logo'),
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      assets.logoUrl!,
+                    child: Image(
+                      image: logoProvider,
                       height: 48,
                       width: 96,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const _LogoPlaceholder(),
                     ),
                   )
                 : const _LogoPlaceholder(key: ValueKey('placeholder')),
@@ -113,8 +114,9 @@ class AssinaturaWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(perfilAssetsProvider);
-    final hasAssinatura =
-        assets.assinaturaUrl != null && assets.assinaturaUrl!.isNotEmpty;
+    final assinaturaProvider =
+        ImageSourceResolver.imageProvider(assets.assinaturaUrl);
+    final hasAssinatura = assinaturaProvider != null;
     final palette = context.appPalette;
 
     return Container(
@@ -132,13 +134,11 @@ class AssinaturaWidget extends ConsumerWidget {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: hasAssinatura
-                  ? Image.network(
-                      assets.assinaturaUrl!,
+                  ? Image(
+                      image: assinaturaProvider,
                       key: const ValueKey('assinatura'),
                       height: 60,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) =>
-                          const _AssinaturaPlaceholder(),
                     )
                   : const _AssinaturaPlaceholder(
                       key: ValueKey('placeholder'),

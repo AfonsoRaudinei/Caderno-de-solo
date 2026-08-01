@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
-import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/presentation/widgets/cliente_card_widget.dart';
 
@@ -36,6 +38,12 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<ClienteState>(clienteProvider, (previous, next) {
+      if (next.requiresLogin && next.requiresLogin != previous?.requiresLogin) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        context.go(AppRoutes.login);
+        return;
+      }
+
       final erro = next.erro;
       if (erro != null && erro.isNotEmpty && erro != previous?.erro) {
         ScaffoldMessenger.of(context)
@@ -57,29 +65,39 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
       final token = cliente.token.toLowerCase();
       return nome.contains(_busca) || token.contains(_busca);
     }).toList(growable: false);
+    final palette = context.appPalette;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Clientes'),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        onPressed: () => context.push(AppRoutes.clienteNovo),
+        onPressed: _abrirNovoCliente,
         child: const Icon(Icons.add),
       ),
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.fromLTRB(
+          AppDimens.screenPadding,
+          AppDimens.lg,
+          AppDimens.screenPadding,
+          0,
+        ),
         child: Column(
           children: [
-            AppInput(
-              controller: _buscaController,
-              label: 'Busca',
-              hint: 'Buscar por nome ou token',
-              prefixIcon: const Icon(
-                Icons.search_rounded,
-                color: AppColors.textSecond,
+            AppSurface(
+              padding: const EdgeInsets.all(AppDimens.md),
+              showBorder: true,
+              child: AppInput(
+                controller: _buscaController,
+                label: 'Busca',
+                hint: 'Buscar por nome ou token',
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: palette.textSecondary,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -95,26 +113,14 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
                   }
 
                   if (clientes.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.person_outline,
-                            size: 72,
-                            color: AppColors.textSecond,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Nenhum cliente cadastrado',
-                            style: AppTextStyles.label,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Toque em + para adicionar',
-                            style: AppTextStyles.caption,
-                          ),
-                        ],
+                    return AppEmptyState(
+                      title: 'Nenhum cliente cadastrado',
+                      message: 'Toque em + para adicionar',
+                      icon: Icons.person_add_alt_1_outlined,
+                      action: FilledButton.icon(
+                        onPressed: _abrirNovoCliente,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Adicionar cliente'),
                       ),
                     );
                   }
@@ -148,5 +154,11 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _abrirNovoCliente() async {
+    final result = await context.push<bool>(AppRoutes.clienteNovo);
+    if (!mounted || result != true) return;
+    await ref.read(clienteProvider.notifier).carregarClientes();
   }
 }
