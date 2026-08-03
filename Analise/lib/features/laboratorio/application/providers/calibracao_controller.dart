@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/data/base_dados/nc_por_referencia.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
+import 'package:soloforte/domain/models/micronutrientes_calibracao.dart';
 import 'package:soloforte/features/laboratorio/application/providers/calibracao_state.dart';
 import 'package:soloforte/features/laboratorio/data/repositories/calibracao_repository_impl.dart';
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
@@ -66,14 +67,22 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     );
     try {
       final sorted = await _carregarCalibracoes();
-      final selectedId = sorted.isNotEmpty ? sorted.first.id : null;
+      final migrated =
+          sorted.map(_migrateProfileMicros).toList(growable: false);
+      final selectedId = migrated.isNotEmpty ? migrated.first.id : null;
+      final draft = selectedId == null
+          ? _novoDraft(cultura: 'Soja')
+          : migrated.first.copyWith();
       state = state.copyWith(
         loading: false,
-        profiles: sorted,
+        profiles: migrated,
         selectedProfileId: selectedId,
-        draft: selectedId == null
-            ? _novoDraft(cultura: 'Soja')
-            : sorted.first.copyWith(),
+        draft: draft,
+        micros: MicronutrientesState(
+          parametros: Map<String, dynamic>.from(
+            (draft.parametrosCards['micros'] as Map?) ?? const {},
+          ),
+        ),
       );
     } catch (_) {
       state = state.copyWith(
@@ -87,36 +96,60 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     if (profileId == null) return;
     final profile = state.profiles.where((p) => p.id == profileId).firstOrNull;
     if (profile == null) return;
+    final migrated = _migrateProfileMicros(profile);
     state = state.copyWith(
       selectedProfileId: profileId,
-      draft: profile.copyWith(),
+      draft: migrated.copyWith(),
+      micros: MicronutrientesState(
+        parametros: Map<String, dynamic>.from(
+          (migrated.parametrosCards['micros'] as Map?) ?? const {},
+        ),
+      ),
       errorMessage: null,
       successMessage: null,
     );
   }
 
   void novo() {
+    final draft = _novoDraft(cultura: 'Soja');
     state = state.copyWith(
       selectedProfileId: null,
-      draft: _novoDraft(cultura: 'Soja'),
+      draft: draft,
+      micros: MicronutrientesState(
+        parametros: Map<String, dynamic>.from(
+          (draft.parametrosCards['micros'] as Map?) ?? const {},
+        ),
+      ),
       errorMessage: null,
       successMessage: null,
     );
   }
 
   void novaCalibracaoEmBranco() {
+    final draft = _novoDraft(cultura: 'Soja');
     state = state.copyWith(
       selectedProfileId: null,
-      draft: _novoDraft(cultura: 'Soja'),
+      draft: draft,
+      micros: MicronutrientesState(
+        parametros: Map<String, dynamic>.from(
+          (draft.parametrosCards['micros'] as Map?) ?? const {},
+        ),
+      ),
       successMessage: 'Nova calibração iniciada',
       errorMessage: null,
     );
   }
 
   void carregarPerfil(CalibracaoProfile profile) {
+    final migrated = _migrateProfileMicros(profile);
     state = state.copyWith(
-      selectedProfileId: profile.id,
-      draft: profile.copyWith(),
+      selectedProfileId: migrated.id,
+      draft: migrated.copyWith(),
+      micros: MicronutrientesState(
+        parametros: Map<String, dynamic>.from(
+          (migrated.parametrosCards['micros'] as Map?) ?? const {},
+        ),
+      ),
       errorMessage: null,
       successMessage: null,
     );
@@ -182,8 +215,10 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
   }
 
   void updateMicros(MicronutrientesState novo) {
-    state = state.copyWith(micros: novo);
-    _syncDraftParametros('micros', novo.parametros);
+    final migrated = migrateMicrosParametros(novo.parametros);
+    final stateMigrado = MicronutrientesState(parametros: migrated);
+    state = state.copyWith(micros: stateMigrado);
+    _syncDraftParametros('micros', migrated);
   }
 
   /// Propaga Referência e NC para todos os elementos membros do grupo.
@@ -195,8 +230,10 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     required String referenciaNome,
   }) {
     final parametros = Map<String, dynamic>.from(state.draft.parametrosCards);
-    final micros = Map<String, dynamic>.from(
-      (parametros['micros'] as Map<String, dynamic>?) ?? {},
+    final micros = migrateMicrosParametros(
+      Map<String, dynamic>.from(
+        (parametros['micros'] as Map<String, dynamic>?) ?? {},
+      ),
     );
     final grupos = List<dynamic>.from(
       (micros['grupos'] as List<dynamic>?) ?? [],
@@ -207,6 +244,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     final grupo = Map<String, dynamic>.from(
       grupos[grupoIndex] as Map<String, dynamic>,
     );
+    grupo['referenciaNcNome'] = referenciaNome;
     grupo['referenciaNome'] = referenciaNome;
 
     final elementos = Map<String, dynamic>.from(
@@ -223,6 +261,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         elementos[simbolo] as Map<String, dynamic>,
       );
       el['referencia'] = referenciaNome;
+      el['referenciaNc'] = referenciaNome;
 
       if (referenciaNome != 'Personalizada') {
         final nc = getNcParaReferencia(referenciaNome, simbolo);
@@ -267,6 +306,19 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       return false;
     }
 
+    final microsRaw = Map<String, dynamic>.from(
+      (state.draft.parametrosCards['micros'] as Map?) ?? const {},
+    );
+    final microsMigrados = migrateMicrosParametros(microsRaw);
+    final validacao = validateMicrosParametros(microsMigrados);
+    if (!validacao.isValid) {
+      state = state.copyWith(
+        errorMessage: validacao.errors.first,
+        micros: MicronutrientesState(parametros: microsMigrados),
+      );
+      return false;
+    }
+
     state =
         state.copyWith(saving: true, errorMessage: null, successMessage: null);
     try {
@@ -274,10 +326,14 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       final shouldCreate = salvarComoNovo || state.selectedProfileId == null;
       final profileId = shouldCreate ? _uuid.v4() : state.draft.id;
 
+      final parametros = Map<String, dynamic>.from(state.draft.parametrosCards);
+      parametros['micros'] = microsMigrados;
+
       final profile = state.draft.copyWith(
         id: profileId,
         nome: nome,
         cultura: cultura,
+        parametrosCards: parametros,
         createdAt: shouldCreate ? now : state.draft.createdAt,
         updatedAt: now,
       );
@@ -301,6 +357,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         profiles: sorted,
         selectedProfileId: profile.id,
         draft: profile,
+        micros: MicronutrientesState(parametros: microsMigrados),
         successMessage: shouldCreate
             ? 'Calibração salva como novo perfil.'
             : 'Calibração atualizada com sucesso.',
@@ -378,6 +435,15 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       errorMessage: null,
       successMessage: null,
     );
+  }
+
+  static CalibracaoProfile _migrateProfileMicros(CalibracaoProfile profile) {
+    final parametros = Map<String, dynamic>.from(profile.parametrosCards);
+    final micros = migrateMicrosParametros(
+      Map<String, dynamic>.from((parametros['micros'] as Map?) ?? const {}),
+    );
+    parametros['micros'] = micros;
+    return profile.copyWith(parametrosCards: parametros);
   }
 
   List<CalibracaoProfile> _sortByUpdatedDesc(List<CalibracaoProfile> list) {
@@ -584,7 +650,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       };
     }
 
-    return {
+    return migrateMicrosParametros({
       'pH': 5.8,
       'plantioDiretoAntigo': false,
       'gessoDoseKgHa': 0.0,
@@ -699,7 +765,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         ),
       },
       'grupos': <Map<String, dynamic>>[],
-    };
+    });
   }
 }
 

@@ -17,6 +17,7 @@ import 'package:soloforte/domain/formulas/types/calcario_input.dart';
 import 'package:soloforte/domain/formulas/types/fosforo_input.dart';
 import 'package:soloforte/domain/formulas/types/gesso_input.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
+import 'package:soloforte/domain/models/micronutrientes_calibracao.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:soloforte/data/culturas_data.dart';
 
@@ -65,7 +66,6 @@ class MicroResultado with _$MicroResultado {
 
     /// Citação científica da referência usada
     String? referencia,
-
     @Default([]) List<String> avisosNutriente,
   }) = _MicroResultado;
 }
@@ -266,10 +266,19 @@ class RecomendacaoEngine {
       limiteKCa: configAntagonismos.limiteKCa,
     );
 
-    final microsResultado = calcularMicros(micros: micros, analise: analise);
-    final gruposMicros = _asListMap(micros['grupos']);
+    final microsMigrados = migrateMicrosParametros(micros);
+    final gruposMicros = gruposFromMicros(microsMigrados);
+    final simbolosEmGrupos = elementosEmGrupos(gruposMicros);
+    final microsResultado = calcularMicros(
+      micros: microsMigrados,
+      analise: analise,
+      excluirElementos: simbolosEmGrupos,
+    );
     final gruposResultado = calcularGrupos(
-        grupos: gruposMicros, micros: microsResultado);
+      grupos: gruposMicros,
+      microsConfig: microsMigrados,
+      analise: analise,
+    );
 
     final relacaoCaMg = analise.mg > 0 ? analise.ca / analise.mg : 0.0;
     // Fórmula: CaO% × dose(t/ha) × 0.714(CaO→Ca) × (10/2) = cmolc/dm³ aportado
@@ -279,7 +288,8 @@ class RecomendacaoEngine {
     final mgAportado = (mgO / 100) * doseCalcario * 0.603 * (10 / 2.43);
     final caEsperado = analise.ca + caAportado;
     final mgEsperado = analise.mg + mgAportado;
-    final vEsperado = _vEsperado(caEsperado, mgEsperado, analise.k, analise.ctc);
+    final vEsperado =
+        _vEsperado(caEsperado, mgEsperado, analise.k, analise.ctc);
 
     final avisos = <String>[
       if (legacyP) 'Fósforo acima do NC: aplicado piso de manutenção.',
@@ -668,22 +678,24 @@ class RecomendacaoEngine {
     return (ncP: ncP, doseP: doseP, legacyP: legacyInfo.legacyP);
   }
 
-  /// Calcula doses de micronutrientes elemento a elemento.
+  /// Calcula doses de micronutrientes elemento a elemento (fora de grupos).
   /// Migração de _calcularMicros (RE3).
   List<MicroResultado> calcularMicros({
     required Map<String, dynamic> micros,
     required AnaliseEntity analise,
+    Set<String> excluirElementos = const {},
   }) {
     final elementos = _asMap(micros['elementos']);
     final resultados = <MicroResultado>[];
     for (final entry in elementos.entries) {
       final simbolo = entry.key;
+      if (excluirElementos.contains(simbolo)) continue;
       final config = _asMap(entry.value);
       final via = _string(config['viaAplicacao'], 'Solo (correção)');
 
       final teor = via.contains('Solo')
-          ? _num(config['teorFonteSolo'], 0)
-          : _num(config['teorFonteFoliar'], 0);
+          ? _num(config['teorFonteSolo'], _num(config['concentracao'], 0))
+          : _num(config['teorFonteFoliar'], _num(config['concentracao'], 0));
 
       final eficiencia = via.contains('Solo')
           ? _num(config['eficienciaSolo'], 0)
@@ -722,26 +734,95 @@ class RecomendacaoEngine {
               : _string(config['fonteFoliar'], 'Fonte foliar'),
           doseProduto: doseProdutoCalc,
           doseProdutoLabel: doseProdutoLabelText,
+          referencia: _string(
+            config['referenciaNc'],
+            _string(config['referencia'], ''),
+          ),
         ),
       );
     }
     return resultados;
   }
 
-  /// Agrupa micronutrientes em grupos de aplicação.
-  /// Migração de _calcularGrupos (RE3).
+  /// Calcula cada grupo de forma independente, usando via/eficiência do grupo
+  /// e NC/concentração por elemento — sem misturar dados de outros grupos.
   List<GrupoResultado> calcularGrupos({
     required List<Map<String, dynamic>> grupos,
-    required List<MicroResultado> micros,
+    required Map<String, dynamic> microsConfig,
+    required AnaliseEntity analise,
+    List<MicroResultado>? micros,
   }) {
+    final elementos = _asMap(microsConfig['elementos']);
     final resultados = <GrupoResultado>[];
-    for (final grupo in grupos) {
-      final elementosGrupo = List<String>.from(
-          (grupo['elementos'] as List?)?.map((e) => e.toString()) ?? const []);
 
-      final microsGrupo = micros
-          .where((item) => elementosGrupo.contains(item.elemento))
-          .toList();
+    for (final grupoRaw in grupos) {
+      final grupo =
+          migrateGrupoAplicacao(grupoRaw, indice: resultados.length + 1);
+      final elementosGrupo = List<String>.from(
+        (grupo['elementos'] as List?)?.map((e) => e.toString()) ?? const [],
+      );
+      if (elementosGrupo.isEmpty) continue;
+
+      final viaGrupo = _string(grupo['via'], 'Foliar');
+      final eficienciaGrupo = eficienciaDoGrupo(grupo);
+      final fonteGrupo = fonteDoGrupo(grupo);
+      final microsGrupo = <MicroResultado>[];
+
+      for (final simbolo in elementosGrupo) {
+        final config = _asMap(elementos[simbolo]);
+        if (config.isEmpty) continue;
+
+        final nc = _num(config['ncSolo']);
+        final valorAtual = _valorMicroAnalise(simbolo, analise);
+        final teor = _num(
+          config['concentracao'],
+          viaGrupo == 'Solo'
+              ? _num(config['teorFonteSolo'], 0)
+              : _num(config['teorFonteFoliar'], 0),
+        );
+
+        final doseElemento = viaGrupo == 'Solo'
+            ? ((nc - valorAtual).clamp(0, double.infinity) *
+                200 *
+                (_num(config['percentualCorrecaoSolo'], 100) / 100))
+            : _num(config['doseElementoFoliar'], 0);
+
+        if (doseElemento <= 0) continue;
+
+        final doseProdutoCalc = (teor > 0 && eficienciaGrupo > 0)
+            ? doseElemento / (teor / 100) / (eficienciaGrupo / 100)
+            : 0.0;
+
+        final doseProdutoLabelText = doseProdutoCalc >= 1000
+            ? '${_fmt(doseProdutoCalc / 1000, 2)} kg/ha produto'
+            : '${_fmt(doseProdutoCalc, 1)} g/ha produto';
+
+        microsGrupo.add(
+          MicroResultado(
+            elemento: simbolo,
+            valorAtual: valorAtual,
+            nc: nc,
+            dose: doseElemento,
+            unidade: 'g/ha',
+            deficiente: valorAtual < nc,
+            via: viaGrupo,
+            fonte: fonteGrupo,
+            doseProduto: doseProdutoCalc,
+            doseProdutoLabel: doseProdutoLabelText,
+            referencia: _string(
+              config['referenciaNc'],
+              _string(config['referencia'], ''),
+            ),
+          ),
+        );
+      }
+
+      // Fallback legado: se não houver cálculo próprio, usa lista antiga.
+      if (microsGrupo.isEmpty && micros != null) {
+        microsGrupo.addAll(
+          micros.where((item) => elementosGrupo.contains(item.elemento)),
+        );
+      }
       if (microsGrupo.isEmpty) continue;
 
       final doseProdutoKg =
@@ -756,8 +837,8 @@ class RecomendacaoEngine {
         GrupoResultado(
           nomeGrupo: _string(grupo['nome'], 'Grupo'),
           micros: microsGrupo,
-          via: _string(grupo['via'], 'Foliar'),
-          produto: _string(grupo['produto'], 'Mistura manual'),
+          via: viaGrupo,
+          produto: fonteGrupo,
           doseProdutoKgLabel: '${_fmt(doseProdutoKg, 2)} kg/ha',
           fornecimento: fornecimento,
         ),
@@ -858,15 +939,6 @@ String _mesSeguinte(String mes) {
   return meses[(index + 1) % 12];
 }
 
-List<Map<String, dynamic>> _asListMap(dynamic value) {
-  if (value is List) {
-    return value
-        .whereType<Map>()
-        .map((entry) => entry.map((key, val) => MapEntry(key.toString(), val)))
-        .toList();
-  }
-  return <Map<String, dynamic>>[];
-}
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers privados do arquivo (não exportados)
 // ─────────────────────────────────────────────────────────────────────────────
