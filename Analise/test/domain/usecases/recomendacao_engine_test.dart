@@ -75,18 +75,19 @@ void main() {
     required double prnt,
     double profundidade = 20.0,
     double sc = 1.0,
-  }) => engine.calcularDoseCalcario(
-    metodo: '① Saturação por Bases (V%)',
-    analise: analise,
-    prnt: prnt,
-    profundidade: profundidade,
-    sc: sc,
-    corretivos: {'v2': v2},
-    albrecht: {},
-    caO: 30.0,
-    mgO: 16.0,
-    tabelas: [],
-  );
+  }) =>
+      engine.calcularDoseCalcario(
+        metodo: '① Saturação por Bases (V%)',
+        analise: analise,
+        prnt: prnt,
+        profundidade: profundidade,
+        sc: sc,
+        corretivos: {'v2': v2},
+        albrecht: {},
+        caO: 30.0,
+        mgO: 16.0,
+        tabelas: [],
+      );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Método ① — Saturação por Bases (V%)
@@ -291,17 +292,17 @@ void main() {
 
     test('PRNT maior → dose SMP menor', () {
       double doseSmp(double prnt) => engine.calcularDoseCalcario(
-        metodo: 'SMP fallback',
-        analise: _fancelli,
-        prnt: prnt,
-        profundidade: 20,
-        sc: 1.0,
-        corretivos: {},
-        albrecht: {},
-        caO: 30,
-        mgO: 16,
-        tabelas: [],
-      );
+            metodo: 'SMP fallback',
+            analise: _fancelli,
+            prnt: prnt,
+            profundidade: 20,
+            sc: 1.0,
+            corretivos: {},
+            albrecht: {},
+            caO: 30,
+            mgO: 16,
+            tabelas: [],
+          );
       expect(doseSmp(90), greaterThan(doseSmp(100)));
     });
   });
@@ -415,7 +416,7 @@ void main() {
       expect(res.doseP, closeTo(33.0, 0.01));
     });
 
-    test('eficiência 50% incrementa dose de reposição', () {
+    test('eficiência 50% incrementa apenas reposição (fallback cultura)', () {
       final analiseFosforo = _fancelli.copyWith(argila: 25.0, p: 30.0);
 
       final semAjuste = engine.calcularFosforo(
@@ -424,7 +425,6 @@ void main() {
           'modoReposicao': 'Exportação',
           'ajusteEficienciaSolo': 0.0,
           'referencia': 'IAC Bol.100',
-          'fepBase': 15.0,
         },
         analise: analiseFosforo,
         cultura: 'Milho',
@@ -437,14 +437,17 @@ void main() {
           'modoReposicao': 'Exportação',
           'ajusteEficienciaSolo': 50.0,
           'referencia': 'IAC Bol.100',
-          'fepBase': 15.0,
         },
         analise: analiseFosforo,
         cultura: 'Milho',
         tabelas: [],
       );
 
-      expect(comAjuste.doseP, closeTo(semAjuste.doseP * 1.5, 0.01));
+      expect(
+        comAjuste.replacementAdjustedP2O5,
+        closeTo(semAjuste.replacementBaseP2O5 * 1.5, 0.01),
+      );
+      expect(comAjuste.correctionP2O5, 0);
     });
   });
 

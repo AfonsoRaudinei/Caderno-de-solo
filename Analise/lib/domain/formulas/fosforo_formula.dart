@@ -152,7 +152,11 @@ class FosforoFormula {
     return exportacaoP2O5 / (fepFinal / 100.0);
   }
 
-  /// Modo 2 (extração).
+  /// Modo 2 (extração) — LEGADO.
+  ///
+  /// Desconta o P da análise (mg/dm³) convertido para kg P₂O₅/ha.
+  /// O motor atual ([FosforoCalculoEngine]) usa percentual sobre a demanda total.
+  /// Mantido para compatibilidade de chamadas existentes e testes de divergência.
   static double recomendacaoExtracao({
     required double pSolo,
     required double percentualUsoSolo,
