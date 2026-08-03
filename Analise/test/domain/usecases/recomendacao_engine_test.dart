@@ -75,40 +75,43 @@ void main() {
     required double prnt,
     double profundidade = 20.0,
     double sc = 1.0,
-  }) =>
-      engine.calcularDoseCalcario(
-        metodo: '① Saturação por Bases (V%)',
-        analise: analise,
-        prnt: prnt,
-        profundidade: profundidade,
-        sc: sc,
-        corretivos: {'v2': v2},
-        albrecht: {},
-        caO: 30.0,
-        mgO: 16.0,
-        tabelas: [],
-      );
+  }) => engine.calcularDoseCalcario(
+    metodo: '① Saturação por Bases (V%)',
+    analise: analise,
+    prnt: prnt,
+    profundidade: profundidade,
+    sc: sc,
+    corretivos: {'v2': v2},
+    albrecht: {},
+    caO: 30.0,
+    mgO: 16.0,
+    tabelas: [],
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Método ① — Saturação por Bases (V%)
   // ─────────────────────────────────────────────────────────────────────────
   group('calcularDoseCalcario — ① Saturação por Bases (V%)', () {
-    test('Fancelli Aula 10: vd=70, va=43.7, CTC=6.04, PRNT=80 → ~1.985 t/ha',
-        () {
-      // NC = (70 - 43.7) × 6.04 / 100 = 26.3 × 6.04 / 100 = 1.5885
-      // Dose = 1.5885 / (80/100) = 1.9856 t/ha
-      final dose = doseV(analise: _fancelli, v2: 70, prnt: 80);
-      expect(dose, closeTo(1.985, 0.05));
-    });
+    test(
+      'Fancelli Aula 10: vd=70, va=43.7, CTC=6.04, PRNT=80 → ~1.985 t/ha',
+      () {
+        // NC = (70 - 43.7) × 6.04 / 100 = 26.3 × 6.04 / 100 = 1.5885
+        // Dose = 1.5885 / (80/100) = 1.9856 t/ha
+        final dose = doseV(analise: _fancelli, v2: 70, prnt: 80);
+        expect(dose, closeTo(1.985, 0.05));
+      },
+    );
 
-    test('Solo Cerrado Embrapa: vd=50, va=43.7, CTC=6.04, PRNT=80 → menor dose',
-        () {
-      // V% atual já é 43.7 < 50 → deve haver dose positiva mas menor
-      final dose50 = doseV(analise: _fancelli, v2: 50, prnt: 80);
-      final dose70 = doseV(analise: _fancelli, v2: 70, prnt: 80);
-      expect(dose50, greaterThan(0));
-      expect(dose50, lessThan(dose70));
-    });
+    test(
+      'Solo Cerrado Embrapa: vd=50, va=43.7, CTC=6.04, PRNT=80 → menor dose',
+      () {
+        // V% atual já é 43.7 < 50 → deve haver dose positiva mas menor
+        final dose50 = doseV(analise: _fancelli, v2: 50, prnt: 80);
+        final dose70 = doseV(analise: _fancelli, v2: 70, prnt: 80);
+        expect(dose50, greaterThan(0));
+        expect(dose50, lessThan(dose70));
+      },
+    );
 
     test('V% atual >= V% desejado → dose zero', () {
       // Va=43.7, Vd=40 → sem necessidade de calcário
@@ -265,14 +268,32 @@ void main() {
   // Método fallback — SMP (nenhum ① a ⑦)
   // ─────────────────────────────────────────────────────────────────────────
   group('calcularDoseCalcario — SMP (fallback)', () {
-    test('pH ácido com tabelas vazias retorna > 0 (usa tabela interna SMP)',
-        () {
-      // Sem tabelas → ncBaseSmp=0 → usa tabela interna do metodoSMP
-      // pH=5.2 → ncBase interno = 5.0 t/ha
-      final dose = engine.calcularDoseCalcario(
-        metodo: 'SMP — Sem prefixo numérico',
-        analise: _fancelli, // pH=5.2
-        prnt: 90,
+    test(
+      'pH ácido com tabelas vazias retorna > 0 (usa tabela interna SMP)',
+      () {
+        // Sem tabelas → ncBaseSmp=0 → usa tabela interna do metodoSMP
+        // pH=5.2 → ncBase interno = 5.0 t/ha
+        final dose = engine.calcularDoseCalcario(
+          metodo: 'SMP — Sem prefixo numérico',
+          analise: _fancelli, // pH=5.2
+          prnt: 90,
+          profundidade: 20,
+          sc: 1.0,
+          corretivos: {},
+          albrecht: {},
+          caO: 30,
+          mgO: 16,
+          tabelas: [],
+        );
+        expect(dose, greaterThan(0));
+      },
+    );
+
+    test('PRNT maior → dose SMP menor', () {
+      double doseSmp(double prnt) => engine.calcularDoseCalcario(
+        metodo: 'SMP fallback',
+        analise: _fancelli,
+        prnt: prnt,
         profundidade: 20,
         sc: 1.0,
         corretivos: {},
@@ -281,22 +302,6 @@ void main() {
         mgO: 16,
         tabelas: [],
       );
-      expect(dose, greaterThan(0));
-    });
-
-    test('PRNT maior → dose SMP menor', () {
-      double doseSmp(double prnt) => engine.calcularDoseCalcario(
-            metodo: 'SMP fallback',
-            analise: _fancelli,
-            prnt: prnt,
-            profundidade: 20,
-            sc: 1.0,
-            corretivos: {},
-            albrecht: {},
-            caO: 30,
-            mgO: 16,
-            tabelas: [],
-          );
       expect(doseSmp(90), greaterThan(doseSmp(100)));
     });
   });
@@ -375,10 +380,7 @@ void main() {
   // ─────────────────────────────────────────────────────────────────────────
   group('calcularFosforo', () {
     test('IAC Bol.100, argila <15%, P_Resina atual < NC', () {
-      final analiseFosforo = _fancelli.copyWith(
-        argila: 10.0,
-        p: 8.0,
-      );
+      final analiseFosforo = _fancelli.copyWith(argila: 10.0, p: 8.0);
 
       final res = engine.calcularFosforo(
         fosforo: {
@@ -395,17 +397,13 @@ void main() {
       expect(res.legacyP, isFalse);
     });
 
-    test(
-        'P atual já acima do NC: doseP deve ser igual exportacao (extracao) se legacyP, senao zero ou minimo',
-        () {
-      final analiseFosforo = _fancelli.copyWith(
-        argila: 25.0,
-        p: 30.0, // alto!
-      );
+    test('P atual já acima do NC: legacyP aplica piso de manutenção', () {
+      final analiseFosforo = _fancelli.copyWith(argila: 25.0, p: 30.0);
 
       final res = engine.calcularFosforo(
         fosforo: {
-          'modoCalculo': '① Correção do solo',
+          'correcaoSoloAtiva': true,
+          'modoReposicao': 'Sem reposição',
           'referencia': 'IAC Bol.100',
         },
         analise: analiseFosforo,
@@ -413,10 +411,40 @@ void main() {
         tabelas: [],
       );
 
-      // P > NC -> manutencao
       expect(res.legacyP, isTrue);
-      // Dose de milho exportacao = 110, e exportação manutenção = exportacao * 0.3 = 33.0
       expect(res.doseP, closeTo(33.0, 0.01));
+    });
+
+    test('eficiência 50% incrementa dose de reposição', () {
+      final analiseFosforo = _fancelli.copyWith(argila: 25.0, p: 30.0);
+
+      final semAjuste = engine.calcularFosforo(
+        fosforo: {
+          'correcaoSoloAtiva': false,
+          'modoReposicao': 'Exportação',
+          'ajusteEficienciaSolo': 0.0,
+          'referencia': 'IAC Bol.100',
+          'fepBase': 15.0,
+        },
+        analise: analiseFosforo,
+        cultura: 'Milho',
+        tabelas: [],
+      );
+
+      final comAjuste = engine.calcularFosforo(
+        fosforo: {
+          'correcaoSoloAtiva': false,
+          'modoReposicao': 'Exportação',
+          'ajusteEficienciaSolo': 50.0,
+          'referencia': 'IAC Bol.100',
+          'fepBase': 15.0,
+        },
+        analise: analiseFosforo,
+        cultura: 'Milho',
+        tabelas: [],
+      );
+
+      expect(comAjuste.doseP, closeTo(semAjuste.doseP * 1.5, 0.01));
     });
   });
 
@@ -434,8 +462,8 @@ void main() {
               'teorFonteSolo': 20.0,
               'eficienciaSolo': 100.0,
               'percentualCorrecaoSolo': 100.0,
-            }
-          }
+            },
+          },
         },
         analise: _fancelli.copyWith(zn: 1.0), // defi: 2 - 1 = 1g/dm3 = 200g/ha
       );
@@ -449,11 +477,8 @@ void main() {
       final res = engine.calcularMicros(
         micros: {
           'elementos': {
-            'Zn': {
-              'viaAplicacao': 'Solo (correção)',
-              'ncSolo': 2.0,
-            }
-          }
+            'Zn': {'viaAplicacao': 'Solo (correção)', 'ncSolo': 2.0},
+          },
         },
         analise: _fancelli.copyWith(zn: 3.0),
       );
@@ -484,17 +509,12 @@ void main() {
           'sc': 1.0,
           'gesso': {'usarGesso': false},
         },
-        'fosforo': {
-          'modoCalculo': '① Correção do solo',
-        },
+        'fosforo': {'modoCalculo': '① Correção do solo'},
         'potassio': {
           'modoCalculo': '① Correção do solo',
           'criterioNc': 'Ambos — usar o maior',
         },
-        'micros': {
-          'elementos': {},
-          'grupos': [],
-        },
+        'micros': {'elementos': {}, 'grupos': []},
       },
     );
 
@@ -512,39 +532,44 @@ void main() {
       expect(resultado.avisos, isA<List<String>>());
     });
 
-    test('calcula doses informativas de absorção/exportação quando configuradas',
-        () {
-      final perfilComAbsorcao = perfil.copyWith(
-        produtividadeEsperadaTha: 4.0,
-        parametrosCards: {
-          ...perfil.parametrosCards,
-          'fosforo': {
-            ...Map<String, dynamic>.from(perfil.parametrosCards['fosforo'] as Map),
-            'fosforoTipoFonte': 'Autores',
-            'fosforoFonteNome': 'EMBRAPA',
-            'fosforoModoAbsorcao': 'extracao',
+    test(
+      'calcula doses informativas de absorção/exportação quando configuradas',
+      () {
+        final perfilComAbsorcao = perfil.copyWith(
+          produtividadeEsperadaTha: 4.0,
+          parametrosCards: {
+            ...perfil.parametrosCards,
+            'fosforo': {
+              ...Map<String, dynamic>.from(
+                perfil.parametrosCards['fosforo'] as Map,
+              ),
+              'fosforoTipoFonte': 'Autores',
+              'fosforoFonteNome': 'EMBRAPA',
+              'fosforoModoAbsorcao': 'extracao',
+            },
+            'potassio': {
+              ...Map<String, dynamic>.from(
+                perfil.parametrosCards['potassio'] as Map,
+              ),
+              'potassioTipoFonte': 'Autores',
+              'potassioFonteNome': 'EMBRAPA',
+              'potassioModoAbsorcao': 'exportacao',
+            },
           },
-          'potassio': {
-            ...Map<String, dynamic>.from(
-                perfil.parametrosCards['potassio'] as Map),
-            'potassioTipoFonte': 'Autores',
-            'potassioFonteNome': 'EMBRAPA',
-            'potassioModoAbsorcao': 'exportacao',
-          },
-        },
-      );
+        );
 
-      final resultado = engine.calcular(
-        analise: _fancelli,
-        calibracao: perfilComAbsorcao,
-        tabelas: const [],
-      );
+        final resultado = engine.calcular(
+          analise: _fancelli,
+          calibracao: perfilComAbsorcao,
+          tabelas: const [],
+        );
 
-      expect(resultado.doseAbsorcaoP, isNotNull);
-      expect(resultado.doseAbsorcaoK, isNotNull);
-      expect(resultado.doseAbsorcaoP!, greaterThan(0));
-      expect(resultado.doseAbsorcaoK!, greaterThan(0));
-    });
+        expect(resultado.doseAbsorcaoP, isNotNull);
+        expect(resultado.doseAbsorcaoK, isNotNull);
+        expect(resultado.doseAbsorcaoP!, greaterThan(0));
+        expect(resultado.doseAbsorcaoK!, greaterThan(0));
+      },
+    );
   });
 
   group('helpers de tabelas dinâmicas', () {

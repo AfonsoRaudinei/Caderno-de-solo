@@ -6,32 +6,36 @@ import 'package:soloforte/features/laboratorio/data/repositories/calibracao_repo
 import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecases.dart';
 import 'package:uuid/uuid.dart';
 
-final carregarCalibracoesUsecaseProvider =
-    Provider<CarregarCalibracoesUsecase>((ref) {
-  return CarregarCalibracoesUsecase(ref.read(calibracaoRepositoryProvider));
-});
+final carregarCalibracoesUsecaseProvider = Provider<CarregarCalibracoesUsecase>(
+  (ref) {
+    return CarregarCalibracoesUsecase(ref.read(calibracaoRepositoryProvider));
+  },
+);
 
-final salvarCalibracaoUsecaseProvider =
-    Provider<SalvarCalibracaoUsecase>((ref) {
+final salvarCalibracaoUsecaseProvider = Provider<SalvarCalibracaoUsecase>((
+  ref,
+) {
   return SalvarCalibracaoUsecase(ref.read(calibracaoRepositoryProvider));
 });
 
-final excluirCalibracaoUsecaseProvider =
-    Provider<ExcluirCalibracaoUsecase>((ref) {
+final excluirCalibracaoUsecaseProvider = Provider<ExcluirCalibracaoUsecase>((
+  ref,
+) {
   return ExcluirCalibracaoUsecase(ref.read(calibracaoRepositoryProvider));
 });
 
-final calibracaoUsadaNaRecomendacaoProvider =
-    StateProvider<String?>((ref) => null);
+final calibracaoUsadaNaRecomendacaoProvider = StateProvider<String?>(
+  (ref) => null,
+);
 
 final calibracaoControllerProvider =
     StateNotifierProvider<CalibracaoController, CalibracaoState>((ref) {
-  return CalibracaoController(
-    carregarCalibracoes: ref.read(carregarCalibracoesUsecaseProvider),
-    salvarCalibracao: ref.read(salvarCalibracaoUsecaseProvider),
-    excluirCalibracao: ref.read(excluirCalibracaoUsecaseProvider),
-  )..load();
-});
+      return CalibracaoController(
+        carregarCalibracoes: ref.read(carregarCalibracoesUsecaseProvider),
+        salvarCalibracao: ref.read(salvarCalibracaoUsecaseProvider),
+        excluirCalibracao: ref.read(excluirCalibracaoUsecaseProvider),
+      )..load();
+    });
 
 // A classe CalibracaoState foi movida para calibracao_state.dart e gerenciada pelo Freezed
 
@@ -40,18 +44,18 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     required CarregarCalibracoesUsecase carregarCalibracoes,
     required SalvarCalibracaoUsecase salvarCalibracao,
     required ExcluirCalibracaoUsecase excluirCalibracao,
-  })  : _carregarCalibracoes = carregarCalibracoes,
-        _salvarCalibracao = salvarCalibracao,
-        _excluirCalibracao = excluirCalibracao,
-        super(
-          CalibracaoState(
-            loading: true,
-            saving: false,
-            profiles: const [],
-            selectedProfileId: null,
-            draft: _novoDraft(cultura: 'Soja'),
-          ),
-        );
+  }) : _carregarCalibracoes = carregarCalibracoes,
+       _salvarCalibracao = salvarCalibracao,
+       _excluirCalibracao = excluirCalibracao,
+       super(
+         CalibracaoState(
+           loading: true,
+           saving: false,
+           profiles: const [],
+           selectedProfileId: null,
+           draft: _novoDraft(cultura: 'Soja'),
+         ),
+       );
 
   final CarregarCalibracoesUsecase _carregarCalibracoes;
   final SalvarCalibracaoUsecase _salvarCalibracao;
@@ -267,8 +271,11 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       return false;
     }
 
-    state =
-        state.copyWith(saving: true, errorMessage: null, successMessage: null);
+    state = state.copyWith(
+      saving: true,
+      errorMessage: null,
+      successMessage: null,
+    );
     try {
       final now = DateTime.now();
       final shouldCreate = salvarComoNovo || state.selectedProfileId == null;
@@ -291,10 +298,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       }
       final sorted = _sortByUpdatedDesc(updated);
 
-      await _salvarCalibracao(
-        perfis: sorted,
-        perfilSincronizar: profile,
-      );
+      await _salvarCalibracao(perfis: sorted, perfilSincronizar: profile);
 
       state = state.copyWith(
         saving: false,
@@ -317,8 +321,9 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
 
   Future<bool> duplicarSelecionado() async {
     if (state.selectedProfileId == null) {
-      state =
-          state.copyWith(errorMessage: 'Selecione um perfil para duplicar.');
+      state = state.copyWith(
+        errorMessage: 'Selecione um perfil para duplicar.',
+      );
       return false;
     }
     final base = state.profiles
@@ -335,8 +340,9 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       ),
     );
     state = state.copyWith(
-        selectedProfileId: null,
-        successMessage: 'Perfil duplicado no rascunho.');
+      selectedProfileId: null,
+      successMessage: 'Perfil duplicado no rascunho.',
+    );
     return salvar(salvarComoNovo: true);
   }
 
@@ -349,10 +355,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
 
     try {
       final updated = state.profiles.where((p) => p.id != selectedId).toList();
-      await _excluirCalibracao(
-        perfisRestantes: updated,
-        perfilId: selectedId,
-      );
+      await _excluirCalibracao(perfisRestantes: updated, perfilId: selectedId);
 
       final nextSelected = updated.isNotEmpty ? updated.first : null;
       state = state.copyWith(
@@ -517,12 +520,18 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       'faixaArgila': '21–40%',
       'nc': 30.0,
       'camada': '0–20 cm',
+      'correcaoSoloAtiva': true,
+      'modoReposicao': 'Sem reposição',
+      'ajusteEficienciaSolo': 0.0,
       'modoCalculo': '① Correção do solo',
       'percentualCorrecao': 100.0,
       'fatorSolo': 4.0,
       'cultivar': '',
       'tipoDadoCultivar': 'Exportação',
       'percentualUsoPSolo': 0.0,
+      'fosforoTipoFonte': 'Autores',
+      'fosforoFonteNome': '',
+      'fosforoModoAbsorcao': 'extracao',
       'doseMinimaLegacyP': 30.0,
       'modoAplicacao': 'Sulco',
       'fepBase': 15.0,
@@ -530,7 +539,8 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
   }
 
   static Map<String, dynamic> defaultPotassio({String cultura = 'Soja'}) {
-    final isAlgodao = cultura.toLowerCase() == 'algodão' ||
+    final isAlgodao =
+        cultura.toLowerCase() == 'algodão' ||
         cultura.toLowerCase() == 'algodao';
     return {
       'extrator': 'Resina (IAC)',

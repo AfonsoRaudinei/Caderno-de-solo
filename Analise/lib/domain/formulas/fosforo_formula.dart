@@ -2,10 +2,7 @@ import 'package:soloforte/domain/models/analise_model.dart';
 import 'package:soloforte/domain/formulas/types/fosforo_input.dart';
 
 class LegacyPResultado {
-  const LegacyPResultado({
-    required this.legacyP,
-    required this.doseMinima,
-  });
+  const LegacyPResultado({required this.legacyP, required this.doseMinima});
 
   final bool legacyP;
   final double doseMinima;
@@ -20,7 +17,10 @@ class FosforoFormula {
   }
 
   /// NC para Resina (IAC): 12/20/30/40 mg/dm³.
-  static double nivelCriticoResina(double argilaPercent, {double? overrideValue}) {
+  static double nivelCriticoResina(
+    double argilaPercent, {
+    double? overrideValue,
+  }) {
     if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
@@ -36,7 +36,10 @@ class FosforoFormula {
   }
 
   /// NC para Mehlich-1: 8/12/18/25 mg/dm³.
-  static double nivelCriticoMehlich1(double argilaPercent, {double? overrideValue}) {
+  static double nivelCriticoMehlich1(
+    double argilaPercent, {
+    double? overrideValue,
+  }) {
     if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
     switch (classe) {
@@ -114,15 +117,40 @@ class FosforoFormula {
   /// dose_final = dose_base / (FEP/100)
   static FosforoResult recomendacaoCorrecao(FosforoInput input) {
     final deficit = (input.nc - input.pAtual).clamp(0.0, double.infinity);
-    if (deficit <= 0) return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
+    if (deficit <= 0)
+      return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
 
     final fator = fatorSolo(input.argila);
     final doseBase = deficit * fator * (100.0 / 100.0);
     final fepUsado = fepBase(input.argila);
-    if (fepUsado <= 0) return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
-    return FosforoResult(doseRecomendada: doseBase / (fepUsado / 100.0), formula: input.referencia);
+    if (fepUsado <= 0)
+      return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
+    return FosforoResult(
+      doseRecomendada: doseBase / (fepUsado / 100.0),
+      formula: input.referencia,
+    );
   }
 
+  /// Aplica acréscimo percentual sobre a necessidade base (não divisão por eficiência).
+  ///
+  /// Ex.: base=64,68 · ajuste=50% → 64,68 + (64,68×0,50) = 97,02 kg P₂O₅/ha
+  static double aplicarAjusteEficienciaSolo({
+    required double necessidadeBase,
+    required double ajustePercentual,
+  }) {
+    final ajuste = ajustePercentual.clamp(0.0, 100.0);
+    if (necessidadeBase <= 0 || ajuste <= 0) return necessidadeBase;
+    return necessidadeBase * (1.0 + ajuste / 100.0);
+  }
+
+  /// Modo exportação: repõe P exportado pela colheita (sem desconto de solo).
+  static double recomendacaoExportacao({
+    required double exportacaoP2O5,
+    required double fepFinal,
+  }) {
+    if (exportacaoP2O5 <= 0 || fepFinal <= 0) return 0.0;
+    return exportacaoP2O5 / (fepFinal / 100.0);
+  }
 
   /// Modo 2 (extração).
   static double recomendacaoExtracao({
@@ -173,7 +201,7 @@ class FosforoFormula {
         pAtual: pAtual,
         nc: pCritico,
         referencia: 'Metodo Correcao',
-      )
+      ),
     );
   }
 }
