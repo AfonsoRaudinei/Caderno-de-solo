@@ -1,0 +1,343 @@
+From 51ccda6b98bee92d7031b2335fe0da4dfd028e9d Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Thu, 9 Jul 2026 00:59:38 +0000
+Subject: [PATCH 2/2] chore(release): IPA 116 + scripts de auditoria e release
+ no Mac
+
+- bump pubspec para 1.0.1+116
+- audit_merge_and_export_readonly.sh (read-only)
+- release_ipa_116_mac.sh (abort merge, merge export, build IPA)
+
+Co-authored-by: AfonsoRaudinei <AfonsoRaudinei@users.noreply.github.com>
+---
+ Analise/pubspec.yaml                          |   2 +-
+ .../tool/audit_merge_and_export_readonly.sh   | 171 ++++++++++++++++++
+ Analise/tool/release_ipa_116_mac.sh           | 126 +++++++++++++
+ 3 files changed, 298 insertions(+), 1 deletion(-)
+ create mode 100755 Analise/tool/audit_merge_and_export_readonly.sh
+ create mode 100755 Analise/tool/release_ipa_116_mac.sh
+
+diff --git a/Analise/pubspec.yaml b/Analise/pubspec.yaml
+index da1fb42..c55c97c 100644
+--- a/Analise/pubspec.yaml
++++ b/Analise/pubspec.yaml
+@@ -1,6 +1,6 @@
+ name: soloforte
+ description: App profissional de análise e recomendação de fertilidade de solo.
+-version: 1.0.1+114
++version: 1.0.1+116
+ publish_to: 'none'
+ 
+ environment:
+diff --git a/Analise/tool/audit_merge_and_export_readonly.sh b/Analise/tool/audit_merge_and_export_readonly.sh
+new file mode 100755
+index 0000000..0fc6165
+--- /dev/null
++++ b/Analise/tool/audit_merge_and_export_readonly.sh
+@@ -0,0 +1,171 @@
++#!/usr/bin/env bash
++# Auditoria READ-ONLY: estado de merge + export HTML SoloForte v4.
++# Não altera arquivos, não faz commit, não aborta merge.
++set -u
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++REPO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
++
++pass=0
++fail=0
++warn=0
++
++ok()   { echo "  ✅ $1"; pass=$((pass + 1)); }
++bad()  { echo "  ❌ $1"; fail=$((fail + 1)); }
++note() { echo "  ⚠️  $1"; warn=$((warn + 1)); }
++
++section() {
++  echo
++  echo "== $1 =="
++}
++
++cd "$REPO_ROOT"
++
++section "Git / merge"
++echo "Repo: $REPO_ROOT"
++echo "Branch: $(git branch --show-current 2>/dev/null || echo '?')"
++echo "HEAD: $(git rev-parse --short HEAD 2>/dev/null || echo '?')"
++
++if [[ -f .git/MERGE_HEAD ]]; then
++  merge_commit="$(cat .git/MERGE_HEAD)"
++  note "MERGE_HEAD presente — merge incompleto"
++  echo "     MERGE_HEAD: $merge_commit ($(git log -1 --oneline "$merge_commit" 2>/dev/null || echo 'commit inacessível'))"
++  if [[ -f .git/MERGE_MSG ]]; then
++    echo "     MERGE_MSG:"
++    sed 's/^/       /' .git/MERGE_MSG
++  fi
++else
++  ok "Sem MERGE_HEAD (não há merge pendente)"
++fi
++
++if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
++  note "Rebase em andamento"
++fi
++
++if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
++  changed="$(git status --porcelain | wc -l | tr -d ' ')"
++  note "Worktree com $changed arquivo(s) modificado(s)/não rastreado(s)"
++  echo "     (primeiros 20)"
++  git status --porcelain | head -20 | sed 's/^/       /'
++else
++  ok "Worktree limpa"
++fi
++
++section "Arquivos export HTML (escopo v1)"
++check_file() {
++  local rel="$1"
++  if [[ -f "$REPO_ROOT/$rel" ]]; then ok "$rel"; else bad "$rel ausente"; fi
++}
++
++check_file "Analise/assets/templates/recomendacao_soloforte_v4.html"
++check_file "Analise/lib/domain/export/recomendacao_export_context.dart"
++check_file "Analise/lib/domain/export/recomendacao_html_mapper.dart"
++check_file "Analise/lib/domain/export/disponibilidade_nutrientes_calculator.dart"
++check_file "Analise/lib/features/laboratorio/application/recomendacao_export_context_builder.dart"
++check_file "Analise/lib/features/laboratorio/services/recomendacao_html_renderer.dart"
++check_file "Analise/lib/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart"
++check_file "Analise/lib/features/laboratorio/presentation/providers/recomendacao_export_provider.dart"
++check_file "Analise/test/features/laboratorio/presentation/recomendacao/recomendacao_screen_export_test.dart"
++
++if rg -q "assets/templates/" "$REPO_ROOT/Analise/pubspec.yaml" 2>/dev/null; then
++  ok "pubspec.yaml registra assets/templates/"
++else
++  bad "pubspec.yaml não registra assets/templates/"
++fi
++
++section "Wiring da tela de recomendação"
++SCREEN="$REPO_ROOT/Analise/lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart"
++if [[ ! -f "$SCREEN" ]]; then
++  bad "recomendacao_screen.dart ausente"
++else
++  if rg -q "exportRecomendacaoProvider" "$SCREEN"; then
++    ok "usa exportRecomendacaoProvider"
++  else
++    bad "NÃO usa exportRecomendacaoProvider"
++  fi
++
++  if rg -q "Key\\('btn_exportar_pdf'\\)" "$SCREEN"; then
++    ok "Key btn_exportar_pdf presente"
++  else
++    bad "Key btn_exportar_pdf ausente"
++  fi
++
++  if rg -q "Exportar relatorio" "$SCREEN"; then
++    ok "label Exportar relatorio presente"
++  else
++    bad "label Exportar relatorio ausente"
++  fi
++
++  if rg -q "btn_compartilhar_recomendacao" "$SCREEN"; then
++    bad "ainda referencia btn_compartilhar_recomendacao (legado)"
++  else
++    ok "sem btn_compartilhar_recomendacao"
++  fi
++
++  if rg -q "RecomendacaoHtmlExporter\\(\\)\\.exportar" "$SCREEN"; then
++    bad "chama RecomendacaoHtmlExporter().exportar direto na tela"
++  else
++    ok "tela não chama RecomendacaoHtmlExporter direto"
++  fi
++fi
++
++section "Versão / IPA"
++if [[ -f "$ROOT_DIR/pubspec.yaml" ]]; then
++  version_line="$(grep '^version:' "$ROOT_DIR/pubspec.yaml" | head -1)"
++  echo "  $version_line"
++  build_num="$(echo "$version_line" | sed -n 's/.*+\([0-9][0-9]*\).*/\1/p')"
++  if [[ "$build_num" == "116" ]]; then
++    ok "build number já é 116"
++  else
++    note "build number atual: ${build_num:-?} (IPA alvo: 116)"
++  fi
++fi
++
++section "Flutter (se disponível)"
++if command -v flutter >/dev/null 2>&1; then
++  echo "  $(flutter --version 2>/dev/null | head -1)"
++  cd "$ROOT_DIR"
++  if flutter analyze \
++    lib/domain/export \
++    lib/features/laboratorio/presentation/providers/recomendacao_export_provider.dart \
++    lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart \
++    >/tmp/audit_export_analyze.log 2>&1; then
++    ok "flutter analyze (escopo export)"
++  else
++    bad "flutter analyze falhou — ver /tmp/audit_export_analyze.log"
++  fi
++  if flutter test \
++    test/domain/export \
++    test/features/laboratorio/application/recomendacao_export_context_builder_test.dart \
++    test/features/laboratorio/services/recomendacao_html_renderer_test.dart \
++    test/features/laboratorio/presentation/recomendacao/recomendacao_screen_export_test.dart \
++    >/tmp/audit_export_test.log 2>&1; then
++    ok "flutter test export (7 testes esperados)"
++  else
++    bad "flutter test export falhou — ver /tmp/audit_export_test.log"
++  fi
++else
++  note "flutter não encontrado no PATH — pulando analyze/test"
++fi
++
++section "Veredito"
++if [[ -f .git/MERGE_HEAD ]]; then
++  note "Bloqueio: resolver MERGE_HEAD antes de commit/IPA"
++fi
++
++if [[ "$fail" -eq 0 && ! -f .git/MERGE_HEAD ]]; then
++  echo "  🟢 IMPLEMENTADO — pronto para preparar IPA 116"
++  echo "     Próximo: ./tool/release_ipa_116_mac.sh"
++  exit 0
++elif [[ "$fail" -eq 0 ]]; then
++  echo "  🟡 EXPORT OK — mas merge pendente impede release"
++  echo "     Próximo: ./tool/release_ipa_116_mac.sh --abort-merge-only"
++  exit 2
++else
++  echo "  🔴 PARCIAL — corrigir itens ❌ antes do IPA"
++  echo "     Sugestão: git fetch origin && git merge origin/cursor/export-wiring-theme-6ab3"
++  exit 1
++fi
++
++echo
++echo "Resumo: ✅ $pass  ❌ $fail  ⚠️ $warn"
+diff --git a/Analise/tool/release_ipa_116_mac.sh b/Analise/tool/release_ipa_116_mac.sh
+new file mode 100755
+index 0000000..82368e7
+--- /dev/null
++++ b/Analise/tool/release_ipa_116_mac.sh
+@@ -0,0 +1,126 @@
++#!/usr/bin/env bash
++# MacBook: limpa merge pendente (com backup), valida export HTML e gera IPA build 116.
++#
++# Uso:
++#   ./tool/audit_merge_and_export_readonly.sh   # só leitura (obrigatório antes)
++#   ./tool/release_ipa_116_mac.sh               # fluxo completo
++#   ./tool/release_ipa_116_mac.sh --abort-merge-only
++#   ./tool/release_ipa_116_mac.sh --skip-merge   # worktree já limpa e export mergeado
++#
++set -euo pipefail
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++REPO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
++TARGET_BUILD=116
++EXPORT_BRANCH="${EXPORT_BRANCH:-cursor/export-wiring-theme-6ab3}"
++RELEASE_BRANCH="${RELEASE_BRANCH:-cursor/release-ipa-116-6ab3}"
++
++MODE="full"
++for arg in "$@"; do
++  case "$arg" in
++    --abort-merge-only) MODE="abort-only" ;;
++    --skip-merge) MODE="skip-merge" ;;
++    -h|--help)
++      sed -n '2,12p' "$0"
++      exit 0
++      ;;
++    *)
++      echo "Argumento desconhecido: $arg"
++      exit 1
++      ;;
++  esac
++done
++
++cd "$REPO_ROOT"
++
++echo "== Release IPA $TARGET_BUILD =="
++echo "Repo: $REPO_ROOT"
++echo "Modo: $MODE"
++
++if [[ "$MODE" != "abort-only" ]]; then
++  echo
++  echo "== 1/5 Auditoria read-only =="
++  if ! "$ROOT_DIR/tool/audit_merge_and_export_readonly.sh"; then
++    audit_code=$?
++    if [[ "$audit_code" -eq 2 && -f .git/MERGE_HEAD ]]; then
++      echo "Auditoria: export OK, merge pendente — continuando limpeza..."
++    else
++      echo "Auditoria falhou. Corrija antes do IPA."
++      exit "$audit_code"
++    fi
++  fi
++fi
++
++echo
++echo "== 2/5 Backup do trabalho local =="
++STASH_NAME="wip-pre-ipa116-$(date +%Y%m%d-%H%M%S)"
++if [[ -n "$(git status --porcelain)" ]]; then
++  echo "Salvando stash: $STASH_NAME"
++  git stash push -u -m "$STASH_NAME"
++  echo "Stash criado. Recuperar depois: git stash list | rg ipa116"
++else
++  echo "Worktree limpa — stash não necessário."
++fi
++
++if [[ -f .git/MERGE_HEAD ]]; then
++  echo
++  echo "== 3/5 Abortando merge pendente =="
++  git merge --abort || git reset --merge
++  echo "MERGE_HEAD removido."
++else
++  echo
++  echo "== 3/5 Sem merge pendente =="
++fi
++
++if [[ "$MODE" == "abort-only" ]]; then
++  echo
++  echo "Concluído (--abort-merge-only)."
++  echo "Stash (se criado): git stash list"
++  echo "Reaplicar trabalho: git stash pop"
++  exit 0
++fi
++
++if [[ "$MODE" != "skip-merge" ]]; then
++  echo
++  echo "== 4/5 Trazendo export HTML + build $TARGET_BUILD =="
++  git fetch origin
++  if git show-ref --verify --quiet "refs/remotes/origin/$RELEASE_BRANCH"; then
++    echo "Merge origin/$RELEASE_BRANCH"
++    git merge "origin/$RELEASE_BRANCH" --no-edit
++  elif git show-ref --verify --quiet "refs/remotes/origin/$EXPORT_BRANCH"; then
++    echo "Merge origin/$EXPORT_BRANCH"
++    git merge "origin/$EXPORT_BRANCH" --no-edit
++  else
++    echo "Branch remota não encontrada: $EXPORT_BRANCH nem $RELEASE_BRANCH"
++    exit 1
++  fi
++else
++  echo
++  echo "== 4/5 Pulando merge (--skip-merge) =="
++fi
++
++cd "$ROOT_DIR"
++
++current_build="$(grep '^version:' pubspec.yaml | sed -n 's/.*+\([0-9]*\).*/\1/p')"
++if [[ "$current_build" != "$TARGET_BUILD" ]]; then
++  version_name="$(grep '^version:' pubspec.yaml | sed -n 's/version:[[:space:]]*\([^+]*\)+.*/\1/p')"
++  echo "Ajustando pubspec: ${version_name}+${current_build} -> ${version_name}+${TARGET_BUILD}"
++  sed -i.bak "s/^version: .*/version: ${version_name}+${TARGET_BUILD}/" pubspec.yaml
++  rm -f pubspec.yaml.bak
++  cd "$REPO_ROOT"
++  git add Analise/pubspec.yaml
++  git commit -m "chore(release): bump build number to ${TARGET_BUILD} para IPA"
++  cd "$ROOT_DIR"
++fi
++
++echo
++echo "== 5/5 Release gate + IPA =="
++chmod +x build_ios.sh
++./build_ios.sh "$TARGET_BUILD"
++
++echo
++echo "✅ IPA build $TARGET_BUILD concluída."
++echo "Arquivo esperado: build/ios/ipa/*.ipa"
++echo
++echo "Stash local (se criado): git -C \"$REPO_ROOT\" stash list"
++echo "Reaplicar tema/WIP:      git -C \"$REPO_ROOT\" stash pop"
+-- 
+2.43.0
+

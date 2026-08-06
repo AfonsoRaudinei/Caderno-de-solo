@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:soloforte/domain/exceptions/permission_denied_exception.dart';
 import 'package:soloforte/features/analise/data/datasources/analise_datasource.dart';
 import 'package:soloforte/features/analise/data/models/analise_solo_model.dart';
 import 'package:soloforte/features/analise/data/models/produtor_model.dart';
@@ -31,6 +32,10 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
     try {
       data['createdAt'] = FieldValue.serverTimestamp();
       await _collection.add(data);
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao adicionar análise', e);
+    } on PermissionDeniedException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao adicionar análise: $e');
     }
@@ -40,6 +45,10 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
     try {
       data['updatedAt'] = FieldValue.serverTimestamp();
       await _collection.doc(id).update(data);
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao atualizar análise', e);
+    } on PermissionDeniedException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao atualizar análise: $e');
     }
@@ -49,6 +58,10 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
   Future<void> deleteAnalise(String id) async {
     try {
       await _collection.doc(id).delete();
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao deletar análise', e);
+    } on PermissionDeniedException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao deletar análise: $e');
     }
@@ -63,6 +76,10 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
       final querySnapshot =
           await _collection.where('userId', isEqualTo: uid).get();
       return _toCommittedAnalises(querySnapshot.docs);
+    } on FirebaseException catch (e) {
+      _rethrowMapped('Erro ao listar análises', e);
+    } on PermissionDeniedException {
+      rethrow;
     } catch (e) {
       throw Exception('Erro ao listar análises: $e');
     }
@@ -70,14 +87,73 @@ class AnaliseFirestoreDatasource implements AnaliseDataSource {
 
   @override
   Stream<List<AnaliseSoloModel>> watchAnalises({required String userId}) {
-    return _collection
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) => _toCommittedAnalises(snapshot.docs))
-        .handleError((Object error, StackTrace stackTrace) {
-          debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
-          throw error;
-        });
+    late final StreamController<List<AnaliseSoloModel>> controller;
+    StreamSubscription<User?>? authSub;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? querySub;
+    var bindSeq = 0;
+
+    Future<void> bindUser(User? user) async {
+      final seq = ++bindSeq;
+      await querySub?.cancel();
+      querySub = null;
+
+      if (seq != bindSeq) return;
+
+      if (user == null || user.uid != userId) {
+        if (!controller.isClosed) {
+          controller.add(const <AnaliseSoloModel>[]);
+        }
+        return;
+      }
+
+      if (seq != bindSeq) return;
+
+      querySub = _collection
+          .where('userId', isEqualTo: userId)
+          .snapshots()
+          .listen((snapshot) {
+        if (seq != bindSeq || controller.isClosed) return;
+        controller.add(_toCommittedAnalises(snapshot.docs));
+      }, onError: (Object error) {
+        if (seq != bindSeq || controller.isClosed) return;
+        controller.addError(error);
+      });
+    }
+
+    controller = StreamController<List<AnaliseSoloModel>>(
+      onListen: () {
+        bindUser(_auth.currentUser);
+        authSub = _auth.authStateChanges().listen(
+              bindUser,
+              onError: controller.addError,
+            );
+      },
+      onCancel: () async {
+        await querySub?.cancel();
+        await authSub?.cancel();
+      },
+    );
+
+    return controller.stream.handleError((Object error, StackTrace stackTrace) {
+      debugPrint('AnaliseFirestoreDatasource erro Firestore: $error');
+      if (error is FirebaseException &&
+          (error.code == 'permission-denied' ||
+              error.code == 'missing-or-insufficient-permissions')) {
+        throw const PermissionDeniedException();
+      }
+      if (error is PermissionDeniedException) {
+        throw error;
+      }
+      throw Exception('Erro no stream de análises: $error');
+    });
+  }
+
+  Never _rethrowMapped(String operation, FirebaseException error) {
+    if (error.code == 'permission-denied' ||
+        error.code == 'missing-or-insufficient-permissions') {
+      throw const PermissionDeniedException();
+    }
+    throw Exception('$operation: $error');
   }
 
   List<AnaliseSoloModel> _toCommittedAnalises(

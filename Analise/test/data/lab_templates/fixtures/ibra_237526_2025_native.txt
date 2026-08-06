@@ -1,0 +1,879 @@
+Rogerio de Paiva Moura
+Fazenda Estrela  Dois Irmãos do Tocantins TO
+Solo.
+Proprietário:
+Propridade:
+Material:
+CONSULTA DE RESULTADOS
+O.S.: 237526 - Emissão: 21/08/2025
+Início do Ensaio: 19/08/2025 - Final do Ensaio: 21/08/2025
+Agrofarm - Produtos Agroquimicos Ltda.
+R 7 A, 218 Quadra 02 Lote 08
+Trevo Oeste
+77433-100 - Gurupi - TO
+257056
+257057
+257058
+257059
+257060
+257061
+257062
+257063
+Talhão: LT-01; Prof.: 0 a 20 cm
+Talhão: LT-02; Prof.: 0 a 20 cm
+Talhão: LT-3A; Prof.: 0 a 20 cm
+Talhão: LT-3B; Prof.: 0 a 20 cm
+Talhão: LT-4A; Prof.: 0 a 20 cm
+Talhão: LT-4B; Prof.: 0 a 20 cm
+Talhão: LT-5A; Prof.: 0 a 20 cm
+Talhão: LT-5B; Prof.: 0 a 20 cm
+Nº LAB
+IDENTIFICAÇÃO DA AMOSTRA (Informações fornecidas pelo cliente)
+DETERMINAÇÕES
+P
+P Rem
+M.O.
+COT
+pH
+pH
+K
+Ca
+Mg
+Na
+H° + Al ³
+Al ³
+H°
+C.T.C.
+S.B.
+V%
+m%
+S
+B
+Cu
+Fe
+Mn
+Zn
+K na CTC
+Ca na CTC
+Mg na CTC
+Na na CTC
+Al na CTC
+H na CTC
+Ca/K
+Ca/Mg
+Mg/K
+Argila
+Silte
+Areia Total
+Fósforo (Resina)
+Fósforo Remanescente
+Matéria Orgânica
+Carbono Orgânico Total
+pH (CaCl2)
+pH (SMP)
+Potássio 
+Cálcio
+Magnésio
+Sódio (Mehlich)
+Acidez Total
+Alumínio Trocável
+Hidrogênio
+Capac. de troca de cátions
+Soma de bases
+Saturação por bases
+Saturação por Al
+Enxofre (Fosfato de Cálcio)
+Boro
+Cobre (DTPA)
+Ferro (DTPA)
+Manganês (DTPA)
+Zinco (DTPA)
+% de Potássio na CTC
+% de Cálcio na CTC
+% de Magnésio na CTC
+% de Sódio na C.T.C.
+% de Alumínio na CTC
+% de Hidrogênio na CTC
+Relação Ca/K
+Relação Ca/Mg
+Relação Mg/K
+Argila
+Silte
+Areia Total
+mg/dm³
+mg/dm³
+g/dm³
+g/dm³
+-
+-
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+%
+%
+mg/dm³
+mg/dm³
+mg/dm³
+mg/dm³
+mg/dm³
+mg/dm³
+%
+%
+%
+%
+%
+%
+-
+-
+-
+g/kg
+g/kg
+g/kg
+IAC
+IAC
+IAC
+IAC
+IAC
+IAC
+IAC
+IAC
+Embrapa
+IAC
+IAC
+Cálculo
+Embrapa
+Cálculo
+Embrapa
+Embrapa
+IAC
+ME SOLO 03
+IAC
+IAC
+IAC
+IAC
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Método da Pipeta
+Método da Pipeta
+Método da Pipeta
+257056
+18
+37,58
+22
+13
+5,8
+6,79
+0,8
+29
+12
+0,1
+18
+0
+18
+59,9
+41,9
+70
+0
+3
+0,4
+0,4
+20
+0,6
+0,5
+1,3
+48,4
+20
+0,2
+0
+30,1
+36,3
+2,4
+15
+98
+74
+828
+257057
+19
+33,25
+32
+19
+5,4
+6,26
+1,3
+28
+10
+0,1
+32
+0
+32
+71,4
+39,4
+55
+0
+3
+0,64
+0,5
+23
+5
+0,8
+1,8
+39,2
+14
+0,1
+0
+44,8
+21,5
+2,8
+7,7
+123
+96
+781
+257058
+16
+38,23
+32
+19
+5,6
+6,7
+1,7
+30
+14
+0,1
+20
+0
+20
+65,8
+45,8
+70
+0
+3
+0,46
+0,3
+18
+3,8
+1,5
+2,6
+45,6
+21,3
+0,2
+0
+30,4
+17,6
+2,1
+8,2
+167
+66
+767
+257059
+16
+30,93
+28
+16
+5,1
+6,09
+2,2
+21
+12
+0,1
+38
+0
+38
+73,3
+35,3
+48
+0
+3
+0,46
+0,3
+33
+1,8
+0,6
+3
+28,6
+16,4
+0,1
+0
+51,8
+9,5
+1,8
+5,5
+126
+68
+806
+257060
+23
+41,72
+23
+13
+5,6
+6,75
+0,8
+26
+15
+0
+19
+0
+19
+60,8
+41,8
+69
+0
+4
+0,46
+0,3
+27
+0,6
+0,6
+1,3
+42,8
+24,7
+0
+0
+31,3
+32,5
+1,7
+18,8
+90
+76
+834
+257061
+16
+43,53
+35
+20
+5,9
+6,82
+0,9
+35
+21
+0
+18
+0
+18
+74,9
+56,9
+76
+0
+3
+0,37
+0,2
+26
+1,6
+0,6
+1,2
+46,7
+28
+0
+0
+24
+38,9
+1,7
+23,3
+116
+90
+794
+257062
+33
+35,9
+21
+12
+5,3
+6,44
+1,3
+18
+10
+0
+27
+0
+27
+56,3
+29,3
+52
+0
+4
+0,29
+0,2
+27
+1,2
+0,6
+2,3
+32
+17,8
+0
+0
+48
+13,8
+1,8
+7,7
+93
+77
+830
+257063
+33
+38,89
+24
+14
+5,5
+6,49
+1,1
+26
+12
+0
+25
+0
+25
+64,1
+39,1
+61
+0
+2
+0,42
+0,3
+19
+1
+1
+1,7
+40,6
+18,7
+0
+0
+39
+23,6
+2,2
+10,9
+127
+72
+801
+Página 1 de 2
+METODOLOGIA
+AMOSTRAS
+ESTE(S) RESULTADO(S) REFERE(M)-SE SOMENTE AO(S) ITEM(S) ENSAIADO(S).
+ESTE RELATÓRIO DE ENSAIO SOMENTE PODE SER REPRODUZIDO NA SUA TOTALIDADE E SEM ALTERAÇÕES. A REPRODUÇÃO PARCIAL REQUER APROVAÇÃO ESCRITA DO LABORATÓRIO. 
+ IAC - Análise Química para Avaliação da Fertilidade de Solos Tropicais, Instituto Agronômico de Campinas, 2001;
+ IAC - MP SOLO 01 - Manual de Procedimentos do Laboratório de Solo;
+ Embrapa - EMBRAPA - Manual de Análises Químicas de Solos, Plantas e Fertilizantes, 2ª edição, 2009.;
+ Cálculo - MP SOLO 01 - Manual de Procedimentos do Laboratório de Solo;
+ Embrapa - Manual de Métodos de Análise de Solos, Centro Nacional de Pesquisa de Solos, Embrapa, 2ª edição, 1997;
+ ME SOLO 03 - ME SOLO 03 - Determinação de Boro em Solo;
+ Método da Pipeta - MP SOLO 01 - Manual de Procedimentos do Laboratório de Solo;
+Referências:
+INSTITUTO BRASILEIRO DE ANÁLISES
+Químico Carlos Eduardo Prieto
+Gerente Técnico
+CRQ 04261966
+LABORATÓRIO SEDE: Rua Ipê Branco, 214 - Cond. Empresarial Veccon Zeta - 13178-541 - Sumaré/SP.  PABX +55 19 3832.3679 . laboratorio@ibra.com.br . www.ibra.com.br
+
+Rogerio de Paiva Moura
+Fazenda Estrela  Dois Irmãos do Tocantins TO
+Solo.
+Proprietário:
+Propridade:
+Material:
+CONSULTA DE RESULTADOS
+O.S.: 237526 - Emissão: 21/08/2025
+Início do Ensaio: 19/08/2025 - Final do Ensaio: 21/08/2025
+Agrofarm - Produtos Agroquimicos Ltda.
+R 7 A, 218 Quadra 02 Lote 08
+Trevo Oeste
+77433-100 - Gurupi - TO
+257064
+257065
+257066
+257067
+257068
+257069
+Talhão: LT-5B; Prof.: 20 a 40 cm
+Talhão: LT-6A; Prof.: 0 a 20 cm
+Talhão: LT-6B; Prof.: 0 a 20 cm
+Talhão: 6 Bico; Prof.: 0 a 20 cm
+Talhão: 07; Prof.: 0 a 20 cm
+Talhão: 08; Prof.: 0 a 20 cm
+Nº LAB
+IDENTIFICAÇÃO DA AMOSTRA (Informações fornecidas pelo cliente)
+DETERMINAÇÕES
+P
+P Rem
+M.O.
+COT
+pH
+pH
+K
+Ca
+Mg
+Na
+H° + Al ³
+Al ³
+H°
+C.T.C.
+S.B.
+V%
+m%
+S
+B
+Cu
+Fe
+Mn
+Zn
+K na CTC
+Ca na CTC
+Mg na CTC
+Na na CTC
+Al na CTC
+H na CTC
+Ca/K
+Ca/Mg
+Mg/K
+Argila
+Silte
+Areia Total
+Fósforo (Resina)
+Fósforo Remanescente
+Matéria Orgânica
+Carbono Orgânico Total
+pH (CaCl2)
+pH (SMP)
+Potássio 
+Cálcio
+Magnésio
+Sódio (Mehlich)
+Acidez Total
+Alumínio Trocável
+Hidrogênio
+Capac. de troca de cátions
+Soma de bases
+Saturação por bases
+Saturação por Al
+Enxofre (Fosfato de Cálcio)
+Boro
+Cobre (DTPA)
+Ferro (DTPA)
+Manganês (DTPA)
+Zinco (DTPA)
+% de Potássio na CTC
+% de Cálcio na CTC
+% de Magnésio na CTC
+% de Sódio na C.T.C.
+% de Alumínio na CTC
+% de Hidrogênio na CTC
+Relação Ca/K
+Relação Ca/Mg
+Relação Mg/K
+Argila
+Silte
+Areia Total
+mg/dm³
+mg/dm³
+g/dm³
+g/dm³
+-
+-
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+mmolc/dm³
+%
+%
+mg/dm³
+mg/dm³
+mg/dm³
+mg/dm³
+mg/dm³
+mg/dm³
+%
+%
+%
+%
+%
+%
+-
+-
+-
+g/kg
+g/kg
+g/kg
+IAC
+IAC
+IAC
+IAC
+IAC
+IAC
+IAC
+IAC
+Embrapa
+IAC
+IAC
+Cálculo
+Embrapa
+Cálculo
+Embrapa
+Embrapa
+IAC
+ME SOLO 03
+IAC
+IAC
+IAC
+IAC
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Cálculo
+Método da Pipeta
+Método da Pipeta
+Método da Pipeta
+257064
+12
+35,9
+19
+11
+5,1
+6,33
+0,8
+16
+7
+0
+30
+0
+30
+53,8
+23,8
+44
+0
+3
+0,28
+0,2
+27
+1,2
+0,5
+1,5
+29,7
+13
+0
+0
+55,8
+20
+2,3
+8,8
+117
+83
+800
+257065
+21
+32,02
+26
+15
+5
+6,13
+1
+20
+8
+0
+37
+0
+37
+66
+29
+44
+0
+3
+0,5
+0,2
+20
+0,8
+0,7
+1,5
+30,3
+12,1
+0
+0
+56,1
+20
+2,5
+8
+182
+55
+763
+257066
+12
+37,18
+24
+14
+5,4
+6,53
+0,5
+19
+6
+0
+24
+0
+24
+49,5
+25,5
+52
+0
+4
+0,32
+0,1
+18
+0,6
+0,6
+1
+38,4
+12,1
+0
+0
+48,5
+38
+3,2
+12
+103
+100
+797
+257067
+11
+7,3
+67
+39
+4,7
+5,23
+1,2
+25
+8
+0,1
+95
+3
+92
+129,3
+34,3
+27
+8,04
+3
+1,24
+0,3
+19
+0,4
+0,4
+0,9
+19,3
+6,2
+0,1
+2,3
+71,2
+20,8
+3,1
+6,7
+267
+94
+639
+257068
+13
+37,31
+29
+17
+5,6
+6,72
+1,3
+25
+11
+0
+20
+0
+20
+57,3
+37,3
+65
+0
+4
+0,41
+0,2
+20
+0,6
+0,4
+2,3
+43,6
+19,2
+0
+0
+34,9
+19,2
+2,3
+8,5
+141
+21
+838
+257069
+17
+29,85
+49
+28
+5,3
+6,11
+2,6
+58
+32
+0,1
+38
+0
+38
+130,7
+92,7
+71
+0
+4
+0,95
+0,3
+37
+9
+0,8
+2
+44,4
+24,5
+0,1
+0
+29,1
+22,3
+1,8
+12,3
+168
+123
+709
+Página 2 de 2
+METODOLOGIA
+AMOSTRAS
+ESTE(S) RESULTADO(S) REFERE(M)-SE SOMENTE AO(S) ITEM(S) ENSAIADO(S).
+ESTE RELATÓRIO DE ENSAIO SOMENTE PODE SER REPRODUZIDO NA SUA TOTALIDADE E SEM ALTERAÇÕES. A REPRODUÇÃO PARCIAL REQUER APROVAÇÃO ESCRITA DO LABORATÓRIO. 
+ IAC - Análise Química para Avaliação da Fertilidade de Solos Tropicais, Instituto Agronômico de Campinas, 2001;
+ IAC - MP SOLO 01 - Manual de Procedimentos do Laboratório de Solo;
+ Embrapa - EMBRAPA - Manual de Análises Químicas de Solos, Plantas e Fertilizantes, 2ª edição, 2009.;
+ Cálculo - MP SOLO 01 - Manual de Procedimentos do Laboratório de Solo;
+ Embrapa - Manual de Métodos de Análise de Solos, Centro Nacional de Pesquisa de Solos, Embrapa, 2ª edição, 1997;
+ ME SOLO 03 - ME SOLO 03 - Determinação de Boro em Solo;
+ Método da Pipeta - MP SOLO 01 - Manual de Procedimentos do Laboratório de Solo;
+Referências:
+INSTITUTO BRASILEIRO DE ANÁLISES
+Químico Carlos Eduardo Prieto
+Gerente Técnico
+CRQ 04261966
+LABORATÓRIO SEDE: Rua Ipê Branco, 214 - Cond. Empresarial Veccon Zeta - 13178-541 - Sumaré/SP.  PABX +55 19 3832.3679 . laboratorio@ibra.com.br . www.ibra.com.br

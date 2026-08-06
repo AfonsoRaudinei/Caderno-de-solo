@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 
-const _minTotalPdfs = 20;
+const _minTotalPdfs = 25;
 const _minByLab = 5;
 const _globalSuccessTarget = 0.95;
 const _labSuccessTarget = 0.90;
@@ -14,6 +14,7 @@ const _supportedLabs = <String>{
   'exata_brasil',
   'ibra',
   'mb',
+  'solum',
 };
 
 const _requiredColumns = <String>{
@@ -59,7 +60,7 @@ class _LabStats {
 
 void main() {
   test('ground truth local: aceite P0 com 20+ PDFs reais e 95%+ de sucesso',
-      () async {
+      skip: !const bool.fromEnvironment('RUN_LOCAL_GROUND_TRUTH'), () async {
     final csv = File(
       '/Users/raudineisilvapereira/dev/Caderno de Solo/Analise/docs/importacao/ground_truth_lote_local.csv',
     );
@@ -391,7 +392,12 @@ double _essentialCoverage(
 }) {
   final requiredFields = switch (labId) {
     'ibra' => const {'phCaCl2', 'pResina', 'k', 'ca', 'mg'},
-    'sellar' || 'exata_brasil' || 'mb' => const {'phCaCl2', 'k', 'ca', 'mg'},
+    'sellar' || 'exata_brasil' || 'mb' || 'solum' => const {
+        'phCaCl2',
+        'k',
+        'ca',
+        'mg'
+      },
     _ => const {'phCaCl2', 'k'},
   };
 

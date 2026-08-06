@@ -2,9 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
-import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/domain/entities/lab_template.dart';
 import 'package:soloforte/features/config/presentation/controllers/lab_template_controller.dart';
 import 'package:uuid/uuid.dart';
@@ -118,20 +120,9 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
         : 'Novo Template';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
-        title: Text(
-          titulo,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1D1D1F),
-          ),
-        ),
-        backgroundColor: const Color(0xFFF5F5F7),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.primary,
+        title: Text(titulo),
       ),
       body: Form(
         key: _formKey,
@@ -140,13 +131,12 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Aviso para templates padrão
               if (_isDefault) _AvisoReadOnly(),
-
-              // Seção 1 — Identificação
               const _SectionHeader(titulo: 'IDENTIFICAÇÃO'),
               const SizedBox(height: 8),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -190,13 +180,12 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Seção 2 — Unidades (Opção A — dropdown único)
               const _SectionHeader(titulo: 'UNIDADES PADRÃO'),
               const SizedBox(height: 8),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -247,10 +236,7 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Seção 3 — Derivados calculados
               const _SectionHeader(titulo: 'DERIVADOS CALCULADOS'),
               const SizedBox(height: 4),
               const Text(
@@ -261,7 +247,9 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Column(
                   children: [
                     _ToggleRow(
@@ -311,13 +299,12 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // pH
               const _SectionHeader(titulo: 'pH'),
               const SizedBox(height: 8),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Column(
                   children: [
                     _ToggleRow(
@@ -336,13 +323,12 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Micronutrientes
               const _SectionHeader(titulo: 'MICRONUTRIENTES'),
               const SizedBox(height: 8),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Column(
                   children: [
                     _ToggleRow(
@@ -385,13 +371,12 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Campos especiais
               const _SectionHeader(titulo: 'CAMPOS ESPECIAIS'),
               const SizedBox(height: 8),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Column(
                   children: [
                     _ToggleRow(
@@ -459,13 +444,12 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Layout do laudo
               const _SectionHeader(titulo: 'LAYOUT DO LAUDO'),
               const SizedBox(height: 8),
-              AppCard(
+              AppSurface(
+                showShadow: false,
+                showBorder: true,
                 child: Column(
                   children: [
                     _ToggleRow(
@@ -496,13 +480,13 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
                   ],
                 ),
               ),
-
-              // Status (só para templates custom)
               if (!_isDefault) ...[
                 const SizedBox(height: 16),
                 const _SectionHeader(titulo: 'STATUS'),
                 const SizedBox(height: 8),
-                AppCard(
+                AppSurface(
+                  showShadow: false,
+                  showBorder: true,
                   child: _ToggleRow(
                     label: 'Template ativo',
                     subtitle: 'Templates inativos não são detectados no upload',
@@ -516,8 +500,6 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
           ),
         ),
       ),
-
-      // Botão salvar (apenas para templates custom)
       bottomNavigationBar: _isDefault
           ? null
           : Container(
@@ -535,6 +517,7 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
               child: SafeArea(
                 child: AppButton(
                   label: _isEditing ? 'Salvar Alterações' : 'Criar Template',
+                  icon: Icons.check_rounded,
                   onPressed: _salvando ? null : _salvar,
                   isLoading: _salvando,
                 ),
@@ -616,8 +599,6 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
   }
 }
 
-// ── Widgets auxiliares ─────────────────────────────────────────────
-
 class _SectionHeader extends StatelessWidget {
   final String titulo;
   const _SectionHeader({required this.titulo});
@@ -627,11 +608,9 @@ class _SectionHeader extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 0),
         child: Text(
           titulo,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-            color: Color(0xFF86868B),
+          style: AppTextStyles.sectionLabel.copyWith(
+            color: AppColors.textSecond,
+            fontWeight: FontWeight.w700,
           ),
         ),
       );
@@ -639,23 +618,31 @@ class _SectionHeader extends StatelessWidget {
 
 class _AvisoReadOnly extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF3CD),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFFFE082)),
-        ),
-        child: const Row(
+  Widget build(BuildContext context) => AppSurface(
+        margin: const EdgeInsets.only(bottom: AppDimens.lg),
+        padding: const EdgeInsets.all(AppDimens.md),
+        showShadow: false,
+        showBorder: true,
+        color: const Color(0xFFFFFBEB),
+        borderRadius: AppDimens.radiusLg,
+        child: Row(
           children: [
-            Icon(CupertinoIcons.lock, color: Color(0xFF856404), size: 15),
-            SizedBox(width: 8),
+            const AppIconFrame(
+              icon: CupertinoIcons.lock,
+              size: 32,
+              iconSize: 16,
+              iconColor: AppColors.warning,
+              backgroundColor: Color(0x1AD97706),
+            ),
+            const SizedBox(width: AppDimens.sm),
             Expanded(
               child: Text(
                 'Template padrão — apenas visualização. '
                 'Crie um template personalizado para customizar.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF856404)),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecond,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -678,16 +665,15 @@ class _DropdownRow<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppDimens.md),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1D1D1F),
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -696,12 +682,12 @@ class _DropdownRow<T> extends StatelessWidget {
               items: items,
               onChanged: onChanged,
               underline: const SizedBox(),
-              style: TextStyle(
-                fontSize: 14,
+              borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+              style: AppTextStyles.label.copyWith(
                 color: onChanged == null
-                    ? const Color(0xFF86868B)
-                    : const Color(0xFF007AFF),
-                fontWeight: FontWeight.w500,
+                    ? AppColors.textSecond
+                    : AppColors.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -726,7 +712,10 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.lg,
+          vertical: AppDimens.md,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -735,19 +724,17 @@ class _ToggleRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF1D1D1F),
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppDimens.xs),
                     Text(
                       subtitle!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF86868B),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecond,
                       ),
                     ),
                   ],
@@ -757,7 +744,7 @@ class _ToggleRow extends StatelessWidget {
             CupertinoSwitch(
               value: value,
               onChanged: enabled ? onChanged : null,
-              activeTrackColor: const Color(0xFF007AFF),
+              activeTrackColor: AppColors.primary,
             ),
           ],
         ),
@@ -768,8 +755,8 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Divider(
         height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: Color(0xFFE5E5EA),
+        indent: AppDimens.lg,
+        endIndent: AppDimens.lg,
+        color: AppColors.borderSoft,
       );
 }

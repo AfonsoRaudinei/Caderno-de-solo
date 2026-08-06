@@ -9,6 +9,7 @@ void main() {
   test('telemetria remota fica desativada sem endpoint explícito', () {
     expect(AppConfig.analiseTelemetryEndpoint, isEmpty);
     expect(AppConfig.hasAnaliseTelemetryEndpoint, isFalse);
+    expect(AppConfig.allowRemoteAnaliseTelemetry, isFalse);
     expect(AppConfig.enableAnaliseTelemetryInDebug, isFalse);
   });
 }

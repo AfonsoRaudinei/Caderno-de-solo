@@ -48,6 +48,7 @@ class SolumImportService {
     final mgMmolc = toDouble(raw('mg_mmolc'));
     final alMmolc = toDouble(raw('al_mmolc'));
     final halMmolc = toDouble(raw('hMaisAl_mmolc'));
+    final hMmolc = toDouble(raw('h_mmolc'));
     final ctcMmolc = toDouble(raw('ctc_mmolc'));
     final sbMmolc = toDouble(raw('sb_mmolc'));
     final kCmolc = kMmolc != null ? kMmolc / 10.0 : null;
@@ -55,6 +56,7 @@ class SolumImportService {
     final mgCmolc = mgMmolc != null ? mgMmolc / 10.0 : null;
     final alCmolc = alMmolc != null ? alMmolc / 10.0 : null;
     final halCmolc = halMmolc != null ? halMmolc / 10.0 : null;
+    final hCmolc = hMmolc != null ? hMmolc / 10.0 : null;
     final ctcCmolc = ctcMmolc != null ? ctcMmolc / 10.0 : null;
     final sbCmolc = sbMmolc != null ? sbMmolc / 10.0 : null;
 
@@ -124,6 +126,7 @@ class SolumImportService {
       ni: null,
       mo: null,
       se: null,
+      h: hCmolc,
       laudoMetadata: metadata,
     );
   }

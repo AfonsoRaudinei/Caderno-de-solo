@@ -4,15 +4,22 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/data/base_dados/referencias_tecnicas_data.dart';
 
 class BaseDadosDetailPage extends StatelessWidget {
   const BaseDadosDetailPage({super.key, required this.referencia});
 
+  static const String _iconPath = 'assets/icons/referencias_tecnicas.png';
+
   final ReferenciaTecnica referencia;
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Scaffold(
       backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
@@ -48,30 +55,57 @@ class BaseDadosDetailPage extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      referencia.nome,
-                      style: AppTextStyles.headline.copyWith(fontSize: 18),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${referencia.autor} · ${referencia.anoPublicacao} · ${referencia.instituicao}',
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF86868B)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${referencia.tipo} • Ano: ${referencia.ano} • Fórmula: ${referencia.formulaAssociada}',
-                      style: AppTextStyles.caption.copyWith(fontSize: 13),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      referencia.arquivoMarkdown,
-                      style: AppTextStyles.caption.copyWith(fontSize: 12),
-                    ),
-                  ],
+                child: AppSurface(
+                  showBorder: true,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AppIconFrame(
+                        assetPath: _iconPath,
+                        size: AppDimens.listIconSize,
+                        backgroundColor: Colors.transparent,
+                      ),
+                      const SizedBox(width: AppDimens.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              referencia.nome,
+                              style: AppTextStyles.headline.copyWith(
+                                fontSize: 18,
+                                color: palette.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${referencia.autor} · ${referencia.anoPublicacao} · ${referencia.instituicao}',
+                              style: AppTextStyles.caption.copyWith(
+                                fontSize: 12,
+                                color: palette.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${referencia.tipo} • Ano: ${referencia.ano} • Fórmula: ${referencia.formulaAssociada}',
+                              style: AppTextStyles.caption.copyWith(
+                                fontSize: 13,
+                                color: palette.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              referencia.arquivoMarkdown,
+                              style: AppTextStyles.caption.copyWith(
+                                fontSize: 12,
+                                color: palette.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

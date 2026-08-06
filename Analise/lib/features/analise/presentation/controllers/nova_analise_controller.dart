@@ -9,6 +9,7 @@ import 'package:soloforte/features/analise/application/providers/analise_persist
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
+import 'package:soloforte/features/analise/presentation/formatters/coordinate_formatter.dart';
 import 'package:uuid/uuid.dart';
 
 /// Estado do controller da tabela de nova análise
@@ -121,13 +122,23 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
 
   void atualizarCampo(int index, String campo, dynamic valor) {
     final texto = valor?.toString() ?? '';
-    final coordenadas = _parseCoordenadasCombinadas(texto);
+    final coordenadas = CoordinateFormatter.parseCombined(texto);
 
     final updated = [...state.analises];
-    if (coordenadas != null && (campo == 'latitude' || campo == 'longitude')) {
+    if (texto.trim().isEmpty && (campo == 'latitude' || campo == 'longitude')) {
+      updated[index] =
+          updated[index].withField('latitude', '').withField('longitude', '');
+    } else if (coordenadas != null &&
+        (campo == 'latitude' || campo == 'longitude')) {
       updated[index] = updated[index]
-          .withField('latitude', coordenadas.latitude)
-          .withField('longitude', coordenadas.longitude);
+          .withField(
+            'latitude',
+            coordenadas.latitude.toStringAsFixed(8),
+          )
+          .withField(
+            'longitude',
+            coordenadas.longitude.toStringAsFixed(8),
+          );
     } else {
       updated[index] = updated[index].withField(campo, texto);
     }
@@ -136,27 +147,6 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
       clearError: true,
     );
     _refreshValidation();
-  }
-
-  ({String latitude, String longitude})? _parseCoordenadasCombinadas(
-      String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty) return null;
-
-    final match = RegExp(
-      r'^\s*([+-]?\d+(?:[\.,]\d+)?)\s*[,;]\s*([+-]?\d+(?:[\.,]\d+)?)\s*$',
-    ).firstMatch(trimmed);
-    if (match == null) return null;
-
-    final lat = double.tryParse(match.group(1)!.replaceAll(',', '.'));
-    final lng = double.tryParse(match.group(2)!.replaceAll(',', '.'));
-    if (lat == null || lng == null) return null;
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-
-    return (
-      latitude: lat.toStringAsFixed(8),
-      longitude: lng.toStringAsFixed(8),
-    );
   }
 
   void atualizarLaudoProdutor(String valor) {
@@ -288,6 +278,38 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
 
   // ── Persistência ───────────────────────────────────────────────────────
 
+  String? validarParaSalvar() {
+    _refreshValidation();
+    return _validarAntesDeSalvar();
+  }
+
+  List<AnaliseSolo> montarAnalisesParaSalvar() {
+    _refreshValidation();
+    final total = state.analises.length;
+    final analisesParaSalvar = <AnaliseSolo>[];
+
+    for (var i = 0; i < total; i++) {
+      final draftOriginal = state.analises[i];
+      final normalizedFields = i < state.validation.normalizedColumns.length
+          ? state.validation.normalizedColumns[i]
+          : draftOriginal.fields;
+      final draft = draftOriginal.copyWith(fields: normalizedFields);
+
+      analisesParaSalvar.add(
+        draft.toEntity(
+          uuid: _uuid,
+          laudoProdutor: state.laudoProdutor,
+          laudoFazenda: state.laudoFazenda,
+          laudoLaboratorio: state.laudoLaboratorio,
+          laudoSafra: state.laudoSafra,
+          validationSnapshot: state.validation.metadataForColumn(i),
+        ),
+      );
+    }
+
+    return analisesParaSalvar;
+  }
+
   Future<SaveBatchResult> salvarImportadas(List<AnaliseSolo> analises) async {
     if (state.isSaving) {
       throw const SaveBatchException(
@@ -340,45 +362,66 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
     }
   }
 
-  Future<bool> salvar() async {
+  Future<bool> salvar({List<AnaliseSolo>? analisesPreparadas}) async {
     if (state.isSaving) return false;
     final telemetry = _ref.read(analiseTelemetryProvider);
     final operationId = telemetry.newOperationId();
     final saveWatch = Stopwatch()..start();
-    _refreshValidation();
 
-    telemetry.emit(
-      eventName: AnaliseTelemetryEvents.saveStarted,
-      operationId: operationId,
-      labId:
-          state.laudoLaboratorio.trim().isEmpty ? null : state.laudoLaboratorio,
-      columnCount: state.analises.length,
-      status: 'started',
-    );
+    List<AnaliseSolo> analisesParaSalvar;
+    if (analisesPreparadas != null) {
+      analisesParaSalvar = analisesPreparadas;
+    } else {
+      _refreshValidation();
 
-    final erroValidacao = _validarAntesDeSalvar();
-    if (erroValidacao != null) {
       telemetry.emit(
-        eventName: AnaliseTelemetryEvents.saveValidationBlocked,
+        eventName: AnaliseTelemetryEvents.saveStarted,
         operationId: operationId,
         labId: state.laudoLaboratorio.trim().isEmpty
             ? null
             : state.laudoLaboratorio,
         columnCount: state.analises.length,
-        status: 'blocked',
-        durationMs: saveWatch.elapsedMilliseconds,
-        errorCode: 'SAVE_VALIDATION_BLOCKED',
-        context: <String, Object?>{
-          'issues': state.validation.issues.length,
-          'errors': state.validation.totalErrors,
-          'warnings': state.validation.totalWarnings,
-        },
+        status: 'started',
       );
-      state = state.copyWith(
-        isSaving: false,
-        error: erroValidacao,
+
+      final erroValidacao = _validarAntesDeSalvar();
+      if (erroValidacao != null) {
+        telemetry.emit(
+          eventName: AnaliseTelemetryEvents.saveValidationBlocked,
+          operationId: operationId,
+          labId: state.laudoLaboratorio.trim().isEmpty
+              ? null
+              : state.laudoLaboratorio,
+          columnCount: state.analises.length,
+          status: 'blocked',
+          durationMs: saveWatch.elapsedMilliseconds,
+          errorCode: 'SAVE_VALIDATION_BLOCKED',
+          context: <String, Object?>{
+            'issues': state.validation.issues.length,
+            'errors': state.validation.totalErrors,
+            'warnings': state.validation.totalWarnings,
+          },
+        );
+        state = state.copyWith(
+          isSaving: false,
+          error: erroValidacao,
+        );
+        return false;
+      }
+
+      analisesParaSalvar = montarAnalisesParaSalvar();
+    }
+
+    if (analisesPreparadas != null) {
+      telemetry.emit(
+        eventName: AnaliseTelemetryEvents.saveStarted,
+        operationId: operationId,
+        labId: state.laudoLaboratorio.trim().isEmpty
+            ? null
+            : state.laudoLaboratorio,
+        columnCount: analisesParaSalvar.length,
+        status: 'started',
       );
-      return false;
     }
 
     state = state.copyWith(
@@ -387,26 +430,6 @@ class NovaAnaliseController extends StateNotifier<NovaAnaliseState> {
     );
     try {
       final persistence = _ref.read(analisePersistenceGatewayProvider);
-      final total = state.analises.length;
-      final analisesParaSalvar = <AnaliseSolo>[];
-
-      for (var i = 0; i < total; i++) {
-        final draftOriginal = state.analises[i];
-        final normalizedFields = i < state.validation.normalizedColumns.length
-            ? state.validation.normalizedColumns[i]
-            : draftOriginal.fields;
-        final draft = draftOriginal.copyWith(fields: normalizedFields);
-
-        final analise = draft.toEntity(
-          uuid: _uuid,
-          laudoProdutor: state.laudoProdutor,
-          laudoFazenda: state.laudoFazenda,
-          laudoLaboratorio: state.laudoLaboratorio,
-          laudoSafra: state.laudoSafra,
-          validationSnapshot: state.validation.metadataForColumn(i),
-        );
-        analisesParaSalvar.add(analise);
-      }
 
       telemetry.emit(
         eventName: AnaliseTelemetryEvents.savePersisting,

@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
@@ -14,9 +16,14 @@ import 'package:soloforte/features/mapa/providers/map_engine_provider.dart';
 import 'package:soloforte/features/mapa/providers/mapa_analise_provider.dart';
 
 class MapaPage extends ConsumerStatefulWidget {
-  const MapaPage({super.key, this.initialAnaliseId});
+  const MapaPage({
+    super.key,
+    this.initialAnaliseId,
+    this.selectionMode = false,
+  });
 
   final String? initialAnaliseId;
+  final bool selectionMode;
 
   @override
   ConsumerState<MapaPage> createState() => _MapaPageState();
@@ -35,6 +42,10 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   MapPin? _selectedPin;
   String? _focusAnaliseId;
   bool _focusRequestHandled = false;
+  bool _isEditingPolygon = false;
+  LatLng? _selectedLocation;
+  final List<LatLng> _polygonDraft = <LatLng>[];
+  final List<LatLng> _redoStack = <LatLng>[];
 
   @override
   void initState() {
@@ -56,9 +67,16 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   @override
   Widget build(BuildContext context) {
     final engine = ref.watch(mapEngineProvider);
-    final pinsAsync = ref.watch(mapaAnaliseProvider);
+    final targetAnaliseId = _normalizeAnaliseId(widget.initialAnaliseId);
+    final pinsAsync = targetAnaliseId == null
+        ? ref.watch(mapaAnaliseProvider)
+        : ref.watch(mapaAnaliseFiltradaProvider(targetAnaliseId));
     final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? [];
-    final pins = pinsAsync.valueOrNull ?? const <MapPin>[];
+    final targetAnalise = targetAnaliseId == null
+        ? null
+        : _findAnaliseById(analises, targetAnaliseId);
+    final basePins = pinsAsync.valueOrNull ?? const <MapPin>[];
+    final pins = _pinsForCurrentMode(basePins, targetAnalise);
     final selectedAnalise = _selectedPin == null
         ? null
         : _findAnaliseById(analises, _selectedPin!.id);
@@ -75,11 +93,77 @@ class _MapaPageState extends ConsumerState<MapaPage> {
               zoom: _initialZoom,
               pins: pins,
               controller: _controller,
+              polygons: _polygonDraft.isEmpty
+                  ? const <MapPolygon>[]
+                  : [
+                      MapPolygon(
+                        id: 'draft',
+                        points: List<LatLng>.unmodifiable(_polygonDraft),
+                        editable: _isEditingPolygon,
+                      ),
+                    ],
               onCameraChanged: _onCameraChanged,
+              onMapTap: widget.selectionMode
+                  ? (point) => _onMapTapSelection(point, targetAnalise)
+                  : (_isEditingPolygon ? _onMapTapEditing : null),
               onPinTap: _onPinTap,
               selectedPinId: _selectedPin?.id,
             ),
           ),
+          if (widget.selectionMode) ...[
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 14,
+              left: 16,
+              right: 16,
+              child: _MapStatusBadge(
+                icon: Icons.add_location_alt_rounded,
+                text: _selectedLocation == null
+                    ? 'Toque no mapa para selecionar o ponto'
+                    : 'Ponto selecionado',
+              ),
+            ),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: MediaQuery.paddingOf(context).bottom + 24,
+              child: _LocationSelectionActions(
+                canConfirm: _selectedLocation != null,
+                onCancel: () => Navigator.of(context).pop(),
+                onConfirm: _confirmarSelecaoLocalizacao,
+              ),
+            ),
+          ],
+          if (_isEditingPolygon && !widget.selectionMode) ...[
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 14,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _EditingBadge(
+                  text: 'Editando vertices',
+                  vertexCount: _polygonDraft.length,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 18,
+              top: MediaQuery.paddingOf(context).top + 82,
+              child: _AreaBadge(areaHa: _polygonAreaHa(_polygonDraft)),
+            ),
+            Positioned(
+              right: 18,
+              bottom: MediaQuery.paddingOf(context).bottom + 96,
+              child: _EditingActions(
+                canConfirm: _polygonDraft.length >= 3,
+                canUndo: _polygonDraft.isNotEmpty,
+                canRedo: _redoStack.isNotEmpty,
+                onConfirm: _confirmarEdicaoPoligono,
+                onUndo: _desfazerVertice,
+                onRedo: _refazerVertice,
+                onCancel: _cancelarEdicaoPoligono,
+              ),
+            ),
+          ],
           Positioned(
             top: MediaQuery.paddingOf(context).top + 12,
             right: 14,
@@ -91,6 +175,10 @@ class _MapaPageState extends ConsumerState<MapaPage> {
                 ),
                 const SizedBox(height: 10),
                 _MapLocationButton(onPressed: _centralizarUsuario),
+                if (!widget.selectionMode) ...[
+                  const SizedBox(height: 10),
+                  _MapEditButton(onPressed: _iniciarEdicaoPoligono),
+                ],
               ],
             ),
           ),
@@ -113,7 +201,9 @@ class _MapaPageState extends ConsumerState<MapaPage> {
                 isError: true,
               ),
             ),
-          if (_selectedPin != null)
+          if (_selectedPin != null &&
+              !_isEditingPolygon &&
+              !widget.selectionMode)
             Positioned(
               left: 0,
               right: 0,
@@ -161,6 +251,9 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   }
 
   void _onPinTap(MapPin pin) {
+    if (_isEditingPolygon || widget.selectionMode) {
+      return;
+    }
     const focusZoom = 11.5;
     final shouldZoom = _cameraZoom < focusZoom;
     if (shouldZoom) {
@@ -172,6 +265,74 @@ class _MapaPageState extends ConsumerState<MapaPage> {
       if (shouldZoom) {
         _cameraZoom = focusZoom;
       }
+    });
+  }
+
+  void _onMapTapEditing(LatLng point) {
+    setState(() {
+      _polygonDraft.add(point);
+      _redoStack.clear();
+    });
+  }
+
+  void _iniciarEdicaoPoligono() {
+    setState(() {
+      _isEditingPolygon = true;
+      _selectedPin = null;
+      _polygonDraft.clear();
+      _redoStack.clear();
+    });
+  }
+
+  void _onMapTapSelection(LatLng point, AnaliseSolo? targetAnalise) {
+    if (targetAnalise == null) {
+      return;
+    }
+    final previewPin = pinFromAnaliseForPreview(targetAnalise, point);
+    setState(() {
+      _selectedLocation = point;
+      _selectedPin = previewPin;
+      _cameraCenter = point;
+    });
+  }
+
+  void _confirmarSelecaoLocalizacao() {
+    final selected = _selectedLocation;
+    if (selected == null) {
+      return;
+    }
+    Navigator.of(context).pop(selected);
+  }
+
+  void _desfazerVertice() {
+    if (_polygonDraft.isEmpty) {
+      return;
+    }
+    setState(() => _redoStack.add(_polygonDraft.removeLast()));
+  }
+
+  void _refazerVertice() {
+    if (_redoStack.isEmpty) {
+      return;
+    }
+    setState(() => _polygonDraft.add(_redoStack.removeLast()));
+  }
+
+  void _cancelarEdicaoPoligono() {
+    setState(() {
+      _isEditingPolygon = false;
+      _polygonDraft.clear();
+      _redoStack.clear();
+    });
+  }
+
+  void _confirmarEdicaoPoligono() {
+    if (_polygonDraft.length < 3) {
+      return;
+    }
+    setState(() {
+      _isEditingPolygon = false;
+      _redoStack.clear();
     });
   }
 
@@ -203,6 +364,7 @@ class _MapaPageState extends ConsumerState<MapaPage> {
         break;
       }
     }
+
     _focusRequestHandled = true;
     if (target == null) {
       return;
@@ -217,10 +379,27 @@ class _MapaPageState extends ConsumerState<MapaPage> {
       _controller.move(targetPin.position, targetZoom);
       setState(() {
         _selectedPin = targetPin;
+        if (widget.selectionMode) {
+          _selectedLocation = targetPin.position;
+        }
         _cameraCenter = targetPin.position;
         _cameraZoom = targetZoom;
       });
     });
+  }
+
+  List<MapPin> _pinsForCurrentMode(
+    List<MapPin> basePins,
+    AnaliseSolo? targetAnalise,
+  ) {
+    if (!widget.selectionMode) {
+      return basePins;
+    }
+    final selected = _selectedLocation;
+    if (selected != null && targetAnalise != null) {
+      return [pinFromAnaliseForPreview(targetAnalise, selected)];
+    }
+    return basePins;
   }
 
   void _clearSelectionWhenPinIsRemoved(List<MapPin> pins) {
@@ -269,6 +448,344 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   }
 }
 
+double _polygonAreaHa(List<LatLng> points) {
+  if (points.length < 3) {
+    return 0;
+  }
+
+  final refLatRad = points.map((p) => p.latitude).reduce((a, b) => a + b) /
+      points.length *
+      math.pi /
+      180;
+  const metersPerDegreeLat = 111320.0;
+  final metersPerDegreeLng = metersPerDegreeLat * math.cos(refLatRad);
+
+  final projected = points
+      .map(
+        (p) => Offset(
+          p.longitude * metersPerDegreeLng,
+          p.latitude * metersPerDegreeLat,
+        ),
+      )
+      .toList(growable: false);
+
+  var area = 0.0;
+  for (var i = 0; i < projected.length; i++) {
+    final current = projected[i];
+    final next = projected[(i + 1) % projected.length];
+    area += current.dx * next.dy - next.dx * current.dy;
+  }
+  return area.abs() / 2 / 10000;
+}
+
+class _EditingBadge extends StatelessWidget {
+  const _EditingBadge({
+    required this.text,
+    required this.vertexCount,
+  });
+
+  final String text;
+  final int vertexCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFAF52DE),
+      elevation: 4,
+      borderRadius: BorderRadius.circular(28),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.location_on_rounded,
+                color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Text(
+              '$text · $vertexCount',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AreaBadge extends StatelessWidget {
+  const _AreaBadge({required this.areaHa});
+
+  final double areaHa;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xCC000000),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${areaHa.toStringAsFixed(areaHa >= 100 ? 0 : 2)} ha',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _UnitChip(label: 'ha', active: true),
+                SizedBox(width: 6),
+                _UnitChip(label: 'm2'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UnitChip extends StatelessWidget {
+  const _UnitChip({
+    required this.label,
+    this.active = false,
+  });
+
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: active ? AppColors.success : const Color(0x33FFFFFF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditingActions extends StatelessWidget {
+  const _EditingActions({
+    required this.canConfirm,
+    required this.canUndo,
+    required this.canRedo,
+    required this.onConfirm,
+    required this.onUndo,
+    required this.onRedo,
+    required this.onCancel,
+  });
+
+  final bool canConfirm;
+  final bool canUndo;
+  final bool canRedo;
+  final VoidCallback onConfirm;
+  final VoidCallback onUndo;
+  final VoidCallback onRedo;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xE61D1D1F),
+      borderRadius: BorderRadius.circular(34),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _RoundActionButton(
+              icon: Icons.check_rounded,
+              color: AppColors.success,
+              onPressed: canConfirm ? onConfirm : null,
+              tooltip: 'Confirmar desenho',
+            ),
+            const SizedBox(height: 10),
+            _RoundActionButton(
+              icon: Icons.undo_rounded,
+              color: const Color(0xFF8E8E93),
+              onPressed: canUndo ? onUndo : null,
+              tooltip: 'Desfazer vertice',
+            ),
+            const SizedBox(height: 10),
+            _RoundActionButton(
+              icon: Icons.redo_rounded,
+              color: const Color(0xFF8E8E93),
+              onPressed: canRedo ? onRedo : null,
+              tooltip: 'Refazer vertice',
+            ),
+            const SizedBox(height: 10),
+            _RoundActionButton(
+              icon: Icons.close_rounded,
+              color: AppColors.error,
+              onPressed: onCancel,
+              tooltip: 'Cancelar desenho',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoundActionButton extends StatelessWidget {
+  const _RoundActionButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: onPressed == null ? 0.45 : 1,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: color,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 58,
+              height: 58,
+              child: Icon(icon, color: Colors.white, size: 34),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LocationSelectionActions extends StatelessWidget {
+  const _LocationSelectionActions({
+    required this.canConfirm,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final bool canConfirm;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MapFloatingSurface(
+      padding: const EdgeInsets.all(AppDimens.md),
+      borderRadius: AppDimens.radius2xl,
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: onCancel,
+              icon: const Icon(Icons.close_rounded),
+              label: const Text('Cancelar'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                foregroundColor: AppColors.textPrimary,
+                side: const BorderSide(color: AppColors.borderSoft),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimens.sm),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: canConfirm ? onConfirm : null,
+              icon: Icon(
+                Icons.check_rounded,
+                color: canConfirm ? Colors.white : AppColors.textTertiary,
+              ),
+              label: Text(canConfirm ? 'Usar ponto' : 'Selecione'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor:
+                    AppColors.borderSoft.withValues(alpha: 0.72),
+                disabledForegroundColor: AppColors.textTertiary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapFloatingSurface extends StatelessWidget {
+  const _MapFloatingSurface({
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.borderRadius = AppDimens.radiusLg,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.bgPrimary,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: AppColors.bgPrimary.withValues(alpha: 0.76),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
 class _MapStatusBadge extends StatelessWidget {
   const _MapStatusBadge({
     required this.icon,
@@ -282,26 +799,44 @@ class _MapStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isError ? const Color(0xFFFFF3F0) : Colors.white;
+    final bg = isError ? AppColors.bgError : AppColors.bgPrimary;
     final fg = isError ? AppColors.error : AppColors.textPrimary;
 
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(12),
-      elevation: 3,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppDimens.radiusPill),
+        border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: fg),
-            const SizedBox(width: 6),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isError
+                    ? AppColors.error.withValues(alpha: 0.12)
+                    : AppColors.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 15, color: fg),
+            ),
+            const SizedBox(width: 8),
             Text(
               text,
-              style: TextStyle(
+              style: AppTextStyles.caption.copyWith(
                 color: fg,
                 fontWeight: FontWeight.w600,
-                fontSize: 12,
               ),
             ),
           ],
@@ -331,17 +866,34 @@ class _AnaliseMapSheet extends StatelessWidget {
       minChildSize: 0.24,
       maxChildSize: 1.0,
       builder: (context, scrollController) {
-        return Material(
-          color: Colors.white,
-          elevation: 10,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          clipBehavior: Clip.antiAlias,
-          child: SingleChildScrollView(
-            controller: scrollController,
-            padding: EdgeInsets.fromLTRB(18, 10, 18, bottomPadding),
-            child: analise == null
-                ? _PinFallbackDetails(pin: pin, onClose: onClose)
-                : _AnaliseDetailsContent(analise: analise!, onClose: onClose),
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.bgSecondary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppDimens.radius2xl),
+            ),
+            border: Border.all(
+              color: AppColors.bgPrimary.withValues(alpha: 0.82),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.10),
+                blurRadius: 30,
+                offset: const Offset(0, -8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppDimens.radius2xl),
+            ),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(18, 10, 18, bottomPadding),
+              child: analise == null
+                  ? _PinFallbackDetails(pin: pin, onClose: onClose)
+                  : _AnaliseDetailsContent(analise: analise!, onClose: onClose),
+            ),
           ),
         );
       },
@@ -463,24 +1015,44 @@ class _AnaliseMapHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppDimens.lg),
       decoration: BoxDecoration(
-        color: analise.cultura.color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(analise.cultura.emoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(width: 8),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: analise.cultura.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  analise.cultura.emoji,
+                  style: const TextStyle(fontSize: 22),
+                ),
+              ),
+              const SizedBox(width: AppDimens.md),
               Expanded(
                 child: Text(
                   analise.cultura.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: AppTextStyles.headline.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: analise.cultura.color,
@@ -552,22 +1124,26 @@ class _AnaliseDataSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
+    return Container(
+      margin: const EdgeInsets.only(top: AppDimens.md),
+      padding: const EdgeInsets.all(AppDimens.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+        border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.65)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: AppTextStyles.label.copyWith(
               color: AppColors.textPrimary,
-              fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppDimens.sm),
           ...rows.map((row) => _AnaliseDataRow(row: row)),
-          const Divider(height: 14, color: AppColors.borderSoft),
         ],
       ),
     );
@@ -670,29 +1246,63 @@ class _SheetHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Spacer(),
-        Container(
-          width: 44,
-          height: 5,
-          decoration: BoxDecoration(
-            color: AppColors.border,
-            borderRadius: BorderRadius.circular(99),
-          ),
-        ),
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              onPressed: onClose,
-              tooltip: 'Fechar',
-              icon: const Icon(Icons.close_rounded),
-              visualDensity: VisualDensity.compact,
+    return SizedBox(
+      height: 42,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 46,
+            height: 5,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(AppDimens.radiusPill),
             ),
           ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _RoundMapButton(
+              tooltip: 'Fechar',
+              icon: Icons.close_rounded,
+              onPressed: onClose,
+              size: 34,
+              iconSize: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundMapButton extends StatelessWidget {
+  const _RoundMapButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    this.size = 52,
+    this.iconSize = 24,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MapFloatingSurface(
+      borderRadius: AppDimens.radiusPill,
+      child: SizedBox.square(
+        dimension: size,
+        child: IconButton(
+          onPressed: onPressed,
+          tooltip: tooltip,
+          icon: Icon(icon, color: AppColors.primary, size: iconSize),
+          visualDensity: VisualDensity.compact,
         ),
-      ],
+      ),
     );
   }
 }
@@ -740,26 +1350,16 @@ class _MapZoomControl extends StatelessWidget {
     required this.onZoomOut,
   });
 
-  static const _backgroundColor = Color(0xFFEFF4D7);
-  static const _borderColor = Color(0x1A000000);
-  static const _dividerColor = Color(0x26000000);
-
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: _backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-        side: const BorderSide(color: _borderColor),
-      ),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
+    return _MapFloatingSurface(
+      borderRadius: AppDimens.radiusPill,
       child: SizedBox(
-        width: 56,
-        height: 128,
+        width: 52,
+        height: 116,
         child: Column(
           children: [
             Expanded(
@@ -767,23 +1367,23 @@ class _MapZoomControl extends StatelessWidget {
                 onPressed: onZoomIn,
                 icon: const Icon(
                   CupertinoIcons.add,
-                  size: 28,
-                  color: AppColors.textPrimary,
+                  size: 24,
+                  color: AppColors.primary,
                 ),
               ),
             ),
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 14),
+              margin: const EdgeInsets.symmetric(horizontal: 13),
               height: 1,
-              color: _dividerColor,
+              color: AppColors.borderSoft,
             ),
             Expanded(
               child: IconButton(
                 onPressed: onZoomOut,
                 icon: const Icon(
                   CupertinoIcons.minus,
-                  size: 28,
-                  color: AppColors.textPrimary,
+                  size: 24,
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -797,29 +1397,22 @@ class _MapZoomControl extends StatelessWidget {
 class _MapLocationButton extends StatelessWidget {
   const _MapLocationButton({required this.onPressed});
 
-  static const _backgroundColor = Color(0xFFF7F7F2);
-  static const _borderColor = Color(0x1A000000);
-
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: _backgroundColor,
-      shape: const CircleBorder(side: BorderSide(color: _borderColor)),
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
+    return _MapFloatingSurface(
+      borderRadius: AppDimens.radiusPill,
       child: InkWell(
         onTap: onPressed,
         customBorder: const CircleBorder(),
-        child: const SizedBox(
-          width: 56,
-          height: 56,
+        child: const SizedBox.square(
+          dimension: 52,
           child: Center(
-            child: SizedBox(
-              width: 34,
-              height: 34,
-              child: CustomPaint(painter: _CompassPainter()),
+            child: Icon(
+              Icons.my_location_rounded,
+              color: AppColors.primary,
+              size: 24,
             ),
           ),
         ),
@@ -828,74 +1421,17 @@ class _MapLocationButton extends StatelessWidget {
   }
 }
 
-class _CompassPainter extends CustomPainter {
-  const _CompassPainter();
+class _MapEditButton extends StatelessWidget {
+  const _MapEditButton({required this.onPressed});
+
+  final VoidCallback onPressed;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.shortestSide / 2;
-
-    final ringPaint = Paint()
-      ..color = const Color(0xFF000000).withValues(alpha: 0.22)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawCircle(center, radius, ringPaint);
-
-    final tickPaint = Paint()
-      ..color = const Color(0xFF000000).withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..strokeCap = StrokeCap.round;
-
-    const ticks = 12;
-    for (var i = 0; i < ticks; i++) {
-      final angle = -math.pi / 2 + (i * 2 * math.pi / ticks);
-      final isMajor = i % 3 == 0;
-      final inner = radius * (isMajor ? 0.70 : 0.78);
-      final outer = radius * (isMajor ? 0.92 : 0.90);
-      final p1 = Offset(
-        center.dx + inner * math.cos(angle),
-        center.dy + inner * math.sin(angle),
-      );
-      final p2 = Offset(
-        center.dx + outer * math.cos(angle),
-        center.dy + outer * math.sin(angle),
-      );
-      canvas.drawLine(p1, p2, tickPaint);
-    }
-
-    final arrowPaint = Paint()
-      ..color = const Color(0xFFE53935)
-      ..style = PaintingStyle.fill;
-    final arrowWidth = radius * 0.30;
-    final arrowHeight = radius * 0.28;
-    final arrowTop = center.dy - radius * 0.98;
-    final arrowPath = Path()
-      ..moveTo(center.dx, arrowTop)
-      ..lineTo(center.dx - arrowWidth / 2, arrowTop + arrowHeight)
-      ..lineTo(center.dx + arrowWidth / 2, arrowTop + arrowHeight)
-      ..close();
-    canvas.drawPath(arrowPath, arrowPaint);
-
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'N',
-        style: TextStyle(
-          color: Color(0xFF111111),
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final textOffset = Offset(
-      center.dx - textPainter.width / 2,
-      center.dy - textPainter.height / 2 + radius * 0.08,
+  Widget build(BuildContext context) {
+    return _RoundMapButton(
+      tooltip: 'Editar vertices',
+      icon: Icons.edit_location_alt_rounded,
+      onPressed: onPressed,
     );
-    textPainter.paint(canvas, textOffset);
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

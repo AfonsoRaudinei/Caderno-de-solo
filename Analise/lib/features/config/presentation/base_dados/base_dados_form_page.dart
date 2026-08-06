@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
-import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 
 class BaseDadosFormPage extends StatelessWidget {
   const BaseDadosFormPage({super.key});
@@ -21,10 +23,39 @@ class BaseDadosFormPage extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimens.lg),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AppCard(
+            AppSurface(
+              borderRadius: AppDimens.radiusXl,
+              child: Row(
+                children: [
+                  const AppIconFrame(
+                    icon: Icons.menu_book_rounded,
+                    size: 52,
+                  ),
+                  const SizedBox(width: AppDimens.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Referência técnica', style: AppTextStyles.value),
+                        const SizedBox(height: AppDimens.xs),
+                        Text(
+                          'Cadastre a fonte usada para rastrear tabelas e fórmulas.',
+                          style: AppTextStyles.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppDimens.lg),
+            AppSurface(
+              showShadow: false,
+              showBorder: true,
               child: Column(
                 children: [
                   const AppInput(
@@ -81,9 +112,10 @@ class BaseDadosFormPage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppDimens.xl),
             AppButton(
               label: 'Salvar Referência',
+              icon: Icons.check_rounded,
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

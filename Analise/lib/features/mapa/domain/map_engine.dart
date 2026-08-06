@@ -7,7 +7,9 @@ abstract class MapEngine {
     required double zoom,
     required List<MapPin> pins,
     required AbstractMapController controller,
+    List<MapPolygon> polygons = const <MapPolygon>[],
     void Function(LatLng center, double zoom)? onCameraChanged,
+    void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
     String? selectedPinId,
   });
@@ -38,6 +40,18 @@ class MapPin {
     this.safra,
     this.profundidade,
     this.descricaoLocal,
+  });
+}
+
+class MapPolygon {
+  final String id;
+  final List<LatLng> points;
+  final bool editable;
+
+  const MapPolygon({
+    required this.id,
+    required this.points,
+    this.editable = false,
   });
 }
 

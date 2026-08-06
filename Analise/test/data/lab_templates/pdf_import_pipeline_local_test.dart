@@ -100,6 +100,98 @@ void main() {
 
     expect(executed, greaterThanOrEqualTo(3));
   });
+
+  test('pipeline MB importa nutrientes do laudo 78416', () async {
+    final file = _localSoilPdf('mb_gt_01.pdf');
+    if (!file.existsSync()) return;
+
+    final analises = await PdfImportService().importarArquivoPdf(
+      fileBytes: file.readAsBytesSync(),
+      fileName: file.path.split('/').last,
+      forcedLabId: 'mb',
+    );
+
+    expect(analises.length, 1);
+    final amostra = analises.single;
+    expect(amostra.numeroAmostra, '78416-1');
+    expect(amostra.talhao, 'TH ABACAXI');
+    expect(amostra.profundidade, '0-20');
+    expect(amostra.phCaCl2!, closeTo(5.8, 0.001));
+    expect(amostra.phSmp!, closeTo(6.76, 0.001));
+    expect(amostra.materiaOrganica!, closeTo(1.94, 0.001));
+    expect(amostra.carbonoOrganico!, closeTo(1.125, 0.001));
+    expect(amostra.pMehlich!, closeTo(6.53, 0.001));
+    expect(amostra.pResina, isNull);
+    expect(amostra.pRem, isNull);
+    expect(amostra.s020, isNull);
+    expect(amostra.k!, closeTo(31.74 / 391.0, 0.0001));
+    expect(amostra.ca!, closeTo(2.95, 0.001));
+    expect(amostra.mg!, closeTo(1.02, 0.001));
+    expect(amostra.al!, closeTo(0, 0.001));
+    expect(amostra.hMaisAl!, closeTo(1.9, 0.001));
+    expect(amostra.b, isNull);
+    expect(amostra.cu, isNull);
+    expect(amostra.fe, isNull);
+    expect(amostra.mn, isNull);
+    expect(amostra.zn, isNull);
+    expect(amostra.argila!, closeTo(420, 0.001));
+    expect(amostra.silte!, closeTo(43.6, 0.001));
+    expect(amostra.areiaTotal!, closeTo(536.4, 0.001));
+  });
+
+  test('pipeline MB importa os PDFs citados com dados essenciais', () async {
+    final files = <File>[
+      _localSoilPdf('Laudo-1 (1).pdf'),
+      _localSoilPdf('Laudo-3 (1).pdf'),
+      _localSoilPdf('mb_gt_01.pdf'),
+    ].where((file) => file.existsSync()).toList(growable: false);
+    if (files.isEmpty) return;
+
+    final service = PdfImportService();
+    for (final file in files) {
+      final analises = await service.importarArquivoPdf(
+        fileBytes: file.readAsBytesSync(),
+        fileName: file.path.split('/').last,
+        forcedLabId: 'mb',
+      );
+
+      expect(
+        analises.length,
+        1,
+        reason: 'Falha em ${file.path}: MB deve importar uma amostra.',
+      );
+
+      final amostra = analises.single;
+      expect(amostra.numeroAmostra.trim(), isNotEmpty,
+          reason: 'Número da amostra ausente em ${file.path}.');
+      expect(amostra.talhao.trim(), isNotEmpty,
+          reason: 'Talhão ausente em ${file.path}.');
+      expect(amostra.profundidade.trim(), isNotEmpty,
+          reason: 'Profundidade ausente em ${file.path}.');
+      expect(amostra.phCaCl2, isNotNull,
+          reason: 'pH CaCl2 ausente em ${file.path}.');
+      expect(amostra.pMehlich, isNotNull,
+          reason: 'P Mehlich ausente em ${file.path}.');
+      expect(amostra.k, isNotNull,
+          reason: 'K convertido ausente em ${file.path}.');
+      expect(amostra.ca, isNotNull, reason: 'Ca ausente em ${file.path}.');
+      expect(amostra.mg, isNotNull, reason: 'Mg ausente em ${file.path}.');
+      expect(amostra.hMaisAl, isNotNull,
+          reason: 'H+Al ausente em ${file.path}.');
+      expect(amostra.argila, isNotNull,
+          reason: 'Argila ausente em ${file.path}.');
+      expect(amostra.silte, isNotNull,
+          reason: 'Silte ausente em ${file.path}.');
+      expect(amostra.areiaTotal, isNotNull,
+          reason: 'Areia total ausente em ${file.path}.');
+    }
+  });
+}
+
+File _localSoilPdf(String fileName) {
+  return File(
+    '/Users/raudineisilvapereira/dev/Caderno de Solo/Analise/Analise de solo /$fileName',
+  );
 }
 
 class _ImportCase {

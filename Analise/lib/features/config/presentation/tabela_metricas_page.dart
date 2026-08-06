@@ -5,6 +5,7 @@ import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/presentation/providers/tabela_metricas_provider.dart';
 
@@ -18,7 +19,6 @@ class TabelaMetricasPage extends ConsumerWidget {
     final tabelasAsync = ref.watch(tabelaMetricasProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Tabelas de Métricas'),
         actions: [
@@ -94,23 +94,45 @@ class TabelaMetricasPage extends ConsumerWidget {
 
 class _TabelaCard extends StatelessWidget {
   const _TabelaCard({required this.tabela, required this.onEditar});
+
+  static const String _iconPath = 'assets/icons/tabelas_agronomicas.png';
+
   final TabelaMetricas tabela;
   final VoidCallback onEditar;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    return AppSurface(
       onTap: onEditar,
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Cabeçalho
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(tabela.nome,
-                    style: AppTextStyles.label.copyWith(fontSize: 15)),
+              const AppIconFrame(
+                assetPath: _iconPath,
+                size: AppDimens.listIconSize,
+                backgroundColor: Colors.transparent,
               ),
+              const SizedBox(width: AppDimens.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(tabela.nome,
+                        style: AppTextStyles.label.copyWith(fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Text(tabela.descricao,
+                        style: AppTextStyles.caption,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppDimens.sm),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -123,11 +145,6 @@ class _TabelaCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(tabela.descricao,
-              style: AppTextStyles.caption,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
           const SizedBox(height: 10),
           // Preview das faixas
           ...tabela.linhas.map((linha) => Padding(

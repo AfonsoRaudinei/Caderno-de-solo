@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/widgets/absorcao_card_wrapper.dart';
@@ -22,6 +23,7 @@ class AbsorcaoInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final items = <String>[
       quality.subtitle,
       isAccumulated
@@ -39,7 +41,7 @@ class AbsorcaoInfoCard extends StatelessWidget {
             'Leitura da análise',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.greenDark,
+              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
             ),
           ),
           const SizedBox(height: 10),
@@ -62,7 +64,10 @@ class AbsorcaoInfoCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item,
-                      style: AppTextStyles.body.copyWith(fontSize: 13),
+                      style: AppTextStyles.body.copyWith(
+                        fontSize: 13,
+                        color: palette.textPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -73,7 +78,7 @@ class AbsorcaoInfoCard extends StatelessWidget {
           Text(
             'Visualização atual: $modeText',
             style: AppTextStyles.caption.copyWith(
-              color: AbsorcaoNutrientesCores.textMuted,
+              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
               fontWeight: FontWeight.w600,
             ),
           ),

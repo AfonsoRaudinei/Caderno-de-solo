@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// Botão primário com gradiente iOS (#007AFF → #0051D5)
 class AppButton extends StatefulWidget {
@@ -48,6 +49,7 @@ class _AppButtonState extends State<AppButton>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final bool isDisabled = widget.onPressed == null || widget.isLoading;
 
     return ScaleTransition(
@@ -61,11 +63,11 @@ class _AppButtonState extends State<AppButton>
           height: 50,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: isDisabled
-                  ? null
-                  : AppColors.primaryGradient,
-              color: isDisabled ? AppColors.borderSoft : null,
+              gradient: isDisabled ? null : AppColors.primaryGradient,
+              color: isDisabled ? palette.cardStrong : null,
               borderRadius: BorderRadius.circular(12),
+              border:
+                  isDisabled ? Border.all(color: palette.borderStrong) : null,
               boxShadow: isDisabled
                   ? null
                   : [
@@ -81,7 +83,7 @@ class _AppButtonState extends State<AppButton>
               style: TextButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 foregroundColor:
-                    isDisabled ? AppColors.textSecond : Colors.white,
+                    isDisabled ? palette.textSecondary : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -104,7 +106,14 @@ class _AppButtonState extends State<AppButton>
                           Icon(widget.icon, size: 18),
                           const SizedBox(width: 6),
                         ],
-                        Text(widget.label, style: AppTextStyles.button),
+                        Text(
+                          widget.label,
+                          style: AppTextStyles.button.copyWith(
+                            color: isDisabled
+                                ? palette.textSecondary
+                                : Colors.white,
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -115,7 +124,7 @@ class _AppButtonState extends State<AppButton>
   }
 }
 
-/// Botão secundário — fundo cinza suave, texto discreto
+/// Botão secundário — fundo suave, texto discreto (legível em dark)
 class AppButtonSecondary extends StatelessWidget {
   const AppButtonSecondary({
     super.key,
@@ -134,26 +143,28 @@ class AppButtonSecondary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
       height: 50,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.borderSoft,
-          foregroundColor: AppColors.textSecond,
-          side: BorderSide.none,
+          backgroundColor: palette.cardStrong,
+          foregroundColor: palette.textSecondary,
+          side: BorderSide(color: palette.borderStrong),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                  color: AppColors.textSecond,
+                  color: palette.textSecondary,
                   strokeWidth: 2,
                 ),
               )
@@ -168,7 +179,7 @@ class AppButtonSecondary extends StatelessWidget {
                   Text(
                     label,
                     style: AppTextStyles.button.copyWith(
-                      color: AppColors.textSecond,
+                      color: palette.textSecondary,
                     ),
                   ),
                 ],

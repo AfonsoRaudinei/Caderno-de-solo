@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// DropdownButton estilizado iOS — usar para seleções com 3+ opções
 class AppDropdown<T> extends StatelessWidget {
@@ -30,6 +31,7 @@ class AppDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final hasError = errorText != null && errorText!.isNotEmpty;
 
     return Column(
@@ -37,20 +39,23 @@ class AppDropdown<T> extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(label!, style: AppTextStyles.label),
+          Text(
+            label!,
+            style: AppTextStyles.label.copyWith(color: palette.textSecondary),
+          ),
           const SizedBox(height: 6),
         ],
         Container(
           height: 44,
           decoration: BoxDecoration(
-            color: enabled ? AppColors.bgPrimary : AppColors.bgSecondary,
+            color: enabled ? palette.inputFill : palette.cardStrong,
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: hasError ? AppColors.error : AppColors.borderSoft,
+              color: hasError ? AppColors.error : palette.border,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.025),
+                color: palette.shadow,
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -61,19 +66,19 @@ class AppDropdown<T> extends StatelessWidget {
             child: DropdownButton<T>(
               value: value,
               isExpanded: true,
-              icon: const Icon(
+              icon: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: AppColors.textSecond,
+                color: palette.textSecondary,
                 size: 20,
               ),
-              style: AppTextStyles.body,
-              dropdownColor: AppColors.bgPrimary,
+              style: AppTextStyles.body.copyWith(color: palette.textPrimary),
+              dropdownColor: palette.cardStrong,
               borderRadius: BorderRadius.circular(12),
               hint: hint != null
                   ? Text(
                       hint!,
                       style: AppTextStyles.body.copyWith(
-                        color: AppColors.textTertiary,
+                        color: palette.textTertiary,
                       ),
                     )
                   : null,
@@ -83,7 +88,9 @@ class AppDropdown<T> extends StatelessWidget {
                         value: item.value,
                         child: Text(
                           item.label,
-                          style: AppTextStyles.body,
+                          style: AppTextStyles.body.copyWith(
+                            color: palette.textPrimary,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ))

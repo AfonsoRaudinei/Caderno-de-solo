@@ -3,66 +3,70 @@ import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
-import 'package:soloforte/core/widgets/app_card.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/domain/models/calibracao_profile.dart';
+import 'package:soloforte/features/laboratorio/application/providers/calibracao_state.dart';
 
 class CalibracaoHeaderCard extends StatefulWidget {
   const CalibracaoHeaderCard({
     super.key,
-    required this.draftKey,
-    required this.nome,
-    required this.safra,
-    required this.cliente,
+    required this.state,
+    required this.isExpanded,
+    required this.onToggle,
     required this.culturas,
-    required this.culturaSelecionada,
     required this.onNomeChanged,
     required this.onCulturaChanged,
     required this.onSafraChanged,
     required this.onClienteChanged,
-    this.produtividadeEsperadaTha,
-    this.onProdutividadeChanged,
+    required this.onProdutividadeChanged,
+    required this.onUnidadeChanged,
   });
 
-  final String draftKey;
-  final String nome;
-  final String safra;
-  final String cliente;
+  final CalibracaoState state;
+  final bool isExpanded;
+  final VoidCallback onToggle;
   final List<AppDropdownItem<String>> culturas;
-  final String? culturaSelecionada;
   final ValueChanged<String> onNomeChanged;
   final ValueChanged<String?> onCulturaChanged;
   final ValueChanged<String> onSafraChanged;
   final ValueChanged<String> onClienteChanged;
-
-  /// Produtividade persistida sempre em t/ha. Null = não configurado.
-  final double? produtividadeEsperadaTha;
-
-  /// Callback com o valor em t/ha (null = campo limpo).
-  final ValueChanged<double?>? onProdutividadeChanged;
+  final ValueChanged<double?> onProdutividadeChanged;
+  final ValueChanged<String> onUnidadeChanged;
 
   @override
   State<CalibracaoHeaderCard> createState() => _CalibracaoHeaderCardState();
 }
 
 class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
-  // 1 tonelada = 16.667 sacas (saco = 60 kg de soja)
   static const double _sacasPorTon = 16.667;
+  static const Duration _animDuration = Duration(milliseconds: 250);
 
-  /// Toggle session-only: não persiste. Padrão = Sacas/ha.
   bool _emSacas = true;
 
   late TextEditingController _prodCtrl;
+  final GlobalKey _cardKey = GlobalKey();
 
-  // ── helpers ──────────────────────────────────────────────────────────────
+  CalibracaoState get _state => widget.state;
+  CalibracaoProfile get _draft => _state.draft;
+
+  String get _draftKey =>
+      '${_draft.id}_${_draft.createdAt.microsecondsSinceEpoch}';
+
+  String? get _culturaSelecionada {
+    final cultura = _draft.cultura;
+    final values = widget.culturas.map((item) => item.value).toList();
+    if (values.isEmpty) return null;
+    return values.contains(cultura) ? cultura : values.first;
+  }
 
   String _textoInicial(double? tHa) {
     if (tHa == null || tHa <= 0) return '';
     if (_emSacas) {
       return (tHa * _sacasPorTon).toStringAsFixed(0);
-    } else {
-      return tHa.toStringAsFixed(1);
     }
+    return tHa.toStringAsFixed(1);
   }
 
   double? get _valorEmTha {
@@ -77,27 +81,48 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
     if (tHa == null) return '';
     if (_emSacas) {
       return '≈ ${tHa.toStringAsFixed(1)} t/ha';
-    } else {
-      return '≈ ${(tHa * _sacasPorTon).toStringAsFixed(0)} sc/ha';
     }
+    return '≈ ${(tHa * _sacasPorTon).toStringAsFixed(0)} sc/ha';
   }
 
-  // ── lifecycle ─────────────────────────────────────────────────────────────
+  String get _unidadeLabel => _emSacas ? 'Sacas/ha' : 't/ha';
+
+  String? _produtividadeResumo(double? tHa) {
+    if (tHa == null || tHa <= 0) return null;
+    if (_emSacas) {
+      return '${(tHa * _sacasPorTon).toStringAsFixed(0)} Sacas/ha';
+    }
+    return '${tHa.toStringAsFixed(1)} t/ha';
+  }
 
   @override
   void initState() {
     super.initState();
     _prodCtrl = TextEditingController(
-      text: _textoInicial(widget.produtividadeEsperadaTha),
+      text: _textoInicial(_draft.produtividadeEsperadaTha),
     );
   }
 
   @override
-  void didUpdateWidget(covariant CalibracaoHeaderCard old) {
-    super.didUpdateWidget(old);
-    // Atualiza campo apenas quando o perfil selecionado muda externamente.
-    if (old.produtividadeEsperadaTha != widget.produtividadeEsperadaTha) {
-      _prodCtrl.text = _textoInicial(widget.produtividadeEsperadaTha);
+  void didUpdateWidget(covariant CalibracaoHeaderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.draft.produtividadeEsperadaTha !=
+        widget.state.draft.produtividadeEsperadaTha) {
+      _prodCtrl.text =
+          _textoInicial(widget.state.draft.produtividadeEsperadaTha);
+    }
+    if (!oldWidget.isExpanded && widget.isExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = _cardKey.currentContext;
+        if (context != null && context.mounted) {
+          Scrollable.ensureVisible(
+            context,
+            duration: _animDuration,
+            curve: Curves.easeInOut,
+            alignment: 0,
+          );
+        }
+      });
     }
   }
 
@@ -106,8 +131,6 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
     _prodCtrl.dispose();
     super.dispose();
   }
-
-  // ── callbacks ─────────────────────────────────────────────────────────────
 
   void _onToggleUnidade(bool paraEmSacas) {
     if (_emSacas == paraEmSacas) return;
@@ -120,54 +143,183 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
             : tHaAtual.toStringAsFixed(1);
       }
     });
+    widget.onUnidadeChanged(_unidadeLabel);
   }
 
   void _onProdChanged(String _) {
-    setState(() {}); // reconstrói label de equivalência
-    widget.onProdutividadeChanged?.call(_valorEmTha);
+    setState(() {});
+    widget.onProdutividadeChanged(_valorEmTha);
   }
-
-  // ── build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(AppDimens.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppInput(
-            key: ValueKey('nome-${widget.draftKey}'),
-            label: 'Nome',
-            initialValue: widget.nome,
-            onChanged: widget.onNomeChanged,
+    final shadowColor = context.appPalette.shadow;
+
+    return Container(
+      key: _cardKey,
+      decoration: BoxDecoration(
+        color: AppColors.bgPrimary,
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        border: Border.all(color: AppColors.border, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(height: AppDimens.md),
-          AppDropdown<String>(
-            label: 'Cultura',
-            value: widget.culturaSelecionada,
-            items: widget.culturas,
-            onChanged: widget.onCulturaChanged,
-          ),
-          const SizedBox(height: AppDimens.md),
-          AppInput(
-            key: ValueKey('safra-${widget.draftKey}'),
-            label: 'Safra',
-            hint: 'Ex.: 2026/2027',
-            initialValue: widget.safra,
-            onChanged: widget.onSafraChanged,
-          ),
-          const SizedBox(height: AppDimens.md),
-          AppInput(
-            key: ValueKey('cliente-${widget.draftKey}'),
-            label: 'Cliente',
-            initialValue: widget.cliente,
-            onChanged: widget.onClienteChanged,
-          ),
-          const SizedBox(height: AppDimens.md),
-          _buildProdutividadeSection(),
         ],
       ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!widget.isExpanded)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onToggle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.lg,
+                    vertical: 14,
+                  ),
+                  child: _buildCollapsedContent(),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppDimens.xl,
+                  AppDimens.md,
+                  AppDimens.xl,
+                  0,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildChevron(onTap: widget.onToggle),
+                ),
+              ),
+            AnimatedSize(
+              duration: _animDuration,
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.hardEdge,
+              child: widget.isExpanded
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDimens.xl,
+                        AppDimens.sm,
+                        AppDimens.xl,
+                        AppDimens.xl,
+                      ),
+                      child: _buildExpandedForm(),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsedContent() {
+    final draft = _draft;
+    final captionStyle = AppTextStyles.caption.copyWith(
+      color: AppColors.textSecond,
+    );
+
+    final culturaSafraParts = <String>[
+      if (draft.cultura.trim().isNotEmpty) draft.cultura.trim(),
+      if (draft.safra.trim().isNotEmpty) draft.safra.trim(),
+    ];
+    final prodResumo = _produtividadeResumo(draft.produtividadeEsperadaTha);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (draft.nome.trim().isNotEmpty)
+              Expanded(
+                child: Text(
+                  draft.nome.trim(),
+                  style: AppTextStyles.value,
+                ),
+              )
+            else
+              const Spacer(),
+            _buildChevron(onTap: widget.onToggle),
+          ],
+        ),
+        if (culturaSafraParts.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(culturaSafraParts.join(' · '), style: captionStyle),
+        ],
+        if (draft.cliente.trim().isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(draft.cliente.trim(), style: captionStyle),
+        ],
+        if (prodResumo != null) ...[
+          const SizedBox(height: 4),
+          Text('Produtividade: $prodResumo', style: captionStyle),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildChevron({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedRotation(
+        turns: widget.isExpanded ? 0.5 : 0.0,
+        duration: _animDuration,
+        curve: Curves.easeInOut,
+        child: const Icon(
+          Icons.keyboard_arrow_down,
+          color: AppColors.textSecond,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppInput(
+          key: ValueKey('nome-$_draftKey'),
+          label: 'Nome',
+          initialValue: _draft.nome,
+          onChanged: widget.onNomeChanged,
+        ),
+        const SizedBox(height: AppDimens.md),
+        AppDropdown<String>(
+          label: 'Cultura',
+          value: _culturaSelecionada,
+          items: widget.culturas,
+          onChanged: widget.onCulturaChanged,
+        ),
+        const SizedBox(height: AppDimens.md),
+        AppInput(
+          key: ValueKey('safra-$_draftKey'),
+          label: 'Safra',
+          hint: 'Ex.: 2026/2027',
+          initialValue: _draft.safra,
+          onChanged: widget.onSafraChanged,
+        ),
+        const SizedBox(height: AppDimens.md),
+        AppInput(
+          key: ValueKey('cliente-$_draftKey'),
+          label: 'Cliente',
+          initialValue: _draft.cliente,
+          onChanged: widget.onClienteChanged,
+        ),
+        const SizedBox(height: AppDimens.md),
+        _buildProdutividadeSection(),
+      ],
     );
   }
 
@@ -176,29 +328,26 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Label da seção
         Text('Produtividade Esperada', style: AppTextStyles.label),
         const SizedBox(height: 8),
-
-        // ── Toggle Sacas/ha | t/ha
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildToggleBtn(
-                label: 'Sacas/ha',
-                selected: _emSacas,
-                onTap: () => _onToggleUnidade(true),
-                isLeft: true),
+              label: 'Sacas/ha',
+              selected: _emSacas,
+              onTap: () => _onToggleUnidade(true),
+              isLeft: true,
+            ),
             _buildToggleBtn(
-                label: 't/ha',
-                selected: !_emSacas,
-                onTap: () => _onToggleUnidade(false),
-                isLeft: false),
+              label: 't/ha',
+              selected: !_emSacas,
+              onTap: () => _onToggleUnidade(false),
+              isLeft: false,
+            ),
           ],
         ),
         const SizedBox(height: 8),
-
-        // ── Campo numérico
         AppInput(
           controller: _prodCtrl,
           hint: _emSacas ? 'Ex.: 70' : 'Ex.: 4.2',
@@ -209,8 +358,6 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
           ],
           onChanged: _onProdChanged,
         ),
-
-        // ── Label de equivalência
         if (equiv.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(

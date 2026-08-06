@@ -17,6 +17,11 @@ workflows:
         script: flutter analyze
       - name: Rodar suíte de testes
         script: flutter test
+      - name: Widget Tests — Blindagem Calibração Cards
+        script: |
+          flutter test test/presentation/calibracao/ \
+            --reporter=expanded \
+            --no-pub
       - name: Build iOS Release
         script: |
           # BUILD_NAME vem do pubspec.yaml (fonte da verdade para a versão semântica).

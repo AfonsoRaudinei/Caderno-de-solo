@@ -12,8 +12,6 @@
 //   Valor 0.0 = dado não disponível na literatura
 // ============================================================
 
-
-
 // ─── ENUMS ───────────────────────────────────────────────────
 
 enum SourceType { autor, cultivar, tecnologia }

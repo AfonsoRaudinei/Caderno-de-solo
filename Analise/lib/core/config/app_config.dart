@@ -25,6 +25,34 @@ abstract final class AppConfig {
     defaultValue: '',
   );
 
+  /// Senha de acesso ao módulo Cálculos (gate interno).
+  /// Definir em build/CI via `--dart-define=CALCULOS_ACCESS_PASSWORD=...`.
+  /// Quando vazia, o acesso é negado (exceto em builds de teste).
+  static const String calculosAccessPassword = String.fromEnvironment(
+    'CALCULOS_ACCESS_PASSWORD',
+    defaultValue: '',
+  );
+
+  /// Builds de teste (TestFlight, debug, profile) abrem Cálculos sem senha.
+  /// Produção pode forçar gate com `--dart-define=SKIP_CALCULOS_ACCESS_PASSWORD=false`.
+  static const bool skipCalculosAccessPassword = bool.fromEnvironment(
+    'SKIP_CALCULOS_ACCESS_PASSWORD',
+    defaultValue: true,
+  );
+
+  /// Gate ativo apenas quando senha configurada e skip desligado.
+  static bool get requiresCalculosAccessPassword =>
+      !skipCalculosAccessPassword && calculosAccessPassword.isNotEmpty;
+
+  /// Autoriza explicitamente qualquer envio remoto de telemetria operacional.
+  ///
+  /// Sem esta flag, a aplicação mantém trilha apenas local e não publica
+  /// eventos para fora do app, mesmo em profile/release.
+  static const bool allowRemoteAnaliseTelemetry = bool.fromEnvironment(
+    'ALLOW_REMOTE_ANALISE_TELEMETRY',
+    defaultValue: false,
+  );
+
   /// Permite envio remoto também em debug (diagnóstico controlado).
   static const bool enableAnaliseTelemetryInDebug = bool.fromEnvironment(
     'ENABLE_ANALISE_TELEMETRY_IN_DEBUG',

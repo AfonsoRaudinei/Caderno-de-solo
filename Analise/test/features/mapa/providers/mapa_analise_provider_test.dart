@@ -74,4 +74,43 @@ void main() {
     expect(pins.single.position.latitude, -12.34);
     expect(pins.single.position.longitude, -45.67);
   });
+
+  test('provider filtrado retorna somente o pin da analise solicitada',
+      () async {
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier(
+            [
+              _analise(
+                id: 'a1',
+                talhao: 'T-01',
+                latitude: -12.34,
+                longitude: -45.67,
+              ),
+              _analise(
+                id: 'a2',
+                talhao: 'T-02',
+                latitude: -13.34,
+                longitude: -46.67,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(analiseNotifierProvider.future);
+    final globalPins = container.read(mapaAnaliseProvider).valueOrNull;
+    final filteredPins =
+        container.read(mapaAnaliseFiltradaProvider('a2')).valueOrNull;
+
+    expect(globalPins, hasLength(2));
+    expect(filteredPins, isNotNull);
+    expect(filteredPins, hasLength(1));
+    expect(filteredPins!.single.id, 'a2');
+    expect(filteredPins.single.position.latitude, -13.34);
+    expect(filteredPins.single.position.longitude, -46.67);
+  });
 }

@@ -73,20 +73,41 @@ void main() {
       expect(corrigida.produtor, 'Rogério de Paiva Moura');
     });
 
-    test('compativelComConfigurado exige match quando configurado', () {
-      final analise = _analise(produtor: 'Cliente A');
+    test('compativelComConfigurado aceita match parcial quando configurado',
+        () {
+      final analise = _analise(produtor: 'ANDRE LUIZ DE SIQUEIRA');
 
       expect(
         ProdutorResolucaoService.compativelComConfigurado(analise, ''),
         isTrue,
       );
       expect(
-        ProdutorResolucaoService.compativelComConfigurado(analise, 'Cliente A'),
+        ProdutorResolucaoService.compativelComConfigurado(
+          analise,
+          'ANDRE LUIZ DE SIQUEIRA',
+        ),
+        isTrue,
+      );
+      expect(
+        ProdutorResolucaoService.compativelComConfigurado(
+            analise, 'Andre Luiz'),
         isTrue,
       );
       expect(
         ProdutorResolucaoService.compativelComConfigurado(analise, 'Outro'),
         isFalse,
+      );
+    });
+
+    test('produtorEfetivo usa metadata quando campo produtor esta vazio', () {
+      final analise = _analise(
+        produtor: '',
+        metadata: const {'proprietario': 'ANDRE LUIZ DE SIQUEIRA'},
+      );
+
+      expect(
+        ProdutorResolucaoService.produtorEfetivo(analise),
+        'ANDRE LUIZ DE SIQUEIRA',
       );
     });
   });

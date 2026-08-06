@@ -105,11 +105,22 @@ class LabPdfParserService {
           normalizedHeader.contains('fe meh') ||
           (normalizedHeader.contains('cu meh') &&
               normalizedHeader.contains('mn meh'));
+      final isTableMehTexture = _hasHeaderToken(normalizedHeader, 'mn') &&
+          _hasHeaderToken(normalizedHeader, 'zn') &&
+          _hasHeaderToken(normalizedHeader, 'na') &&
+          normalizedHeader.contains('argila') &&
+          normalizedHeader.contains('silte') &&
+          normalizedHeader.contains('areia');
+      final isTableDtpa = normalizedHeader.contains('cu dtpa') &&
+          normalizedHeader.contains('fe dtpa') &&
+          normalizedHeader.contains('mn dtpa') &&
+          normalizedHeader.contains('zn dtpa');
       final isTableSilteAreia = normalizedHeader.contains('silte') &&
           normalizedHeader.contains('areia');
 
       for (final row in section.rows) {
-        final parsed = _parseRowWithTailValues(row, valueCount: 8);
+        final valueCount = isTableDtpa ? 4 : 8;
+        final parsed = _parseRowWithTailValues(row, valueCount: valueCount);
         if (parsed == null) continue;
 
         if (isTablePhK) {
@@ -128,6 +139,26 @@ class LabPdfParserService {
             hasPResCol
                 ? _exataPRemFields(parsed.values)
                 : _exataPRemSemResinaFields(parsed.values),
+            talhao: parsed.talhao,
+            profundidade: parsed.profundidade,
+          );
+          continue;
+        }
+
+        if (isTableMehTexture) {
+          mergeSample(
+            parsed.sampleId,
+            _exataMehTextureFields(parsed.values),
+            talhao: parsed.talhao,
+            profundidade: parsed.profundidade,
+          );
+          continue;
+        }
+
+        if (isTableDtpa) {
+          mergeSample(
+            parsed.sampleId,
+            _exataDtpaFields(parsed.values),
             talhao: parsed.talhao,
             profundidade: parsed.profundidade,
           );
@@ -174,6 +205,17 @@ class LabPdfParserService {
           continue;
         }
       }
+    }
+
+    final inlineResult = _parseExataInlineLayout(lines);
+    warnings.addAll(inlineResult.warnings);
+    for (final sample in inlineResult.samples.values) {
+      mergeSample(
+        sample['numeroAmostra'] as String,
+        sample,
+        talhao: sample['talhao'] as String?,
+        profundidade: sample['profundidade'] as String?,
+      );
     }
 
     if (amostras.isEmpty) {
@@ -232,6 +274,132 @@ class LabPdfParserService {
     );
   }
 
+  _ExataInlineParseResult _parseExataInlineLayout(
+    List<String> lines,
+  ) {
+    final samples = <String, Map<String, dynamic>>{};
+    final warnings = <String>[];
+    _ExataInlineBlock? currentBlock;
+    String? currentHeader;
+
+    void mergeParsed(_ParsedRow parsed, Map<String, dynamic> fields) {
+      final sample = samples.putIfAbsent(parsed.sampleId, () {
+        return {
+          'numeroAmostra': parsed.sampleId,
+          'talhao': parsed.talhao,
+          'profundidade': parsed.profundidade.isEmpty
+              ? '0-20'
+              : _normalizeDepth(parsed.profundidade) ?? parsed.profundidade,
+        };
+      });
+      if ((sample['talhao'] as String).trim().isEmpty &&
+          parsed.talhao.trim().isNotEmpty) {
+        sample['talhao'] = parsed.talhao;
+      }
+      for (final entry in fields.entries) {
+        if (entry.value != null) sample[entry.key] = entry.value;
+      }
+    }
+
+    for (final line in lines) {
+      final lower = _normalizeHeader(line);
+      if (lower.startsWith('amostra descrição da amostra') ||
+          lower.startsWith('amostra descricao da amostra')) {
+        currentBlock = _matchExataInlineBlock(lower);
+        currentHeader = lower;
+        continue;
+      }
+
+      if (!RegExp(r'^(SBA|SGO)\d{2}\.\d{5,6}\b').hasMatch(line)) {
+        continue;
+      }
+
+      final sampleId = RegExp(
+        r'^((?:SBA|SGO)\d{2}\.\d{5,6})\b',
+      ).firstMatch(line)?.group(1);
+      if (currentBlock == null) {
+        warnings.add(
+          'exata_inline_bloco_perdido:${sampleId ?? 'desconhecida'}:${currentHeader ?? 'sem_cabecalho'}',
+        );
+        continue;
+      }
+
+      final parsed = _parseRowWithTailValues(
+        _splitTableLine(line),
+        valueCount: currentBlock.valueCount,
+      );
+      if (parsed == null) {
+        warnings.add(
+          'exata_inline_linha_invalida:${currentBlock.id}:${sampleId ?? 'desconhecida'}',
+        );
+        continue;
+      }
+
+      mergeParsed(
+          parsed, _mapExataInlineBlockFields(currentBlock, parsed.values));
+    }
+
+    return _ExataInlineParseResult(samples: samples, warnings: warnings);
+  }
+
+  _ExataInlineBlock? _matchExataInlineBlock(String normalizedHeader) {
+    if (normalizedHeader.contains('ca mg al h + al k')) {
+      return _ExataInlineBlock.phK;
+    }
+    if (normalizedHeader.contains('p rem') &&
+        normalizedHeader.contains('m.o.')) {
+      return _ExataInlineBlock.pMo;
+    }
+    if (normalizedHeader.contains('argila') &&
+        normalizedHeader.contains('silte') &&
+        normalizedHeader.contains('areia')) {
+      return _ExataInlineBlock.textureCtc;
+    }
+    if (normalizedHeader.contains('m ca/ctc')) {
+      return _ExataInlineBlock.saturation;
+    }
+    if (normalizedHeader.contains('dtpa')) {
+      return _ExataInlineBlock.dtpa;
+    }
+    return null;
+  }
+
+  Map<String, dynamic> _mapExataInlineBlockFields(
+    _ExataInlineBlock block,
+    List<String> values,
+  ) {
+    switch (block) {
+      case _ExataInlineBlock.phK:
+        return _exataPhKFields(values);
+      case _ExataInlineBlock.pMo:
+        return _exataPRemSemResinaFields(values);
+      case _ExataInlineBlock.textureCtc:
+        return {
+          'mn_meh': _valueAt(values, 0),
+          'zn_meh': _valueAt(values, 1),
+          'na': _valueAt(values, 2),
+          'argila': _valueAt(values, 3),
+          'silte': _valueAt(values, 4),
+          'areiaTotal': _valueAt(values, 5),
+          'ctc': _valueAt(values, 6),
+          'vPercent': _valueAt(values, 7),
+        };
+      case _ExataInlineBlock.saturation:
+        return {
+          'mPercent': _valueAt(values, 0),
+          'caPctCtc': _valueAt(values, 1),
+          'mgPctCtc': _valueAt(values, 2),
+          'kPctCtc': _valueAt(values, 3),
+          'hAlPctCtc': _valueAt(values, 4),
+          'caMg': _valueAt(values, 5),
+          'caK': _valueAt(values, 6),
+          'mgK': _valueAt(values, 7),
+        };
+      case _ExataInlineBlock.dtpa:
+        return _exataDtpaFields(values);
+    }
+  }
+
   LabPdfParseResult _parseIbra(String text) {
     final compact = _compact(text);
     final warnings = <String>[];
@@ -263,6 +431,18 @@ class LabPdfParserService {
       for (var i = 0; i < ids.length && i < talhaoList.length; i++) {
         sampleMeta[ids[i]] = talhaoList[i];
       }
+    }
+
+    for (final line in _cleanLines(text)) {
+      final match = RegExp(
+        r'^(\d{6})\s+Talh[aã]o:\s*([^;]+);\s*Prof\.\s*:\s*(\d+)\s*a\s*(\d+)\s*cm',
+        caseSensitive: false,
+      ).firstMatch(line);
+      if (match == null) continue;
+      sampleMeta[match.group(1)!] = {
+        'talhao': (match.group(2) ?? '').trim(),
+        'profundidade': '${match.group(3) ?? ''}-${match.group(4) ?? ''}',
+      };
     }
 
     final amostras = <String, Map<String, dynamic>>{};
@@ -316,12 +496,12 @@ class LabPdfParserService {
           'na': values.length > 9 ? _toDouble(values[9]) : null,
           'hMaisAl_mmolc': values.length > 10 ? _toDouble(values[10]) : null,
           'al_mmolc': values.length > 11 ? _toDouble(values[11]) : null,
-          's020': values.length > 18 ? _toDouble(values[18]) : null,
-          'b': values.length > 19 ? _toDouble(values[19]) : null,
-          'cu': values.length > 20 ? _toDouble(values[20]) : null,
-          'fe': values.length > 21 ? _toDouble(values[21]) : null,
-          'mn': values.length > 22 ? _toDouble(values[22]) : null,
-          'zn': values.length > 23 ? _toDouble(values[23]) : null,
+          's020': values.length > 17 ? _toDouble(values[17]) : null,
+          'b': values.length > 18 ? _toDouble(values[18]) : null,
+          'cu': values.length > 19 ? _toDouble(values[19]) : null,
+          'fe': values.length > 20 ? _toDouble(values[20]) : null,
+          'mn': values.length > 21 ? _toDouble(values[21]) : null,
+          'zn': values.length > 22 ? _toDouble(values[22]) : null,
           'argila':
               values.length > 2 ? _toDouble(values[values.length - 3]) : null,
           'silte':
@@ -330,6 +510,10 @@ class LabPdfParserService {
               values.isNotEmpty ? _toDouble(values[values.length - 1]) : null,
         };
       }
+    }
+
+    if (amostras.isEmpty) {
+      amostras.addAll(_parseIbraMatrixLayout(text, sampleMeta));
     }
 
     if (amostras.isEmpty) {
@@ -390,9 +574,118 @@ class LabPdfParserService {
     );
   }
 
+  Map<String, Map<String, dynamic>> _parseIbraMatrixLayout(
+    String text,
+    Map<String, Map<String, String>> sampleMeta,
+  ) {
+    final lines = _cleanLines(text);
+    final ids = _ibraMatrixIds(lines);
+    if (ids.isEmpty) return const {};
+    final n = ids.length;
+
+    List<double?> row(RegExp label) => _matrixNumericRow(lines, label, n);
+
+    final pResina = row(RegExp(r'^P\s+F', caseSensitive: false));
+    final pRem = row(RegExp(r'^P\s+Rem\b', caseSensitive: false));
+    final mo = row(RegExp(r'^M\.O\.\s+Mat[ée]ria', caseSensitive: false));
+    final cot = row(RegExp(r'^COT\s+Carbono', caseSensitive: false));
+    final phCaCl2 = row(RegExp(r'^pH\s+pH\s+\(CaCl2\)', caseSensitive: false));
+    final phSmp = row(RegExp(r'^pH\s+pH\s+\(SMP\)', caseSensitive: false));
+    final k = row(RegExp(r'^K\s+Pot[áa]ssio', caseSensitive: false));
+    final ca = row(RegExp(r'^Ca\s+C[áa]lcio', caseSensitive: false));
+    final mg = row(RegExp(r'^Mg\s+Magn[ée]sio', caseSensitive: false));
+    final na = row(RegExp(r'^Na\s+S[óo]dio', caseSensitive: false));
+    final hAl = row(RegExp(r'^H[°ºo]\s*\+\s*Al', caseSensitive: false));
+    final al = row(RegExp(r'^Al\s*³|^Al\s+Alum', caseSensitive: false));
+    final ctc = row(RegExp(r'^C\.T\.C\.', caseSensitive: false));
+    final sb = row(RegExp(r'^S\.B\.', caseSensitive: false));
+    final v = row(RegExp(r'^V%', caseSensitive: false));
+    final m = row(RegExp(r'^m%', caseSensitive: false));
+    final s = row(RegExp(r'^S\s+Enxofre', caseSensitive: false));
+    final b = row(RegExp(r'^B\s+Boro', caseSensitive: false));
+    final cu = row(RegExp(r'^Cu\s+Cobre', caseSensitive: false));
+    final fe = row(RegExp(r'^Fe\s+Ferro', caseSensitive: false));
+    final mn = row(RegExp(r'^Mn\s+Mangan', caseSensitive: false));
+    final zn = row(RegExp(r'^Zn\s+Zinco', caseSensitive: false));
+    final argila = row(RegExp(r'^Argila\s+Argila', caseSensitive: false));
+    final silte = row(RegExp(r'^Silte\s+Silte', caseSensitive: false));
+    final areia =
+        row(RegExp(r'^Areia\s+Total\s+Areia\s+Total', caseSensitive: false));
+
+    return {
+      for (var i = 0; i < n; i++)
+        ids[i]: {
+          'numeroAmostra': ids[i],
+          'talhao': sampleMeta[ids[i]]?['talhao'] ?? '',
+          'profundidade': sampleMeta[ids[i]]?['profundidade'] ?? '0-20',
+          'pResina': pResina[i],
+          'pRem': pRem[i],
+          'mo_gdm3': mo[i],
+          'cot_gdm3': cot[i],
+          'phCaCl2': phCaCl2[i],
+          'phSmp': phSmp[i],
+          'k_mmolc': k[i],
+          'ca_mmolc': ca[i],
+          'mg_mmolc': mg[i],
+          'na': na[i],
+          'hMaisAl_mmolc': hAl[i],
+          'al_mmolc': al[i],
+          'ctc_mmolc': ctc[i],
+          'sb_mmolc': sb[i],
+          'vPercent': v[i],
+          'mPercent': m[i],
+          's020': s[i],
+          'b': b[i],
+          'cu': cu[i],
+          'fe': fe[i],
+          'mn': mn[i],
+          'zn': zn[i],
+          'argila': argila[i],
+          'silte': silte[i],
+          'areiaTotal': areia[i],
+        },
+    };
+  }
+
+  List<String> _ibraMatrixIds(List<String> lines) {
+    final amostrasIndex = lines.indexWhere(
+      (line) => line.toLowerCase() == 'amostras',
+    );
+    if (amostrasIndex < 0) return const [];
+
+    for (var i = amostrasIndex + 1; i < lines.length; i++) {
+      final ids = RegExp(r'\b\d{6}\b')
+          .allMatches(lines[i])
+          .map((match) => match.group(0)!)
+          .toList(growable: false);
+      if (ids.length >= 2) return ids;
+      if (lines[i].toLowerCase().startsWith('refer')) break;
+    }
+    return const [];
+  }
+
+  List<double?> _matrixNumericRow(
+    List<String> lines,
+    RegExp label,
+    int count,
+  ) {
+    final line = lines.firstWhere(
+      (candidate) => label.hasMatch(candidate.trim()),
+      orElse: () => '',
+    );
+    if (line.isEmpty) return List<double?>.filled(count, null);
+    final values = _numericTokens(line)
+        .map(_toDouble)
+        .whereType<double>()
+        .toList(growable: false);
+    if (values.length < count) return List<double?>.filled(count, null);
+    return values.sublist(values.length - count);
+  }
+
   LabPdfParseResult _parseMb(String text) {
     final lines = _cleanLines(text);
     final compact = _compact(text);
+    final warnings = <String>[];
 
     final analiseNumero = _firstMatch(
       text,
@@ -401,15 +694,17 @@ class LabPdfParserService {
     );
     final talhao = _firstMatch(
       text,
-      RegExp(r'AMOSTRA:\s*([^\n\r]+)', caseSensitive: false),
+      RegExp(r'AMOSTRA:\s*([^\n\r]+?)(?=\s+PROFUNDIDADE:|\r?\n|$)',
+          caseSensitive: false),
     );
-    final profundidade = _normalizeDepth(
-          _firstMatch(
-            text,
-            RegExp(r'PROFUNDIDADE:\s*([0-9\-\s]+)cm', caseSensitive: false),
-          ),
-        ) ??
-        '0-20';
+    final profundidadeRaw = _firstMatch(
+      text,
+      RegExp(r'PROFUNDIDADE:\s*([0-9\-\s]+)cm', caseSensitive: false),
+    );
+    final profundidade = _normalizeDepth(profundidadeRaw) ?? '0-20';
+    if ((profundidadeRaw ?? '').trim().isEmpty) {
+      warnings.add('mb_profundidade_ausente:${analiseNumero ?? 'sem_numero'}');
+    }
 
     final textureStart = lines.indexWhere(
         (line) => line.toUpperCase().contains('COMPOSIÇÃO GRANULOMÉTRICA'));
@@ -422,18 +717,14 @@ class LabPdfParserService {
             .where((line) => !RegExp(r'^\d+(,\d+)?\s*(mm|cm)$').hasMatch(line))
             .toList(growable: false)
         : const <String>[];
-    final textureValues =
-        textureTokens.where(_isNumberToken).take(3).toList(growable: false);
+    final textureValues = _extractMbTextureValues(textureTokens);
 
     final macroBlock = _sliceByMarkers(
       compact,
       startMarker: 'Ca Mg K P-meh K S H+Al Al',
       endMarker: 'REFERÊNCIAS TÉCNICAS PARA MÁXIMA PRODUTIVIDADE',
     );
-    // Substituir 'nr' por '0' no bloco para evitar deslocamento de índices
-    final macroBlockClean =
-        macroBlock.replaceAll(RegExp(r'\bnr\b', caseSensitive: false), '0');
-    final macroValues = macroBlockClean
+    final macroValues = macroBlock
         .split(RegExp(r'\s+'))
         .where(_looksLikeValueToken)
         .take(10)
@@ -484,6 +775,27 @@ class LabPdfParserService {
       's020': _toDouble(macroValues[5]),
       'hMaisAl': _toDouble(macroValues[6]),
       'al': _toDouble(macroValues[7]),
+      'ctc': _toDouble(_firstMatch(
+        text,
+        RegExp(r'CTC\s+Potencial\s+\(T\)\s+([0-9]+[,\.][0-9]+)',
+            caseSensitive: false),
+      )),
+      'sb': _toDouble(_firstMatch(
+        text,
+        RegExp(r'Soma\s+de\s+bases\s+\(S\)\s+([0-9]+[,\.][0-9]+)',
+            caseSensitive: false),
+      )),
+      'vPercent': _toDouble(_firstMatch(
+        text,
+        RegExp(r'Sat\.\s+por\s+bases\s+\(V\)\s+([0-9]+[,\.][0-9]+)',
+            caseSensitive: false),
+      )),
+      'mPercent': _toDouble(_firstMatch(
+        text,
+        RegExp(
+            r'Satura[çc][ãa]o\s+por\s+alum[ií]nio\s+\(m\)\s+([0-9]+[,\.][0-9]+)',
+            caseSensitive: false),
+      )),
       'b': mbMicro('B'),
       'cu': mbMicro('Cu'),
       'fe': mbMicro('Fe'),
@@ -542,8 +854,27 @@ class LabPdfParserService {
             '',
         'amostras': <Map<String, dynamic>>[amostra],
       },
-      warnings: const [],
+      warnings: warnings,
     );
+  }
+
+  List<String> _extractMbTextureValues(List<String> textureTokens) {
+    for (final line in textureTokens) {
+      final values = _numericTokens(line);
+      if (values.length >= 3) {
+        return values.sublist(values.length - 3);
+      }
+    }
+
+    final stackedValues = textureTokens
+        .expand(_numericTokens)
+        .where((token) => token.trim().isNotEmpty)
+        .toList(growable: false);
+    if (stackedValues.length >= 3) {
+      return stackedValues.sublist(stackedValues.length - 3);
+    }
+
+    return const [];
   }
 
   LabPdfParseResult _parseSolum(String text) {
@@ -590,96 +921,101 @@ class LabPdfParserService {
       if (m != null) {
         final id = m.group(1)!;
         final talhao = m.group(2)!.trim();
-        final prof = m.group(3)!.replaceFirst(RegExp(r'^0+'), ''); // 00-20→0-20
+        final prof = _normalizeDepth(m.group(3)!) ?? m.group(3)!;
         sampleMeta[id] = {'talhao': talhao, 'profundidade': prof};
       }
     }
 
-    // ── Extração de dados por campo ──────────────────────────────────
-    final tableHeaderMatch =
-        RegExp(r'AMOSTRAS\s*((?:\d{5}\s*)+)').firstMatch(text);
-    final orderedIds = tableHeaderMatch != null
-        ? RegExp(r'\d{5}')
-            .allMatches(tableHeaderMatch.group(1) ?? '')
-            .map((m) => m.group(0)!)
-            .toList()
-        : sampleMeta.keys.toList();
-
-    if (orderedIds.isEmpty) {
+    final tableBlocks = _solumTableBlocks(text);
+    if (tableBlocks.isEmpty && sampleMeta.isEmpty) {
       throw const LabPdfParseException('IDs Solum não encontrados');
     }
-    final n = orderedIds.length;
 
-    List<double?> solumRow(String label) {
+    List<double?> solumRow(String block, String label, int count) {
       final pattern = RegExp(
-        '$label[^\\n\\r]*?(?:IAC|Cálculo|-)\\s+([\\d.,\\s\\-]+)',
+        '(?:$label)[^\\n\\r]*?(?:IAC|Cálculo|-)\\s+([\\d.,\\s\\-]+)',
         caseSensitive: false,
       );
-      final match = pattern.firstMatch(text);
-      if (match == null) return List.filled(n, null);
-      final tokens = match
-          .group(1)!
-          .split(RegExp(r'\s+'))
-          .map((t) => t.trim())
-          .where((t) => t.isNotEmpty)
-          .take(n)
-          .toList();
-      return List.generate(n, (i) {
-        if (i >= tokens.length) return null;
-        final s = tokens[i];
-        if (s == '-') return null;
-        return double.tryParse(s.replaceAll(',', '.'));
-      });
+      final match = pattern.firstMatch(block);
+      if (match != null) {
+        final tokens = match
+            .group(1)!
+            .split(RegExp(r'\s+'))
+            .map((t) => t.trim())
+            .where((t) => t.isNotEmpty)
+            .toList();
+        while (tokens.length > count && tokens.first == '-') {
+          tokens.removeAt(0);
+        }
+        return List.generate(count, (i) {
+          if (i >= tokens.length) return null;
+          final s = tokens[i];
+          if (s == '-') return null;
+          return double.tryParse(s.replaceAll(',', '.'));
+        });
+      }
+
+      return _solumVerticalRow(block, label, count);
     }
 
-    final kRow = solumRow(r'K\s+Pot');
-    final mgRow = solumRow(r'Mg\s+Magn');
-    final caRow = solumRow(r'Ca\s+C[aá]lc');
-    final pRow = solumRow(r'P\s+F[oó]sf');
-    final alRow = solumRow(r'Al');
-    final moRow = solumRow(r'MO\s+Mat');
-    final halRow = solumRow(r'H[°o]\s*\+\s*Al');
-    final phRow = solumRow(r'pH\s+pH CaCl');
-    final phSmpRow = solumRow(r'pH SMP');
-    final vPercentRow = solumRow(r'V\s*%|Satura[çc][ãa]o\s+de\s+Bases');
-    final ctcRow = solumRow(r'CTC');
-    final sbRow = solumRow(r'SB|Soma\s+de\s+Bases');
-    final mPercentRow = solumRow(r'm\s*%|Satura[çc][ãa]o\s+por\s+Al');
-    final sRow = solumRow(r'S(?:[\s]+Enxofre)?|Enxofre');
-    final bRow = solumRow(r'B(?:[a-zA-Z\s/()]+)?|Boro');
-    final cuRow = solumRow(r'Cu(?:[\s]+Cobre)?|Cobre');
-    final feRow = solumRow(r'Fe\s+Ferro');
-    final mnRow = solumRow(r'Mn\s+Mang');
-    final znRow = solumRow(r'Zn\s+Zinco');
-
     final amostras = <Map<String, dynamic>>[];
-    for (var i = 0; i < n; i++) {
-      final id = orderedIds[i];
-      final meta = sampleMeta[id] ?? {};
-      amostras.add({
-        'numeroAmostra': id,
-        'talhao': meta['talhao'] ?? '',
-        'profundidade': meta['profundidade'] ?? '0-20',
-        'k_mmolc': kRow[i],
-        'mg_mmolc': mgRow[i],
-        'ca_mmolc': caRow[i],
-        'p_mgdm3': pRow[i],
-        'al_mmolc': alRow[i],
-        'mo_gdm3': moRow[i],
-        'hMaisAl_mmolc': halRow[i],
-        'phCaCl2': phRow[i],
-        'phSmp': phSmpRow[i],
-        'vPercent': vPercentRow[i],
-        'ctc_mmolc': ctcRow[i],
-        'sb_mmolc': sbRow[i],
-        'mPercent': mPercentRow[i],
-        's020': sRow[i],
-        'b': bRow[i],
-        'cu': cuRow[i],
-        'fe': feRow[i],
-        'mn': mnRow[i],
-        'zn': znRow[i],
-      });
+    for (final block in tableBlocks) {
+      final orderedIds = _solumOrderedIds(block);
+      if (orderedIds.isEmpty) continue;
+      final n = orderedIds.length;
+
+      final kRow = solumRow(block, r'^K$|K\s+Pot', n);
+      final mgRow = solumRow(block, r'^Mg$|Mg\s+Magn', n);
+      final caRow = solumRow(block, r'^Ca$|Ca\s+C[aá]lc', n);
+      final pRow = solumRow(block, r'^P$|P\s+F[oó]sf', n);
+      final alRow = solumRow(block, r'Al(?:³|\s+Alum)', n);
+      final moRow = solumRow(block, r'^MO$|MO\s+Mat', n);
+      final halRow = solumRow(block, r'H[°o]\s*\+\s*Al', n);
+      final phRow = solumRow(block, r'pH\s+pH CaCl|pH\s+CaCl2', n);
+      final phSmpRow = solumRow(block, r'pH\s+SMP', n);
+      final vPercentRow =
+          solumRow(block, r'V\s*%|Satura[çc][ãa]o\s+de\s+Bases', n);
+      final ctcRow = solumRow(block, r'C\.?\s*T\.?\s*C\.?', n);
+      final hRow = solumRow(block, r'^H\s*°?$|H\s*[°o]\s+Hidrog', n);
+      final sbRow = solumRow(block, r'S\.?\s*B\.?|Soma\s+de\s+Bases', n);
+      final mPercentRow =
+          solumRow(block, r'm\s*%|Satura[çc][ãa]o\s+por\s+Al', n);
+      final sRow = solumRow(block, r'^S$|S\s+Enxofre|Enxofre', n);
+      final bRow = solumRow(block, r'^B$|B\s+Boro|Boro', n);
+      final cuRow = solumRow(block, r'^Cu$|Cu\s+Cobre|Cobre', n);
+      final feRow = solumRow(block, r'^Fe$|Fe\s+Ferro', n);
+      final mnRow = solumRow(block, r'^Mn$|Mn\s+Mang', n);
+      final znRow = solumRow(block, r'^Zn$|Zn\s+Zinco', n);
+
+      for (var i = 0; i < n; i++) {
+        final id = orderedIds[i];
+        final meta = sampleMeta[id] ?? {};
+        amostras.add({
+          'numeroAmostra': id,
+          'talhao': meta['talhao'] ?? '',
+          'profundidade': meta['profundidade'] ?? '0-20',
+          'k_mmolc': kRow[i],
+          'mg_mmolc': mgRow[i],
+          'ca_mmolc': caRow[i],
+          'p_mgdm3': pRow[i],
+          'al_mmolc': alRow[i],
+          'mo_gdm3': moRow[i],
+          'hMaisAl_mmolc': halRow[i],
+          'h_mmolc': hRow[i] ?? _subtractNullable(halRow[i], alRow[i]),
+          'phCaCl2': phRow[i],
+          'phSmp': phSmpRow[i],
+          'vPercent': vPercentRow[i],
+          'ctc_mmolc': ctcRow[i],
+          'sb_mmolc': sbRow[i],
+          'mPercent': mPercentRow[i],
+          's020': sRow[i],
+          'b': bRow[i],
+          'cu': cuRow[i],
+          'fe': feRow[i],
+          'mn': mnRow[i],
+          'zn': znRow[i],
+        });
+      }
     }
 
     if (amostras.isEmpty) {
@@ -702,117 +1038,90 @@ class LabPdfParserService {
     );
   }
 
+  List<String> _solumTableBlocks(String text) {
+    final matches = RegExp(
+      r'(?:DETERMINA[ÇC][ÕO]ES[\s\S]*?AMOSTRAS|AMOSTRAS)[\s\S]*?(?=Notas:|C[ÓO]DIGO:|$)',
+      caseSensitive: false,
+    ).allMatches(text);
+    return matches
+        .map((match) => match.group(0) ?? '')
+        .where((block) => _solumOrderedIds(block).isNotEmpty)
+        .toList(growable: false);
+  }
+
+  List<String> _solumOrderedIds(String block) {
+    final lines = _cleanLines(block);
+    for (final line in lines) {
+      final tokens = line.split(RegExp(r'\s+'));
+      if (tokens.length > 1 &&
+          tokens.every((token) => RegExp(r'^\d{5}$').hasMatch(token))) {
+        return tokens;
+      }
+    }
+
+    final amostrasIndex = lines.lastIndexWhere(
+      (line) => line.toLowerCase() == 'amostras',
+    );
+    if (amostrasIndex >= 0) {
+      final ids = <String>[];
+      for (var i = amostrasIndex + 1; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (RegExp(r'^\d{5}$').hasMatch(line)) {
+          ids.add(line);
+          continue;
+        }
+        if (ids.isNotEmpty) break;
+      }
+      if (ids.isNotEmpty) return ids;
+    }
+
+    return const [];
+  }
+
+  List<double?> _solumVerticalRow(String block, String label, int count) {
+    final lines = _cleanLines(block);
+    final labelRegex = RegExp(label, caseSensitive: false);
+    final start = lines.indexWhere((line) => labelRegex.hasMatch(line));
+    if (start < 0) return List.filled(count, null);
+
+    var valuesStarted = false;
+    final tokens = <String>[];
+    for (var i = start + 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      final normalized = line.toLowerCase();
+      if (!valuesStarted) {
+        if (normalized == 'iac' ||
+            normalized == 'cálculo' ||
+            normalized == 'calculo' ||
+            line == '-') {
+          valuesStarted = true;
+        }
+        continue;
+      }
+
+      if (_looksLikeValueToken(line)) {
+        tokens.add(line);
+        continue;
+      }
+      if (tokens.isNotEmpty) break;
+    }
+
+    while (tokens.length > count && tokens.first == '-') {
+      tokens.removeAt(0);
+    }
+    return List.generate(count, (i) {
+      if (i >= tokens.length) return null;
+      return _toDouble(tokens[i]);
+    });
+  }
+
   LabPdfParseResult _parseSellar(String text) {
     final lines = _cleanLines(text);
     final warnings = <String>[];
-
-    final start = lines.indexWhere(
-      (line) => line.toLowerCase().contains('análise granulométrica'),
-    );
-    final end = lines.indexWhere((line) => line.toLowerCase() == 'média');
-    if (start < 0 || end <= start) {
-      throw const LabPdfParseException('Bloco principal Sellar não encontrado');
-    }
-
-    final blockTokens = lines
-        .sublist(start + 1, end)
-        .expand((line) => line.split(RegExp(r'\s+')))
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList(growable: false);
-
-    final ids = <String>[];
-    var idx = 0;
-    while (idx < blockTokens.length &&
-        RegExp(r'^\d{5}$').hasMatch(blockTokens[idx])) {
-      ids.add(blockTokens[idx]);
-      idx++;
-    }
-
-    if (ids.isEmpty) {
-      throw const LabPdfParseException('Número Sellar não identificado');
-    }
-
-    final n = ids.length;
-    final numeric = blockTokens
-        .sublist(idx)
-        .where(_looksLikeValueToken)
-        .toList(growable: false);
-
-    if (numeric.length < (n * 20)) {
-      throw const LabPdfParseException('Dados numéricos Sellar insuficientes');
-    }
-
-    final ph = _takeGroup(numeric, 0, n);
-    final pMeh = _takeGroup(numeric, 1, n);
-    final pResina = _extractValuesAfterLabel(lines, 'P resina', count: n);
-    final ca = _takeGroup(numeric, 3, n);
-    final mg = _takeGroup(numeric, 4, n);
-    final al = _takeGroup(numeric, 5, n);
-    final hMaisAl = _takeGroup(numeric, 6, n);
-    final mo = _takeGroup(numeric, 7, n);
-
-    final sampleBlockStart = n * 12;
-    final microAndRatios = numeric.skip(sampleBlockStart).take(n * 8).toList();
-    final textures =
-        numeric.skip(sampleBlockStart + (n * 8)).take(n * 3).toList();
-
-    final talhao = _extractSellarTalhoes(lines, n);
-    final kValues = _extractValuesAfterLabel(lines, 'K', count: n);
-    final sValues = _extractValuesAfterLabel(lines, 'S-SO4-2', count: n);
-    final coValues = _extractValuesAfterLabel(lines, 'C.O.', count: n);
-    final bValues = _extractValuesAfterRegex(
-      lines,
-      RegExp(r'^(B|Boro|B\s+mg/dm3|B\s+dtpa)$', caseSensitive: false),
-      count: n,
-    );
-
     final amostras = <Map<String, dynamic>>[];
-    for (var i = 0; i < n; i++) {
-      final base = i * 8;
-      final textureBase = i * 3;
-      amostras.add(<String, dynamic>{
-        'numeroSellar': ids[i],
-        'identificacao': talhao.length > i ? talhao[i] : 'Amostra ${i + 1}',
-        'profundidade': '0-20',
-        'phCaCl2': _toDouble(ph[i]),
-        'pMehlich': _toDouble(pMeh[i]),
-        'pResina': pResina.length > i ? _toDouble(pResina[i]) : null,
-        'k_mgdm3': kValues.length > i ? _toDouble(kValues[i]) : null,
-        'ca': _toDouble(ca[i]),
-        'mg': _toDouble(mg[i]),
-        'al': _toDouble(al[i]),
-        'hMaisAl': _toDouble(hMaisAl[i]),
-        'materiaOrganica': _toDouble(mo[i]),
-        's020': sValues.length > i ? _toDouble(sValues[i]) : null,
-        'carbonoOrganico': coValues.length > i ? _toDouble(coValues[i]) : null,
-        'b': bValues.length > i
-            ? _toDouble(bValues[i])
-            : (microAndRatios.length > base
-                ? _toDouble(microAndRatios[base])
-                : null),
-        'cu': microAndRatios.length > base + 1
-            ? _toDouble(microAndRatios[base + 1])
-            : null,
-        'fe': microAndRatios.length > base + 2
-            ? _toDouble(microAndRatios[base + 2])
-            : null,
-        'mn': microAndRatios.length > base + 3
-            ? _toDouble(microAndRatios[base + 3])
-            : null,
-        'zn': microAndRatios.length > base + 4
-            ? _toDouble(microAndRatios[base + 4])
-            : null,
-        'argila': textures.length > textureBase
-            ? _toDouble(textures[textureBase])
-            : null,
-        'silte': textures.length > textureBase + 1
-            ? _toDouble(textures[textureBase + 1])
-            : null,
-        'areiaTotal': textures.length > textureBase + 2
-            ? _toDouble(textures[textureBase + 2])
-            : null,
-      });
+
+    for (final block in _sellarTableBlocks(lines)) {
+      amostras.addAll(_parseSellarSingleBlock(block));
     }
 
     if (amostras.isEmpty) {
@@ -832,10 +1141,6 @@ class LabPdfParserService {
       'amostras': amostras,
     };
 
-    if (kValues.length != n || sValues.length != n) {
-      warnings.add('sellar_triplet_incompleto');
-    }
-
     return LabPdfParseResult(
       labId: 'sellar',
       laudo: laudo,
@@ -843,7 +1148,471 @@ class LabPdfParserService {
     );
   }
 
+  List<Map<String, dynamic>> _parseSellarSingleBlock(List<String> lines) {
+    final ids = _extractSellarIds(lines);
+
+    if (ids.isEmpty) {
+      throw const LabPdfParseException('Número Sellar não identificado');
+    }
+
+    final n = ids.length;
+    final vertical = _extractSellarVerticalValues(lines, n);
+
+    final phAgua = _extractSellarRowValues(
+        lines, RegExp(r'^pH\s+Á?gua\b', caseSensitive: false), n);
+    final phCaCl2 = _extractSellarRowValues(
+        lines, RegExp(r'^pH\s+CaCl\s*2\b', caseSensitive: false), n);
+    final pTotal = _extractSellarRowValues(
+        lines, RegExp(r'^P\s+Total\b', caseSensitive: false), n);
+    final pMeh = _extractSellarRowValues(
+        lines, RegExp(r'^P\s+meh\b', caseSensitive: false), n);
+    final pResina = _extractSellarRowValues(
+        lines, RegExp(r'^P\s+resina\b', caseSensitive: false), n);
+    final sValues = _extractSellarRowValues(
+        lines, RegExp(r'^S-SO(?:\s*4)?\b', caseSensitive: false), n);
+    final kRows = _extractSellarRowsValues(
+        lines, RegExp(r'^K\b', caseSensitive: false), n);
+    final kMgDm3 = kRows.isNotEmpty ? kRows.first : const <String>[];
+    final kCmolc = kRows.length > 1 ? kRows[1] : const <String>[];
+    final ca = _extractSellarRowValues(
+        lines, RegExp(r'^Ca\b', caseSensitive: false), n);
+    final mg = _extractSellarRowValues(
+        lines, RegExp(r'^Mg\b', caseSensitive: false), n);
+    final al = _extractSellarRowValues(
+        lines, RegExp(r'^Al\b', caseSensitive: false), n);
+    final hMaisAl = _extractSellarRowValues(
+        lines, RegExp(r'^H\+Al\b', caseSensitive: false), n);
+    final mo = _extractSellarRowValues(
+        lines, RegExp(r'^M\.O\.', caseSensitive: false), n);
+    final coValues = _extractSellarRowValues(
+        lines, RegExp(r'^C\.O\.', caseSensitive: false), n);
+    final bValues = _extractSellarRowValues(
+        lines, RegExp(r'^B\b', caseSensitive: false), n);
+    final cu = _extractSellarRowValues(
+        lines, RegExp(r'^Cu\b', caseSensitive: false), n);
+    final fe = _extractSellarRowValues(
+        lines, RegExp(r'^Fe\b', caseSensitive: false), n);
+    final mn = _extractSellarRowValues(
+        lines, RegExp(r'^Mn\b', caseSensitive: false), n);
+    final zn = _extractSellarRowValues(
+        lines, RegExp(r'^Zn\b', caseSensitive: false), n);
+    final sb = _extractSellarRowValues(
+        lines, RegExp(r'^SB\b', caseSensitive: false), n);
+    final ctcRows = _extractSellarRowsValues(
+        lines, RegExp(r'^CTC\b', caseSensitive: false), n);
+    final ctc = ctcRows.isNotEmpty ? ctcRows.first : const <String>[];
+    final ctcEfetiva = ctcRows.length > 1 ? ctcRows[1] : const <String>[];
+    final v = _extractSellarRowValues(
+        lines, RegExp(r'^V\b', caseSensitive: false), n);
+    final m =
+        _extractSellarRowValues(lines, RegExp(r'^m\b', caseSensitive: true), n);
+    final caMg = _extractSellarRowValues(
+        lines, RegExp(r'^Ca/Mg\b', caseSensitive: false), n);
+    final caK = _extractSellarRowValues(
+        lines, RegExp(r'^Ca/K\b', caseSensitive: false), n);
+    final mgK = _extractSellarRowValues(
+        lines, RegExp(r'^Mg/K\b', caseSensitive: false), n);
+    final argila = _extractSellarRowValues(
+        lines, RegExp(r'^Argila\b', caseSensitive: false), n);
+    final silte = _extractSellarRowValues(
+        lines, RegExp(r'^Silte\b', caseSensitive: false), n);
+    final areia = _extractSellarRowValues(
+        lines, RegExp(r'^Areia\s+Total\b', caseSensitive: false), n);
+    final classificacaoTextura = _extractSellarTextRowValues(
+        lines, RegExp(r'^Classificação\b', caseSensitive: false), n);
+    final tipoSoloMapa = _extractSellarTextRowValues(lines,
+        RegExp(r'^Tipo\s+de\s+Solo\s+\(MAPA\)', caseSensitive: false), n);
+
+    final sampleMeta = _extractSellarSampleMeta(lines, n);
+
+    final amostras = <Map<String, dynamic>>[];
+    for (var i = 0; i < n; i++) {
+      final meta = sampleMeta.length > i
+          ? sampleMeta[i]
+          : _SellarSampleMeta(
+              identificacao: 'Amostra ${i + 1}',
+              profundidade: '0-20',
+            );
+      amostras.add(<String, dynamic>{
+        'numeroSellar': ids[i],
+        'identificacao': meta.identificacao,
+        'profundidade': meta.profundidade,
+        'phAgua': phAgua.length > i ? _toDouble(phAgua[i]) : null,
+        'phCaCl2': phCaCl2.length > i
+            ? _toDouble(phCaCl2[i])
+            : _verticalAt(vertical, 'phCaCl2', i),
+        'pTotal': pTotal.length > i
+            ? _toDouble(pTotal[i])
+            : _verticalAt(vertical, 'pTotal', i),
+        'pMehlich': pMeh.length > i
+            ? _toDouble(pMeh[i])
+            : _verticalAt(vertical, 'pMehlich', i),
+        'pResina': pResina.length > i ? _toDouble(pResina[i]) : null,
+        'k_mgdm3': kMgDm3.length > i
+            ? _toDouble(kMgDm3[i])
+            : _verticalAt(vertical, 'k_mgdm3', i),
+        'k': kCmolc.length > i
+            ? _toDouble(kCmolc[i])
+            : _verticalAt(vertical, 'k', i),
+        'ca': ca.length > i ? _toDouble(ca[i]) : _verticalAt(vertical, 'ca', i),
+        'mg': mg.length > i ? _toDouble(mg[i]) : _verticalAt(vertical, 'mg', i),
+        'al': al.length > i ? _toDouble(al[i]) : _verticalAt(vertical, 'al', i),
+        'hMaisAl': hMaisAl.length > i
+            ? _toDouble(hMaisAl[i])
+            : _verticalAt(vertical, 'hMaisAl', i),
+        'materiaOrganica': mo.length > i
+            ? _toDouble(mo[i])
+            : _verticalAt(vertical, 'materiaOrganica', i),
+        's020': sValues.length > i
+            ? _toDouble(sValues[i])
+            : _verticalAt(vertical, 's020', i),
+        'carbonoOrganico': coValues.length > i
+            ? _toDouble(coValues[i])
+            : _verticalAt(vertical, 'carbonoOrganico', i),
+        'b': bValues.length > i
+            ? _toDouble(bValues[i])
+            : _verticalAt(vertical, 'b', i),
+        'cu': cu.length > i ? _toDouble(cu[i]) : _verticalAt(vertical, 'cu', i),
+        'fe': fe.length > i ? _toDouble(fe[i]) : _verticalAt(vertical, 'fe', i),
+        'mn': mn.length > i ? _toDouble(mn[i]) : _verticalAt(vertical, 'mn', i),
+        'zn': zn.length > i ? _toDouble(zn[i]) : _verticalAt(vertical, 'zn', i),
+        'sb': sb.length > i ? _toDouble(sb[i]) : _verticalAt(vertical, 'sb', i),
+        'ctc': ctc.length > i
+            ? _toDouble(ctc[i])
+            : _verticalAt(vertical, 'ctc', i),
+        'ctcEfetiva': ctcEfetiva.length > i
+            ? _toDouble(ctcEfetiva[i])
+            : _verticalAt(vertical, 'ctcEfetiva', i),
+        'vPercent': v.length > i
+            ? _toDouble(v[i])
+            : _verticalAt(vertical, 'vPercent', i),
+        'mPercent': m.length > i
+            ? _toDouble(m[i])
+            : _verticalAt(vertical, 'mPercent', i),
+        'caMg': caMg.length > i
+            ? _toDouble(caMg[i])
+            : _verticalAt(vertical, 'caMg', i),
+        'caK': caK.length > i
+            ? _toDouble(caK[i])
+            : _verticalAt(vertical, 'caK', i),
+        'mgK': mgK.length > i
+            ? _toDouble(mgK[i])
+            : _verticalAt(vertical, 'mgK', i),
+        'argila': argila.length > i
+            ? _toDouble(argila[i])
+            : _verticalAt(vertical, 'argila', i),
+        'silte': silte.length > i
+            ? _toDouble(silte[i])
+            : _verticalAt(vertical, 'silte', i),
+        'areiaTotal': areia.length > i
+            ? _toDouble(areia[i])
+            : _verticalAt(vertical, 'areiaTotal', i),
+        'classificacaoTextura':
+            classificacaoTextura.length > i ? classificacaoTextura[i] : null,
+        'tipoSoloMapa': tipoSoloMapa.length > i ? tipoSoloMapa[i] : null,
+      });
+    }
+
+    return amostras;
+  }
+
+  List<List<String>> _sellarTableBlocks(List<String> lines) {
+    final starts = <int>[];
+    final idxDeterminacao = lines.indexWhere(
+      (line) => line.toLowerCase().startsWith('determinação'),
+    );
+    for (var i = 0; i < lines.length; i++) {
+      final lower = lines[i].toLowerCase();
+      if (lower.startsWith('número sellar') ||
+          lower.startsWith('numero sellar')) {
+        starts.add(i);
+      }
+    }
+    if (starts.isEmpty) return [lines];
+    if (idxDeterminacao >= 0 && starts.first > idxDeterminacao) {
+      return [lines];
+    }
+
+    return List.generate(starts.length, (index) {
+      final start = starts[index];
+      final end = index + 1 < starts.length ? starts[index + 1] : lines.length;
+      return lines.sublist(start, end);
+    });
+  }
+
+  List<String> _extractSellarIds(List<String> lines) {
+    for (final line in lines) {
+      if (!line.toLowerCase().startsWith('número sellar') &&
+          !line.toLowerCase().startsWith('numero sellar')) {
+        continue;
+      }
+      final sameLineIds = RegExp(r'\b\d{5}\b')
+          .allMatches(line)
+          .map((match) => match.group(0)!)
+          .toList(growable: false);
+      if (sameLineIds.isNotEmpty) return sameLineIds;
+
+      final currentIndex = lines.indexOf(line);
+      final nextIds = <String>[];
+      for (var i = currentIndex + 1;
+          i < lines.length && i <= currentIndex + 4;
+          i++) {
+        final ids = RegExp(r'\b\d{5}\b')
+            .allMatches(lines[i])
+            .map((match) => match.group(0)!)
+            .toList(growable: false);
+        nextIds.addAll(ids);
+        if (nextIds.isNotEmpty) return nextIds;
+      }
+    }
+
+    for (final line in lines.take(30)) {
+      final ids = RegExp(r'\b\d{5}\b')
+          .allMatches(line)
+          .map((match) => match.group(0)!)
+          .toList(growable: false);
+      if (ids.length >= 2) {
+        return ids;
+      }
+    }
+
+    final granulometriaIndex = lines.indexWhere(
+      (line) => line.toLowerCase().contains('análise granulométrica'),
+    );
+    if (granulometriaIndex >= 0) {
+      final ids = <String>[];
+      for (var i = granulometriaIndex + 1; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (RegExp(r'^\d{5}$').hasMatch(line)) {
+          ids.add(line);
+          continue;
+        }
+        if (ids.isNotEmpty) break;
+      }
+      if (ids.isNotEmpty) return ids;
+    }
+    return const [];
+  }
+
+  List<List<String>> _extractSellarRowsValues(
+    List<String> lines,
+    RegExp labelPattern,
+    int count,
+  ) {
+    final rows = <List<String>>[];
+    for (final line in lines) {
+      if (!labelPattern.hasMatch(line.trim())) continue;
+      final values = _numericTokens(line);
+      if (values.length >= count) {
+        rows.add(values.sublist(values.length - count));
+      }
+    }
+    return rows;
+  }
+
+  List<String> _extractSellarRowValues(
+    List<String> lines,
+    RegExp labelPattern,
+    int count,
+  ) {
+    final rows = _extractSellarRowsValues(lines, labelPattern, count);
+    return rows.isEmpty ? const [] : rows.first;
+  }
+
+  List<String> _extractSellarTextRowValues(
+    List<String> lines,
+    RegExp labelPattern,
+    int count,
+  ) {
+    for (final line in lines) {
+      if (!labelPattern.hasMatch(line.trim())) continue;
+      final tokens = line
+          .split(RegExp(r'\s+'))
+          .map((token) => token.trim())
+          .where((token) => token.isNotEmpty)
+          .toList(growable: false);
+      if (tokens.length <= count) return const [];
+      if (line.toLowerCase().startsWith('classificação')) {
+        return _extractSellarClassificacaoValues(tokens, count);
+      }
+      return tokens.sublist(tokens.length - count);
+    }
+    return const [];
+  }
+
+  List<String> _extractSellarClassificacaoValues(
+    List<String> tokens,
+    int count,
+  ) {
+    final values = <String>[];
+    for (var i = 1; i < tokens.length && values.length < count; i++) {
+      final token = tokens[i];
+      final next = i + 1 < tokens.length ? tokens[i + 1] : '';
+      if (token.toUpperCase() == 'M' &&
+          next.toLowerCase().startsWith('argilosa')) {
+        values.add('$token $next');
+        i++;
+        continue;
+      }
+      values.add(token);
+    }
+    return values.length == count ? values : const [];
+  }
+
+  List<String> _numericTokens(String line) {
+    return RegExp(r'(?<![A-Za-zÀ-ÿ])\d+(?:[,.]\d+)?(?![A-Za-zÀ-ÿ])')
+        .allMatches(line)
+        .map((match) => match.group(0)!)
+        .toList(growable: false);
+  }
+
+  Map<String, List<double?>> _extractSellarVerticalValues(
+    List<String> lines,
+    int count,
+  ) {
+    final start = lines.indexWhere(
+      (line) => line.toLowerCase().contains('análise granulométrica'),
+    );
+    final end = lines.indexWhere(
+      (line) => line.toLowerCase().trim() == 'determinação',
+    );
+    if (start < 0 || end <= start) return const {};
+
+    final numbers = <double>[];
+    for (final line in lines.sublist(start + 1, end)) {
+      for (final token in _numericTokens(line)) {
+        final value = _toDouble(token);
+        if (value != null) numbers.add(value);
+      }
+    }
+
+    if (numbers.length < count + (count * 20)) return const {};
+    var offset = count;
+
+    List<double?> group() {
+      if (offset + count > numbers.length) {
+        return List<double?>.filled(count, null);
+      }
+      final values = numbers.sublist(offset, offset + count);
+      offset += count;
+      return values;
+    }
+
+    final values = <String, List<double?>>{
+      'phCaCl2': group(),
+      'pTotal': group(),
+      'pMehlich': group(),
+      's020': group(),
+      'k_mgdm3': group(),
+      'k': group(),
+      'ca': group(),
+      'mg': group(),
+      'al': group(),
+      'hMaisAl': group(),
+      'materiaOrganica': group(),
+      'carbonoOrganico': group(),
+      'b': group(),
+      'cu': group(),
+      'fe': group(),
+      'mn': group(),
+      'zn': group(),
+      'sb': group(),
+      'ctc': group(),
+      'ctcEfetiva': group(),
+      'vPercent': group(),
+      'mPercent': group(),
+    };
+
+    for (var i = 0; i < count; i++) {
+      for (final key in const ['caMg', 'caK', 'mgK']) {
+        values.putIfAbsent(key, () => List<double?>.filled(count, null));
+        values[key]![i] = offset < numbers.length ? numbers[offset] : null;
+        offset++;
+      }
+    }
+
+    for (var i = 0; i < count; i++) {
+      for (final key in const ['areiaTotal', 'silte', 'argila']) {
+        values.putIfAbsent(key, () => List<double?>.filled(count, null));
+        values[key]![i] = offset < numbers.length ? numbers[offset] : null;
+        offset++;
+      }
+    }
+
+    return values;
+  }
+
+  double? _verticalAt(
+      Map<String, List<double?>> values, String key, int index) {
+    final row = values[key];
+    if (row == null || index < 0 || index >= row.length) return null;
+    return row[index];
+  }
+
+  List<_SellarSampleMeta> _extractSellarSampleMeta(List<String> lines, int n) {
+    final idxNumeroSellar = lines.indexWhere((line) {
+      final lower = line.toLowerCase();
+      return lower.startsWith('número sellar') ||
+          lower.startsWith('numero sellar');
+    });
+    final idxDeterminacao = lines.indexWhere(
+      (line) => line.toLowerCase().startsWith('determinação'),
+    );
+
+    if (idxNumeroSellar >= 0 && idxDeterminacao > idxNumeroSellar) {
+      final header =
+          lines.sublist(idxNumeroSellar + 1, idxDeterminacao).join(' ');
+      final depths = RegExp(r'\((\d{1,3})\s*-\s*(\d{1,3})\)')
+          .allMatches(header)
+          .map(
+            (match) =>
+                '${_normalizeDepthNumber(match.group(1)!)}-${_normalizeDepthNumber(match.group(2)!)}',
+          )
+          .toList(growable: false);
+      final names = RegExp(r'Amostra\s+\d+\s*-', caseSensitive: false)
+          .allMatches(header)
+          .map((match) => match.group(0)!.trim())
+          .toList(growable: false);
+
+      if (names.length >= n || depths.length >= n) {
+        return List.generate(n, (i) {
+          final name = names.length > i ? names[i] : 'Amostra ${i + 1}';
+          final depth = depths.length > i ? depths[i] : '0-20';
+          return _SellarSampleMeta(
+            identificacao: '$name ($depth)',
+            profundidade: depth,
+          );
+        });
+      }
+    }
+
+    final talhoes = _extractSellarTalhoes(lines, n);
+    return List.generate(n, (i) {
+      return _SellarSampleMeta(
+        identificacao: talhoes.length > i ? talhoes[i] : 'Amostra ${i + 1}',
+        profundidade: '0-20',
+      );
+    });
+  }
+
   List<String> _extractSellarTalhoes(List<String> lines, int n) {
+    final idxNumeroSellar = lines.indexWhere((line) {
+      final lower = line.toLowerCase();
+      return lower.startsWith('número sellar') ||
+          lower.startsWith('numero sellar');
+    });
+    if (idxNumeroSellar >= 0) {
+      for (var i = idxNumeroSellar + 1; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (line.isEmpty) continue;
+        if (line.toLowerCase().contains('identificação da amostra')) break;
+        if (_numericTokens(line).length >= n) continue;
+
+        final names = _splitSellarSampleNames(line, n);
+        if (names.isNotEmpty) return names;
+      }
+    }
+
     // No PDF Sellar: "Identificação da Amostra" aparece ANTES de "Tipo de Solo"
     // Os talhões ficam entre essas duas marcações
     final idxIdentificacao = lines.indexWhere(
@@ -878,69 +1647,30 @@ class LabPdfParserService {
     return talhoes.take(n).toList(growable: false);
   }
 
-  List<String> _extractValuesAfterLabel(
-    List<String> items,
-    String label, {
-    required int count,
-    int window = 12,
-  }) {
-    return _extractValuesAfterMatcher(
-      items,
-      count: count,
-      window: window,
-      matches: (item) => item.toLowerCase() == label.toLowerCase(),
-    );
-  }
+  List<String> _splitSellarSampleNames(String line, int count) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return const [];
 
-  List<String> _extractValuesAfterRegex(
-    List<String> items,
-    RegExp pattern, {
-    required int count,
-    int window = 12,
-  }) {
-    return _extractValuesAfterMatcher(
-      items,
-      count: count,
-      window: window,
-      matches: pattern.hasMatch,
-    );
-  }
-
-  List<String> _extractValuesAfterMatcher(
-    List<String> items, {
-    required bool Function(String item) matches,
-    required int count,
-    required int window,
-  }) {
-    List<String> best = const [];
-    var bestSpan = 1 << 30;
-
-    for (var i = 0; i < items.length; i++) {
-      if (!matches(items[i])) continue;
-
-      final candidate = <String>[];
-      var span = bestSpan;
-      final limit =
-          (i + window + 1) < items.length ? (i + window + 1) : items.length;
-      for (var j = i + 1; j < limit && candidate.length < count; j++) {
-        if (!_looksLikeValueToken(items[j])) continue;
-        candidate.add(items[j]);
-        span = j - i;
+    final numbered = RegExp(r'.+?\d(?:\s+|$)').allMatches(trimmed).toList();
+    if (numbered.length >= count - 1) {
+      final names = <String>[];
+      var end = 0;
+      for (final match in numbered.take(count - 1)) {
+        final value = match.group(0)?.trim();
+        if (value != null && value.isNotEmpty) {
+          names.add(value);
+          end = match.end;
+        }
       }
-
-      if (candidate.length == count && span < bestSpan) {
-        best = List<String>.unmodifiable(candidate);
-        bestSpan = span;
-      }
+      final tail = trimmed.substring(end).trim();
+      if (tail.isNotEmpty) names.add(tail);
+      if (names.length == count) return names;
     }
 
-    return best;
-  }
-
-  List<String> _takeGroup(List<String> values, int group, int size) {
-    final start = group * size;
-    if (start + size > values.length) return List<String>.filled(size, '');
-    return values.sublist(start, start + size);
+    final tokens = trimmed.split(RegExp(r'\s{2,}'));
+    if (tokens.length == count) return tokens;
+    if (count == 1) return [trimmed];
+    return const [];
   }
 
   List<_TableSection> _extractTableSections({
@@ -951,7 +1681,10 @@ class LabPdfParserService {
     var i = 0;
 
     while (i < lines.length) {
-      if (lines[i].toLowerCase() != 'amostra') {
+      final currentLower = lines[i].toLowerCase();
+      if (currentLower != 'amostra' &&
+          !currentLower.startsWith('amostra descrição da amostra') &&
+          !currentLower.startsWith('amostra descricao da amostra')) {
         i++;
         continue;
       }
@@ -962,7 +1695,11 @@ class LabPdfParserService {
           startData = j;
           break;
         }
-        if (lines[j].toLowerCase() == 'amostra' && j > i + 1) {
+        final lower = lines[j].toLowerCase();
+        if ((lower == 'amostra' ||
+                lower.startsWith('amostra descrição da amostra') ||
+                lower.startsWith('amostra descricao da amostra')) &&
+            j > i + 1) {
           break;
         }
       }
@@ -976,6 +1713,8 @@ class LabPdfParserService {
       for (var j = startData + 1; j < lines.length; j++) {
         final lower = lines[j].toLowerCase();
         if (lower == 'amostra' ||
+            lower.startsWith('amostra descrição da amostra') ||
+            lower.startsWith('amostra descricao da amostra') ||
             lower.startsWith('relatório n') ||
             lower.startsWith('software ultra lims') ||
             lower.startsWith('referência metodológica') ||
@@ -1004,7 +1743,7 @@ class LabPdfParserService {
             .sublist(rowStart, rowEnd)
             .expand(_splitTableLine)
             .toList(growable: false);
-        if (row.length >= 9) {
+        if (row.length >= 5) {
           rows.add(row);
         }
       }
@@ -1151,6 +1890,26 @@ class LabPdfParserService {
     };
   }
 
+  Map<String, dynamic> _exataMehTextureFields(List<String> values) {
+    return <String, dynamic>{
+      'mn_meh': _valueAt(values, 0),
+      'zn_meh': _valueAt(values, 1),
+      'na': _valueAt(values, 2),
+      'argila': _valueAt(values, 3),
+      'silte': _valueAt(values, 4),
+      'areiaTotal': _valueAt(values, 5),
+    };
+  }
+
+  Map<String, dynamic> _exataDtpaFields(List<String> values) {
+    return <String, dynamic>{
+      'cu_dtpa': _valueAt(values, 0),
+      'fe_dtpa': _valueAt(values, 1),
+      'mn_dtpa': _valueAt(values, 2),
+      'zn_dtpa': _valueAt(values, 3),
+    };
+  }
+
   Map<String, dynamic> _exataSilteAreiaFields(List<String> values) {
     return <String, dynamic>{
       'silte': _valueAt(values, 0),
@@ -1180,6 +1939,11 @@ class LabPdfParserService {
   double? _valueAt(List<String> values, int index) {
     if (index < 0 || index >= values.length) return null;
     return _toDouble(values[index]);
+  }
+
+  double? _subtractNullable(double? left, double? right) {
+    if (left == null || right == null) return null;
+    return left - right;
   }
 
   String _resolveTalhaoFallback(List<String> tokens) {
@@ -1297,13 +2061,17 @@ class LabPdfParserService {
     final cleaned = raw.replaceAll('cm', '').trim();
     final match = RegExp(r'(\d{1,2})\s*-\s*(\d{1,2})').firstMatch(cleaned);
     if (match != null) {
-      return '${match.group(1)}-${match.group(2)}';
+      return '${_normalizeDepthNumber(match.group(1)!)}-${_normalizeDepthNumber(match.group(2)!)}';
     }
     final matchA = RegExp(r'(\d{1,2})\s*a\s*(\d{1,2})').firstMatch(cleaned);
     if (matchA != null) {
-      return '${matchA.group(1)}-${matchA.group(2)}';
+      return '${_normalizeDepthNumber(matchA.group(1)!)}-${_normalizeDepthNumber(matchA.group(2)!)}';
     }
     return cleaned.isEmpty ? null : cleaned;
+  }
+
+  String _normalizeDepthNumber(String value) {
+    return (int.tryParse(value) ?? 0).toString();
   }
 
   String? _firstMatch(String text, RegExp regex) {
@@ -1345,6 +2113,39 @@ class _ParsedRow {
     required this.talhao,
     required this.profundidade,
     required this.values,
+  });
+}
+
+class _ExataInlineParseResult {
+  final Map<String, Map<String, dynamic>> samples;
+  final List<String> warnings;
+
+  const _ExataInlineParseResult({
+    required this.samples,
+    required this.warnings,
+  });
+}
+
+enum _ExataInlineBlock {
+  phK('ph_k', 8),
+  pMo('p_mo', 8),
+  textureCtc('texture_ctc', 8),
+  saturation('sat', 8),
+  dtpa('dtpa', 4);
+
+  final String id;
+  final int valueCount;
+
+  const _ExataInlineBlock(this.id, this.valueCount);
+}
+
+class _SellarSampleMeta {
+  final String identificacao;
+  final String profundidade;
+
+  const _SellarSampleMeta({
+    required this.identificacao,
+    required this.profundidade,
   });
 }
 

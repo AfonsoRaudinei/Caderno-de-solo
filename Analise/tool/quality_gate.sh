@@ -6,7 +6,11 @@ cd "$ROOT_DIR"
 
 echo "[GATE E] Quality gate started"
 
-echo "[GATE E] 1/9 - Architecture boundaries (domain imports)"
+echo "[GATE E] 0/11 - Product modules anti-regression guard"
+chmod +x ./tool/product_modules_guard.sh
+./tool/product_modules_guard.sh
+
+echo "[GATE E] 1/11 - Architecture boundaries (domain imports)"
 DOMAIN_VIOLATIONS="$(rg -n "import 'package:soloforte/features/.*/presentation|import 'package:soloforte/features/.*/application|import 'package:soloforte/presentation" -S lib/domain lib/features/*/domain || true)"
 if [[ -n "$DOMAIN_VIOLATIONS" ]]; then
   echo "[GATE E][FAIL] Domain boundary violations found:"
@@ -15,7 +19,7 @@ if [[ -n "$DOMAIN_VIOLATIONS" ]]; then
 fi
 echo "[GATE E] Domain boundaries OK"
 
-echo "[GATE E] 2/9 - Cross-feature presentation imports"
+echo "[GATE E] 2/11 - Cross-feature presentation imports"
 python3 - <<'PY'
 from pathlib import Path
 import re
@@ -40,7 +44,7 @@ if issues:
 print("[GATE E] Cross-feature presentation OK")
 PY
 
-echo "[GATE E] 3/9 - Runtime mock policy guards"
+echo "[GATE E] 3/11 - Runtime mock policy guards"
 SEED_IDENTITY_VIOLATIONS="$(rg -n "raudyneyb@gmail.com|_seedAccount\\(|auto-seed" -g '*.dart' lib/features/analise/presentation/providers/analise_provider.dart lib/data/datasources/remote/auth_datasource.dart || true)"
 if [[ -n "$SEED_IDENTITY_VIOLATIONS" ]]; then
   echo "[GATE E][FAIL] Seed/runtime identity-specific logic found:"
@@ -70,13 +74,14 @@ if [[ -n "$BAK_VIOLATIONS" ]]; then
 fi
 echo "[GATE E] Runtime mock policy OK"
 
-echo "[GATE E] 4/9 - Static analysis"
+echo "[GATE E] 4/11 - Static analysis"
 flutter analyze
 
-echo "[GATE E] 5/9 - Critical tests with coverage"
+echo "[GATE E] 5/11 - Critical tests with coverage"
 flutter test --coverage --reporter compact \
   test/core/config/app_config_test.dart \
   test/core/router/app_router_test.dart \
+  test/core/product_modules_guard_test.dart \
   test/main_test.dart \
   test/presentation/login_controller_test.dart \
   test/data/datasources/remote/auth_datasource_test.dart \
@@ -86,7 +91,7 @@ flutter test --coverage --reporter compact \
   test/features/historico/presentation/historico_page_test.dart \
   test/domain/usecases/recomendacao_engine_test.dart
 
-echo "[GATE E] 6/9 - Analise widget and persistence tests"
+echo "[GATE E] 6/11 - Analise widget and persistence tests"
 flutter test --reporter compact \
   test/features/analise/domain/validation/analise_data_contract_test.dart \
   test/features/analise/application/providers/analise_telemetry_provider_test.dart \
@@ -95,7 +100,17 @@ flutter test --reporter compact \
   test/features/analise/presentation/widgets/analise_table_widget_test.dart \
   test/features/analise/data/datasources/analise_local_datasource_batch_test.dart
 
-echo "[GATE E] 7/9 - Golden and integration tests"
+echo "[GATE E] 7/11 - Unificação Clientes ↔ Análises"
+flutter test --reporter compact \
+  test/features/analise/domain/services/analise_vinculo_service_test.dart \
+  test/features/analise/domain/services/cliente_analises_filter_test.dart \
+  test/features/analise/domain/usecases/aplicar_hierarquia_analises_usecase_test.dart \
+  test/features/analise/domain/usecases/migrar_vinculos_legados_usecase_test.dart \
+  test/features/analise/application/providers/hierarquia_selecao_provider_test.dart \
+  test/features/clientes/presentation/analise_vinculo_badge_test.dart \
+  test/core/constants/app_routes_cliente_test.dart
+
+echo "[GATE E] 8/11 - Golden and integration tests"
 flutter test --reporter compact test/features/analise/integration/nova_analise_flow_test.dart
 
 if [[ "${QUALITY_RUN_FULL_TESTS:-false}" == "true" ]]; then
@@ -103,10 +118,13 @@ if [[ "${QUALITY_RUN_FULL_TESTS:-false}" == "true" ]]; then
   flutter test --reporter compact
 fi
 
-echo "[GATE E] 8/9 - Coverage thresholds"
+echo "[GATE E] 9/11 - Coverage thresholds"
 python3 tool/coverage_gate.py coverage/lcov.info
 
-echo "[GATE E] 9/9 - Observability gate"
+echo "[GATE E] 10/11 - Observability gate"
 ./tool/observability_gate.sh
+
+echo "[GATE E] 11/11 - Product modules re-check"
+./tool/product_modules_guard.sh
 
 echo "[GATE E] Quality gate PASSED"

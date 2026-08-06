@@ -1,5 +1,4 @@
-import 'package:soloforte/features/laboratorio/application/recomendacao_export_context_builder.dart';
-import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_html_exporter.dart';
+import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
@@ -12,10 +11,11 @@ import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
-import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
+import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
@@ -33,9 +33,12 @@ bool analiseMatchesProdutorBusca(AnaliseSolo analise, String busca) {
   final query = busca.trim();
   if (query.isEmpty) return true;
   final q = query.toLowerCase();
-  return analise.produtor.toLowerCase().contains(q) ||
+  final produtor =
+      ProdutorResolucaoService.produtorEfetivo(analise).toLowerCase();
+  return produtor.contains(q) ||
       analise.fazenda.toLowerCase().contains(q) ||
-      analise.talhao.toLowerCase().contains(q);
+      analise.talhao.toLowerCase().contains(q) ||
+      analise.numeroAmostra.toLowerCase().contains(q);
 }
 
 class RecomendacaoScreen extends ConsumerStatefulWidget {
@@ -120,6 +123,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
         centerTitle: false,
       ),
       body: ListView(
+        key: const Key('recomendacao_body_scroll'),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         children: [
           AppCardSection(
@@ -335,12 +339,12 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      key: const Key('btn_compartilhar_recomendacao'),
+                      key: const Key('btn_exportar_pdf'),
                       onPressed: (_salvando || _exportando)
                           ? null
-                          : () => _compartilharRecomendacao(resultado),
+                          : () => _exportarRelatorio(resultado),
                       icon: const Icon(Icons.share_outlined, size: 18),
-                      label: const Text('Compartilhar'),
+                      label: const Text('Exportar relatorio'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF666666),
                         side: const BorderSide(color: Color(0xFFD1D1D6)),
@@ -425,34 +429,34 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     }
   }
 
-  Future<void> _compartilharRecomendacao(
-      ResultadoRecomendacao resultado) async {
+  Future<void> _exportarRelatorio(ResultadoRecomendacao resultado) async {
     setState(() => _exportando = true);
     try {
       final analises = ref.read(analiseNotifierProvider).valueOrNull ?? [];
       AnaliseSolo? analiseSolo;
+      final analisesSelecionadas = <AnaliseSolo>[];
       for (final a in analises) {
+        if (_analiseIdsSelecionados.contains(a.id)) {
+          analisesSelecionadas.add(a);
+        }
         if (a.id == resultado.analise.id) {
           analiseSolo = a;
-          break;
         }
       }
 
       final perfilAssets = ref.read(perfilAssetsProvider);
       final perfil = ref.read(configControllerProvider).valueOrNull;
 
-      final exportContext =
-          await const RecomendacaoExportContextBuilder().build(
+      await ref.read(exportRecomendacaoProvider)(
         resultado: resultado,
         analiseSolo: analiseSolo,
+        analisesSelecionadas: analisesSelecionadas,
         perfil: perfil,
         logoUrl: perfilAssets.logoUrl,
       );
-
-      await const RecomendacaoHtmlExporter().exportar(exportContext);
     } catch (e) {
       if (!mounted) return;
-      _showMensagem('Erro ao compartilhar: $e');
+      _showMensagem('Erro exportar relatorio: $e');
     } finally {
       if (mounted) setState(() => _exportando = false);
     }

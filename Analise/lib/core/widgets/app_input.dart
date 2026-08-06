@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// TextField estilizado iOS do SoloForte
 class AppInput extends StatefulWidget {
@@ -117,21 +118,28 @@ class _AppInputState extends State<AppInput> {
 
   @override
   Widget build(BuildContext context) {
-    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    final palette = context.appPalette;
+    final externalError =
+        widget.errorText != null && widget.errorText!.isNotEmpty
+            ? widget.errorText
+            : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.label != null) ...[
-          Text(widget.label!, style: AppTextStyles.label),
+          Text(
+            widget.label!,
+            style: AppTextStyles.label.copyWith(color: palette.textSecondary),
+          ),
           const SizedBox(height: 6),
         ],
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            boxShadow: _isFocused && !hasError
+            boxShadow: _isFocused && externalError == null
                 ? [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.12),
@@ -157,26 +165,32 @@ class _AppInputState extends State<AppInput> {
             inputFormatters: _buildFormatters(),
             style: AppTextStyles.input.copyWith(
               color:
-                  widget.enabled ? AppColors.textPrimary : AppColors.textSecond,
+                  widget.enabled ? palette.textPrimary : palette.textSecondary,
             ),
-            onChanged: widget.onChanged,
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              // Atualiza borda/sombra quando o validator limpa o erro.
+              setState(() {});
+            },
             onFieldSubmitted: widget.onSubmitted,
             validator: widget.validator,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: AppTextStyles.input.copyWith(
-                color: AppColors.textTertiary,
+                color: palette.textTertiary,
               ),
               counterText: '',
               filled: true,
               fillColor:
-                  widget.enabled ? AppColors.bgPrimary : AppColors.bgSecondary,
+                  widget.enabled ? palette.inputFill : palette.cardStrong,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 12,
               ),
               suffixText: widget.suffixText,
-              suffixStyle: AppTextStyles.caption,
+              suffixStyle:
+                  AppTextStyles.caption.copyWith(color: palette.textSecondary),
               prefixIcon: widget.prefixIcon,
               suffixIcon: widget.obscureText
                   ? IconButton(
@@ -186,7 +200,7 @@ class _AppInputState extends State<AppInput> {
                         _isObscured
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: AppColors.textSecond,
+                        color: palette.textSecondary,
                         size: 20,
                       ),
                     )
@@ -194,19 +208,23 @@ class _AppInputState extends State<AppInput> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: hasError ? AppColors.error : AppColors.border,
+                  color: externalError != null
+                      ? AppColors.error
+                      : palette.borderStrong,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(
-                  color: hasError ? AppColors.error : AppColors.primary,
+                  color: externalError != null
+                      ? AppColors.error
+                      : AppColors.primary,
                   width: 1.5,
                 ),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.borderSoft),
+                borderSide: BorderSide(color: palette.border),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -217,15 +235,12 @@ class _AppInputState extends State<AppInput> {
                 borderSide:
                     const BorderSide(color: AppColors.error, width: 1.5),
               ),
-              // Sem errorText aqui — exibimos manualmente abaixo para controle total
-              errorText: null,
+              // Expõe erro externo e deixa o FormField sobrescrever com o validator.
+              errorText: externalError,
+              errorStyle: AppTextStyles.error,
             ),
           ),
         ),
-        if (hasError) ...[
-          const SizedBox(height: 4),
-          Text(widget.errorText!, style: AppTextStyles.error),
-        ],
       ],
     );
   }

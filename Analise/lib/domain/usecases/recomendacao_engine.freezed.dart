@@ -218,6 +218,30 @@ mixin _$MicroResultado {
   /// Nível crítico de referência
   double get nc => throw _privateConstructorUsedError;
 
+  /// Déficit (NC − teor atual), limitado a zero
+  double get deficit => throw _privateConstructorUsedError;
+
+  /// Correção do solo (g/ha elemento), após eficiência solo
+  double get correcaoSolo => throw _privateConstructorUsedError;
+
+  /// Produção esperada (t/ha)
+  double get producaoTha => throw _privateConstructorUsedError;
+
+  /// Extração calculada (g/ha)
+  double get extracao => throw _privateConstructorUsedError;
+
+  /// Exportação calculada (g/ha)
+  double get exportacao => throw _privateConstructorUsedError;
+
+  /// Regra Planta ou Grão
+  String get regraUtilizada => throw _privateConstructorUsedError;
+
+  /// Eficiência da via aplicada (%)
+  double get eficienciaAplicada => throw _privateConstructorUsedError;
+
+  /// Necessidade do nutriente (g/ha elemento)
+  double get necessidadeNutriente => throw _privateConstructorUsedError;
+
   /// Dose recomendada do nutriente puro
   double get dose => throw _privateConstructorUsedError;
 
@@ -235,6 +259,12 @@ mixin _$MicroResultado {
   /// Citação científica da referência usada
   String? get referencia => throw _privateConstructorUsedError;
   List<String> get avisosNutriente => throw _privateConstructorUsedError;
+  List<String> get memoriaCalculo => throw _privateConstructorUsedError;
+  String get grupoNome => throw _privateConstructorUsedError;
+  String? get grupoId => throw _privateConstructorUsedError;
+  String get concentracaoUnidade => throw _privateConstructorUsedError;
+  double get doseMinima => throw _privateConstructorUsedError;
+  double get doseMaxima => throw _privateConstructorUsedError;
 
   /// Create a copy of MicroResultado
   /// with the given fields replaced by the non-null parameter values.
@@ -253,6 +283,14 @@ abstract class $MicroResultadoCopyWith<$Res> {
       {String elemento,
       double valorAtual,
       double nc,
+      double deficit,
+      double correcaoSolo,
+      double producaoTha,
+      double extracao,
+      double exportacao,
+      String regraUtilizada,
+      double eficienciaAplicada,
+      double necessidadeNutriente,
       double dose,
       String unidade,
       bool deficiente,
@@ -261,7 +299,13 @@ abstract class $MicroResultadoCopyWith<$Res> {
       double doseProduto,
       String doseProdutoLabel,
       String? referencia,
-      List<String> avisosNutriente});
+      List<String> avisosNutriente,
+      List<String> memoriaCalculo,
+      String grupoNome,
+      String? grupoId,
+      String concentracaoUnidade,
+      double doseMinima,
+      double doseMaxima});
 }
 
 /// @nodoc
@@ -282,6 +326,14 @@ class _$MicroResultadoCopyWithImpl<$Res, $Val extends MicroResultado>
     Object? elemento = null,
     Object? valorAtual = null,
     Object? nc = null,
+    Object? deficit = null,
+    Object? correcaoSolo = null,
+    Object? producaoTha = null,
+    Object? extracao = null,
+    Object? exportacao = null,
+    Object? regraUtilizada = null,
+    Object? eficienciaAplicada = null,
+    Object? necessidadeNutriente = null,
     Object? dose = null,
     Object? unidade = null,
     Object? deficiente = null,
@@ -291,6 +343,12 @@ class _$MicroResultadoCopyWithImpl<$Res, $Val extends MicroResultado>
     Object? doseProdutoLabel = null,
     Object? referencia = freezed,
     Object? avisosNutriente = null,
+    Object? memoriaCalculo = null,
+    Object? grupoNome = null,
+    Object? grupoId = freezed,
+    Object? concentracaoUnidade = null,
+    Object? doseMinima = null,
+    Object? doseMaxima = null,
   }) {
     return _then(_value.copyWith(
       elemento: null == elemento
@@ -304,6 +362,38 @@ class _$MicroResultadoCopyWithImpl<$Res, $Val extends MicroResultado>
       nc: null == nc
           ? _value.nc
           : nc // ignore: cast_nullable_to_non_nullable
+              as double,
+      deficit: null == deficit
+          ? _value.deficit
+          : deficit // ignore: cast_nullable_to_non_nullable
+              as double,
+      correcaoSolo: null == correcaoSolo
+          ? _value.correcaoSolo
+          : correcaoSolo // ignore: cast_nullable_to_non_nullable
+              as double,
+      producaoTha: null == producaoTha
+          ? _value.producaoTha
+          : producaoTha // ignore: cast_nullable_to_non_nullable
+              as double,
+      extracao: null == extracao
+          ? _value.extracao
+          : extracao // ignore: cast_nullable_to_non_nullable
+              as double,
+      exportacao: null == exportacao
+          ? _value.exportacao
+          : exportacao // ignore: cast_nullable_to_non_nullable
+              as double,
+      regraUtilizada: null == regraUtilizada
+          ? _value.regraUtilizada
+          : regraUtilizada // ignore: cast_nullable_to_non_nullable
+              as String,
+      eficienciaAplicada: null == eficienciaAplicada
+          ? _value.eficienciaAplicada
+          : eficienciaAplicada // ignore: cast_nullable_to_non_nullable
+              as double,
+      necessidadeNutriente: null == necessidadeNutriente
+          ? _value.necessidadeNutriente
+          : necessidadeNutriente // ignore: cast_nullable_to_non_nullable
               as double,
       dose: null == dose
           ? _value.dose
@@ -341,6 +431,30 @@ class _$MicroResultadoCopyWithImpl<$Res, $Val extends MicroResultado>
           ? _value.avisosNutriente
           : avisosNutriente // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      memoriaCalculo: null == memoriaCalculo
+          ? _value.memoriaCalculo
+          : memoriaCalculo // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      grupoNome: null == grupoNome
+          ? _value.grupoNome
+          : grupoNome // ignore: cast_nullable_to_non_nullable
+              as String,
+      grupoId: freezed == grupoId
+          ? _value.grupoId
+          : grupoId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      concentracaoUnidade: null == concentracaoUnidade
+          ? _value.concentracaoUnidade
+          : concentracaoUnidade // ignore: cast_nullable_to_non_nullable
+              as String,
+      doseMinima: null == doseMinima
+          ? _value.doseMinima
+          : doseMinima // ignore: cast_nullable_to_non_nullable
+              as double,
+      doseMaxima: null == doseMaxima
+          ? _value.doseMaxima
+          : doseMaxima // ignore: cast_nullable_to_non_nullable
+              as double,
     ) as $Val);
   }
 }
@@ -357,6 +471,14 @@ abstract class _$$MicroResultadoImplCopyWith<$Res>
       {String elemento,
       double valorAtual,
       double nc,
+      double deficit,
+      double correcaoSolo,
+      double producaoTha,
+      double extracao,
+      double exportacao,
+      String regraUtilizada,
+      double eficienciaAplicada,
+      double necessidadeNutriente,
       double dose,
       String unidade,
       bool deficiente,
@@ -365,7 +487,13 @@ abstract class _$$MicroResultadoImplCopyWith<$Res>
       double doseProduto,
       String doseProdutoLabel,
       String? referencia,
-      List<String> avisosNutriente});
+      List<String> avisosNutriente,
+      List<String> memoriaCalculo,
+      String grupoNome,
+      String? grupoId,
+      String concentracaoUnidade,
+      double doseMinima,
+      double doseMaxima});
 }
 
 /// @nodoc
@@ -384,6 +512,14 @@ class __$$MicroResultadoImplCopyWithImpl<$Res>
     Object? elemento = null,
     Object? valorAtual = null,
     Object? nc = null,
+    Object? deficit = null,
+    Object? correcaoSolo = null,
+    Object? producaoTha = null,
+    Object? extracao = null,
+    Object? exportacao = null,
+    Object? regraUtilizada = null,
+    Object? eficienciaAplicada = null,
+    Object? necessidadeNutriente = null,
     Object? dose = null,
     Object? unidade = null,
     Object? deficiente = null,
@@ -393,6 +529,12 @@ class __$$MicroResultadoImplCopyWithImpl<$Res>
     Object? doseProdutoLabel = null,
     Object? referencia = freezed,
     Object? avisosNutriente = null,
+    Object? memoriaCalculo = null,
+    Object? grupoNome = null,
+    Object? grupoId = freezed,
+    Object? concentracaoUnidade = null,
+    Object? doseMinima = null,
+    Object? doseMaxima = null,
   }) {
     return _then(_$MicroResultadoImpl(
       elemento: null == elemento
@@ -406,6 +548,38 @@ class __$$MicroResultadoImplCopyWithImpl<$Res>
       nc: null == nc
           ? _value.nc
           : nc // ignore: cast_nullable_to_non_nullable
+              as double,
+      deficit: null == deficit
+          ? _value.deficit
+          : deficit // ignore: cast_nullable_to_non_nullable
+              as double,
+      correcaoSolo: null == correcaoSolo
+          ? _value.correcaoSolo
+          : correcaoSolo // ignore: cast_nullable_to_non_nullable
+              as double,
+      producaoTha: null == producaoTha
+          ? _value.producaoTha
+          : producaoTha // ignore: cast_nullable_to_non_nullable
+              as double,
+      extracao: null == extracao
+          ? _value.extracao
+          : extracao // ignore: cast_nullable_to_non_nullable
+              as double,
+      exportacao: null == exportacao
+          ? _value.exportacao
+          : exportacao // ignore: cast_nullable_to_non_nullable
+              as double,
+      regraUtilizada: null == regraUtilizada
+          ? _value.regraUtilizada
+          : regraUtilizada // ignore: cast_nullable_to_non_nullable
+              as String,
+      eficienciaAplicada: null == eficienciaAplicada
+          ? _value.eficienciaAplicada
+          : eficienciaAplicada // ignore: cast_nullable_to_non_nullable
+              as double,
+      necessidadeNutriente: null == necessidadeNutriente
+          ? _value.necessidadeNutriente
+          : necessidadeNutriente // ignore: cast_nullable_to_non_nullable
               as double,
       dose: null == dose
           ? _value.dose
@@ -443,6 +617,30 @@ class __$$MicroResultadoImplCopyWithImpl<$Res>
           ? _value._avisosNutriente
           : avisosNutriente // ignore: cast_nullable_to_non_nullable
               as List<String>,
+      memoriaCalculo: null == memoriaCalculo
+          ? _value._memoriaCalculo
+          : memoriaCalculo // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      grupoNome: null == grupoNome
+          ? _value.grupoNome
+          : grupoNome // ignore: cast_nullable_to_non_nullable
+              as String,
+      grupoId: freezed == grupoId
+          ? _value.grupoId
+          : grupoId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      concentracaoUnidade: null == concentracaoUnidade
+          ? _value.concentracaoUnidade
+          : concentracaoUnidade // ignore: cast_nullable_to_non_nullable
+              as String,
+      doseMinima: null == doseMinima
+          ? _value.doseMinima
+          : doseMinima // ignore: cast_nullable_to_non_nullable
+              as double,
+      doseMaxima: null == doseMaxima
+          ? _value.doseMaxima
+          : doseMaxima // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -454,6 +652,14 @@ class _$MicroResultadoImpl implements _MicroResultado {
       {required this.elemento,
       required this.valorAtual,
       required this.nc,
+      this.deficit = 0,
+      this.correcaoSolo = 0,
+      this.producaoTha = 0,
+      this.extracao = 0,
+      this.exportacao = 0,
+      this.regraUtilizada = '',
+      this.eficienciaAplicada = 0,
+      this.necessidadeNutriente = 0,
       required this.dose,
       required this.unidade,
       required this.deficiente,
@@ -462,8 +668,15 @@ class _$MicroResultadoImpl implements _MicroResultado {
       required this.doseProduto,
       required this.doseProdutoLabel,
       this.referencia,
-      final List<String> avisosNutriente = const []})
-      : _avisosNutriente = avisosNutriente;
+      final List<String> avisosNutriente = const [],
+      final List<String> memoriaCalculo = const [],
+      this.grupoNome = '',
+      this.grupoId,
+      this.concentracaoUnidade = '%',
+      this.doseMinima = 0,
+      this.doseMaxima = 0})
+      : _avisosNutriente = avisosNutriente,
+        _memoriaCalculo = memoriaCalculo;
 
   /// Símbolo do elemento (ex: 'Zn', 'B', 'Cu')
   @override
@@ -476,6 +689,46 @@ class _$MicroResultadoImpl implements _MicroResultado {
   /// Nível crítico de referência
   @override
   final double nc;
+
+  /// Déficit (NC − teor atual), limitado a zero
+  @override
+  @JsonKey()
+  final double deficit;
+
+  /// Correção do solo (g/ha elemento), após eficiência solo
+  @override
+  @JsonKey()
+  final double correcaoSolo;
+
+  /// Produção esperada (t/ha)
+  @override
+  @JsonKey()
+  final double producaoTha;
+
+  /// Extração calculada (g/ha)
+  @override
+  @JsonKey()
+  final double extracao;
+
+  /// Exportação calculada (g/ha)
+  @override
+  @JsonKey()
+  final double exportacao;
+
+  /// Regra Planta ou Grão
+  @override
+  @JsonKey()
+  final String regraUtilizada;
+
+  /// Eficiência da via aplicada (%)
+  @override
+  @JsonKey()
+  final double eficienciaAplicada;
+
+  /// Necessidade do nutriente (g/ha elemento)
+  @override
+  @JsonKey()
+  final double necessidadeNutriente;
 
   /// Dose recomendada do nutriente puro
   @override
@@ -510,9 +763,33 @@ class _$MicroResultadoImpl implements _MicroResultado {
     return EqualUnmodifiableListView(_avisosNutriente);
   }
 
+  final List<String> _memoriaCalculo;
+  @override
+  @JsonKey()
+  List<String> get memoriaCalculo {
+    if (_memoriaCalculo is EqualUnmodifiableListView) return _memoriaCalculo;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_memoriaCalculo);
+  }
+
+  @override
+  @JsonKey()
+  final String grupoNome;
+  @override
+  final String? grupoId;
+  @override
+  @JsonKey()
+  final String concentracaoUnidade;
+  @override
+  @JsonKey()
+  final double doseMinima;
+  @override
+  @JsonKey()
+  final double doseMaxima;
+
   @override
   String toString() {
-    return 'MicroResultado(elemento: $elemento, valorAtual: $valorAtual, nc: $nc, dose: $dose, unidade: $unidade, deficiente: $deficiente, via: $via, fonte: $fonte, doseProduto: $doseProduto, doseProdutoLabel: $doseProdutoLabel, referencia: $referencia, avisosNutriente: $avisosNutriente)';
+    return 'MicroResultado(elemento: $elemento, valorAtual: $valorAtual, nc: $nc, deficit: $deficit, correcaoSolo: $correcaoSolo, producaoTha: $producaoTha, extracao: $extracao, exportacao: $exportacao, regraUtilizada: $regraUtilizada, eficienciaAplicada: $eficienciaAplicada, necessidadeNutriente: $necessidadeNutriente, dose: $dose, unidade: $unidade, deficiente: $deficiente, via: $via, fonte: $fonte, doseProduto: $doseProduto, doseProdutoLabel: $doseProdutoLabel, referencia: $referencia, avisosNutriente: $avisosNutriente, memoriaCalculo: $memoriaCalculo, grupoNome: $grupoNome, grupoId: $grupoId, concentracaoUnidade: $concentracaoUnidade, doseMinima: $doseMinima, doseMaxima: $doseMaxima)';
   }
 
   @override
@@ -525,6 +802,21 @@ class _$MicroResultadoImpl implements _MicroResultado {
             (identical(other.valorAtual, valorAtual) ||
                 other.valorAtual == valorAtual) &&
             (identical(other.nc, nc) || other.nc == nc) &&
+            (identical(other.deficit, deficit) || other.deficit == deficit) &&
+            (identical(other.correcaoSolo, correcaoSolo) ||
+                other.correcaoSolo == correcaoSolo) &&
+            (identical(other.producaoTha, producaoTha) ||
+                other.producaoTha == producaoTha) &&
+            (identical(other.extracao, extracao) ||
+                other.extracao == extracao) &&
+            (identical(other.exportacao, exportacao) ||
+                other.exportacao == exportacao) &&
+            (identical(other.regraUtilizada, regraUtilizada) ||
+                other.regraUtilizada == regraUtilizada) &&
+            (identical(other.eficienciaAplicada, eficienciaAplicada) ||
+                other.eficienciaAplicada == eficienciaAplicada) &&
+            (identical(other.necessidadeNutriente, necessidadeNutriente) ||
+                other.necessidadeNutriente == necessidadeNutriente) &&
             (identical(other.dose, dose) || other.dose == dose) &&
             (identical(other.unidade, unidade) || other.unidade == unidade) &&
             (identical(other.deficiente, deficiente) ||
@@ -538,24 +830,50 @@ class _$MicroResultadoImpl implements _MicroResultado {
             (identical(other.referencia, referencia) ||
                 other.referencia == referencia) &&
             const DeepCollectionEquality()
-                .equals(other._avisosNutriente, _avisosNutriente));
+                .equals(other._avisosNutriente, _avisosNutriente) &&
+            const DeepCollectionEquality()
+                .equals(other._memoriaCalculo, _memoriaCalculo) &&
+            (identical(other.grupoNome, grupoNome) ||
+                other.grupoNome == grupoNome) &&
+            (identical(other.grupoId, grupoId) || other.grupoId == grupoId) &&
+            (identical(other.concentracaoUnidade, concentracaoUnidade) ||
+                other.concentracaoUnidade == concentracaoUnidade) &&
+            (identical(other.doseMinima, doseMinima) ||
+                other.doseMinima == doseMinima) &&
+            (identical(other.doseMaxima, doseMaxima) ||
+                other.doseMaxima == doseMaxima));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      elemento,
-      valorAtual,
-      nc,
-      dose,
-      unidade,
-      deficiente,
-      via,
-      fonte,
-      doseProduto,
-      doseProdutoLabel,
-      referencia,
-      const DeepCollectionEquality().hash(_avisosNutriente));
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        elemento,
+        valorAtual,
+        nc,
+        deficit,
+        correcaoSolo,
+        producaoTha,
+        extracao,
+        exportacao,
+        regraUtilizada,
+        eficienciaAplicada,
+        necessidadeNutriente,
+        dose,
+        unidade,
+        deficiente,
+        via,
+        fonte,
+        doseProduto,
+        doseProdutoLabel,
+        referencia,
+        const DeepCollectionEquality().hash(_avisosNutriente),
+        const DeepCollectionEquality().hash(_memoriaCalculo),
+        grupoNome,
+        grupoId,
+        concentracaoUnidade,
+        doseMinima,
+        doseMaxima
+      ]);
 
   /// Create a copy of MicroResultado
   /// with the given fields replaced by the non-null parameter values.
@@ -572,6 +890,14 @@ abstract class _MicroResultado implements MicroResultado {
       {required final String elemento,
       required final double valorAtual,
       required final double nc,
+      final double deficit,
+      final double correcaoSolo,
+      final double producaoTha,
+      final double extracao,
+      final double exportacao,
+      final String regraUtilizada,
+      final double eficienciaAplicada,
+      final double necessidadeNutriente,
       required final double dose,
       required final String unidade,
       required final bool deficiente,
@@ -580,7 +906,13 @@ abstract class _MicroResultado implements MicroResultado {
       required final double doseProduto,
       required final String doseProdutoLabel,
       final String? referencia,
-      final List<String> avisosNutriente}) = _$MicroResultadoImpl;
+      final List<String> avisosNutriente,
+      final List<String> memoriaCalculo,
+      final String grupoNome,
+      final String? grupoId,
+      final String concentracaoUnidade,
+      final double doseMinima,
+      final double doseMaxima}) = _$MicroResultadoImpl;
 
   /// Símbolo do elemento (ex: 'Zn', 'B', 'Cu')
   @override
@@ -593,6 +925,38 @@ abstract class _MicroResultado implements MicroResultado {
   /// Nível crítico de referência
   @override
   double get nc;
+
+  /// Déficit (NC − teor atual), limitado a zero
+  @override
+  double get deficit;
+
+  /// Correção do solo (g/ha elemento), após eficiência solo
+  @override
+  double get correcaoSolo;
+
+  /// Produção esperada (t/ha)
+  @override
+  double get producaoTha;
+
+  /// Extração calculada (g/ha)
+  @override
+  double get extracao;
+
+  /// Exportação calculada (g/ha)
+  @override
+  double get exportacao;
+
+  /// Regra Planta ou Grão
+  @override
+  String get regraUtilizada;
+
+  /// Eficiência da via aplicada (%)
+  @override
+  double get eficienciaAplicada;
+
+  /// Necessidade do nutriente (g/ha elemento)
+  @override
+  double get necessidadeNutriente;
 
   /// Dose recomendada do nutriente puro
   @override
@@ -619,6 +983,18 @@ abstract class _MicroResultado implements MicroResultado {
   String? get referencia;
   @override
   List<String> get avisosNutriente;
+  @override
+  List<String> get memoriaCalculo;
+  @override
+  String get grupoNome;
+  @override
+  String? get grupoId;
+  @override
+  String get concentracaoUnidade;
+  @override
+  double get doseMinima;
+  @override
+  double get doseMaxima;
 
   /// Create a copy of MicroResultado
   /// with the given fields replaced by the non-null parameter values.

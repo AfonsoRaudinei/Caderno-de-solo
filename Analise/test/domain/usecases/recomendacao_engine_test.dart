@@ -415,8 +415,63 @@ void main() {
 
       // P > NC -> manutencao
       expect(res.legacyP, isTrue);
-      // Dose de milho exportacao = 110, e exportação manutenção = exportacao * 0.3 = 33.0
-      expect(res.doseP, closeTo(33.0, 0.01));
+      // Dose de milho exportação = 60, e piso legacy = exportação * 0.3 = 18.0
+      expect(res.doseP, closeTo(18.0, 0.01));
+    });
+
+    test('exportação repõe grão sem abater P do solo', () {
+      final res = engine.calcularFosforo(
+        fosforo: {
+          'corrigirSolo': false,
+          'reposicaoFosforo': 'exportacao',
+          'referencia': 'IAC Bol.100',
+          'eficienciaSolo': 0.0,
+        },
+        analise: _fancelli.copyWith(argila: 25.0, p: 30.0),
+        cultura: 'Soja',
+        tabelas: [],
+      );
+
+      expect(res.doseExportacao, closeTo(70.0, 0.01));
+      expect(res.doseExtracao, equals(0.0));
+      expect(res.pSoloCreditadoP2O5, equals(0.0));
+      expect(res.legacyP, isFalse);
+    });
+
+    test('extração abate percentual de P do solo', () {
+      final res = engine.calcularFosforo(
+        fosforo: {
+          'corrigirSolo': false,
+          'reposicaoFosforo': 'extracao',
+          'referencia': 'IAC Bol.100',
+          'eficienciaSolo': 0.0,
+          'percentualUsoPSolo': 100.0,
+        },
+        analise: _fancelli.copyWith(argila: 25.0, p: 10.0),
+        cultura: 'Soja',
+        tabelas: [],
+      );
+
+      expect(res.doseExportacao, equals(0.0));
+      expect(res.pSoloCreditadoP2O5, closeTo(45.82, 0.01));
+      expect(res.doseExtracao, closeTo(54.18, 0.01));
+      expect(res.doseP, closeTo(res.doseExtracao, 0.01));
+    });
+
+    test('eficienciaSolo aplica incremento aditivo na exportação', () {
+      final res = engine.calcularFosforo(
+        fosforo: {
+          'corrigirSolo': false,
+          'reposicaoFosforo': 'exportacao',
+          'referencia': 'IAC Bol.100',
+          'eficienciaSolo': 50.0,
+        },
+        analise: _fancelli.copyWith(argila: 25.0, p: 30.0),
+        cultura: 'Soja',
+        tabelas: [],
+      );
+
+      expect(res.doseExportacao, closeTo(105.0, 0.01));
     });
   });
 
@@ -424,40 +479,59 @@ void main() {
   // calcularMicros
   // ─────────────────────────────────────────────────────────────────────────
   group('calcularMicros', () {
-    test('elemento deficiente retorna dose > 0', () {
+    test('elemento deficiente retorna dose com déficit × 2 × 1000', () {
       final res = engine.calcularMicros(
         micros: {
           'elementos': {
             'Zn': {
               'viaAplicacao': 'Solo (correção)',
+              'viasAplicacao': ['Solo'],
               'ncSolo': 2.0,
-              'teorFonteSolo': 20.0,
+              'concentracaoFonte': 20.0,
+              'concentracaoUnidade': '%',
               'eficienciaSolo': 100.0,
-              'percentualCorrecaoSolo': 100.0,
             }
           }
         },
-        analise: _fancelli.copyWith(zn: 1.0), // defi: 2 - 1 = 1g/dm3 = 200g/ha
+        analise: _fancelli.copyWith(zn: 1.0),
+        producaoEsperadaTha: 4,
       );
       expect(res.length, 1);
       expect(res.first.elemento, 'Zn');
-      expect(res.first.dose, closeTo(200.0, 0.1));
+      expect(res.first.deficit, closeTo(1.0, 0.01));
+      expect(res.first.dose, closeTo(2000.0, 0.1));
       expect(res.first.deficiente, isTrue);
     });
 
-    test('elemento acima do NC retorna dose = 0 (vazio na lista)', () {
+    test('elemento acima do NC usa regra Grão', () {
       final res = engine.calcularMicros(
         micros: {
+          'grupos': [
+            {
+              'id': 'g1',
+              'nome': 'Foliar',
+              'viasAplicacaoGrupo': ['Foliar'],
+              'eficienciaFoliarGrupo': 100,
+              'elementos': ['Zn'],
+            },
+          ],
           'elementos': {
             'Zn': {
-              'viaAplicacao': 'Solo (correção)',
               'ncSolo': 2.0,
-            }
-          }
+              'viasAplicacao': ['Foliar'],
+              'concentracaoFonte': 20,
+              'concentracaoUnidade': '%',
+              'exportacaoGraos': 30,
+              'extracaoPlanta': 70,
+            },
+          },
         },
         analise: _fancelli.copyWith(zn: 3.0),
+        producaoEsperadaTha: 4,
       );
-      expect(res, isEmpty);
+      expect(res, isNotEmpty);
+      expect(res.first.regraUtilizada, 'Grão');
+      expect(res.first.deficit, 0);
     });
   });
 
@@ -512,14 +586,16 @@ void main() {
       expect(resultado.avisos, isA<List<String>>());
     });
 
-    test('calcula doses informativas de absorção/exportação quando configuradas',
+    test(
+        'calcula doses informativas de absorção/exportação quando configuradas',
         () {
       final perfilComAbsorcao = perfil.copyWith(
         produtividadeEsperadaTha: 4.0,
         parametrosCards: {
           ...perfil.parametrosCards,
           'fosforo': {
-            ...Map<String, dynamic>.from(perfil.parametrosCards['fosforo'] as Map),
+            ...Map<String, dynamic>.from(
+                perfil.parametrosCards['fosforo'] as Map),
             'fosforoTipoFonte': 'Autores',
             'fosforoFonteNome': 'EMBRAPA',
             'fosforoModoAbsorcao': 'extracao',
@@ -685,6 +761,74 @@ void main() {
       expect(ncSmpTabela(phSmp: 5.2, tabelas: tabelas), 5.0);
       expect(ncSmpTabela(phSmp: 4.8, tabelas: const []), 10.0);
       expect(ncSmpTabela(phSmp: 6.5, tabelas: const []), 0.0);
+    });
+  });
+
+  group('RecomendacaoEngine.calcularPotassio', () {
+    test('integração calibração → cálculo com extração e eficiência 15%', () {
+      final potassio = {
+        'corrigirSolo': false,
+        'metodoCorrecao': 'nivel_critico',
+        'reposicaoPotassio': 'extracao',
+        'indiceExtracaoK2O': 31.0,
+        'percentualKSoloConsiderado': 0.0,
+        'ajusteEficienciaSolo': 15.0,
+        'camada': '0-20',
+      };
+
+      final resultado = engine.calcularPotassio(
+        potassio: potassio,
+        analise: _fancelli,
+        cultura: 'Soja',
+        produtividadeEsperadaTha: 4.2,
+        tabelas: const [],
+      );
+
+      expect(resultado.doseCorrecao, 0);
+      expect(resultado.doseReposicao, closeTo(149.73, 0.5));
+      expect(resultado.doseK, closeTo(149.73, 0.5));
+    });
+
+    test('correção por % K na CTC usa método exclusivo', () {
+      final potassio = {
+        'corrigirSolo': true,
+        'metodoCorrecao': 'percentual_k_ctc',
+        'reposicaoPotassio': 'nenhuma',
+        'percentualKObjetivoCtc': 5.0,
+        'camada': '0-20',
+      };
+
+      final resultado = engine.calcularPotassio(
+        potassio: potassio,
+        analise: _fancelli,
+        cultura: 'Soja',
+        produtividadeEsperadaTha: 4.0,
+        tabelas: const [],
+      );
+
+      expect(resultado.doseCorrecao, greaterThan(0));
+      expect(resultado.doseReposicao, 0);
+      expect(resultado.criterioResumo, '% K na CTC');
+    });
+
+    test('exportação: produção × índice configurado', () {
+      final potassio = {
+        'corrigirSolo': false,
+        'reposicaoPotassio': 'exportacao',
+        'indiceExportacaoK2O': 20.0,
+        'ajusteEficienciaSolo': 0.0,
+      };
+
+      final resultado = engine.calcularPotassio(
+        potassio: potassio,
+        analise: _fancelli,
+        cultura: 'Soja',
+        produtividadeEsperadaTha: 4.2,
+        tabelas: const [],
+      );
+
+      expect(resultado.doseReposicao, closeTo(84, 0.01));
+      expect(resultado.doseK, closeTo(84, 0.01));
     });
   });
 }

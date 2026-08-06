@@ -55,7 +55,8 @@ void main() {
         fontePrincipalP: FonteP.mehlich,
       );
 
-      final recomendacao = useCase(analise: analiseDeficiente, prntDesejado: 80);
+      final recomendacao =
+          useCase(analise: analiseDeficiente, prntDesejado: 80);
 
       expect(recomendacao.necessidadeCalagem, greaterThan(0));
       expect(recomendacao.p2o5, greaterThan(0));
@@ -66,7 +67,8 @@ void main() {
       expect(recomendacao.k2o, greaterThan(50.0));
     });
 
-    test('CENÁRIO 3 — dado ausente (K null) não quebra e não gera negativo', () {
+    test('CENÁRIO 3 — dado ausente (K null) não quebra e não gera negativo',
+        () {
       const analiseSemK = AnaliseModel(
         id: 'sem-k',
         userId: 'user-1',
@@ -95,7 +97,8 @@ void main() {
       expect(recomendacao.necessidadeCalagem.isFinite, isTrue);
     });
 
-    test('CENÁRIO 4 — bordas (zeros e extremos) mantém saída válida e sem negativo',
+    test(
+        'CENÁRIO 4 — bordas (zeros e extremos) mantém saída válida e sem negativo',
         () {
       const analiseZeros = AnaliseModel(
         id: 'zeros',

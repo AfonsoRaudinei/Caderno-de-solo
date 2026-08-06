@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
-import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/analise/presentation/formatters/analise_number_formatter.dart';
+import 'package:soloforte/features/analise/presentation/formatters/coordinate_formatter.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/presentation/widgets/analise_form_content.dart';
-import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
-import 'package:soloforte/features/analise/presentation/widgets/map_preview_widget.dart';
 
 class AnaliseDetailScreen extends ConsumerStatefulWidget {
   final String analiseId;
@@ -23,12 +26,11 @@ class AnaliseDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
+  static const String _analiseIcon = 'assets/icons/analises.png';
+
   bool _isEditing = false;
-  final _formKey = GlobalKey<AnaliseFormContentState>();
 
-  void _enterEditMode() => setState(() => _isEditing = true);
-
-  void _exitEditMode() => setState(() => _isEditing = false);
+  void _toggleEditMode() => setState(() => _isEditing = !_isEditing);
 
   @override
   Widget build(BuildContext context) {
@@ -50,51 +52,33 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_isEditing) {
-          _exitEditMode();
+          setState(() => _isEditing = false);
         }
       },
       child: Scaffold(
+        backgroundColor: context.appPalette.background,
         appBar: AppBar(
           title: Text(analise.talhao),
-          actions: _isEditing
-              ? [
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Cancelar',
-                    onPressed: _exitEditMode,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.check),
-                    tooltip: 'Salvar',
-                    onPressed: () => _formKey.currentState?.salvar(),
-                  ),
-                ]
-              : [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Editar',
-                    onPressed: _enterEditMode,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    tooltip: 'Excluir',
-                    onPressed: () => _confirmDelete(context, analise),
-                  ),
-                ],
+          actions: [
+            IconButton(
+              icon: Icon(_isEditing ? Icons.check : Icons.edit),
+              tooltip: _isEditing ? 'Concluir edição' : 'Editar',
+              onPressed: _toggleEditMode,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              tooltip: 'Excluir',
+              onPressed: () => _confirmDelete(context, analise),
+            ),
+          ],
         ),
-        body: _isEditing
-            ? AnaliseFormContent(
-                key: _formKey,
-                analiseInicial: analise,
-                onSaveSuccess: _exitEditMode,
-                showFab: false,
-              )
-            : _buildViewBody(context, analise),
+        body: _buildViewBody(context, analise),
       ),
     );
   }
 
   Widget _buildViewBody(BuildContext context, AnaliseSolo analise) {
+    final palette = _AnaliseDetailPalette.of(context);
     final derivados = AnaliseDetailScreen._calc.call({
       'ca': analise.ca,
       'mg': analise.mg,
@@ -109,218 +93,270 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            elevation: 0,
-            color: analise.cultura.color.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          AppSurface(
+            showBorder: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppIconFrame(
+                  assetPath: _analiseIcon,
+                  size: AppDimens.cardIconSize,
+                  backgroundColor: Colors.transparent,
+                ),
+                const SizedBox(width: AppDimens.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        analise.cultura.emoji,
-                        style: const TextStyle(fontSize: 24),
+                        analise.talhao.trim().isEmpty
+                            ? 'Amostra de solo'
+                            : analise.talhao,
+                        style: AppTextStyles.headline.copyWith(
+                          fontSize: 20,
+                          color: palette.valueText,
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: AppDimens.xs),
                       Text(
                         analise.cultura.label,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: analise.cultura.color,
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
                         ),
+                      ),
+                      const SizedBox(height: AppDimens.sm),
+                      _HeaderInfoLine(
+                        label: 'Produtor',
+                        value: analise.produtor,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Fazenda',
+                        value: analise.fazenda,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Nº Amostra',
+                        value: analise.numeroAmostra,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Safra',
+                        value: analise.safra,
+                        color: palette.mutedText,
+                      ),
+                      _HeaderInfoLine(
+                        label: 'Laboratório',
+                        value: analise.laboratorio,
+                        color: palette.mutedText,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text('Produtor: ${analise.produtor}'),
-                  Text('Fazenda: ${analise.fazenda}'),
-                  Text('Nº Amostra: ${analise.numeroAmostra}'),
-                  Text('Safra: ${analise.safra}'),
-                  Text('Laboratório: ${analise.laboratorio}'),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.spaceEvenly,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ActionButton(
-                icon: Icons.science,
-                label: 'Recomendar',
-                color: Colors.green,
-                onTap: () {
-                  context.go(
-                    AppRoutes.labRecomendacao,
-                    extra: analise.id,
-                  );
-                },
-              ),
-              _ActionButton(
-                icon: Icons.picture_as_pdf,
-                label: 'PDF',
-                color: Colors.red,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Baixando ou abrindo laudo anexado'),
-                    ),
-                  );
-                },
-              ),
-              _ActionButton(
-                icon: Icons.map,
-                label: 'Mapa',
-                color: Colors.blue,
-                onTap: () {
-                  context.go(
-                    '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
-                  );
-                },
-              ),
-              _ActionButton(
-                icon: Icons.upload_file,
-                label: 'Reimportar',
-                color: Colors.orange,
-                onTap: () => _reimportarPdf(context, analise),
-              ),
-            ],
+          AppSurface(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.sm,
+              vertical: AppDimens.xs,
+            ),
+            showBorder: true,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.science_outlined,
+                    label: 'Recomendar',
+                    color: AppColors.success,
+                    onTap: () {
+                      context.go(
+                        AppRoutes.labRecomendacao,
+                        extra: analise.id,
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.picture_as_pdf_outlined,
+                    label: 'PDF',
+                    color: AppColors.error,
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Baixando ou abrindo laudo anexado'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.map_outlined,
+                    label: 'Mapa',
+                    color: AppColors.primary,
+                    onTap: () => _openMapForView(analise),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
-          if (analise.latitude != null && analise.longitude != null) ...[
-            const Text(
-              'Localização',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          AppSurface(
+            showBorder: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildSectionTitle('Localização', palette),
+                const SizedBox(height: 8),
+                _buildDataRow(
+                  'Lat/Long',
+                  CoordinateFormatter.formatCombined(
+                    analise.latitude,
+                    analise.longitude,
+                  ),
+                  palette,
+                  fieldKey: 'latLong',
+                  analise: analise,
+                  isText: true,
+                ),
+                _buildMapActionRow(
+                  'Ir ao mapa',
+                  analise.latitude == null || analise.longitude == null
+                      ? 'Selecionar ponto'
+                      : 'Alterar ponto',
+                  palette,
+                  onTap: () => _openMapForSelection(analise),
+                ),
+                _buildDataRow(
+                  'Descrição',
+                  analise.descricaoLocal ?? '-',
+                  palette,
+                  fieldKey: 'descricaoLocal',
+                  analise: analise,
+                  isText: true,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            MapPreviewWidget(
-              latitude: analise.latitude!,
-              longitude: analise.longitude!,
-              onOpenMap: () {
-                context.go(
-                  '${AppRoutes.mapa}?analiseId=${Uri.encodeComponent(analise.id)}',
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-          const Text(
-            'Localização',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 20),
+          _buildSectionTitle('Composição Física', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Latitude', _fmt(analise.latitude)),
-          _buildDataRow('Longitude', _fmt(analise.longitude)),
-          _buildDataRow('Descrição', analise.descricaoLocal ?? '-'),
-          const Divider(),
-          const Text(
-            'Composição Física',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Argila (g/kg)', _fmt(analise.argila), palette,
+              fieldKey: 'argila', analise: analise),
+          _buildDataRow('Silte (g/kg)', _fmt(analise.silte), palette,
+              fieldKey: 'silte', analise: analise),
+          _buildDataRow('Areia Total (g/kg)', _fmt(analise.areiaTotal), palette,
+              fieldKey: 'areiaTotal', analise: analise),
+          _buildDataRow('Profundidade', analise.profundidade, palette,
+              fieldKey: 'profundidade', analise: analise, isText: true),
+          Divider(color: palette.divider),
+          _buildSectionTitle('pH', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Argila (g/kg)', _fmt(analise.argila)),
-          _buildDataRow('Silte (g/kg)', _fmt(analise.silte)),
-          _buildDataRow('Areia Total (g/kg)', _fmt(analise.areiaTotal)),
-          _buildDataRow('Profundidade', analise.profundidade),
-          const Divider(),
-          const Text(
-            'pH',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('pH Água', _fmt(analise.phAgua), palette,
+              fieldKey: 'phAgua', analise: analise),
+          _buildDataRow('pH SMP', _fmt(analise.phSmp), palette,
+              fieldKey: 'phSmp', analise: analise),
+          _buildDataRow('pH CaCl₂', _fmt(analise.phCaCl2), palette,
+              fieldKey: 'phCaCl2', analise: analise),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Matéria Orgânica', palette),
           const SizedBox(height: 8),
-          _buildDataRow('pH Água', _fmt(analise.phAgua)),
-          _buildDataRow('pH SMP', _fmt(analise.phSmp)),
-          _buildDataRow('pH CaCl₂', _fmt(analise.phCaCl2)),
-          const Divider(),
-          const Text(
-            'Matéria Orgânica',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('M.O. (dag/kg)', _fmt(analise.materiaOrganica), palette,
+              fieldKey: 'materiaOrganica', analise: analise),
+          _buildDataRow(
+              'C Orgânico (dag/kg)', _fmt(analise.carbonoOrganico), palette,
+              fieldKey: 'carbonoOrganico', analise: analise),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Fósforo', palette),
           const SizedBox(height: 8),
-          _buildDataRow('M.O. (dag/kg)', _fmt(analise.materiaOrganica)),
-          _buildDataRow('C Orgânico (dag/kg)', _fmt(analise.carbonoOrganico)),
-          const Divider(),
-          const Text(
-            'Fósforo',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich), palette,
+              fieldKey: 'pMehlich', analise: analise),
+          _buildDataRow('P Total (%)', _fmt(analise.pTotal), palette,
+              fieldKey: 'pTotal', analise: analise),
+          _buildDataRow('P Resina (mg/dm³)', _fmt(analise.pResina), palette,
+              fieldKey: 'pResina', analise: analise),
+          _buildDataRow('P-rem (mg/L)', _fmt(analise.pRem), palette,
+              fieldKey: 'pRem', analise: analise),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Enxofre', palette),
           const SizedBox(height: 8),
-          _buildDataRow('P Mehlich (mg/dm³)', _fmt(analise.pMehlich)),
-          _buildDataRow('P Resina (mg/dm³)', _fmt(analise.pResina)),
-          _buildDataRow('P-rem (mg/L)', _fmt(analise.pRem)),
-          const Divider(),
-          const Text(
-            'Enxofre',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020), palette,
+              fieldKey: 's020', analise: analise),
+          _buildDataRow('S 20-40 (mg/dm³)', _fmt(analise.s2040), palette,
+              fieldKey: 's2040', analise: analise),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Macronutrientes', palette),
           const SizedBox(height: 8),
-          _buildDataRow('S 0-20 (mg/dm³)', _fmt(analise.s020)),
-          _buildDataRow('S 20-40 (mg/dm³)', _fmt(analise.s2040)),
-          const Divider(),
-          const Text(
-            'Macronutrientes',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k), palette,
+              fieldKey: 'k', analise: analise),
+          _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca), palette,
+              fieldKey: 'ca', analise: analise),
+          _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg), palette,
+              fieldKey: 'mg', analise: analise),
+          _buildDataRow('Alumínio (cmolc/dm³)', _fmt(analise.al), palette,
+              fieldKey: 'al', analise: analise),
+          _buildDataRow('H+Al (cmolc/dm³)', _fmt(analise.hMaisAl), palette,
+              fieldKey: 'hMaisAl', analise: analise),
+          _buildDataRow('Sódio (cmolc/dm³)', _fmt(analise.na), palette,
+              fieldKey: 'na', analise: analise),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Bases e CTC', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Potássio (cmolc/dm³)', _fmt(analise.k)),
-          _buildDataRow('Cálcio (cmolc/dm³)', _fmt(analise.ca)),
-          _buildDataRow('Magnésio (cmolc/dm³)', _fmt(analise.mg)),
-          _buildDataRow('Alumínio (cmolc/dm³)', _fmt(analise.al)),
-          _buildDataRow('H+Al (cmolc/dm³)', _fmt(analise.hMaisAl)),
-          _buildDataRow('Sódio (cmolc/dm³)', _fmt(analise.na)),
-          const Divider(),
-          const Text(
-            'Bases e CTC',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('SB (cmolc/dm³)',
+              _fmt(_labOrDerived(analise.sb, derivados['sb'])), palette),
+          _buildDataRow('CTC(T) (cmolc/dm³)',
+              _fmt(_labOrDerived(analise.ctc, derivados['ctcTotal'])), palette),
+          _buildDataRow(
+              'CTC(e) (cmolc/dm³)',
+              _fmt(_labOrDerived(analise.ctcEfetiva, derivados['ctcEfetiva'])),
+              palette),
+          _buildDataRow(
+              'V% (%)',
+              _fmtPercent(_labOrDerived(analise.vPercent, derivados['vPct'])),
+              palette),
+          _buildDataRow(
+              'm% (%)',
+              _fmtPercent(_labOrDerived(analise.mPercent, derivados['mPct'])),
+              palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Saturação das Bases', palette),
           const SizedBox(height: 8),
-          _buildDataRow('SB (cmolc/dm³)', _fmt(derivados['sb'])),
-          _buildDataRow('CTC(T) (cmolc/dm³)', _fmt(derivados['ctcTotal'])),
-          _buildDataRow('CTC(e) (cmolc/dm³)', _fmt(derivados['ctcEfetiva'])),
-          _buildDataRow('V% (%)', _fmt(derivados['vPct'])),
-          _buildDataRow('m% (%)', _fmt(derivados['mPct'])),
-          const Divider(),
-          const Text(
-            'Saturação das Bases',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Ca/T (%)', _fmtPercent(derivados['caPctT']), palette),
+          _buildDataRow('Mg/T (%)', _fmtPercent(derivados['mgPctT']), palette),
+          _buildDataRow('K/T (%)', _fmtPercent(derivados['kPctT']), palette),
+          _buildDataRow(
+              'H+Al/T (%)', _fmtPercent(derivados['hAlPctT']), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Relações entre Bases', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Ca/T (%)', _fmt(derivados['caPctT'])),
-          _buildDataRow('Mg/T (%)', _fmt(derivados['mgPctT'])),
-          _buildDataRow('K/T (%)', _fmt(derivados['kPctT'])),
-          _buildDataRow('H+Al/T (%)', _fmt(derivados['hAlPctT'])),
-          const Divider(),
-          const Text(
-            'Relações entre Bases',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          _buildDataRow('Ca/Mg', _fmtRatio(derivados['relCaMg']), palette),
+          _buildDataRow('Ca/K', _fmtRatio(derivados['relCaK']), palette),
+          _buildDataRow('Mg/K', _fmtRatio(derivados['relMgK']), palette),
+          _buildDataRow(
+              '(Ca+Mg)/T (%)', _fmtPercent(derivados['relCaMgT']), palette),
+          Divider(color: palette.divider),
+          _buildSectionTitle('Micronutrientes (mg/dm³)', palette),
           const SizedBox(height: 8),
-          _buildDataRow('Ca/Mg', _fmt(derivados['relCaMg'])),
-          _buildDataRow('Ca/K', _fmt(derivados['relCaK'])),
-          _buildDataRow('Mg/K', _fmt(derivados['relMgK'])),
-          _buildDataRow('(Ca+Mg)/T (%)', _fmt(derivados['relCaMgT'])),
-          const Divider(),
-          const Text(
-            'Micronutrientes (mg/dm³)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          _buildDataRow('Boro', _fmt(analise.b)),
-          _buildDataRow('Cobre', _fmt(analise.cu)),
-          _buildDataRow('Ferro', _fmt(analise.fe)),
-          _buildDataRow('Manganês', _fmt(analise.mn)),
-          _buildDataRow('Zinco', _fmt(analise.zn)),
-          _buildDataRow('Níquel', _fmt(analise.ni)),
-          _buildDataRow('Molibdênio', _fmt(analise.mo)),
-          _buildDataRow('Selênio', _fmt(analise.se)),
+          _buildDataRow('Boro', _fmt(analise.b), palette,
+              fieldKey: 'b', analise: analise),
+          _buildDataRow('Cobre', _fmt(analise.cu), palette,
+              fieldKey: 'cu', analise: analise),
+          _buildDataRow('Ferro', _fmt(analise.fe), palette,
+              fieldKey: 'fe', analise: analise),
+          _buildDataRow('Manganês', _fmt(analise.mn), palette,
+              fieldKey: 'mn', analise: analise),
+          _buildDataRow('Zinco', _fmt(analise.zn), palette,
+              fieldKey: 'zn', analise: analise),
+          _buildDataRow('Níquel', _fmt(analise.ni), palette,
+              fieldKey: 'ni', analise: analise),
+          _buildDataRow('Molibdênio', _fmt(analise.mo), palette,
+              fieldKey: 'mo', analise: analise),
+          _buildDataRow('Selênio', _fmt(analise.se), palette,
+              fieldKey: 'se', analise: analise),
           const SizedBox(height: 32),
         ],
       ),
@@ -351,201 +387,461 @@ class _AnaliseDetailScreenState extends ConsumerState<AnaliseDetailScreen> {
     }
   }
 
-  Widget _buildDataRow(String label, String value) {
+  Widget _buildSectionTitle(String title, _AnaliseDetailPalette palette) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Text(
+        title,
+        style: AppTextStyles.label.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: palette.sectionText,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataRow(
+    String label,
+    String value,
+    _AnaliseDetailPalette palette, {
+    String? fieldKey,
+    AnaliseSolo? analise,
+    bool isText = false,
+  }) {
     final isVazio =
         value == '-' || value.isEmpty || value == 'N/A' || value == 'null';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    final canEdit = _isEditing && fieldKey != null && analise != null;
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade700)),
-          Text(
-            isVazio ? 'Não informado' : value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isVazio ? Colors.orange : Colors.black,
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.caption.copyWith(
+                color: palette.mutedText,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+          const SizedBox(width: 16),
+          Flexible(
+            child: Text(
+              isVazio ? 'Não informado' : value,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.body.copyWith(
+                fontWeight: FontWeight.w700,
+                color: isVazio ? Colors.orange : palette.valueText,
+              ),
+            ),
+          ),
+          if (canEdit) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.edit_outlined, size: 14, color: palette.editIcon),
+          ],
         ],
+      ),
+    );
+
+    if (!canEdit) return row;
+
+    return InkWell(
+      key: ValueKey('edit_row_$fieldKey'),
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => _editField(
+        analise: analise,
+        fieldKey: fieldKey,
+        label: label,
+        currentValue: isVazio ? '' : value,
+        isText: isText,
+      ),
+      child: row,
+    );
+  }
+
+  Widget _buildMapActionRow(
+    String label,
+    String value,
+    _AnaliseDetailPalette palette, {
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      key: const ValueKey('select_location_on_map'),
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: AppTextStyles.caption.copyWith(
+                  color: palette.mutedText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: AppTextStyles.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: palette.valueText,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.map_outlined, size: 16, color: palette.editIcon),
+          ],
+        ),
       ),
     );
   }
 
   String _fmt(num? value) => AnaliseNumberFormatter.formatDecimal(value);
+  String _fmtPercent(num? value) =>
+      AnaliseNumberFormatter.formatDecimal(value, decimals: 0);
+  String _fmtRatio(num? value) =>
+      AnaliseNumberFormatter.formatDecimal(value, decimals: 1);
 
-  Future<void> _reimportarPdf(
-    BuildContext context,
-    AnaliseSolo analise,
-  ) async {
-    final forcedLabId = _forcedLabIdFor(analise.laboratorio);
-    if (forcedLabId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Laboratório atual não suporta reimportação guiada.'),
-        ),
-      );
-      return;
-    }
+  double? _labOrDerived(num? labValue, num? derivedValue) =>
+      labValue?.toDouble() ?? derivedValue?.toDouble();
 
-    try {
-      final importadas = await PdfImportService().importarDePdf(
-        forcedLabId: forcedLabId,
-      );
-      if (importadas == null || !context.mounted) return;
-
-      final numeroAtual = analise.numeroAmostra.trim().toLowerCase();
-      final matches = importadas
-          .where(
-            (item) => item.numeroAmostra.trim().toLowerCase() == numeroAtual,
-          )
-          .toList(growable: false);
-
-      if (matches.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'A amostra ${analise.numeroAmostra} não foi encontrada no PDF selecionado.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      if (matches.length > 1) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'A amostra ${analise.numeroAmostra} apareceu duplicada no PDF selecionado.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      final atualizada = _mergeReimportedAnalise(
-        current: analise,
-        imported: matches.single,
-      );
-      await ref.read(analiseNotifierProvider.notifier).atualizarAnalise(
-            atualizada,
-          );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Análise ${analise.numeroAmostra} atualizada a partir do PDF.',
-          ),
-        ),
-      );
-    } on ImportacaoQualidadeBaixaException catch (e) {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.qualidadeInsuficiente,
-          detalhe: e.buildSummary(),
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } on LabNaoReconhecidoException {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.labNaoReconhecido,
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } on ExtracacaoIndisponivelException {
-      if (!context.mounted) return;
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (_) => ImportacaoBottomSheet(
-          tipo: ImportacaoBottomSheetTipo.extracacaoIndisponivel,
-          onDigitarManualmente: () => Navigator.of(context).pop(),
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao reimportar PDF: $e')),
-      );
-    }
+  String _mapRoute(AnaliseSolo analise, {bool selectionMode = false}) {
+    final params = {
+      'analiseId': analise.id,
+      if (selectionMode) 'selectionMode': 'true',
+    };
+    final query = Uri(queryParameters: params).query;
+    return '${AppRoutes.mapa}?$query';
   }
 
-  AnaliseSolo _mergeReimportedAnalise({
-    required AnaliseSolo current,
-    required AnaliseSolo imported,
-  }) {
-    final metadata = <String, dynamic>{
-      ...?current.laudoMetadata,
-      ...?imported.laudoMetadata,
-    };
+  void _openMapForView(AnaliseSolo analise) {
+    context.go(_mapRoute(analise));
+  }
 
-    String keepImported(String importedValue, String fallback) {
-      final normalized = importedValue.trim();
-      return normalized.isEmpty ? fallback : importedValue;
-    }
+  Future<void> _openMapForSelection(AnaliseSolo analise) async {
+    final result = await context.push<LatLng>(
+      _mapRoute(analise, selectionMode: true),
+    );
+    if (result == null) return;
 
-    return AnaliseSolo(
-      id: current.id,
-      fazenda: keepImported(imported.fazenda, current.fazenda),
-      produtor: keepImported(imported.produtor, current.produtor),
-      talhao: keepImported(imported.talhao, current.talhao),
-      numeroAmostra:
-          keepImported(imported.numeroAmostra, current.numeroAmostra),
-      cultura: current.cultura,
-      safra: keepImported(imported.safra, current.safra),
-      laboratorio: keepImported(imported.laboratorio, current.laboratorio),
-      dataCadastro: current.dataCadastro,
-      profundidade: keepImported(imported.profundidade, current.profundidade),
-      latitude: current.latitude,
-      longitude: current.longitude,
-      descricaoLocal: imported.descricaoLocal ?? current.descricaoLocal,
-      argila: imported.argila,
-      silte: imported.silte,
-      areiaTotal: imported.areiaTotal,
-      phAgua: imported.phAgua,
-      phSmp: imported.phSmp,
-      phCaCl2: imported.phCaCl2,
-      materiaOrganica: imported.materiaOrganica,
-      carbonoOrganico: imported.carbonoOrganico,
-      pMehlich: imported.pMehlich,
-      pResina: imported.pResina,
-      pRem: imported.pRem,
-      s020: imported.s020,
-      s2040: imported.s2040,
-      k: imported.k,
-      ca: imported.ca,
-      mg: imported.mg,
-      al: imported.al,
-      hMaisAl: imported.hMaisAl,
-      na: imported.na,
-      b: imported.b,
-      cu: imported.cu,
-      fe: imported.fe,
-      mn: imported.mn,
-      zn: imported.zn,
-      ni: imported.ni,
-      mo: imported.mo,
-      se: imported.se,
-      pdfUrl: current.pdfUrl,
-      laudoMetadata: metadata.isEmpty ? null : metadata,
+    await _saveEditedAnalise(
+      _copyWithEditedCoordinates(
+        analise,
+        CoordinatePair(
+          latitude: result.latitude,
+          longitude: result.longitude,
+        ),
+      ),
     );
   }
 
-  String? _forcedLabIdFor(String laboratorio) {
-    final raw = laboratorio.trim().toLowerCase();
-    if (raw.contains('exata')) return 'exata_brasil';
-    if (raw.contains('sellar')) return 'sellar';
-    if (raw.contains('ibra')) return 'ibra';
-    if (raw.contains('solum')) return 'solum';
-    if (raw.contains('mb')) return 'mb';
-    return null;
+  Future<void> _editField({
+    required AnaliseSolo analise,
+    required String fieldKey,
+    required String label,
+    required String currentValue,
+    required bool isText,
+  }) async {
+    final controller = TextEditingController(text: currentValue);
+    String? newValue;
+    try {
+      newValue = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(20, 18, 20, bottomInset + 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  keyboardType: isText
+                      ? TextInputType.text
+                      : const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Deixe vazio para marcar como não informado',
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () =>
+                          Navigator.pop(context, controller.text.trim()),
+                      child: const Text('Salvar'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.dispose();
+      });
+    }
+
+    if (newValue == null) return;
+
+    final AnaliseSolo updated;
+    if (fieldKey == 'latLong') {
+      final coordinates = CoordinateFormatter.parseCombined(newValue);
+      if (newValue.trim().isNotEmpty && coordinates == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Informe Lat/Long no formato -10.510193, -48.315852'),
+          ),
+        );
+        return;
+      }
+      updated = _copyWithEditedCoordinates(analise, coordinates);
+    } else {
+      updated = _copyWithEditedField(
+        analise,
+        fieldKey,
+        isText ? newValue : _parseNullableDouble(newValue),
+      );
+    }
+
+    await _saveEditedAnalise(updated);
+  }
+
+  Future<void> _saveEditedAnalise(AnaliseSolo updated) async {
+    try {
+      await ref
+          .read(analiseNotifierProvider.notifier)
+          .atualizarAnalise(updated);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Análise atualizada')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao salvar: $e')),
+      );
+    }
+  }
+
+  AnaliseSolo _copyWithEditedCoordinates(
+    AnaliseSolo original,
+    CoordinatePair? coordinates,
+  ) {
+    return _copyWithEditedField(
+      _copyWithEditedField(original, 'latitude', coordinates?.latitude),
+      'longitude',
+      coordinates?.longitude,
+    );
+  }
+
+  double? _parseNullableDouble(String value) {
+    final normalized = value.trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return null;
+    return double.tryParse(normalized);
+  }
+
+  AnaliseSolo _copyWithEditedField(
+    AnaliseSolo original,
+    String fieldKey,
+    Object? value,
+  ) {
+    double? number(String key, double? current) =>
+        fieldKey == key ? value as double? : current;
+    String text(String key, String current) =>
+        fieldKey == key ? value as String : current;
+    String? nullableText(String key, String? current) =>
+        fieldKey == key ? (value as String).trim().nullIfEmpty : current;
+
+    return AnaliseSolo(
+      id: original.id,
+      fazenda: original.fazenda,
+      produtor: original.produtor,
+      talhao: original.talhao,
+      numeroAmostra: original.numeroAmostra,
+      cultura: original.cultura,
+      safra: original.safra,
+      laboratorio: original.laboratorio,
+      dataCadastro: original.dataCadastro,
+      profundidade: text('profundidade', original.profundidade),
+      latitude: number('latitude', original.latitude),
+      longitude: number('longitude', original.longitude),
+      descricaoLocal: nullableText('descricaoLocal', original.descricaoLocal),
+      argila: number('argila', original.argila),
+      silte: number('silte', original.silte),
+      areiaTotal: number('areiaTotal', original.areiaTotal),
+      phAgua: number('phAgua', original.phAgua),
+      phSmp: number('phSmp', original.phSmp),
+      phCaCl2: number('phCaCl2', original.phCaCl2),
+      materiaOrganica: number('materiaOrganica', original.materiaOrganica),
+      carbonoOrganico: number('carbonoOrganico', original.carbonoOrganico),
+      pMehlich: number('pMehlich', original.pMehlich),
+      pResina: number('pResina', original.pResina),
+      pRem: number('pRem', original.pRem),
+      s020: number('s020', original.s020),
+      s2040: number('s2040', original.s2040),
+      k: number('k', original.k),
+      ca: number('ca', original.ca),
+      mg: number('mg', original.mg),
+      al: number('al', original.al),
+      hMaisAl: number('hMaisAl', original.hMaisAl),
+      na: number('na', original.na),
+      b: number('b', original.b),
+      cu: number('cu', original.cu),
+      fe: number('fe', original.fe),
+      mn: number('mn', original.mn),
+      zn: number('zn', original.zn),
+      ni: number('ni', original.ni),
+      mo: number('mo', original.mo),
+      se: number('se', original.se),
+      co: original.co,
+      cascalho: original.cascalho,
+      areiaGrossa: original.areiaGrossa,
+      areiaFina: original.areiaFina,
+      municipio: original.municipio,
+      responsavelTecnico: original.responsavelTecnico,
+      cnpjCliente: original.cnpjCliente,
+      pTotal: original.pTotal,
+      classificacaoTextura: original.classificacaoTextura,
+      tipoSoloMapa: original.tipoSoloMapa,
+      solicitante: original.solicitante,
+      convenio: original.convenio,
+      creaResponsavel: original.creaResponsavel,
+      cnpjLaboratorio: original.cnpjLaboratorio,
+      dataInicioEnsaio: original.dataInicioEnsaio,
+      dataFimEnsaio: original.dataFimEnsaio,
+      matriculaImovel: original.matriculaImovel,
+      codigoInterno: original.codigoInterno,
+      codigoExternoAmostra: original.codigoExternoAmostra,
+      caMaisMg: original.caMaisMg,
+      kMgDm3: original.kMgDm3,
+      cuMehlich: original.cuMehlich,
+      feMehlich: original.feMehlich,
+      mnMehlich: original.mnMehlich,
+      znMehlich: original.znMehlich,
+      cuDtpa: original.cuDtpa,
+      feDtpa: original.feDtpa,
+      mnDtpa: original.mnDtpa,
+      znDtpa: original.znDtpa,
+      dataRecebimento: original.dataRecebimento,
+      numeroRelatorio: original.numeroRelatorio,
+      codigoVerificacao: original.codigoVerificacao,
+      codigoTalhao: original.codigoTalhao,
+      totalAmostras: original.totalAmostras,
+      pdfUrl: original.pdfUrl,
+      laudoMetadata: original.laudoMetadata,
+      h: original.h,
+      ctcEfetiva: original.ctcEfetiva,
+      ctc: original.ctc,
+      sb: original.sb,
+      vPercent: original.vPercent,
+      mPercent: original.mPercent,
+      osLaboratorio: original.osLaboratorio,
+      dataEmissao: original.dataEmissao,
+      consultor: original.consultor,
+      labTemplateId: original.labTemplateId,
+      unidadeNutrientes: original.unidadeNutrientes,
+      unidadeMO: original.unidadeMO,
+      unidadeTextura: original.unidadeTextura,
+      clienteId: original.clienteId,
+      fazendaId: original.fazendaId,
+      talhaoId: original.talhaoId,
+      vinculoStatus: original.vinculoStatus,
+    );
+  }
+}
+
+class _AnaliseDetailPalette {
+  const _AnaliseDetailPalette({
+    required this.valueText,
+    required this.mutedText,
+    required this.sectionText,
+    required this.divider,
+    required this.editIcon,
+  });
+
+  final Color valueText;
+  final Color mutedText;
+  final Color sectionText;
+  final Color divider;
+  final Color editIcon;
+
+  factory _AnaliseDetailPalette.of(BuildContext context) {
+    final theme = Theme.of(context);
+    return _AnaliseDetailPalette(
+      valueText: theme.colorScheme.onSurface,
+      mutedText: theme.colorScheme.onSurfaceVariant,
+      sectionText: theme.colorScheme.onSurface,
+      divider: theme.dividerColor,
+      editIcon: theme.colorScheme.primary,
+    );
+  }
+}
+
+extension on String {
+  String? get nullIfEmpty {
+    final trimmed = trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+}
+
+class _HeaderInfoLine extends StatelessWidget {
+  const _HeaderInfoLine({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValue = value.trim().isEmpty ? 'Não informado' : value.trim();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Text(
+        '$label: $displayValue',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
   }
 }
 
@@ -564,24 +860,38 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.caption.copyWith(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

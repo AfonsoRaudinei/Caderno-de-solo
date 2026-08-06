@@ -21,6 +21,10 @@ Antes de alterar qualquer coisa:
 5. Preserve alteracoes locais que nao foram feitas por voce.
 6. Nao altere dados, textos, campos ou arquivos que nao tenham sido citados no prompt ou no pedido atual.
 
+## Agentes locais
+
+- `.agents/flutter-code-reviewer.md`: revisor senior Flutter/Dart para parecer tecnico. Use quando o pedido mencionar agente revisor, revisao de codigo ou validacao tecnica das mudancas.
+
 ## Raiz do app
 
 O projeto Flutter fica em `Analise/`, nao na raiz do repositorio.
@@ -58,6 +62,10 @@ dart format .
 - Metodos agronomicos devem ser tipados por enum/value object, nao comparados por label de UI.
 - Nao trocar `flutter_map + latlong2` por Google Maps sem decisao explicita.
 - Persistencia local padrao do projeto e Hive; nao introduzir SQLite sem decisao explicita.
+- **Modulos de produto core** (nao remover em branches paralelas sem merge de volta):
+  `clientes`, `analise`, `laboratorio`, `mapa`, `config`, `main`, `auth`.
+- Em especial, `lib/features/clientes/` + rota `/clientes` + aba Clientes no `MainPage`
+  sao obrigatorios. O gate `tool/product_modules_guard.sh` bloqueia release se sumirem.
 
 ## Padrao de conclusao obrigatorio
 

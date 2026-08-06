@@ -4,14 +4,24 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+gate_search() {
+  local pattern="$1"
+  shift
+  if command -v rg >/dev/null 2>&1; then
+    rg -n "$pattern" "$@" >/dev/null
+  else
+    grep -E -q "$pattern" "$@"
+  fi
+}
+
 echo "[GATE O] Observability gate started"
 
 echo "[GATE O] 1/5 - Contrato de telemetria e sink remoto"
-rg -n "telemetryVersion|operationId|sessionId|appVersion|platform|environment" \
-  lib/features/analise/application/observability/analise_telemetry.dart >/dev/null
-rg -n "HttpAnaliseTelemetrySink|ANALISE_TELEMETRY_ENDPOINT|analiseTelemetryEndpoint" \
+gate_search "telemetryVersion|operationId|sessionId|appVersion|platform|environment" \
+  lib/features/analise/application/observability/analise_telemetry.dart
+gate_search "HttpAnaliseTelemetrySink|ANALISE_TELEMETRY_ENDPOINT|analiseTelemetryEndpoint" \
   lib/features/analise/application/providers/analise_telemetry_provider.dart \
-  lib/core/config/app_config.dart >/dev/null
+  lib/core/config/app_config.dart
 echo "[GATE O] Contrato e sink remoto OK"
 
 echo "[GATE O] 2/5 - Artefatos operacionais versionados"
@@ -45,7 +55,7 @@ echo "[GATE O] Testes de observabilidade OK"
 
 echo "[GATE O] 4/5 - Evidência de produção (modo estrito opcional)"
 if [[ "${OBSERVABILITY_REQUIRE_PRODUCTION_EVIDENCE:-false}" == "true" ]]; then
-  if rg -n "PENDENTE_" docs/observability/evidencias/producao_p1_2026-04-13/PACOTE_EVIDENCIAS.md >/dev/null; then
+  if gate_search "PENDENTE_" docs/observability/evidencias/producao_p1_2026-04-13/PACOTE_EVIDENCIAS.md; then
     echo "[GATE O][FAIL] Evidência de produção incompleta (placeholders pendentes)."
     exit 1
   fi
@@ -53,9 +63,9 @@ fi
 echo "[GATE O] Evidência validada (modo atual)"
 
 echo "[GATE O] 5/5 - Sanidade de rastreabilidade"
-rg -n "operationId|batchId|idempotencyKeyHash|errorCode|durationMs" \
+gate_search "operationId|batchId|idempotencyKeyHash|errorCode|durationMs" \
   docs/observability/FASE5_OPERACAO_OBSERVABILIDADE.md \
-  infra/observability/bigquery/kpi_5min.sql >/dev/null
+  infra/observability/bigquery/kpi_5min.sql
 echo "[GATE O] Rastreabilidade OK"
 
 echo "[GATE O] Observability gate PASSED"

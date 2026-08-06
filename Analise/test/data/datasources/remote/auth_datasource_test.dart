@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -190,5 +192,92 @@ void main() {
     expect(await storage.read(key: AuthDatasource.legacyAuthTokenStorageKey),
         isNull);
     expect(await storage.read(key: 'feature_flag_cache'), 'enabled');
+  });
+
+  test('currentUserId retorna uid da sessão ativa', () {
+    final activeUser = MockUser();
+    when(() => activeUser.uid).thenReturn('uid-ativo');
+    when(() => auth.currentUser).thenReturn(activeUser);
+
+    expect(datasource.currentUserId(), 'uid-ativo');
+  });
+
+  test('waitForCurrentUserId retorna uid imediato quando sessão existe',
+      () async {
+    final activeUser = MockUser();
+    when(() => activeUser.uid).thenReturn('uid-imediato');
+    when(() => auth.currentUser).thenReturn(activeUser);
+
+    final uid = await datasource.waitForCurrentUserId();
+    expect(uid, 'uid-imediato');
+  });
+
+  test('waitForCurrentUserId aguarda authStateChanges', () async {
+    final controller = StreamController<User?>();
+    when(() => auth.currentUser).thenReturn(null);
+    when(() => auth.authStateChanges()).thenAnswer((_) => controller.stream);
+
+    final future = datasource.waitForCurrentUserId();
+    final activeUser = MockUser();
+    when(() => activeUser.uid).thenReturn('uid-stream');
+    controller.add(activeUser);
+
+    expect(await future, 'uid-stream');
+    await controller.close();
+  });
+
+  test('createUser com sucesso delega ao FirebaseAuth', () async {
+    final credential = MockUserCredential();
+    when(() => auth.createUserWithEmailAndPassword(
+          email: 'novo@solo.com',
+          password: '123456',
+        )).thenAnswer((_) async => credential);
+
+    final result = await datasource.createUserWithEmailAndPassword(
+      email: 'novo@solo.com',
+      password: '123456',
+    );
+
+    expect(result, same(credential));
+  });
+
+  test('createUser converte weak-password para mensagem amigável', () async {
+    when(() => auth.createUserWithEmailAndPassword(
+          email: 'novo@solo.com',
+          password: '123',
+        )).thenThrow(
+      FirebaseAuthException(code: 'weak-password'),
+    );
+
+    await expectLater(
+      () => datasource.createUserWithEmailAndPassword(
+        email: 'novo@solo.com',
+        password: '123',
+      ),
+      throwsA('A senha fornecida é muito fraca.'),
+    );
+  });
+
+  test('deleteAccount remove usuário e chaves de auth', () async {
+    final activeUser = MockUser();
+    when(() => activeUser.uid).thenReturn('uid-delete');
+    when(() => auth.currentUser).thenReturn(activeUser);
+    when(() => activeUser.delete()).thenAnswer((_) async {});
+    await storage.write(
+        key: AuthDatasource.authUidStorageKey, value: 'uid-delete');
+
+    await datasource.deleteAccount();
+
+    verify(() => activeUser.delete()).called(1);
+    expect(await storage.read(key: AuthDatasource.authUidStorageKey), isNull);
+  });
+
+  test('deleteAccount falha quando não há usuário autenticado', () async {
+    when(() => auth.currentUser).thenReturn(null);
+
+    await expectLater(
+      datasource.deleteAccount,
+      throwsA(isA<Exception>()),
+    );
   });
 }

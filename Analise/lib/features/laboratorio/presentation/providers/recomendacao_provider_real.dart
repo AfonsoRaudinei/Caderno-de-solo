@@ -124,6 +124,10 @@ final recomendacaoProvider =
   },
 );
 
+final recomendacaoSearchQueryProvider = StateProvider.autoDispose<String>(
+  (ref) => '',
+);
+
 String _normalizarProfundidade(String raw) {
   final value = raw.trim();
   return value.isEmpty ? '0-20' : value;

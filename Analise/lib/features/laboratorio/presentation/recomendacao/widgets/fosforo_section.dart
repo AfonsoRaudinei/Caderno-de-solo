@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/nivel_gradiente_bar.dart';
 import 'package:soloforte/domain/formulas/classificacao_nivel.dart';
@@ -13,24 +14,34 @@ class RecomendacaoFosforoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _buildFosforo(resultado);
+    return _buildFosforo(resultado, context.appPalette);
   }
 
-  Widget _miniBloco(String label, String valor, Color cor) {
+  Widget _miniBloco(
+    String label,
+    String valor,
+    Color cor,
+    AppThemePalette palette,
+  ) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF86868B))),
+        Text(label,
+            style: TextStyle(fontSize: 10, color: palette.textSecondary)),
         const SizedBox(height: 2),
         Text(
           valor,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cor),
+          style:
+              TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cor),
           textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildFosforo(ResultadoRecomendacao resultado) {
+  Widget _buildFosforo(
+    ResultadoRecomendacao resultado,
+    AppThemePalette palette,
+  ) {
     final analise = resultado.analise;
     final p = analise.p;
     final argila = analise.argila;
@@ -60,14 +71,14 @@ class RecomendacaoFosforoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Text(
               'P Mehlich',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF86868B),
+                color: palette.textSecondary,
               ),
             ),
           ),
@@ -85,14 +96,16 @@ class RecomendacaoFosforoSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 5),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 5),
                   child: Text('mg/dm³',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF86868B))),
+                      style: TextStyle(
+                          fontSize: 13, color: palette.textSecondary)),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: corPrincipal.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -128,11 +141,12 @@ class RecomendacaoFosforoSection extends StatelessWidget {
               children: [
                 Text(
                   'NC: ${nc.toStringAsFixed(2)} mg/dm³',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF86868B)),
+                  style: TextStyle(fontSize: 11, color: palette.textSecondary),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: acimaNc
                         ? const Color(0xFF34C759).withValues(alpha: 0.12)
@@ -144,14 +158,16 @@ class RecomendacaoFosforoSection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: acimaNc ? const Color(0xFF34C759) : const Color(0xFFFF9500),
+                      color: acimaNc
+                          ? const Color(0xFF34C759)
+                          : const Color(0xFFFF9500),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+          Divider(height: 1, thickness: 0.5, color: palette.border),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
             child: Text(
@@ -159,7 +175,7 @@ class RecomendacaoFosforoSection extends StatelessWidget {
               textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 11,
-                color: AppColors.textSecond.withValues(alpha: 0.6),
+                color: palette.textSecondary.withValues(alpha: 0.6),
               ),
             ),
           ),
@@ -173,15 +189,16 @@ class RecomendacaoFosforoSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: temDose ? AppColors.fosforo : const Color(0xFF86868B),
+                    color: temDose ? AppColors.fosforo : palette.textSecondary,
                   ),
                 ),
                 if (temDose) ...[
                   const SizedBox(width: 6),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text('kg P₂O₅/ha',
-                        style: TextStyle(fontSize: 13, color: Color(0xFF86868B))),
+                        style: TextStyle(
+                            fontSize: 13, color: palette.textSecondary)),
                   ),
                 ],
               ],
@@ -196,13 +213,15 @@ class RecomendacaoFosforoSection extends StatelessWidget {
                     'P Solo',
                     '${p.toStringAsFixed(1)} mg',
                     corPrincipal,
+                    palette,
                   ),
                 ),
                 Expanded(
                   child: _miniBloco(
                     'P NC',
                     '${nc.toStringAsFixed(1)} mg',
-                    const Color(0xFF86868B),
+                    palette.textSecondary,
+                    palette,
                   ),
                 ),
                 Expanded(
@@ -213,14 +232,15 @@ class RecomendacaoFosforoSection extends StatelessWidget {
                         : '—',
                     resultado.doseAbsorcaoP != null
                         ? const Color(0xFF007AFF)
-                        : const Color(0xFFC7C7CC),
+                        : palette.textTertiary,
+                    palette,
                   ),
                 ),
               ],
             ),
           ),
           if (resultado.legacyP) ...[
-            const Divider(height: 1, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 1, thickness: 0.5, color: palette.border),
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: RecomendacaoBadge(
@@ -236,5 +256,3 @@ class RecomendacaoFosforoSection extends StatelessWidget {
     );
   }
 }
-
-

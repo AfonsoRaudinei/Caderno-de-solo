@@ -58,7 +58,8 @@ class CalibracaoMockDB {
   }) {
     if (metodo == 'Saturação de Bases (V%)') {
       return [
-        const NivelCritico(label: 'V% alvo', valor: '70%', dependeDeAnalise: false),
+        const NivelCritico(
+            label: 'V% alvo', valor: '70%', dependeDeAnalise: false),
         const NivelCritico(
             label: 'pH alvo', valor: '6,0 – 6,5', dependeDeAnalise: false),
         const NivelCritico(

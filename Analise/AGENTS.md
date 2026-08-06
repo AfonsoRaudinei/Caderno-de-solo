@@ -43,6 +43,7 @@ Depois de alterar codigo Dart, tente executar pelo menos:
 ```bash
 dart format .
 flutter analyze
+./tool/product_modules_guard.sh
 ```
 
 Quando alterar regra de negocio, parser, controller, provider ou fluxo de tela, rode teste direcionado:
@@ -51,7 +52,18 @@ Quando alterar regra de negocio, parser, controller, provider ou fluxo de tela, 
 flutter test test/caminho/do_teste.dart
 ```
 
+Se tocar rotas, shell (`MainPage`) ou remover pastas em `lib/features/`, rode tambem:
+
+```bash
+flutter test test/core/product_modules_guard_test.dart
+```
+
 Se nao for possivel executar, declare exatamente o motivo na resposta final.
+
+## Modulos core inviolaveis
+
+Nao apague nem deixe de mergear de volta: `clientes`, `analise`, `laboratorio`, `mapa`, `config`, `main`, `auth`.
+Branches de experimento que omitirem `clientes` nao podem gerar IPA nem passar no quality gate.
 
 ## Perfil De Trabalho
 

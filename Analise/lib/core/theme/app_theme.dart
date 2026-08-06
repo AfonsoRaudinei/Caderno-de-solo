@@ -7,6 +7,11 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get black {
+    const onSurface = Color(0xFFF2F2F7);
+    const surface = Color(0xFF1C1C1E);
+    const border = Color(0xFF2C2C2E);
+    const secondaryText = Color(0xFFAEAEB2);
+
     return light.copyWith(
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
@@ -14,57 +19,70 @@ class AppTheme {
         onPrimary: Colors.white,
         secondary: AppColors.primary,
         onSecondary: Colors.white,
-        surface: Color(0xFF1C1C1E),
-        onSurface: Color(0xFFF2F2F7),
+        surface: surface,
+        onSurface: onSurface,
         error: AppColors.error,
         onError: Colors.white,
       ),
       scaffoldBackgroundColor: Colors.black,
       appBarTheme: light.appBarTheme.copyWith(
         backgroundColor: Colors.black,
-        foregroundColor: const Color(0xFFF2F2F7),
-        shadowColor: const Color(0xFF2C2C2E),
+        foregroundColor: onSurface,
+        shadowColor: border,
         titleTextStyle: AppTextStyles.value.copyWith(
           fontSize: 17,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFFF2F2F7),
+          color: onSurface,
         ),
       ),
       navigationBarTheme: light.navigationBarTheme.copyWith(
-        backgroundColor: const Color(0xFF1C1C1E),
-        shadowColor: const Color(0xFF2C2C2E),
+        backgroundColor: surface,
+        shadowColor: border,
         indicatorColor: AppColors.primary.withValues(alpha: 0.18),
       ),
       cardTheme: light.cardTheme.copyWith(
-        color: const Color(0xFF1C1C1E),
+        color: surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF2C2C2E)),
+          side: const BorderSide(color: border),
         ),
       ),
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF2C2C2E),
+        color: border,
         thickness: 0.5,
         space: 0,
       ),
       inputDecorationTheme: light.inputDecorationTheme.copyWith(
-        fillColor: const Color(0xFF1C1C1E),
+        fillColor: surface,
+        hintStyle: AppTextStyles.body.copyWith(
+          color: const Color(0xFF8E8E93),
+        ),
+        labelStyle: AppTextStyles.label.copyWith(color: secondaryText),
+      ),
+      listTileTheme: light.listTileTheme.copyWith(
+        titleTextStyle: AppTextStyles.body.copyWith(color: onSurface),
+        subtitleTextStyle: AppTextStyles.caption.copyWith(color: secondaryText),
+        iconColor: AppColors.primary,
+      ),
+      chipTheme: light.chipTheme.copyWith(
+        backgroundColor: const Color(0xFF2C2C2E),
+        labelStyle: AppTextStyles.caption.copyWith(color: onSurface),
       ),
       snackBarTheme: light.snackBarTheme.copyWith(
         backgroundColor: const Color(0xFF2C2C2E),
-        contentTextStyle: AppTextStyles.body.copyWith(
-          color: const Color(0xFFF2F2F7),
-        ),
+        contentTextStyle: AppTextStyles.body.copyWith(color: onSurface),
       ),
       dialogTheme: light.dialogTheme.copyWith(
-        backgroundColor: const Color(0xFF1C1C1E),
+        backgroundColor: surface,
         titleTextStyle: AppTextStyles.headline.copyWith(
           fontSize: 18,
-          color: const Color(0xFFF2F2F7),
+          color: onSurface,
         ),
-        contentTextStyle: AppTextStyles.body.copyWith(
-          color: const Color(0xFFF2F2F7),
-        ),
+        contentTextStyle: AppTextStyles.body.copyWith(color: onSurface),
+      ),
+      textTheme: light.textTheme.apply(
+        bodyColor: onSurface,
+        displayColor: onSurface,
       ),
     );
   }
@@ -348,6 +366,8 @@ class AppDimens {
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
   static const double radiusXl = 20.0;
+  static const double radius2xl = 24.0;
+  static const double radiusPill = 999.0;
 
   // Tamanhos fixos
   static const double buttonHeight = 50.0;
@@ -356,5 +376,9 @@ class AppDimens {
   static const double screenPadding = 16.0;
   static const double iconSize = 24.0;
   static const double iconSizeSm = 20.0;
+  static const double listIconSize = 40.0;
+  static const double cardIconSize = 72.0;
+  static const double bottomTabBarHeight = 64.0;
+  static const double bottomTabItemWidth = 64.0;
   static const double avatarSize = 48.0;
 }

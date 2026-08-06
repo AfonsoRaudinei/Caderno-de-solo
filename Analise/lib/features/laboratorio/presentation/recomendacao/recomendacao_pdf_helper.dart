@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:soloforte/core/utils/image_source_resolver.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/features/config/domain/entities/perfil_assets.dart';
 
@@ -73,15 +74,16 @@ class RecomendacaoPdfHelper {
   // ─── HEADER ────────────────────────────────────────────────────────────────
 
   static Future<_PdfAssets> _loadPdfAssets(PerfilAssets perfilAssets) async {
-    final logo = await _loadNetworkImage(perfilAssets.logoUrl);
-    final assinatura = await _loadNetworkImage(perfilAssets.assinaturaUrl);
+    final logo = await _loadImage(perfilAssets.logoUrl);
+    final assinatura = await _loadImage(perfilAssets.assinaturaUrl);
     return _PdfAssets(logo: logo, assinatura: assinatura);
   }
 
-  static Future<pw.ImageProvider?> _loadNetworkImage(String? url) async {
-    if (url == null || url.trim().isEmpty) return null;
+  static Future<pw.ImageProvider?> _loadImage(String? source) async {
     try {
-      return await networkImage(url);
+      final bytes = await ImageSourceResolver.loadBytes(source);
+      if (bytes == null || bytes.isEmpty) return null;
+      return pw.MemoryImage(bytes);
     } catch (_) {
       return null;
     }

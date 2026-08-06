@@ -130,6 +130,9 @@ class ExataBrasilImportService {
       ni: null,
       mo: null,
       se: null,
+      ctc: toDouble(raw('ctc')),
+      vPercent: toDouble(raw('vPercent')),
+      mPercent: toDouble(raw('mPercent')),
       laudoMetadata: metadata,
     );
   }

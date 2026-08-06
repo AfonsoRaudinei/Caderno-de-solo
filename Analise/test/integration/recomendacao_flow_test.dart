@@ -251,15 +251,6 @@ Future<void> _selectCalibracao(WidgetTester tester, String value) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _generate(WidgetTester tester) async {
-  final button = tester.widget<AppButton>(
-    find.byKey(const Key('btn_gerar_recomendacao')),
-  );
-  expect(button.onPressed, isNotNull);
-  button.onPressed?.call();
-  await tester.pumpAndSettle();
-}
-
 RecomendacaoResult _readResult(
   WidgetTester tester, {
   List<String> analiseIds = const [],
@@ -313,6 +304,28 @@ void main() {
       );
       expect(result.recomendacao, isNotNull);
       expect(result.diagnostico.valido, isTrue);
+
+      final gerar = tester.widget<AppButton>(
+        find.byKey(const Key('btn_gerar_recomendacao')),
+      );
+      expect(gerar.onPressed, isNotNull);
+      gerar.onPressed!.call();
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('btn_exportar_pdf')),
+        500,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('recomendacao_body_scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
+      expect(find.text('Exportar relatorio'), findsOneWidget);
       expect(find.text('Compartilhar'), findsNothing);
       expect(find.text('Exportar HTML'), findsNothing);
       expect(find.text('Exportar PDF'), findsNothing);
@@ -341,6 +354,7 @@ void main() {
         ),
         isTrue,
       );
+      expect(find.text('Exportar relatorio'), findsNothing);
       expect(find.text('Compartilhar'), findsNothing);
       expect(find.text('Exportar HTML'), findsNothing);
       expect(find.text('Exportar PDF'), findsNothing);

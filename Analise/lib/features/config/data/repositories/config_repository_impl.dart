@@ -62,7 +62,10 @@ class ConfigRepositoryImpl implements ConfigRepository {
   }
 
   @override
-  Future<void> logout() => _authDatasource.signOut();
+  Future<void> logout() async {
+    await limparDadosLocais();
+    await _authDatasource.signOut();
+  }
 
   @override
   Future<void> excluirConta({required String password}) async {
@@ -97,65 +100,39 @@ class ConfigRepositoryImpl implements ConfigRepository {
   Future<PerfilAssets> getPerfilAssets() async {
     final uid = _remoteDatasource.currentUser?.uid;
     if (uid == null || uid.isEmpty) return const PerfilAssets();
-
-    try {
-      final data = await _remoteDatasource.getUserDocument(uid);
-      final logo = data?['logoUrl'] as String?;
-      final assinatura = data?['assinaturaUrl'] as String?;
-
-      return PerfilAssets(
-        logoUrl: _assetUrlOrNull(logo),
-        assinaturaUrl: _assetUrlOrNull(assinatura),
-      );
-    } catch (_) {
-      return const PerfilAssets();
-    }
+    return _localDatasource.getPerfilAssets(uid);
   }
 
   @override
   Future<String?> uploadLogo() async {
     final uid = _requireUid();
-    final file = await _remoteDatasource.pickImage(
+    return _localDatasource.pickAndSaveLogo(
+      uid: uid,
       imageQuality: 85,
       maxWidth: 800,
     );
-    if (file == null) return null;
-
-    final url =
-        await _remoteDatasource.uploadImage(file, 'users/$uid/logo.jpg');
-    await _remoteDatasource.updateUserFields(uid, {'logoUrl': url});
-    return _withCacheBust(url);
   }
 
   @override
   Future<String?> uploadAssinatura() async {
     final uid = _requireUid();
-    final file = await _remoteDatasource.pickImage(
+    return _localDatasource.pickAndSaveAssinatura(
+      uid: uid,
       imageQuality: 90,
       maxWidth: 600,
     );
-    if (file == null) return null;
-
-    final url = await _remoteDatasource.uploadImage(
-      file,
-      'users/$uid/assinatura.jpg',
-    );
-    await _remoteDatasource.updateUserFields(uid, {'assinaturaUrl': url});
-    return _withCacheBust(url);
   }
 
   @override
   Future<void> removeLogo() async {
     final uid = _requireUid();
-    await _remoteDatasource.deleteStoragePath('users/$uid/logo.jpg');
-    await _remoteDatasource.updateUserFields(uid, {'logoUrl': ''});
+    await _localDatasource.removeLogo(uid);
   }
 
   @override
   Future<void> removeAssinatura() async {
     final uid = _requireUid();
-    await _remoteDatasource.deleteStoragePath('users/$uid/assinatura.jpg');
-    await _remoteDatasource.updateUserFields(uid, {'assinaturaUrl': ''});
+    await _localDatasource.removeAssinatura(uid);
   }
 
   String _requireUid() {
@@ -170,17 +147,6 @@ class ConfigRepositoryImpl implements ConfigRepository {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return '—';
     return trimmed;
-  }
-
-  String? _assetUrlOrNull(String? value) {
-    if (value == null || value.isEmpty) return null;
-    return _withCacheBust(value);
-  }
-
-  String _withCacheBust(String url) {
-    final token = DateTime.now().millisecondsSinceEpoch;
-    final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}v=$token';
   }
 
   String _deleteAccountMessage(String code) {

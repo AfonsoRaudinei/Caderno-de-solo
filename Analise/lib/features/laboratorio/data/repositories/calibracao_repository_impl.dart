@@ -11,7 +11,8 @@ import 'package:uuid/uuid.dart';
 final calibracaoRepositoryProvider = Provider<CalibracaoRepository>((ref) {
   return CalibracaoRepositoryImpl(
     hiveDatasource: CalibracaoHiveDatasource(),
-    firestoreDatasource: CalibracaoFirestoreDatasource(FirebaseFirestore.instance),
+    firestoreDatasource:
+        CalibracaoFirestoreDatasource(FirebaseFirestore.instance),
     auth: FirebaseAuth.instance,
   );
 });

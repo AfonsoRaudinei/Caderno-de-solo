@@ -5,22 +5,23 @@ import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/data/lab_templates/pdf_import_service.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/persistence/save_batch.dart';
 import 'package:soloforte/features/analise/domain/validation/analise_data_contract.dart';
 import 'package:soloforte/features/analise/presentation/controllers/nova_analise_controller.dart';
+import 'package:soloforte/features/analise/presentation/flows/vincular_hierarquia_salvar_flow.dart';
 import 'package:soloforte/features/analise/presentation/widgets/analise_table_widget.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_bottom_sheet.dart';
 import 'package:soloforte/features/analise/presentation/widgets/importacao_confianca_sheet.dart';
 
-const _brandGreen = Color(0xFF4ADE80);
-const _darkGreen = Color(0xFF1E3A2F);
-const _mint = Color(0xFFD1FAE5);
-const _ink = Color(0xFF1A1A1A);
-const _muted = Color(0xFF6B7280);
-const _line = Color(0xFFE5E7EB);
-const _surfaceAlt = Color(0xFFF3F4F6);
+const _brandGreen = AppColors.success;
+const _darkGreen = AppColors.success;
+const _mint = AppColors.bgSuccess;
+const _ink = AppColors.textPrimary;
+const _muted = AppColors.textSecond;
+const _surfaceAlt = AppColors.bgSecondary;
 
 /// Formulário planilha reutilizado em nova análise e edição inline no detalhe.
 class AnaliseFormContent extends ConsumerStatefulWidget {
@@ -150,11 +151,11 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x4D007AFF),
+            color: AppColors.primary.withValues(alpha: 0.30),
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -207,21 +208,11 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     NovaAnaliseState state,
     NovaAnaliseController ctrl,
   ) {
-    return Container(
+    return AppSurface(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _line),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: AppDimens.radiusLg,
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -320,14 +311,11 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     NovaAnaliseState state,
     NovaAnaliseController ctrl,
   ) {
-    return Container(
+    return AppSurface(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _line),
-      ),
+      borderRadius: AppDimens.radiusLg,
+      showBorder: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -343,7 +331,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                 color: state.validation.hasBlockingErrors
                     ? AppColors.error
                     : (state.validation.hasWarnings
-                        ? const Color(0xFFD97706)
+                        ? AppColors.warning
                         : _darkGreen),
               ),
               const SizedBox(width: 8),
@@ -375,7 +363,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                             backgroundColor:
                                 issue.severity == ValidationSeverity.error
                                     ? AppColors.error
-                                    : const Color(0xFFD97706),
+                                    : AppColors.warning,
                           ),
                         );
                       }
@@ -383,7 +371,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                 icon: const Icon(Icons.skip_next_rounded, size: 16),
                 label: const Text('Próxima'),
                 style: TextButton.styleFrom(
-                  foregroundColor: _darkGreen,
+                  foregroundColor: AppColors.primary,
                   textStyle: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -401,10 +389,36 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     final ctrlProvider = novaAnaliseControllerProvider(widget.analiseInicial);
     final ctrl = ref.read(ctrlProvider.notifier);
     final snackBottomMargin = MediaQuery.of(context).viewPadding.bottom + 92;
-    final ok = await ctrl.salvar();
+
+    final erroValidacao = ctrl.validarParaSalvar();
+    if (erroValidacao != null) {
+      if (!mounted) return;
+      ctrl.destacarProximaCelulaInvalida();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(erroValidacao),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackBottomMargin),
+        ),
+      );
+      return;
+    }
+
+    final rascunhos = ctrl.montarAnalisesParaSalvar();
+    final vinculadas = await VincularHierarquiaSalvarFlow.solicitarEVincular(
+      context,
+      ref,
+      analises: rascunhos,
+    );
+    if (vinculadas == null || !mounted) return;
+
+    final ok = await ctrl.salvar(analisesPreparadas: vinculadas);
     if (!mounted) return;
 
     if (ok) {
+      await VincularHierarquiaSalvarFlow.sincronizarPosSalvar(ref, vinculadas);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Análise salva com sucesso'),
@@ -506,14 +520,24 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     NovaAnaliseController ctrl,
     List<AnaliseSolo> analises,
   ) async {
+    final vinculadas = await VincularHierarquiaSalvarFlow.solicitarEVincular(
+      context,
+      ref,
+      analises: analises,
+    );
+    if (vinculadas == null || !mounted) return;
+
     try {
-      final result = await ctrl.salvarImportadas(analises);
+      final result = await ctrl.salvarImportadas(vinculadas);
+      if (!mounted) return;
+
+      await VincularHierarquiaSalvarFlow.sincronizarPosSalvar(ref, vinculadas);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_mensagemSucessoImportacao(result.savedCount)),
-          backgroundColor: const Color(0xFF34C759),
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -527,7 +551,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_mensagemErroImportacao(e)),
-          backgroundColor: const Color(0xFFFF3B30),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

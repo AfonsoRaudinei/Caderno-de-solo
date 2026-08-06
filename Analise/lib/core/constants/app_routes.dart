@@ -9,6 +9,18 @@ class AppRoutes {
   static const String authBootstrap = '/auth-bootstrap';
 
   static const String home = '/'; // Raiz redireciona
+  static const String clientes = '/clientes';
+  static const String clienteNovo = '/clientes/novo';
+  static const String clienteDetalhe = '/clientes/:id';
+  static const String clienteEditar = '/clientes/:id/editar';
+  static const String fazendaNova = '/clientes/:id/fazenda/nova';
+  static const String talhaoNovo =
+      '/clientes/:id/fazenda/:fazendaId/talhao/novo';
+  static const String fazendaEditar = '/clientes/:id/fazenda/:fazendaId/editar';
+  static const String talhaoEditar =
+      '/clientes/:id/fazenda/:fazendaId/talhao/:talhaoId/editar';
+  static const String clienteAnalises = '/clientes/:id/analises';
+  static const String clienteTabQuery = 'tab';
   static const String analise = '/analise';
   @Deprecated('Rota legada removida; use importação PDF na lista de análises')
   static const String analiseForm = '/analise/nova';
@@ -45,4 +57,37 @@ class AppRoutes {
   static const String configLabTemplateEdit = '/config/lab-templates/editar';
   @Deprecated('Use AppRoutes.labRefMetricas')
   static const String tabelaMetricas = '/config/metricas';
+  static const String calculos = '/config/calculos';
+
+  static String clienteDetalhePath(String id) => '/clientes/$id';
+
+  static String clienteEditarPath(String id) => '/clientes/$id/editar';
+
+  static String fazendaNovaPath(String id) => '/clientes/$id/fazenda/nova';
+
+  static String talhaoNovoPath(String id, String fazendaId) =>
+      '/clientes/$id/fazenda/$fazendaId/talhao/novo';
+
+  static String fazendaEditarPath(String clienteId, String fazendaId) =>
+      '/clientes/$clienteId/fazenda/$fazendaId/editar';
+
+  static String talhaoEditarPath(
+    String clienteId,
+    String fazendaId,
+    String talhaoId,
+  ) =>
+      '/clientes/$clienteId/fazenda/$fazendaId/talhao/$talhaoId/editar';
+
+  static String clienteAnalisesPath(String id) => '/clientes/$id/analises';
+
+  static String clienteDetalheComAbaPath(String id, {String tab = 'resumo'}) {
+    final normalized = tab.trim().toLowerCase();
+    if (normalized.isEmpty || normalized == 'resumo') {
+      return clienteDetalhePath(id);
+    }
+    if (normalized == 'analises' || normalized == 'analise') {
+      return clienteAnalisesPath(id);
+    }
+    return '${clienteDetalhePath(id)}?$clienteTabQuery=$normalized';
+  }
 }

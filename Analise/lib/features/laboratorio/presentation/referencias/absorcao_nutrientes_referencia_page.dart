@@ -2,8 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
+import 'package:soloforte/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_data.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/absorcao_nutrientes_models.dart';
 import 'package:soloforte/features/laboratorio/presentation/referencias/widgets/absorcao_card_wrapper.dart';
@@ -22,6 +25,8 @@ class AbsorcaoNutrientesReferenciaPage extends StatefulWidget {
 
 class _AbsorcaoNutrientesReferenciaPageState
     extends State<AbsorcaoNutrientesReferenciaPage> {
+  static const String _iconPath = 'assets/icons/absorcao.png';
+
   final TextEditingController _yieldController = TextEditingController(
     text: '4.2',
   );
@@ -67,40 +72,15 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   DataValue resolveDataValue() {
-    final source =
-        AbsorcaoNutrientesData.nutrientData[_sourceType]?[_selectedSource];
-    if (source == null) {
-      return const DataValue(
-        valuePerTon: 0,
-        quality: DataQuality.unavailable,
-      );
-    }
-
-    final selectedValue = source[_selectedDataType]?[_selectedNutrient] ?? 0;
-    if (selectedValue > 0) {
-      return DataValue(
-        valuePerTon: selectedValue,
-        quality: DataQuality.original,
-      );
-    }
-
-    final oppositeType =
-        _selectedDataType == 'Extração' ? 'Exportação' : 'Extração';
-    final oppositeValue = source[oppositeType]?[_selectedNutrient] ?? 0;
-    final index = AbsorcaoNutrientesData.exportIndexes[_selectedNutrient] ?? 0;
-    if (oppositeValue <= 0 || index <= 0) {
-      return const DataValue(
-        valuePerTon: 0,
-        quality: DataQuality.unavailable,
-      );
-    }
-
-    final calculated = _selectedDataType == 'Exportação'
-        ? oppositeValue * index
-        : oppositeValue / index;
+    final resolved = const AbsorcaoNutrientesResolver().resolve(
+      sourceType: _sourceType,
+      sourceName: _selectedSource,
+      dataType: _selectedDataType,
+      nutrient: _selectedNutrient,
+    );
     return DataValue(
-      valuePerTon: calculated,
-      quality: DataQuality.calculated,
+      valuePerTon: resolved.valuePerTon,
+      quality: resolved.quality,
     );
   }
 
@@ -169,7 +149,6 @@ class _AbsorcaoNutrientesReferenciaPageState
         _viewMode == ViewMode.accumulated ? 'Acumulado' : 'Por Estádio';
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
       appBar: AppBar(
         title: const Text('Absorção de Nutrientes'),
       ),
@@ -221,31 +200,44 @@ class _AbsorcaoNutrientesReferenciaPageState
         color: AbsorcaoNutrientesCores.greenDark,
       ),
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'REFERÊNCIA TÉCNICA',
-            style: AppTextStyles.caption.copyWith(
-              color: AbsorcaoNutrientesCores.greenAccent,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
-            ),
+          const AppIconFrame(
+            assetPath: _iconPath,
+            size: AppDimens.cardIconSize,
+            backgroundColor: Colors.transparent,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Absorção de Nutrientes em Soja',
-            style: AppTextStyles.headline.copyWith(
-              color: Colors.white,
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Análise por estádio fenológico para apoiar recomendação agronômica.',
-            style: AppTextStyles.body.copyWith(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
+          const SizedBox(width: AppDimens.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'REFERÊNCIA TÉCNICA',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AbsorcaoNutrientesCores.greenAccent,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Absorção de Nutrientes em Soja',
+                  style: AppTextStyles.headline.copyWith(
+                    color: Colors.white,
+                    fontSize: 20,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Análise por estádio fenológico para apoiar recomendação agronômica.',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -254,11 +246,18 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   Widget _buildSectionSwitcher() {
+    final palette = context.appPalette;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE9ECEA),
+        color:
+            AbsorcaoNutrientesCores.sectionSwitcherBg(isDark: palette.isDark),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFDCE8E0)),
+        border: Border.all(
+          color: AbsorcaoNutrientesCores.sectionSwitcherBorder(
+            isDark: palette.isDark,
+          ),
+        ),
       ),
       padding: const EdgeInsets.all(4),
       child: Row(
@@ -285,6 +284,7 @@ class _AbsorcaoNutrientesReferenciaPageState
     required String label,
     required ReferenceSection section,
   }) {
+    final palette = context.appPalette;
     final isSelected = _section == section;
     return InkWell(
       borderRadius: BorderRadius.circular(10),
@@ -293,10 +293,10 @@ class _AbsorcaoNutrientesReferenciaPageState
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected ? palette.cardStrong : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? const Color(0xFFD1D1D6) : Colors.transparent,
+            color: isSelected ? palette.borderStrong : Colors.transparent,
           ),
         ),
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -306,8 +306,8 @@ class _AbsorcaoNutrientesReferenciaPageState
             style: AppTextStyles.label.copyWith(
               fontSize: 13,
               color: isSelected
-                  ? AbsorcaoNutrientesCores.greenDark
-                  : AbsorcaoNutrientesCores.textMuted,
+                  ? AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark)
+                  : AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -317,6 +317,8 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   Widget _buildFiltersCard() {
+    final palette = context.appPalette;
+
     return AbsorcaoCardWrapper(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +326,7 @@ class _AbsorcaoNutrientesReferenciaPageState
           Text(
             'Filtros de análise',
             style: AppTextStyles.sectionLabel.copyWith(
-              color: AbsorcaoNutrientesCores.textMuted,
+              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -408,7 +410,9 @@ class _AbsorcaoNutrientesReferenciaPageState
           Text(
             'Produtividade esperada (t/ha)',
             style: AppTextStyles.label.copyWith(
-                fontSize: 13, color: AbsorcaoNutrientesCores.textMuted),
+              fontSize: 13,
+              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+            ),
           ),
           const SizedBox(height: 6),
           TextField(
@@ -417,9 +421,11 @@ class _AbsorcaoNutrientesReferenciaPageState
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
+            style: AppTextStyles.body.copyWith(color: palette.textPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor: AbsorcaoNutrientesCores.greenPale,
+              fillColor:
+                  AbsorcaoNutrientesCores.inputFill(isDark: palette.isDark),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -441,6 +447,7 @@ class _AbsorcaoNutrientesReferenciaPageState
     String unit,
     String modeText,
   ) {
+    final palette = context.appPalette;
     final maxValue = stageData.isEmpty
         ? 1.0
         : stageData.fold<double>(0, (max, row) => math.max(max, row.value));
@@ -453,14 +460,15 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Curva de absorção ($modeText)',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.greenDark,
+              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
             ),
           ),
           const SizedBox(height: 2),
           Text(
             '$_sourceType · $_selectedSource',
-            style: AppTextStyles.caption
-                .copyWith(color: AbsorcaoNutrientesCores.textMuted),
+            style: AppTextStyles.caption.copyWith(
+              color: AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
+            ),
           ),
           const SizedBox(height: 12),
           ...stageData.map((row) {
@@ -516,7 +524,10 @@ class _AbsorcaoNutrientesReferenciaPageState
                     alignment: Alignment.centerRight,
                     child: Text(
                       '${row.value.toStringAsFixed(2)} $unit · ${row.percentage.toStringAsFixed(1)}%',
-                      style: AppTextStyles.caption.copyWith(fontSize: 11),
+                      style: AppTextStyles.caption.copyWith(
+                        fontSize: 11,
+                        color: palette.textSecondary,
+                      ),
                     ),
                   ),
                 ],
@@ -529,6 +540,7 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   Widget _buildTableCard(List<StagePoint> stageData, String unit) {
+    final palette = context.appPalette;
     final pctHeader =
         _viewMode == ViewMode.accumulated ? '% Acumulada' : '% no Estádio';
     final valueHeader =
@@ -542,7 +554,7 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Dados por estádio',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.greenDark,
+              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
             ),
           ),
           const SizedBox(height: 10),
@@ -550,12 +562,14 @@ class _AbsorcaoNutrientesReferenciaPageState
             scrollDirection: Axis.horizontal,
             child: DataTable(
               headingTextStyle: AppTextStyles.label.copyWith(
-                color: AbsorcaoNutrientesCores.textMuted,
+                color:
+                    AbsorcaoNutrientesCores.mutedText(isDark: palette.isDark),
                 fontSize: 12,
               ),
               dataTextStyle: AppTextStyles.body.copyWith(
                 fontSize: 13,
-                color: AbsorcaoNutrientesCores.greenDark,
+                color:
+                    AbsorcaoNutrientesCores.valueColor(isDark: palette.isDark),
               ),
               columns: [
                 const DataColumn(label: Text('Estádio')),
@@ -581,6 +595,7 @@ class _AbsorcaoNutrientesReferenciaPageState
   }
 
   Widget _buildIndexReferenceCard() {
+    final palette = context.appPalette;
     final indexEntries =
         AbsorcaoNutrientesData.exportIndexes.entries.toList(growable: false);
 
@@ -592,7 +607,7 @@ class _AbsorcaoNutrientesReferenciaPageState
             'Índices médios de exportação',
             style: AppTextStyles.headline.copyWith(
               fontSize: 18,
-              color: AbsorcaoNutrientesCores.greenDark,
+              color: AbsorcaoNutrientesCores.titleColor(isDark: palette.isDark),
             ),
           ),
           const SizedBox(height: 10),
@@ -608,8 +623,14 @@ class _AbsorcaoNutrientesReferenciaPageState
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: AbsorcaoNutrientesCores.greenPale,
-                      border: Border.all(color: const Color(0xFFDCE8E0)),
+                      color: AbsorcaoNutrientesCores.inputFill(
+                        isDark: palette.isDark,
+                      ),
+                      border: Border.all(
+                        color: AbsorcaoNutrientesCores.sectionSwitcherBorder(
+                          isDark: palette.isDark,
+                        ),
+                      ),
                     ),
                     child: Text(
                       '${entry.key}: ${(entry.value * 100).toStringAsFixed(1)}%',
@@ -625,7 +646,10 @@ class _AbsorcaoNutrientesReferenciaPageState
           const SizedBox(height: 10),
           Text(
             'Quando faltam dados diretos de extração/exportação, o valor é estimado por índice.',
-            style: AppTextStyles.caption.copyWith(fontSize: 12),
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 12,
+              color: palette.textSecondary,
+            ),
           ),
         ],
       ),

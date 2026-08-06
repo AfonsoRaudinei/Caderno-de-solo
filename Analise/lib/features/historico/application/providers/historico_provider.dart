@@ -52,3 +52,23 @@ class HistoricoNotifier extends AsyncNotifier<List<RecomendacaoModel>> {
     state = await AsyncValue.guard(_carregar);
   }
 }
+
+/// Recomendações das análises vinculadas a um cliente.
+final recomendacoesPorClienteProvider =
+    FutureProvider.family<List<RecomendacaoModel>, String>(
+        (ref, clienteId) async {
+  final normalizedId = clienteId.trim();
+  if (normalizedId.isEmpty) return const [];
+
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid == null) return const [];
+
+  final analises = ref.watch(analisesPorClienteProvider(normalizedId));
+  final ids = analises.map((a) => a.id).where((id) => id.isNotEmpty).toSet();
+  if (ids.isEmpty) return const [];
+
+  return ref.read(carregarHistoricoUseCaseProvider).call(
+        analiseIds: ids,
+        userId: uid,
+      );
+});

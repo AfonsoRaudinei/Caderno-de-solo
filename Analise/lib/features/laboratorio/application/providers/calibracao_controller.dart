@@ -165,6 +165,28 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     _syncDraftParametros('corretivos', novo.parametros);
   }
 
+  void setUsarNivelCritico(bool value) {
+    _updateCorretivos('usarNivelCritico', value);
+  }
+
+  void setCaDesejadoPct(double? value) {
+    _updateCorretivos('caDesejadoPct', value);
+  }
+
+  void setMgDesejadoPct(double? value) {
+    _updateCorretivos('mgDesejadoPct', value);
+  }
+
+  void setKDesejadoPct(double? value) {
+    _updateCorretivos('kDesejadoPct', value);
+  }
+
+  void setNcCa(double? value) => _updateCorretivos('ncCa', value);
+
+  void setNcMg(double? value) => _updateCorretivos('ncMg', value);
+
+  void setNcK(double? value) => _updateCorretivos('ncK', value);
+
   void updateGesso(GessoState novo) {
     state = state.copyWith(gesso: novo);
     // Supondo que gesso utilize a chave gesso se for isolado, ou corretivos
@@ -176,9 +198,33 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     _syncDraftParametros('fosforo', novo.parametros);
   }
 
+  void setFosforoParam(String key, dynamic value) {
+    final parametros = Map<String, dynamic>.from(state.draft.parametrosCards);
+    final fosforo = Map<String, dynamic>.from(
+      (parametros['fosforo'] as Map?) ?? const {},
+    );
+    fosforo[key] = value;
+    parametros['fosforo'] = fosforo;
+    _updateDraft(state.draft.copyWith(parametrosCards: parametros));
+  }
+
   void updatePotassio(PotassioState novo) {
     state = state.copyWith(potassio: novo);
     _syncDraftParametros('potassio', novo.parametros);
+  }
+
+  void setPotassioParam(String key, dynamic value) {
+    _updatePotassioParam(key, value);
+  }
+
+  void resetNcTeorParaAutomatico() {
+    _updatePotassioParam('ncTeor', 46.0);
+    _updatePotassioParam('ncTeorManual', false);
+  }
+
+  void resetNcCtcParaAutomatico() {
+    _updatePotassioParam('ncPctCtc', 3.0);
+    _updatePotassioParam('ncCtcManual', false);
   }
 
   void updateMicros(MicronutrientesState novo) {
@@ -208,6 +254,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       grupos[grupoIndex] as Map<String, dynamic>,
     );
     grupo['referenciaNome'] = referenciaNome;
+    grupo['referenciaTecnica'] = referenciaNome;
 
     final elementos = Map<String, dynamic>.from(
       (micros['elementos'] as Map<String, dynamic>?) ?? {},
@@ -222,6 +269,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       final el = Map<String, dynamic>.from(
         elementos[simbolo] as Map<String, dynamic>,
       );
+      el['referenciaNc'] = referenciaNome;
       el['referencia'] = referenciaNome;
 
       if (referenciaNome != 'Personalizada') {
@@ -231,7 +279,6 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         }
       }
 
-      el['propagadoDoGrupo'] = true;
       elementos[simbolo] = el;
     }
 
@@ -252,6 +299,50 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
   void _syncDraftParametros(String key, Map<String, dynamic> value) {
     final parametros = Map<String, dynamic>.from(state.draft.parametrosCards);
     parametros[key] = value;
+    _updateDraft(state.draft.copyWith(parametrosCards: parametros));
+  }
+
+  void _updateCorretivos(String key, dynamic value) {
+    final parametros = Map<String, dynamic>.from(state.draft.parametrosCards);
+    final corretivos = Map<String, dynamic>.from(
+      (parametros['corretivos'] as Map?) ?? const {},
+    );
+
+    corretivos[key] = value;
+
+    if (key == 'caDesejadoPct' ||
+        key == 'mgDesejadoPct' ||
+        key == 'kDesejadoPct' ||
+        key == 'ncCa' ||
+        key == 'ncMg' ||
+        key == 'ncK') {
+      final albrecht = Map<String, dynamic>.from(
+        (corretivos['albrecht'] as Map?) ?? const {},
+      );
+      final albrechtKey = key == 'caDesejadoPct'
+          ? 'caAlvo'
+          : key == 'mgDesejadoPct'
+              ? 'mgAlvo'
+              : key == 'kDesejadoPct'
+                  ? 'kAlvo'
+                  : key;
+      albrecht[albrechtKey] = value;
+      corretivos['albrecht'] = albrecht;
+    }
+
+    parametros['corretivos'] = corretivos;
+    _updateDraft(
+      state.draft.copyWith(parametrosCards: parametros),
+    );
+  }
+
+  void _updatePotassioParam(String key, dynamic value) {
+    final parametros = Map<String, dynamic>.from(state.draft.parametrosCards);
+    final potassio = Map<String, dynamic>.from(
+      (parametros['potassio'] as Map?) ?? const {},
+    );
+    potassio[key] = value;
+    parametros['potassio'] = potassio;
     _updateDraft(state.draft.copyWith(parametrosCards: parametros));
   }
 
@@ -372,6 +463,28 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     state = state.copyWith(errorMessage: null, successMessage: null);
   }
 
+  void toggleHeader() {
+    state = state.copyWith(isHeaderExpanded: !state.isHeaderExpanded);
+  }
+
+  void toggleCorretivos() {
+    state = state.copyWith(isCorretivosExpanded: !state.isCorretivosExpanded);
+  }
+
+  void toggleFosforo() {
+    state = state.copyWith(isFosforoExpanded: !state.isFosforoExpanded);
+  }
+
+  void togglePotassio() {
+    state = state.copyWith(isPotassioExpanded: !state.isPotassioExpanded);
+  }
+
+  void toggleMicronutrientes() {
+    state = state.copyWith(
+      isMicronutrientesExpanded: !state.isMicronutrientesExpanded,
+    );
+  }
+
   void _updateDraft(CalibracaoProfile draft) {
     state = state.copyWith(
       draft: draft,
@@ -483,6 +596,13 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       'fatorHAl': 0.5,
       'doseFixa': 1.75,
       'mgDesejado': 0.8,
+      'usarNivelCritico': false,
+      'caDesejadoPct': null,
+      'mgDesejadoPct': null,
+      'kDesejadoPct': null,
+      'ncCa': null,
+      'ncMg': null,
+      'ncK': null,
       'albrecht': {
         'cultura': cultura,
         'caAlvo': alvos['ca']!.toDouble(),
@@ -516,8 +636,11 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       'referencia': 'IAC Bol.100',
       'faixaArgila': '21–40%',
       'nc': 30.0,
+      'ncModoManual': false,
       'camada': '0–20 cm',
       'modoCalculo': '① Correção do solo',
+      'corrigirSolo': true,
+      'reposicaoFosforo': 'nenhuma',
       'percentualCorrecao': 100.0,
       'fatorSolo': 4.0,
       'cultivar': '',
@@ -526,6 +649,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       'doseMinimaLegacyP': 30.0,
       'modoAplicacao': 'Sulco',
       'fepBase': 15.0,
+      'eficienciaSolo': 15.0,
     };
   }
 
@@ -533,20 +657,31 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     final isAlgodao = cultura.toLowerCase() == 'algodão' ||
         cultura.toLowerCase() == 'algodao';
     return {
-      'extrator': 'Resina (IAC)',
-      'referencia': '04 — Potássio (K): Motor de Cálculo',
-      'criterioNc': 'Ambos — usar o maior',
+      'extrator': 'Resina IAC',
+      'referencia': 'IAC Bol.100',
+      'camada': '0–20 cm',
+      'corrigirSolo': true,
+      'metodoCorrecao': 'nivel_critico',
+      'criterioNc': 'Teor absoluto',
       'ncTeor': 80.0,
       'ncPctCtc': isAlgodao ? 5.0 : 4.0,
-      'camada': '0–20 cm',
+      'percentualKObjetivoCtc': isAlgodao ? 5.0 : 4.0,
+      'ncTeorManual': false,
+      'ncCtcManual': false,
+      'reposicaoPotassio': 'nenhuma',
       'modoCalculo': 'Correção do solo',
       'percentualCorrecao': 100.0,
-      'cultivar': '',
-      'tipoDadoCultivar': 'Exportação',
+      'cultivar': cultura,
+      'tipoDadoCultivar': 'Nenhum',
       'percentualUsoKSolo': 0.0,
-      'modoAplicacao': 'A lanço incorporado',
-      'fekBase': isAlgodao ? 60.0 : 65.0,
-      'doseSulco': 0.0,
+      'percentualKSoloConsiderado': 0.0,
+      'indiceExportacaoK2O': null,
+      'indiceExtracaoK2O': null,
+      'ajusteEficienciaSolo': 15.0,
+      'fekBase': 15.0,
+      'potassioTipoFonte': 'Autores',
+      'potassioFonteNome': '',
+      'potassioModoAbsorcao': 'extracao',
     };
   }
 
@@ -569,6 +704,9 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         'referencia': '06 — Micronutrientes: Motor de Cálculo',
         'ncSolo': ncSolo,
         'viaAplicacao': 'Solo (correção)',
+        'viasAplicacao': ['Solo'],
+        'tipoFonte': 'Autores',
+        'autor': 'Araújo (2023)',
         'percentualCorrecaoSolo': 100.0,
         'fonteSolo': fonteSolo,
         'teorFonteSolo': teorSolo,
@@ -577,6 +715,8 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         'fonteFoliar': fonteFoliar,
         'teorFonteFoliar': teorFoliar,
         'eficienciaFoliar': eficienciaFoliar,
+        'fonteTs': '',
+        'doseTs': 0.0,
         'temAnaliseFoliar': false,
         'teorFoliar': 0.0,
         'adicionarGrupo': false,

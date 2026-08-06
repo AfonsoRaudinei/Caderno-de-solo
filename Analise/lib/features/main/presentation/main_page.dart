@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/widgets/app_bottom_tab_bar.dart';
 
 /// Shell de navegação principal do SoloForte.
 class MainPage extends ConsumerWidget {
@@ -9,123 +9,48 @@ class MainPage extends ConsumerWidget {
 
   const MainPage({super.key, required this.navigationShell});
 
+  static const List<AppBottomTabItem> tabs = [
+    AppBottomTabItem(
+      icon: Icons.contacts_outlined,
+      selectedIcon: Icons.contacts,
+      label: 'Clientes',
+    ),
+    AppBottomTabItem(
+      icon: Icons.science_outlined,
+      selectedIcon: Icons.science,
+      label: 'Análise',
+    ),
+    AppBottomTabItem(
+      icon: Icons.biotech_outlined,
+      selectedIcon: Icons.biotech,
+      label: 'Lab',
+    ),
+    AppBottomTabItem(
+      icon: Icons.map_outlined,
+      selectedIcon: Icons.map,
+      label: 'Mapa',
+    ),
+    AppBottomTabItem(
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+      label: 'Config',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = navigationShell.currentIndex;
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: navigationShell,
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: Container(
-          height: 64,
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.10),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.science_outlined,
-                selectedIcon: Icons.science,
-                label: 'Análise',
-                selected: currentIndex == 0,
-                onTap: () => navigationShell.goBranch(
-                  0,
-                  initialLocation: true,
-                ),
-              ),
-              _NavItem(
-                icon: Icons.biotech_outlined,
-                selectedIcon: Icons.biotech,
-                label: 'Lab',
-                selected: currentIndex == 1,
-                onTap: () => navigationShell.goBranch(
-                  1,
-                  initialLocation: true,
-                ),
-              ),
-              _NavItem(
-                icon: Icons.map_outlined,
-                selectedIcon: Icons.map,
-                label: 'Mapa',
-                selected: currentIndex == 2,
-                onTap: () => navigationShell.goBranch(
-                  2,
-                  initialLocation: true,
-                ),
-              ),
-              _NavItem(
-                icon: Icons.settings_outlined,
-                selectedIcon: Icons.settings,
-                label: 'Config',
-                selected: currentIndex == 3,
-                onTap: () => navigationShell.goBranch(
-                  3,
-                  initialLocation: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
-        height: 64,
-        child: Center(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
-              selected ? selectedIcon : icon,
-              key: ValueKey(selected),
-              color:
-                  selected ? AppColors.primary : colorScheme.onSurfaceVariant,
-              size: 26,
-            ),
-          ),
+      bottomNavigationBar: AppBottomTabBar(
+        items: tabs,
+        currentIndex: currentIndex,
+        onTap: (index) => navigationShell.goBranch(
+          index,
+          initialLocation: index == currentIndex,
         ),
       ),
     );

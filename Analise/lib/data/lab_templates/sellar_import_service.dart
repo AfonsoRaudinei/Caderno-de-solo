@@ -46,6 +46,14 @@ class SellarImportService {
       return null;
     }
 
+    int? toInt(dynamic raw) {
+      if (raw == null) return null;
+      if (raw is int) return raw;
+      if (raw is num) return raw.toInt();
+      if (raw is String) return int.tryParse(raw.trim());
+      return null;
+    }
+
     Cultura parseCultura(dynamic raw) {
       final normalized = (raw as String?)?.trim().toLowerCase() ?? '';
       for (final cultura in Cultura.values) {
@@ -113,6 +121,7 @@ class SellarImportService {
       s020: toDouble(value('s020')),
       s2040: toDouble(value('s2040')),
       k: kCmolc,
+      kMgDm3: kRawMgDm3,
       ca: toDouble(value('ca')),
       mg: toDouble(value('mg')),
       al: toDouble(value('al')),
@@ -126,6 +135,14 @@ class SellarImportService {
       ni: toDouble(value('ni')),
       mo: toDouble(value('mo')),
       se: toDouble(value('se')),
+      pTotal: toDouble(value('pTotal')),
+      classificacaoTextura: value('classificacaoTextura') as String?,
+      tipoSoloMapa: toInt(value('tipoSoloMapa')),
+      ctcEfetiva: toDouble(value('ctcEfetiva')),
+      ctc: toDouble(value('ctc')),
+      sb: toDouble(value('sb')),
+      vPercent: toDouble(value('vPercent')),
+      mPercent: toDouble(value('mPercent')),
       laudoMetadata: metadata,
     );
   }

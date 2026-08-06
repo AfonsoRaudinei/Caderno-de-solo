@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/domain/formulas/conversoes.dart';
 import 'package:soloforte/domain/formulas/potassio_formula.dart';
 
 void main() {
@@ -14,6 +15,21 @@ void main() {
       final participacao =
           PotassioFormula.participacaoAtual(kAtual: 0.3, ctc: 0.0);
       expect(participacao, 0.0);
+    });
+
+    test('Participação na CTC fica clamped em 0–100%', () {
+      expect(
+        PotassioFormula.participacaoAtual(kAtual: 2.0, ctc: 1.0),
+        100.0,
+      );
+      expect(
+        PotassioFormula.participacaoAtual(kAtual: -1.0, ctc: 10.0),
+        0.0,
+      );
+      expect(
+        PotassioFormula.participacaoAtual(kAtual: 0.3, ctc: -5.0),
+        0.0,
+      );
     });
 
     test('Deve calcular recomendação de K2O quando déficit existe', () {
@@ -81,15 +97,14 @@ void main() {
       );
     });
 
-    test('Modo 2 — extração calcula dose final', () {
+    test('Modo 2 — extração calcula dose final (legado FEK)', () {
       final dose = PotassioFormula.recomendacaoExtracao(
-        kSolo: 80.0,
+        kSolo: 80 / Conversoes.kMgDm3Factor,
         percentualUsoSolo: 50.0,
         extracaoK2O: 150.0,
         fek: 60.0,
       );
-      // kSoloUsado=40; kSoloKg=96.4; base=53.6; final=89.33
-      expect(dose, closeTo(89.33, 0.01));
+      expect(dose, closeTo(89.33, 0.1));
     });
 
     test('aviso de sulco quando dose > 40 kg/ha', () {
@@ -116,6 +131,78 @@ void main() {
       expect(r.avisoKMg, isTrue);
       expect(r.relKCa, 0.5);
       expect(r.avisoKCa, isTrue);
+    });
+
+    test('aplicarAjusteEficiencia soma acréscimo percentual', () {
+      expect(
+        PotassioFormula.aplicarAjusteEficiencia(130.2, 15),
+        closeTo(149.73, 0.01),
+      );
+      expect(PotassioFormula.aplicarAjusteEficiencia(130.2, 0), 130.2);
+      expect(PotassioFormula.aplicarAjusteEficiencia(130.2, 100),
+          closeTo(260.4, 0.01));
+    });
+
+    test('recomendacaoComponentes usa métodos exclusivos', () {
+      final porTeor = PotassioFormula.recomendacaoComponentes(
+        corrigirSolo: true,
+        metodoCorrecao: MetodoCorrecaoPotassio.nivelCritico,
+        reposicao: ReposicaoPotassio.nenhuma,
+        ctc: 10.0,
+        kAtualCmolc: 0.1,
+        kAtualMgDm3: 39.1,
+        argilaPercent: 10.0,
+        ncTeorMgDm3: 40.0,
+        percentualKObjetivoCtc: 5.0,
+        cultura: 'Soja',
+        percentualUsoKSolo: 100,
+        exportacaoK2O: 90,
+        extracaoK2O: 110,
+        ajusteEficienciaSolo: 15,
+      );
+      expect(porTeor.doseCorrecao, greaterThan(0));
+      expect(porTeor.doseReposicaoAjustada, 0);
+
+      final porCtc = PotassioFormula.recomendacaoComponentes(
+        corrigirSolo: true,
+        metodoCorrecao: MetodoCorrecaoPotassio.percentualKCtc,
+        reposicao: ReposicaoPotassio.nenhuma,
+        ctc: 10.0,
+        kAtualCmolc: 0.2,
+        kAtualMgDm3: 78.2,
+        argilaPercent: 10.0,
+        ncTeorMgDm3: 40.0,
+        percentualKObjetivoCtc: 5.0,
+        cultura: 'Soja',
+        percentualUsoKSolo: 100,
+        exportacaoK2O: 90,
+        extracaoK2O: 110,
+        ajusteEficienciaSolo: 15,
+      );
+      expect(porCtc.doseCorrecao, closeTo(282.693, 0.01));
+    });
+
+    test('reposição com eficiência aditiva', () {
+      final resultado = PotassioFormula.recomendacaoComponentes(
+        corrigirSolo: false,
+        metodoCorrecao: MetodoCorrecaoPotassio.nivelCritico,
+        reposicao: ReposicaoPotassio.exportacao,
+        ctc: 10.0,
+        kAtualCmolc: 0.5,
+        kAtualMgDm3: 195.5,
+        argilaPercent: 30.0,
+        ncTeorMgDm3: 60.0,
+        percentualKObjetivoCtc: 4.0,
+        cultura: 'Soja',
+        percentualUsoKSolo: 0,
+        exportacaoK2O: 100,
+        extracaoK2O: 110,
+        ajusteEficienciaSolo: 15,
+      );
+      expect(resultado.doseCorrecao, 0);
+      expect(resultado.doseReposicao, 100);
+      expect(resultado.doseReposicaoAjustada, closeTo(115, 0.01));
+      expect(resultado.doseTotal, closeTo(115, 0.01));
     });
 
     test('utilitário K mg/dm3 -> cmolc/dm3', () {

@@ -2,9 +2,16 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/config/app_config.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/utils/image_source_resolver.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/widgets/app_visual_components.dart';
+import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/analise/domain/value_objects/migracao_vinculos_result.dart';
 import 'package:soloforte/features/config/application/providers/app_theme_mode_provider.dart';
 import 'package:soloforte/features/config/domain/entities/config_action_exception.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
@@ -12,59 +19,6 @@ import 'package:soloforte/features/config/application/providers/perfil_assets_pr
 
 export 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart'
     show PerfilAssets, PerfilAssetsNotifier, perfilAssetsProvider;
-
-class _ConfigPalette {
-  const _ConfigPalette({
-    required this.background,
-    required this.card,
-    required this.cardStrong,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.textTertiary,
-    required this.border,
-    required this.borderStrong,
-    required this.shadow,
-  });
-
-  final Color background;
-  final Color card;
-  final Color cardStrong;
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color textTertiary;
-  final Color border;
-  final Color borderStrong;
-  final Color shadow;
-
-  static _ConfigPalette of(BuildContext context) {
-    final isBlack = Theme.of(context).brightness == Brightness.dark;
-    if (isBlack) {
-      return _ConfigPalette(
-        background: Colors.black,
-        card: const Color(0xFF1C1C1E),
-        cardStrong: const Color(0xFF2C2C2E),
-        textPrimary: const Color(0xFFF2F2F7),
-        textSecondary: const Color(0xFFAEAEB2),
-        textTertiary: const Color(0xFF636366),
-        border: const Color(0xFF2C2C2E),
-        borderStrong: const Color(0xFF3A3A3C),
-        shadow: Colors.black.withValues(alpha: 0.45),
-      );
-    }
-
-    return _ConfigPalette(
-      background: const Color(0xFFF5F5F7),
-      card: Colors.white.withValues(alpha: 0.95),
-      cardStrong: Colors.white,
-      textPrimary: const Color(0xFF1D1D1F),
-      textSecondary: const Color(0xFF86868B),
-      textTertiary: const Color(0xFFC7C7CC),
-      border: const Color(0xFFE5E5E7),
-      borderStrong: const Color(0xFFD1D1D6),
-      shadow: Colors.black.withValues(alpha: 0.06),
-    );
-  }
-}
 
 /// Bottom sheet iOS para edição de campo de texto.
 Future<void> _showEditSheet(
@@ -75,7 +29,7 @@ Future<void> _showEditSheet(
   required String firestoreField,
   String? placeholder,
 }) async {
-  final palette = _ConfigPalette.of(context);
+  final AppThemePalette palette = context.appPalette;
   final controller =
       TextEditingController(text: currentValue == '—' ? '' : currentValue);
 
@@ -109,9 +63,9 @@ Future<void> _showEditSheet(
               CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () => Navigator.of(sheetContext).pop(),
-                child: const Text(
+                child: Text(
                   'Cancelar',
-                  style: TextStyle(color: Color(0xFF86868B)),
+                  style: TextStyle(color: palette.textSecondary),
                 ),
               ),
             ],
@@ -193,7 +147,7 @@ class ConfigPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(configControllerProvider);
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -250,23 +204,47 @@ class ConfigPage extends ConsumerWidget {
                 const _SectionLabel('IDENTIDADE VISUAL'),
                 const _IdentidadeVisualCard(),
                 const SizedBox(height: 24),
-                const _SectionLabel('GERENCIAMENTO'),
+                const _SectionLabel('APARÊNCIA'),
+                const _CardSection(
+                  children: [
+                    _ThemeModeRow(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const _SectionLabel('MODELOS E COMUNICAÇÃO'),
                 _CardSection(
                   children: [
-                    const _ThemeModeRow(),
-                    const _Divider(),
                     _ProfileChevronRow(
                       label: 'Modelos de Laboratório',
+                      subtitle: 'Unidades, campos e leitura de PDFs',
+                      icon: CupertinoIcons.lab_flask,
                       onTap: () => context.push(AppRoutes.configLabTemplates),
                     ),
                     const _Divider(),
                     _ProfileChevronRow(
                       label: 'Enviar Feedback',
+                      subtitle: 'Bug, sugestão, elogio ou melhoria',
+                      icon: CupertinoIcons.chat_bubble_text,
                       onTap: () => context.push(AppRoutes.feedback),
                     ),
-                    const _Divider(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const _SectionLabel('SINCRONIZAÇÃO DE DADOS'),
+                const _CardSection(
+                  children: [
+                    _MigracaoVinculosRow(),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const _SectionLabel('DADOS DO DISPOSITIVO'),
+                _CardSection(
+                  children: [
                     _ProfileChevronRow(
                       label: 'Limpar Dados Locais',
+                      subtitle: 'Remove apenas dados salvos neste aparelho',
+                      icon: CupertinoIcons.trash,
+                      isDestructive: true,
                       onTap: () async {
                         final confirmar = await showCupertinoDialog<bool>(
                           context: context,
@@ -299,7 +277,8 @@ class ConfigPage extends ConsumerWidget {
                           const SnackBar(
                             content:
                                 Text('Dados locais removidos com sucesso.'),
-                            backgroundColor: Color(0xFF34C759),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
@@ -310,214 +289,179 @@ class ConfigPage extends ConsumerWidget {
                 const _SectionLabel('ZONA DE PERIGO'),
                 _CardSection(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      child: GestureDetector(
-                        onTap: () async {
-                          // Passo 1: alerta de consequências
-                          final prosseguir = await showCupertinoDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title:
-                                  const Text('Excluir conta permanentemente?'),
-                              content: const Text(
-                                'Todos os seus dados, análises e configurações serão deletados e não poderão ser recuperados.',
+                    _ProfileChevronRow(
+                      label: 'Excluir Conta',
+                      subtitle: 'Remove conta e dados permanentemente',
+                      icon: CupertinoIcons.delete,
+                      isDestructive: true,
+                      onTap: () async {
+                        // Passo 1: alerta de consequências
+                        final prosseguir = await showCupertinoDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: const Text('Excluir conta permanentemente?'),
+                            content: const Text(
+                              'Todos os seus dados, análises e configurações serão deletados e não poderão ser recuperados.',
+                            ),
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancelar'),
                               ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: const Text('Cancelar'),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text('Continuar'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (prosseguir != true || !context.mounted) return;
+
+                        // Passo 2: senha + EXCLUIR para confirmar
+                        final confirmController = TextEditingController();
+                        final passwordController = TextEditingController();
+                        final confirmado = await showCupertinoDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: const Text('Confirmação final'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Digite sua senha atual e EXCLUIR para confirmar:',
                                 ),
-                                CupertinoDialogAction(
-                                  isDestructiveAction: true,
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(true),
-                                  child: const Text('Continuar'),
+                                const SizedBox(height: 12),
+                                CupertinoTextField(
+                                  controller: passwordController,
+                                  placeholder: 'Senha atual',
+                                  obscureText: true,
+                                  autofocus: true,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text('Digite EXCLUIR para confirmar:'),
+                                const SizedBox(height: 12),
+                                CupertinoTextField(
+                                  controller: confirmController,
+                                  placeholder: 'EXCLUIR',
                                 ),
                               ],
                             ),
-                          );
-                          if (prosseguir != true || !context.mounted) return;
-
-                          // Passo 2: senha + EXCLUIR para confirmar
-                          final confirmController = TextEditingController();
-                          final passwordController = TextEditingController();
-                          final confirmado = await showCupertinoDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title: const Text('Confirmação final'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Digite sua senha atual e EXCLUIR para confirmar:',
-                                  ),
-                                  const SizedBox(height: 12),
-                                  CupertinoTextField(
-                                    controller: passwordController,
-                                    placeholder: 'Senha atual',
-                                    obscureText: true,
-                                    autofocus: true,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Text('Digite EXCLUIR para confirmar:'),
-                                  const SizedBox(height: 12),
-                                  CupertinoTextField(
-                                    controller: confirmController,
-                                    placeholder: 'EXCLUIR',
-                                  ),
-                                ],
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancelar'),
                               ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                CupertinoDialogAction(
-                                  isDestructiveAction: true,
-                                  onPressed: () {
-                                    final ok = confirmController.text.trim() ==
-                                            'EXCLUIR' &&
-                                        passwordController.text.isNotEmpty;
-                                    Navigator.of(dialogContext).pop(ok);
-                                  },
-                                  child: const Text('Excluir conta'),
-                                ),
-                              ],
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () {
+                                  final ok = confirmController.text.trim() ==
+                                          'EXCLUIR' &&
+                                      passwordController.text.isNotEmpty;
+                                  Navigator.of(dialogContext).pop(ok);
+                                },
+                                child: const Text('Excluir conta'),
+                              ),
+                            ],
+                          ),
+                        );
+                        final password = passwordController.text;
+                        confirmController.dispose();
+                        passwordController.dispose();
+                        if (confirmado != true || !context.mounted) return;
+
+                        try {
+                          await ref
+                              .read(configControllerProvider.notifier)
+                              .excluirConta(
+                                password: password,
+                              );
+                          if (context.mounted) context.go(AppRoutes.login);
+                        } on ConfigActionException catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(e.message),
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
                             ),
                           );
-                          final password = passwordController.text;
-                          confirmController.dispose();
-                          passwordController.dispose();
-                          if (confirmado != true || !context.mounted) return;
-
-                          try {
-                            await ref
-                                .read(configControllerProvider.notifier)
-                                .excluirConta(
-                                  password: password,
-                                );
-                            if (context.mounted) context.go(AppRoutes.login);
-                          } on ConfigActionException catch (e) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.message),
-                                backgroundColor: const Color(0xFFFF3B30),
+                        } catch (_) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Erro ao excluir conta. Tente novamente.',
                               ),
-                            );
-                          } catch (_) {
-                            if (!context.mounted) return;
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    const _Divider(),
+                    _ProfileChevronRow(
+                      label: 'Sair da Conta',
+                      subtitle: 'Desconecta este dispositivo',
+                      icon: CupertinoIcons.square_arrow_right,
+                      isDestructive: true,
+                      onTap: () async {
+                        final confirmar = await showCupertinoDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => CupertinoAlertDialog(
+                            title: const Text('Sair da conta?'),
+                            content: const Text(
+                              'Você será desconectado do aplicativo.',
+                            ),
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancelar'),
+                              ),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text('Sair'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirmar != true) return;
+
+                        try {
+                          await ref
+                              .read(configControllerProvider.notifier)
+                              .logout();
+                          if (context.mounted) {
+                            context.go(AppRoutes.login);
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Erro ao excluir conta. Tente novamente.',
+                                  'Erro ao sair. Tente novamente.',
                                 ),
-                                backgroundColor: Color(0xFFFF3B30),
+                                behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
-                        },
-                        child: const Row(
-                          children: [
-                            Icon(
-                              CupertinoIcons.delete,
-                              size: 18,
-                              color: Color(0xFFFF3B30),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Excluir Conta',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFFFF3B30),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                        }
+                      },
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                _CardSection(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      child: GestureDetector(
-                        onTap: () async {
-                          final confirmar = await showCupertinoDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title: const Text('Sair da conta?'),
-                              content: const Text(
-                                'Você será desconectado do aplicativo.',
-                              ),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                CupertinoDialogAction(
-                                  isDestructiveAction: true,
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(true),
-                                  child: const Text('Sair'),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirmar != true) return;
-
-                          try {
-                            await ref
-                                .read(configControllerProvider.notifier)
-                                .logout();
-                            if (context.mounted) {
-                              context.go(AppRoutes.login);
-                            }
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Erro ao sair. Tente novamente.',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        child: const Text(
-                          'Sair da Conta',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFFFF3B30),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Center(
-                  child: Text(
-                    'Analise v1.0.1',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
+                const Center(
+                  child: _CalculosAccessVersion(
+                    versionLabel: 'Analise v1.0.1',
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -537,21 +481,11 @@ class _IdentidadeVisualCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assets = ref.watch(perfilAssetsProvider);
     final notifier = ref.read(perfilAssetsProvider.notifier);
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: palette.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppSurface(
+      padding: EdgeInsets.zero,
+      showBorder: true,
       child: Column(
         children: [
           _ImageUploadRow(
@@ -639,7 +573,9 @@ class _ImageUploadRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
+    final imageProvider = ImageSourceResolver.imageProvider(imageUrl);
+    final hasRenderableImage = hasImage && imageProvider != null;
 
     final double thumbW = shape == _ImageShape.wide ? 80 : 52;
     final double thumbH = shape == _ImageShape.wide ? 40 : 52;
@@ -666,7 +602,7 @@ class _ImageUploadRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
                   color: hasImage
-                      ? const Color(0xFF007AFF).withValues(alpha: 0.3)
+                      ? AppColors.primary.withValues(alpha: 0.3)
                       : palette.borderStrong,
                   width: hasImage ? 1.5 : 1,
                 ),
@@ -680,21 +616,16 @@ class _ImageUploadRow extends StatelessWidget {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFF007AFF),
+                            color: AppColors.primary,
                           ),
                         ),
                       )
-                    : hasImage
-                        ? Image.network(
-                            imageUrl!,
+                    : hasRenderableImage
+                        ? Image(
+                            image: imageProvider,
                             fit: shape == _ImageShape.wide
                                 ? BoxFit.contain
                                 : BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
-                              icon,
-                              size: 22,
-                              color: palette.textTertiary,
-                            ),
                           )
                         : Icon(
                             icon,
@@ -734,7 +665,7 @@ class _ImageUploadRow extends StatelessWidget {
             children: [
               _ActionChip(
                 label: hasImage ? 'Trocar' : 'Adicionar',
-                color: const Color(0xFF007AFF),
+                color: AppColors.primary,
                 onTap: isUploading
                     ? null
                     : () => _runAction(
@@ -747,7 +678,7 @@ class _ImageUploadRow extends StatelessWidget {
                 const SizedBox(width: 6),
                 _ActionChip(
                   label: 'Remover',
-                  color: const Color(0xFFFF3B30),
+                  color: AppColors.error,
                   onTap: isUploading
                       ? null
                       : () => _runAction(
@@ -810,7 +741,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6, top: 2),
@@ -834,21 +765,9 @@ class _CardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: palette.shadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return AppSurface(
+      padding: EdgeInsets.zero,
+      showBorder: true,
       child: Column(children: children),
     );
   }
@@ -936,7 +855,7 @@ class _ThemeModeRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
     final themeMode = ref.watch(appThemeModeProvider).valueOrNull;
     final isBlack = themeMode?.isBlack ?? false;
 
@@ -985,7 +904,7 @@ class _ProfileRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return InkWell(
       onTap: onTap,
@@ -1026,16 +945,24 @@ class _ProfileRow extends StatelessWidget {
 
 class _ProfileChevronRow extends StatelessWidget {
   final String label;
+  final String? subtitle;
+  final IconData? icon;
+  final bool isDestructive;
   final VoidCallback? onTap;
 
   const _ProfileChevronRow({
     required this.label,
+    this.subtitle,
+    this.icon,
+    this.isDestructive = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
+    final color = isDestructive ? AppColors.error : palette.textPrimary;
+    final iconColor = isDestructive ? AppColors.error : AppColors.primary;
 
     return InkWell(
       onTap: onTap,
@@ -1044,14 +971,44 @@ class _ProfileChevronRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: palette.textPrimary,
+            if (icon != null) ...[
+              AppIconFrame(
+                icon: icon,
+                size: 38,
+                iconSize: 19,
+                backgroundColor: iconColor.withValues(alpha: 0.10),
+                iconColor: iconColor,
+              ),
+              const SizedBox(width: AppDimens.md),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: palette.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 10),
             Icon(
               CupertinoIcons.chevron_right,
               size: 16,
@@ -1069,11 +1026,240 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _ConfigPalette.of(context);
+    final AppThemePalette palette = context.appPalette;
 
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: Divider(height: 1, color: palette.border),
+    );
+  }
+}
+
+class _CalculosAccessVersion extends StatefulWidget {
+  const _CalculosAccessVersion({
+    required this.versionLabel,
+  });
+
+  final String versionLabel;
+
+  @override
+  State<_CalculosAccessVersion> createState() => _CalculosAccessVersionState();
+}
+
+class _CalculosAccessVersionState extends State<_CalculosAccessVersion> {
+  void _abrirCalculos() {
+    if (!AppConfig.requiresCalculosAccessPassword) {
+      context.go(AppRoutes.calculos);
+      return;
+    }
+    _mostrarDialogSenha(context);
+  }
+
+  void _mostrarDialogSenha(BuildContext context) {
+    final controller = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Acesso restrito'),
+          content: TextField(
+            controller: controller,
+            obscureText: true,
+            keyboardType: TextInputType.visiblePassword,
+            maxLength: 20,
+            decoration: const InputDecoration(
+              hintText: 'Senha de acesso',
+              counterText: '',
+            ),
+            autofocus: true,
+            onSubmitted: (_) => _validarSenha(
+              dialogContext,
+              controller.text,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => _validarSenha(
+                dialogContext,
+                controller.text,
+              ),
+              child: const Text('Entrar'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
+
+  void _validarSenha(BuildContext dialogContext, String senha) {
+    Navigator.of(dialogContext).pop();
+
+    const expected = AppConfig.calculosAccessPassword;
+    if (expected.isNotEmpty && senha == expected) {
+      context.go(AppRoutes.calculos, extra: true);
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          expected.isEmpty
+              ? 'Acesso ao módulo Cálculos não configurado neste build.'
+              : 'Senha incorreta',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPress: _abrirCalculos,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 20),
+        child: Text(
+          widget.versionLabel,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MigracaoVinculosRow extends ConsumerStatefulWidget {
+  const _MigracaoVinculosRow();
+
+  @override
+  ConsumerState<_MigracaoVinculosRow> createState() =>
+      _MigracaoVinculosRowState();
+}
+
+class _MigracaoVinculosRowState extends ConsumerState<_MigracaoVinculosRow> {
+  bool _isRunning = false;
+
+  Future<void> _executar() async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vincular análises legadas'),
+        content: const Text(
+          'Tenta associar análises antigas aos clientes cadastrados por '
+          'correspondência de nomes. Análises sem match recebem status '
+          '"Vínculo pendente". Nenhum registro será apagado.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Executar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true || !mounted) return;
+
+    setState(() => _isRunning = true);
+    MigracaoVinculosResult result;
+    try {
+      result = await ref
+          .read(analiseNotifierProvider.notifier)
+          .executarMigracaoVinculosLegados();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isRunning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Falha na migração: $e')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isRunning = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_mensagemResultado(result))),
+    );
+  }
+
+  String _mensagemResultado(MigracaoVinculosResult result) {
+    if (!result.executada) {
+      return 'Migração não executada. Verifique login e cadastro de clientes.';
+    }
+    if (!result.teveAlteracao && result.falhas == 0) {
+      return 'Nenhuma análise precisou de migração (${result.jaVinculadas} já vinculadas).';
+    }
+    final partes = <String>[
+      if (result.reparadas > 0) '${result.reparadas} vinculada(s)',
+      if (result.marcadasPendentes > 0)
+        '${result.marcadasPendentes} pendente(s)',
+      if (result.falhas > 0) '${result.falhas} falha(s)',
+    ];
+    return 'Migração concluída: ${partes.join(', ')}.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
+    return InkWell(
+      onTap: _isRunning ? null : _executar,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Vincular análises legadas',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Associa laudos antigos aos clientes por nome',
+                    style: AppTextStyles.caption.copyWith(
+                      color: palette.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_isRunning)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              )
+            else
+              Icon(
+                Icons.sync_rounded,
+                size: 20,
+                color: palette.textSecondary,
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

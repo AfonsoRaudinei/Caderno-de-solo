@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/data/culturas_data.dart';
 import 'package:soloforte/features/culturas/providers/culturas_provider.dart';
 
@@ -12,31 +15,38 @@ class NutrientSelector extends ConsumerWidget {
 
     return GridView.count(
       crossAxisCount: 5,
-      crossAxisSpacing: 6,
-      mainAxisSpacing: 6,
+      crossAxisSpacing: AppDimens.sm,
+      mainAxisSpacing: AppDimens.sm,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       childAspectRatio: 1.8,
       children: kNutrients.map((n) {
         final isSel = selected.contains(n.key);
-        return GestureDetector(
-          onTap: () => ref.read(culturasProvider.notifier).toggleNutrient(n.key),
+        return InkWell(
+          onTap: () =>
+              ref.read(culturasProvider.notifier).toggleNutrient(n.key),
+          borderRadius: BorderRadius.circular(AppDimens.radiusMd),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
-              color: isSel ? Color(n.color) : Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              color: isSel
+                  ? AppColors.primary
+                  : Color(n.color).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppDimens.radiusMd),
               border: Border.all(
-                color: isSel ? Color(n.color) : const Color(0xFFE5E5EA),
-                width: 1.5,
+                color: isSel
+                    ? AppColors.primary
+                    : AppColors.borderSoft.withValues(alpha: 0.9),
+                width: isSel ? 1.2 : 0.8,
               ),
             ),
             alignment: Alignment.center,
             child: Text(
               n.key,
-              style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600,
-                color: isSel ? Colors.white : const Color(0xFF86868B),
+              style: AppTextStyles.caption.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isSel ? Colors.white : AppColors.textSecond,
               ),
             ),
           ),

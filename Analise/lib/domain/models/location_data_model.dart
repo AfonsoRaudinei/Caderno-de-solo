@@ -14,5 +14,6 @@ class LocationDataModel with _$LocationDataModel {
     String? descricao,
   }) = _LocationDataModel;
 
-  factory LocationDataModel.fromJson(Map<String, dynamic> json) => _$LocationDataModelFromJson(json);
+  factory LocationDataModel.fromJson(Map<String, dynamic> json) =>
+      _$LocationDataModelFromJson(json);
 }

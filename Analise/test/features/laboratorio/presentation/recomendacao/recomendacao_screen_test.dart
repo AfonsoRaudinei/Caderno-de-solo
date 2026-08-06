@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:soloforte/core/constants/app_routes.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
@@ -146,6 +148,7 @@ AnaliseSolo _analise({
   String profundidade = '0-20',
   double? ca = 2.1,
   double? k = 0.22,
+  Map<String, dynamic>? metadata,
 }) {
   return AnaliseSolo(
     id: id,
@@ -173,6 +176,7 @@ AnaliseSolo _analise({
     fe: 35,
     mn: 3.2,
     zn: 1.4,
+    laudoMetadata: metadata,
   );
 }
 
@@ -212,6 +216,15 @@ Future<void> _pumpRecomendacao(
   required List<AnaliseSolo> analises,
   List<TabelaMetricas>? tabelas,
 }) async {
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (_, __) => const RecomendacaoScreen(),
+      ),
+    ],
+  );
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -231,7 +244,7 @@ Future<void> _pumpRecomendacao(
           (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
         ),
       ],
-      child: const MaterialApp(home: RecomendacaoScreen()),
+      child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
@@ -248,25 +261,6 @@ Future<void> _setDropdownValue(
   final onChanged = dropdown.onChanged;
   expect(onChanged, isNotNull);
   onChanged?.call(value);
-  await tester.pumpAndSettle();
-}
-
-Future<void> _selectAnaliseByIndex(WidgetTester tester, int index) async {
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-  await tester.pumpAndSettle();
-
-  final checks = find.byIcon(Icons.check_circle);
-  final checkedCount = checks.evaluate().length;
-  for (var i = 0; i < checkedCount; i++) {
-    await tester.tap(checks.at(i));
-    await tester.pumpAndSettle();
-  }
-
-  final unchecked = find.byIcon(Icons.radio_button_unchecked);
-  await tester.tap(unchecked.at(index));
-  await tester.pumpAndSettle();
-
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
   await tester.pumpAndSettle();
 }
 
@@ -313,6 +307,14 @@ void main() {
     await tester.pumpAndSettle();
     await _setDropdownValue(tester, dropdownIndex: 0, value: 'c-1');
 
+    // Garante que a tela computou a recomendação com a seleção atual.
+    final gerar = tester.widget<AppButton>(
+      find.byKey(const Key('btn_gerar_recomendacao')),
+    );
+    expect(gerar.onPressed, isNotNull);
+    gerar.onPressed!.call();
+    await tester.pumpAndSettle();
+
     final container = ProviderScope.containerOf(
       tester.element(find.byType(RecomendacaoScreen)),
     );
@@ -328,13 +330,19 @@ void main() {
     expect(result.diagnostico.valido, isTrue);
 
     await tester.scrollUntilVisible(
-      find.byKey(const Key('btn_compartilhar_recomendacao')),
+      find.byKey(const Key('btn_exportar_pdf')),
       500,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('recomendacao_body_scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Compartilhar'), findsOneWidget);
+    expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
+    expect(find.text('Exportar relatorio'), findsOneWidget);
     expect(find.text('Exportar HTML'), findsNothing);
     expect(find.text('Exportar PDF'), findsNothing);
   });
@@ -498,6 +506,41 @@ void main() {
     expect(find.byKey(const Key('amostra_option_a-2')), findsNothing);
   });
 
+  testWidgets(
+    'filtro por produtor parcial encontra nome completo do cliente',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpRecomendacao(
+        tester,
+        profiles: [_profile()],
+        analises: [
+          _analise(
+            id: 'a-1',
+            produtor: 'ANDRE LUIZ DE SIQUEIRA',
+            numeroAmostra: '001',
+          ),
+        ],
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('filtro_produtor_recomendacao')),
+        'Andre Luiz',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
+      expect(
+        find.textContaining('ANDRE LUIZ DE SIQUEIRA'),
+        findsWidgets,
+      );
+    },
+  );
+
   test('analiseMatchesProdutorBusca filtra por produtor fazenda e talhao', () {
     final analise = _analise(produtor: 'Cliente A', talhao: 'Talhão A');
 
@@ -505,6 +548,66 @@ void main() {
     expect(analiseMatchesProdutorBusca(analise, 'cliente'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'fazenda'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'talhão'), isTrue);
+    expect(analiseMatchesProdutorBusca(analise, '001'), isTrue);
     expect(analiseMatchesProdutorBusca(analise, 'inexistente'), isFalse);
+  });
+
+  test('analiseMatchesProdutorBusca usa metadata quando produtor esta vazio',
+      () {
+    final analise = _analise(
+      produtor: '',
+      metadata: const {'proprietario': 'ANDRE LUIZ DE SIQUEIRA'},
+    );
+
+    expect(analiseMatchesProdutorBusca(analise, 'andre luiz'), isTrue);
+  });
+
+  testWidgets('botao voltar navega para laboratorio quando nao ha stack', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final router = GoRouter(
+      initialLocation: '/recomendacao',
+      routes: [
+        GoRoute(
+          path: AppRoutes.lab,
+          builder: (_, __) => const Scaffold(body: Text('LAB_OK')),
+        ),
+        GoRoute(
+          path: '/recomendacao',
+          builder: (_, __) => const RecomendacaoScreen(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          calibracaoControllerProvider.overrideWith(
+            (ref) => _FakeCalibracaoController(profiles: const []),
+          ),
+          analiseNotifierProvider.overrideWith(
+            () => _FakeAnaliseNotifier(const []),
+          ),
+          tabelaMetricasProvider.overrideWith(
+            () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
+          ),
+          perfilAssetsProvider
+              .overrideWith((ref) => _FakePerfilAssetsNotifier()),
+          analisesVisiveisProvider.overrideWith(
+            (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('LAB_OK'), findsOneWidget);
   });
 }
