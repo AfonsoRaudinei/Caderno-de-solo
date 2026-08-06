@@ -4,18 +4,17 @@ import 'package:soloforte/domain/models/recomendacao_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/features/config/application/providers/calculos_provider.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
 import 'package:soloforte/features/config/application/providers/perfil_assets_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
-import 'package:soloforte/features/analise/domain/services/produtor_resolucao_service.dart';
 import 'package:soloforte/features/laboratorio/domain/entities/laudo_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
@@ -26,20 +25,9 @@ import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/potassio_section.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/avisos_section.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/qualidade_solo_section.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/recomendacao_selecao_analises.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_header_footer.dart';
 import 'package:uuid/uuid.dart';
-
-bool analiseMatchesProdutorBusca(AnaliseSolo analise, String busca) {
-  final query = busca.trim();
-  if (query.isEmpty) return true;
-  final q = query.toLowerCase();
-  final produtor =
-      ProdutorResolucaoService.produtorEfetivo(analise).toLowerCase();
-  return produtor.contains(q) ||
-      analise.fazenda.toLowerCase().contains(q) ||
-      analise.talhao.toLowerCase().contains(q) ||
-      analise.numeroAmostra.toLowerCase().contains(q);
-}
 
 class RecomendacaoScreen extends ConsumerStatefulWidget {
   final String? analiseId;
@@ -51,12 +39,11 @@ class RecomendacaoScreen extends ConsumerStatefulWidget {
 
 class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
   final _uuid = const Uuid();
-  final _buscaProdutorController = TextEditingController();
   List<String> _analiseIdsSelecionados = [];
   String? _calibracaoIdSelecionada;
   bool _salvando = false;
   bool _exportando = false;
-  String _buscaProdutor = '';
+  String? _clienteIdInicial;
 
   @override
   void initState() {
@@ -64,28 +51,36 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     if (widget.analiseId != null && widget.analiseId!.isNotEmpty) {
       _analiseIdsSelecionados = [widget.analiseId!];
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resolverClienteInicial();
+      _syncCalculosSelecao();
+    });
   }
 
-  @override
-  void dispose() {
-    _buscaProdutorController.dispose();
-    super.dispose();
+  void _resolverClienteInicial() {
+    final id = widget.analiseId?.trim();
+    if (id == null || id.isEmpty) return;
+    final analises = ref.read(analiseNotifierProvider).valueOrNull ?? const [];
+    final match = analises.where((a) => a.id == id).firstOrNull;
+    final clienteId = match?.clienteId?.trim();
+    if (clienteId != null && clienteId.isNotEmpty && mounted) {
+      setState(() => _clienteIdInicial = clienteId);
+    }
   }
 
-  bool _analiseMatchesBusca(AnaliseSolo analise) =>
-      analiseMatchesProdutorBusca(analise, _buscaProdutor);
+  void _syncCalculosSelecao() {
+    ref.read(calculosSelectedAnaliseIdsProvider.notifier).state =
+        List<String>.from(_analiseIdsSelecionados);
+    ref.read(calculosSelectedCalibracaoIdProvider.notifier).state =
+        _calibracaoIdSelecionada;
+  }
 
   @override
   Widget build(BuildContext context) {
     final calibracaoState = ref.watch(calibracaoControllerProvider);
     final analisesAsync = ref.watch(analiseNotifierProvider);
-    final analisesVisiveis = ref.watch(analisesVisiveisProvider);
     final perfis = calibracaoState.profiles;
 
-    final analisesRaw = analisesVisiveis;
-    final analisesFiltradas =
-        analisesRaw.where(_analiseMatchesBusca).toList(growable: false);
-    final opcoesAnalise = analisesFiltradas.map(_toAnaliseOption).toList();
     final n = _analiseIdsSelecionados.length;
     final labelBotao =
         n > 1 ? '✦ Gerar Média de $n Amostras' : '✦ Gerar Recomendação';
@@ -131,50 +126,13 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  key: const Key('filtro_produtor_recomendacao'),
-                  controller: _buscaProdutorController,
-                  onChanged: (value) {
-                    setState(() => _buscaProdutor = value.trim());
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Buscar produtor/cliente...',
-                    hintStyle: AppTextStyles.body.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.search_rounded,
-                      color: AppColors.textSecond,
-                      size: 20,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.bgPrimary,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _SeletorAmostras(
-                  analises: opcoesAnalise,
+                RecomendacaoSelecaoAnalises(
+                  key: ValueKey('selecao-${_clienteIdInicial ?? 'none'}'),
                   selecionados: _analiseIdsSelecionados,
+                  initialClienteId: _clienteIdInicial,
                   onChanged: (ids) {
-                    setState(() {
-                      _analiseIdsSelecionados = ids;
-                    });
+                    setState(() => _analiseIdsSelecionados = ids);
+                    _syncCalculosSelecao();
                   },
                 ),
                 const SizedBox(height: 8),
@@ -203,6 +161,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                                 calibracaoUsadaNaRecomendacaoProvider.notifier,
                               )
                               .state = value;
+                          _syncCalculosSelecao();
                         },
                 ),
                 const SizedBox(height: 12),
@@ -214,6 +173,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                           _calibracaoIdSelecionada == null)
                       ? null
                       : () {
+                          _syncCalculosSelecao();
                           ref.invalidate(recomendacaoProvider(request));
                         },
                 ),
@@ -232,30 +192,6 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                     color: AppColors.warning,
                     label:
                         'Nenhuma calibração salva. Cadastre na aba Calibração.',
-                  ),
-                ],
-                if (opcoesAnalise.isEmpty &&
-                    !analisesAsync.isLoading &&
-                    !analisesAsync.hasError &&
-                    analisesRaw.isNotEmpty &&
-                    _buscaProdutor.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  const _Badge(
-                    icon: Icons.search_off_outlined,
-                    color: AppColors.warning,
-                    label:
-                        'Nenhuma amostra encontrada para o produtor informado.',
-                  ),
-                ],
-                if (opcoesAnalise.isEmpty &&
-                    !analisesAsync.isLoading &&
-                    !analisesAsync.hasError &&
-                    analisesRaw.isEmpty) ...[
-                  const SizedBox(height: 10),
-                  const _Badge(
-                    icon: Icons.info_outline,
-                    color: AppColors.warning,
-                    label: 'Nenhuma análise salva. Cadastre em Análise.',
                   ),
                 ],
                 if (!result.diagnostico.valido) ...[
@@ -361,22 +297,6 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
           ],
         ],
       ),
-    );
-  }
-
-  _AnaliseOption _toAnaliseOption(AnaliseSolo analise) {
-    final data = DateFormat('dd/MM/yyyy').format(analise.dataCadastro);
-    final prefixoProdutor = analise.produtor.trim().isNotEmpty
-        ? '${analise.produtor.trim()} · '
-        : '';
-    final label =
-        '$prefixoProdutor${analise.talhao} · ${analise.numeroAmostra} · ${analise.laboratorio} · $data';
-    return _AnaliseOption(
-      id: analise.id,
-      label: label,
-      produtor: analise.produtor,
-      profundidade: analise.profundidade,
-      laboratorio: analise.laboratorio,
     );
   }
 
@@ -547,258 +467,4 @@ class _Badge extends StatelessWidget {
       ),
     );
   }
-}
-
-class _SeletorAmostras extends StatelessWidget {
-  const _SeletorAmostras({
-    required this.analises,
-    required this.selecionados,
-    required this.onChanged,
-  });
-
-  final List<_AnaliseOption> analises;
-  final List<String> selecionados;
-  final ValueChanged<List<String>> onChanged;
-
-  String _normalizarProfundidade(String raw) {
-    final s = raw.trim();
-    return s.isEmpty ? '0-20' : s;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    String? profAtiva;
-    String? laboratorioAtivo;
-    if (selecionados.isNotEmpty) {
-      final primeira = analises.firstWhere(
-        (a) => a.id == selecionados.first,
-        orElse: () => const _AnaliseOption(id: '', label: ''),
-      );
-      if (primeira.id.isNotEmpty) {
-        profAtiva = _normalizarProfundidade(primeira.profundidade ?? '');
-        laboratorioAtivo = primeira.laboratorio;
-      }
-    }
-
-    final resumo = selecionados.isEmpty
-        ? 'Selecione as amostras'
-        : selecionados.length == 1
-            ? _labelSelecionado(selecionados.first)
-            : '${selecionados.length} amostras selecionadas';
-
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: Material(
-        color: AppColors.bgPrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: ExpansionTile(
-          key: const Key('seletor_amostras_dropdown'),
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-          iconColor: AppColors.textSecond,
-          collapsedIconColor: AppColors.textSecond,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Selecionar Amostras', style: AppTextStyles.label),
-              const SizedBox(height: 4),
-              Text(
-                resumo,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.body.copyWith(
-                  color: selecionados.isEmpty
-                      ? AppColors.textTertiary
-                      : AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          children: [
-            if (profAtiva != null || laboratorioAtivo != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 6,
-                  children: [
-                    if (profAtiva != null)
-                      _ContextLabel(
-                        icon: Icons.layers_outlined,
-                        label: 'Profundidade: $profAtiva',
-                      ),
-                    if (laboratorioAtivo != null)
-                      _ContextLabel(
-                        icon: Icons.science_outlined,
-                        label: 'Laboratório: $laboratorioAtivo',
-                      ),
-                  ],
-                ),
-              ),
-            ...analises.map((analise) {
-              final id = analise.id;
-              final label = analise.label;
-              final prof = _normalizarProfundidade(analise.profundidade ?? '');
-              final laboratorio = analise.laboratorio;
-
-              final isSelecionado = selecionados.contains(id);
-              final laboratorioDiferente = laboratorioAtivo != null &&
-                  !isSelecionado &&
-                  laboratorio != laboratorioAtivo;
-              final profundidadeDiferente =
-                  profAtiva != null && !isSelecionado && prof != profAtiva;
-              final isBloqueado = laboratorioDiferente || profundidadeDiferente;
-
-              return Opacity(
-                opacity: isBloqueado ? 0.35 : 1.0,
-                child: InkWell(
-                  key: Key('amostra_option_$id'),
-                  onTap: isBloqueado
-                      ? null
-                      : () {
-                          final novos = List<String>.from(selecionados);
-                          if (isSelecionado) {
-                            novos.remove(id);
-                          } else {
-                            novos.add(id);
-                          }
-                          onChanged(novos);
-                        },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 2),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelecionado
-                          ? const Color(0xFF007AFF).withValues(alpha: 0.08)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelecionado
-                            ? const Color(0xFF007AFF).withValues(alpha: 0.3)
-                            : Colors.transparent,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSelecionado
-                              ? Icons.check_circle
-                              : isBloqueado
-                                  ? Icons.remove_circle_outline
-                                  : Icons.radio_button_unchecked,
-                          size: 20,
-                          color: isSelecionado
-                              ? const Color(0xFF007AFF)
-                              : isBloqueado
-                                  ? const Color(0xFFC7C7CC)
-                                  : const Color(0xFF86868B),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: isSelecionado
-                                  ? const Color(0xFF007AFF)
-                                  : const Color(0xFF1D1D1F),
-                              fontWeight: isSelecionado
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _DepthBadge(label: prof),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _labelSelecionado(String id) {
-    final selecionado = analises.firstWhere(
-      (a) => a.id == id,
-      orElse: () => const _AnaliseOption(id: '', label: ''),
-    );
-    return selecionado.id.isEmpty ? '1 amostra selecionada' : selecionado.label;
-  }
-}
-
-class _ContextLabel extends StatelessWidget {
-  const _ContextLabel({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: const Color(0xFF86868B)),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF86868B)),
-        ),
-      ],
-    );
-  }
-}
-
-class _DepthBadge extends StatelessWidget {
-  const _DepthBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E5E7),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          color: Color(0xFF86868B),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
-class _AnaliseOption {
-  const _AnaliseOption({
-    required this.id,
-    required this.label,
-    this.produtor,
-    this.profundidade,
-    this.laboratorio,
-  });
-
-  final String id;
-  final String label;
-  final String? produtor;
-  final String? profundidade;
-  final String? laboratorio;
 }

@@ -1,10 +1,14 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
-import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/presentation/providers/analise_provider.dart';
+import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
+import 'package:soloforte/features/clientes/data/datasources/cliente_firestore_datasource.dart';
+import 'package:soloforte/features/clientes/data/repositories/cliente_repository.dart';
+import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
 import 'package:soloforte/features/config/presentation/config_controller.dart';
@@ -16,8 +20,11 @@ import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecas
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_export_provider.dart';
+import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
+import 'package:soloforte/domain/usecases/recomendacao_engine.dart'
+    show ResultadoRecomendacao;
 
 class _FakeCalibracaoController extends CalibracaoController {
   _FakeCalibracaoController({required List<CalibracaoProfile> profiles})
@@ -181,7 +188,25 @@ AnaliseSolo _analise() {
     fe: 35,
     mn: 3.2,
     zn: 1.4,
+    clienteId: 'cli-1',
   );
+}
+
+class _FakeClienteNotifier extends ClienteNotifier {
+  _FakeClienteNotifier(ClienteState initialState)
+      : super(
+          repository: ClienteRepository(
+            ClienteFirestoreDatasource(firestore: FakeFirebaseFirestore()),
+          ),
+          waitForCurrentUserId:
+              ({timeout = const Duration(seconds: 5)}) async => 'test-user',
+          signOut: () async {},
+        ) {
+    state = initialState;
+  }
+
+  @override
+  Future<void> carregarClientes() async {}
 }
 
 Future<void> _pumpAndDrain(WidgetTester tester) async {
@@ -190,17 +215,21 @@ Future<void> _pumpAndDrain(WidgetTester tester) async {
 }
 
 Future<void> _selectAmostra(WidgetTester tester, String analiseId) async {
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
+  final clienteDropdown = tester.widget<DropdownButton<String>>(
+    find.byType(DropdownButton<String>).first,
+  );
+  clienteDropdown.onChanged?.call('cli-1');
+  await _pumpAndDrain(tester);
+
+  await tester.tap(find.byKey(const Key('btn_adicionar_amostra')));
   await _pumpAndDrain(tester);
   await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
-  await _pumpAndDrain(tester);
-  await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
   await _pumpAndDrain(tester);
 }
 
 Future<void> _selectCalibracao(WidgetTester tester, String calibracaoId) async {
   final dropdown = tester.widget<DropdownButton<String>>(
-    find.byType(DropdownButton<String>),
+    find.byType(DropdownButton<String>).at(1),
   );
   dropdown.onChanged?.call(calibracaoId);
   await _pumpAndDrain(tester);
@@ -260,6 +289,27 @@ void main() {
           analisesVisiveisProvider.overrideWith(
             (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
           ),
+          clienteProvider.overrideWith(
+            (ref) => _FakeClienteNotifier(
+              ClienteState(
+                clientes: [
+                  ClienteEntity(
+                    id: 'cli-1',
+                    token: 'SF-2026-AAAA',
+                    nome: 'Cliente A',
+                    telefone: '',
+                    email: '',
+                    cidade: 'Palmas',
+                    estado: 'TO',
+                    usuarioId: 'user-1',
+                    criadoEm: DateTime(2026, 1, 1),
+                    atualizadoEm: DateTime(2026, 1, 1),
+                    analiseIds: const ['a-1'],
+                  ),
+                ],
+              ),
+            ),
+          ),
           configControllerProvider.overrideWith(_FakeConfigController.new),
           exportRecomendacaoProvider.overrideWith((ref) {
             return ({
@@ -283,11 +333,6 @@ void main() {
     );
     await _pumpAndDrain(tester);
 
-    await tester.enterText(
-      find.byKey(const Key('filtro_produtor_recomendacao')),
-      'Produtor',
-    );
-    await _pumpAndDrain(tester);
     await _selectAmostra(tester, 'a-1');
     await _selectCalibracao(tester, 'c-1');
     await _generate(tester);

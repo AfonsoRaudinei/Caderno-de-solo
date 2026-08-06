@@ -1,3 +1,4 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,10 @@ import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
+import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
+import 'package:soloforte/features/clientes/data/datasources/cliente_firestore_datasource.dart';
+import 'package:soloforte/features/clientes/data/repositories/cliente_repository.dart';
+import 'package:soloforte/features/clientes/domain/entities/cliente_entity.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas.dart';
 import 'package:soloforte/features/config/domain/entities/tabela_metricas_defaults.dart';
 import 'package:soloforte/features/config/presentation/config_page.dart'
@@ -17,6 +22,7 @@ import 'package:soloforte/features/laboratorio/domain/usecases/calibracao_usecas
 import 'package:soloforte/features/laboratorio/presentation/calibracao/calibracao_controller.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
+import 'package:soloforte/features/laboratorio/presentation/recomendacao/widgets/recomendacao_selecao_analises.dart';
 
 class _FakeCalibracaoController extends CalibracaoController {
   _FakeCalibracaoController({required List<CalibracaoProfile> profiles})
@@ -101,6 +107,23 @@ class _FakePerfilAssetsNotifier extends StateNotifier<PerfilAssets>
   Future<bool> removeAssinatura() async => true;
 }
 
+class _FakeClienteNotifier extends ClienteNotifier {
+  _FakeClienteNotifier(ClienteState initialState)
+      : super(
+          repository: ClienteRepository(
+            ClienteFirestoreDatasource(firestore: FakeFirebaseFirestore()),
+          ),
+          waitForCurrentUserId:
+              ({timeout = const Duration(seconds: 5)}) async => 'test-user',
+          signOut: () async {},
+        ) {
+    state = initialState;
+  }
+
+  @override
+  Future<void> carregarClientes() async {}
+}
+
 final _emptyProfile = CalibracaoProfile(
   id: '__empty__',
   nome: '',
@@ -139,6 +162,26 @@ CalibracaoProfile _profile() {
   );
 }
 
+ClienteEntity _cliente({
+  String id = 'cli-1',
+  String nome = 'Cliente A',
+  List<String> analiseIds = const [],
+}) {
+  return ClienteEntity(
+    id: id,
+    token: 'SF-2026-AAAA',
+    nome: nome,
+    telefone: '',
+    email: '',
+    cidade: 'Palmas',
+    estado: 'TO',
+    usuarioId: 'user-1',
+    criadoEm: DateTime(2026, 1, 1),
+    atualizadoEm: DateTime(2026, 1, 1),
+    analiseIds: analiseIds,
+  );
+}
+
 AnaliseSolo _analise({
   String id = 'a-1',
   String talhao = 'Talhão A',
@@ -146,6 +189,7 @@ AnaliseSolo _analise({
   String laboratorio = 'Lab A',
   String produtor = 'Produtor A',
   String profundidade = '0-20',
+  String? clienteId = 'cli-1',
   double? ca = 2.1,
   double? k = 0.22,
   Map<String, dynamic>? metadata,
@@ -176,6 +220,7 @@ AnaliseSolo _analise({
     fe: 35,
     mn: 3.2,
     zn: 1.4,
+    clienteId: clienteId,
     laudoMetadata: metadata,
   );
 }
@@ -207,6 +252,7 @@ AnaliseSolo _analiseSemPotassio() {
     fe: 35,
     mn: 3.2,
     zn: 1.4,
+    clienteId: 'cli-1',
   );
 }
 
@@ -214,6 +260,7 @@ Future<void> _pumpRecomendacao(
   WidgetTester tester, {
   required List<CalibracaoProfile> profiles,
   required List<AnaliseSolo> analises,
+  List<ClienteEntity>? clientes,
   List<TabelaMetricas>? tabelas,
 }) async {
   final router = GoRouter(
@@ -223,6 +270,15 @@ Future<void> _pumpRecomendacao(
         builder: (_, __) => const RecomendacaoScreen(),
       ),
     ],
+  );
+
+  final clientesState = ClienteState(
+    clientes: clientes ??
+        [
+          _cliente(
+            analiseIds: analises.map((a) => a.id).toList(growable: false),
+          ),
+        ],
   );
 
   await tester.pumpWidget(
@@ -243,6 +299,9 @@ Future<void> _pumpRecomendacao(
         analisesVisiveisProvider.overrideWith(
           (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
         ),
+        clienteProvider.overrideWith(
+          (ref) => _FakeClienteNotifier(clientesState),
+        ),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),
@@ -250,39 +309,51 @@ Future<void> _pumpRecomendacao(
   await tester.pumpAndSettle();
 }
 
-Future<void> _setDropdownValue(
-  WidgetTester tester, {
-  required int dropdownIndex,
-  required String value,
-}) async {
+Future<void> _selecionarCliente(WidgetTester tester, String clienteId) async {
   final dropdown = tester.widget<DropdownButton<String>>(
-    find.byType(DropdownButton<String>).at(dropdownIndex),
+    find.byType(DropdownButton<String>).first,
   );
-  final onChanged = dropdown.onChanged;
-  expect(onChanged, isNotNull);
-  onChanged?.call(value);
+  expect(dropdown.onChanged, isNotNull);
+  dropdown.onChanged!(clienteId);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _adicionarAmostra(WidgetTester tester, String analiseId) async {
+  await tester.tap(find.byKey(const Key('btn_adicionar_amostra')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(Key('amostra_option_$analiseId')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _setCalibracao(WidgetTester tester, String value) async {
+  final dropdown = tester.widget<DropdownButton<String>>(
+    find.byType(DropdownButton<String>).at(1),
+  );
+  expect(dropdown.onChanged, isNotNull);
+  dropdown.onChanged!(value);
   await tester.pumpAndSettle();
 }
 
 void main() {
-  testWidgets('mostra avisos quando não há análise e calibração salvas', (
-    tester,
-  ) async {
-    await _pumpRecomendacao(tester, profiles: const [], analises: const []);
+  testWidgets('mostra aviso quando não há calibração salva', (tester) async {
+    await _pumpRecomendacao(
+      tester,
+      profiles: const [],
+      analises: const [],
+      clientes: const [],
+    );
 
     expect(
       find.text('Nenhuma calibração salva. Cadastre na aba Calibração.'),
       findsOneWidget,
     );
     expect(
-      find.text('Nenhuma análise salva. Cadastre em Análise.'),
+      find.text('Selecione um cliente para listar as análises.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('gera resultado e exibe acao de compartilhar', (
-    tester,
-  ) async {
+  testWidgets('gera resultado e exibe acao de compartilhar', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 2400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -299,15 +370,10 @@ void main() {
       analises: [_analise()],
     );
 
-    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('amostra_option_a-1')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-    await tester.pumpAndSettle();
-    await _setDropdownValue(tester, dropdownIndex: 0, value: 'c-1');
+    await _selecionarCliente(tester, 'cli-1');
+    await _adicionarAmostra(tester, 'a-1');
+    await _setCalibracao(tester, 'c-1');
 
-    // Garante que a tela computou a recomendação com a seleção atual.
     final gerar = tester.widget<AppButton>(
       find.byKey(const Key('btn_gerar_recomendacao')),
     );
@@ -343,12 +409,10 @@ void main() {
 
     expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
     expect(find.text('Exportar relatorio'), findsOneWidget);
-    expect(find.text('Exportar HTML'), findsNothing);
-    expect(find.text('Exportar PDF'), findsNothing);
   });
 
   testWidgets(
-    'dropdown expande e permite várias amostras do mesmo laboratório',
+    'permite várias amostras do mesmo laboratório com profundidades mistas',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 2400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -357,30 +421,91 @@ void main() {
         tester,
         profiles: [_profile()],
         analises: [
-          _analise(id: 'a-1', numeroAmostra: '001', laboratorio: 'Lab A'),
-          _analise(id: 'a-2', numeroAmostra: '002', laboratorio: 'Lab A'),
-          _analise(id: 'a-3', numeroAmostra: '003', laboratorio: 'Lab B'),
+          _analise(
+            id: 'a-1',
+            numeroAmostra: '001',
+            laboratorio: 'Lab A',
+            profundidade: '0-20',
+          ),
+          _analise(
+            id: 'a-2',
+            numeroAmostra: '002',
+            laboratorio: 'Lab A',
+            profundidade: '20-40',
+          ),
+          _analise(
+            id: 'a-3',
+            numeroAmostra: '003',
+            laboratorio: 'Lab B',
+            profundidade: '0-20',
+          ),
         ],
       );
 
-      expect(find.textContaining('002'), findsNothing);
+      await _selecionarCliente(tester, 'cli-1');
+      await _adicionarAmostra(tester, 'a-1');
+      await _adicionarAmostra(tester, 'a-2');
 
-      await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('chip_selecionada_a-1')), findsOneWidget);
+      expect(find.byKey(const Key('chip_selecionada_a-2')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('amostra_option_a-1')));
+      await tester.tap(find.byKey(const Key('btn_adicionar_amostra')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('amostra_option_a-2')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('amostra_option_a-3')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('2 amostras selecionadas'), findsOneWidget);
-      expect(find.text('Laboratório: Lab A'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      expect(find.byKey(const Key('amostra_option_a-3')), findsOneWidget);
       expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
     },
   );
+
+  testWidgets('remover chip inline remove a amostra da seleção',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpRecomendacao(
+      tester,
+      profiles: [_profile()],
+      analises: [_analise()],
+    );
+
+    await _selecionarCliente(tester, 'cli-1');
+    await _adicionarAmostra(tester, 'a-1');
+    expect(find.byKey(const Key('chip_selecionada_a-1')), findsOneWidget);
+
+    final chip = tester.widget<InputChip>(
+      find.byKey(const Key('chip_selecionada_a-1')),
+    );
+    expect(chip.onDeleted, isNotNull);
+    chip.onDeleted!();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chip_selecionada_a-1')), findsNothing);
+  });
+
+  testWidgets('filtro por cliente lista apenas análises do cliente', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpRecomendacao(
+      tester,
+      profiles: [_profile()],
+      clientes: [
+        _cliente(id: 'cli-1', nome: 'Cliente A', analiseIds: ['a-1']),
+        _cliente(id: 'cli-2', nome: 'Cliente B', analiseIds: ['a-2']),
+      ],
+      analises: [
+        _analise(id: 'a-1', clienteId: 'cli-1', numeroAmostra: '001'),
+        _analise(id: 'a-2', clienteId: 'cli-2', numeroAmostra: '002'),
+      ],
+    );
+
+    await _selecionarCliente(tester, 'cli-1');
+    await tester.tap(find.byKey(const Key('btn_adicionar_amostra')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
+    expect(find.byKey(const Key('amostra_option_a-2')), findsNothing);
+  });
 
   test(
     'provider gera análise composta média para múltiplas amostras',
@@ -427,6 +552,56 @@ void main() {
     },
   );
 
+  test('provider aceita profundidades mistas e rejeita labs diferentes',
+      () async {
+    final container = ProviderContainer(
+      overrides: [
+        calibracaoControllerProvider.overrideWith(
+          (ref) => _FakeCalibracaoController(profiles: [_profile()]),
+        ),
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier([
+            _analise(id: 'a-1', profundidade: '0-20', laboratorio: 'Lab A'),
+            _analise(id: 'a-2', profundidade: '20-40', laboratorio: 'Lab A'),
+            _analise(id: 'a-3', profundidade: '0-20', laboratorio: 'Lab B'),
+          ]),
+        ),
+        tabelaMetricasProvider.overrideWith(
+          () => _FakeTabelaMetricasNotifier(TabelaMetricasDefaults.build()),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(analiseNotifierProvider.future);
+    await container.read(tabelaMetricasProvider.future);
+
+    final mistas = container.read(
+      recomendacaoProvider(
+        const RecomendacaoRequest(
+          analiseIds: ['a-1', 'a-2'],
+          calibracaoId: 'c-1',
+        ),
+      ),
+    );
+    expect(mistas.diagnostico.valido, isTrue);
+    expect(mistas.recomendacao, isNotNull);
+
+    final labs = container.read(
+      recomendacaoProvider(
+        const RecomendacaoRequest(
+          analiseIds: ['a-1', 'a-3'],
+          calibracaoId: 'c-1',
+        ),
+      ),
+    );
+    expect(labs.recomendacao, isNull);
+    expect(
+      labs.diagnostico.erros.any((e) => e.contains('mesmo laboratório')),
+      isTrue,
+    );
+  });
+
   test(
     'nao renderiza resultado quando analise sem potassio e invalida',
     () async {
@@ -470,96 +645,33 @@ void main() {
     },
   );
 
-  testWidgets('filtro por produtor reduz opcoes visiveis no seletor', (
-    tester,
-  ) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 2400));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await _pumpRecomendacao(
-      tester,
-      profiles: [_profile()],
-      analises: [
-        _analise(
-          id: 'a-1',
-          produtor: 'ANDRE LUIZ DE SIQUEIRA',
-          numeroAmostra: '001',
-        ),
-        _analise(
-          id: 'a-2',
-          produtor: 'JOSE AUGUSTO MIRANDA',
-          numeroAmostra: '002',
-        ),
-      ],
+  test('profundidadeMatchesFiltro respeita chips 0-20 e 20-40', () {
+    expect(
+      profundidadeMatchesFiltro(
+        '0-20',
+        include020: true,
+        include2040: false,
+      ),
+      isTrue,
     );
-
-    await tester.enterText(
-      find.byKey(const Key('filtro_produtor_recomendacao')),
-      'ANDRE',
+    expect(
+      profundidadeMatchesFiltro(
+        '20-40',
+        include020: true,
+        include2040: false,
+      ),
+      isFalse,
     );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
-    expect(find.byKey(const Key('amostra_option_a-2')), findsNothing);
-  });
-
-  testWidgets(
-    'filtro por produtor parcial encontra nome completo do cliente',
-    (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 2400));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await _pumpRecomendacao(
-        tester,
-        profiles: [_profile()],
-        analises: [
-          _analise(
-            id: 'a-1',
-            produtor: 'ANDRE LUIZ DE SIQUEIRA',
-            numeroAmostra: '001',
-          ),
-        ],
-      );
-
-      await tester.enterText(
-        find.byKey(const Key('filtro_produtor_recomendacao')),
-        'Andre Luiz',
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('seletor_amostras_dropdown')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('amostra_option_a-1')), findsOneWidget);
-      expect(
-        find.textContaining('ANDRE LUIZ DE SIQUEIRA'),
-        findsWidgets,
-      );
-    },
-  );
-
-  test('analiseMatchesProdutorBusca filtra por produtor fazenda e talhao', () {
-    final analise = _analise(produtor: 'Cliente A', talhao: 'Talhão A');
-
-    expect(analiseMatchesProdutorBusca(analise, ''), isTrue);
-    expect(analiseMatchesProdutorBusca(analise, 'cliente'), isTrue);
-    expect(analiseMatchesProdutorBusca(analise, 'fazenda'), isTrue);
-    expect(analiseMatchesProdutorBusca(analise, 'talhão'), isTrue);
-    expect(analiseMatchesProdutorBusca(analise, '001'), isTrue);
-    expect(analiseMatchesProdutorBusca(analise, 'inexistente'), isFalse);
-  });
-
-  test('analiseMatchesProdutorBusca usa metadata quando produtor esta vazio',
-      () {
-    final analise = _analise(
-      produtor: '',
-      metadata: const {'proprietario': 'ANDRE LUIZ DE SIQUEIRA'},
+    expect(
+      profundidadeMatchesFiltro(
+        '20-40',
+        include020: true,
+        include2040: true,
+      ),
+      isTrue,
     );
-
-    expect(analiseMatchesProdutorBusca(analise, 'andre luiz'), isTrue);
+    expect(normalizarProfundidadeRecomendacao(''), '0-20');
+    expect(normalizarProfundidadeRecomendacao('20 – 40'), '20-40');
   });
 
   testWidgets('botao voltar navega para laboratorio quando nao ha stack', (
@@ -598,6 +710,9 @@ void main() {
               .overrideWith((ref) => _FakePerfilAssetsNotifier()),
           analisesVisiveisProvider.overrideWith(
             (ref) => ref.watch(analiseNotifierProvider).valueOrNull ?? const [],
+          ),
+          clienteProvider.overrideWith(
+            (ref) => _FakeClienteNotifier(const ClienteState()),
           ),
         ],
         child: MaterialApp.router(routerConfig: router),

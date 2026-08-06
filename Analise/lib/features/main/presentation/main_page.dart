@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,14 +12,9 @@ class MainPage extends ConsumerWidget {
 
   static const List<AppBottomTabItem> tabs = [
     AppBottomTabItem(
-      icon: Icons.contacts_outlined,
-      selectedIcon: Icons.contacts,
+      icon: CupertinoIcons.person_crop_rectangle,
+      selectedIcon: CupertinoIcons.person_crop_rectangle_fill,
       label: 'Clientes',
-    ),
-    AppBottomTabItem(
-      icon: Icons.science_outlined,
-      selectedIcon: Icons.science,
-      label: 'Análise',
     ),
     AppBottomTabItem(
       icon: Icons.biotech_outlined,
