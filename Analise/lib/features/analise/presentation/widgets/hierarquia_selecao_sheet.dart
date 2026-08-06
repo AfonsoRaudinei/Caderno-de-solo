@@ -134,7 +134,8 @@ class _HierarquiaSelecaoSheetBodyState
                         ] else if (state.listaVazia) ...[
                           const SizedBox(height: AppDimens.lg),
                           _EmptyClientes(onCriar: () {
-                            notifier.abrirModo(HierarquiaSelecaoModo.criarCliente);
+                            notifier
+                                .abrirModo(HierarquiaSelecaoModo.criarCliente);
                           }),
                         ] else ...[
                           const SizedBox(height: AppDimens.lg),
@@ -321,7 +322,8 @@ class _DropdownSecao extends StatelessWidget {
           enabled: enabled && items.isNotEmpty,
           items: items,
           onChanged: onChanged,
-          errorText: enabled && items.isEmpty ? 'Nenhum cadastro disponível' : null,
+          errorText:
+              enabled && items.isEmpty ? 'Nenhum cadastro disponível' : null,
         ),
       ],
     );

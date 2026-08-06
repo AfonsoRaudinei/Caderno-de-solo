@@ -27,11 +27,54 @@ void main() {
     });
   });
 
-  group('MicronutrientesCard — Bloco duplicado removido', () {
-    testWidgets('sem grupos não mostra REFERÊNCIA DE ABSORÇÃO', (tester) async {
-      await pumpCard(tester, micronutrientesCard(initialExpanded: true));
+  group('MicronutrientesCard — Cadastro por elemento', () {
+    testWidgets('mostra cards apenas dos elementos selecionados no grupo',
+        (tester) async {
+      final data = microsBase(
+        grupos: [
+          {
+            'id': 'g1',
+            'nome': 'Foliar',
+            'viasAplicacaoGrupo': ['Foliar'],
+            'extrator': 'DTPA-TEA',
+            'elementos': ['B', 'Mn'],
+          },
+        ],
+      );
+      await pumpCard(
+        tester,
+        micronutrientesCard(micros: data, initialExpanded: true),
+      );
 
-      expect(find.text('REFERÊNCIA DE ABSORÇÃO'), findsNothing);
+      expect(find.textContaining('B — Boro'), findsOneWidget);
+      expect(find.textContaining('Mn — Manganês'), findsOneWidget);
+      expect(find.textContaining('Zn — Zinco'), findsNothing);
+      expect(find.text('Nível crítico'), findsWidgets);
+    });
+
+    testWidgets('sem elementos selecionados não mostra cards de elemento',
+        (tester) async {
+      final data = microsBase(
+        grupos: [
+          {
+            'id': 'g1',
+            'nome': 'Vazio',
+            'viasAplicacaoGrupo': ['Foliar'],
+            'extrator': 'DTPA-TEA',
+            'elementos': <String>[],
+          },
+        ],
+      );
+      await pumpCard(
+        tester,
+        micronutrientesCard(micros: data, initialExpanded: true),
+      );
+
+      expect(find.textContaining('B — Boro'), findsNothing);
+      expect(
+        find.text('Selecione elementos nos grupos para cadastrar parâmetros.'),
+        findsOneWidget,
+      );
     });
   });
 
@@ -75,8 +118,9 @@ void main() {
         micronutrientesCard(micros: data, initialExpanded: true),
       );
 
-      expect(find.textContaining('Fonte foliar'), findsOneWidget);
-      expect(find.textContaining('Fonte solo'), findsOneWidget);
+      expect(find.textContaining('Fonte'), findsWidgets);
+      expect(find.text('Eficiência foliar (%)'), findsOneWidget);
+      expect(find.text('Eficiência solo (%)'), findsOneWidget);
     });
   });
 

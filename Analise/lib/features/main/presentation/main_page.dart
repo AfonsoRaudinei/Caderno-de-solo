@@ -9,7 +9,7 @@ class MainPage extends ConsumerWidget {
 
   const MainPage({super.key, required this.navigationShell});
 
-  static const List<AppBottomTabItem> _tabs = [
+  static const List<AppBottomTabItem> tabs = [
     AppBottomTabItem(
       icon: Icons.contacts_outlined,
       selectedIcon: Icons.contacts,
@@ -46,7 +46,7 @@ class MainPage extends ConsumerWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: navigationShell,
       bottomNavigationBar: AppBottomTabBar(
-        items: _tabs,
+        items: tabs,
         currentIndex: currentIndex,
         onTap: (index) => navigationShell.goBranch(
           index,

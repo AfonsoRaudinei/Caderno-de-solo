@@ -90,11 +90,11 @@ void main() {
     }
   });
 
-  group('CONTRATO 5 — Campo Camada ausente do Potássio', () {
-    testWidgets('Potássio expandido não mostra Camada', (tester) async {
+  group('CONTRATO 5 — Campo Camada no Potássio', () {
+    testWidgets('Potássio expandido mostra Camada', (tester) async {
       await pumpCard(tester, potassioCard(initialExpanded: true));
 
-      expect(find.text('Camada'), findsNothing);
+      expect(find.text('Camada'), findsOneWidget);
     });
   });
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/constants/app_routes.dart';
+import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
@@ -306,6 +307,14 @@ void main() {
     await tester.pumpAndSettle();
     await _setDropdownValue(tester, dropdownIndex: 0, value: 'c-1');
 
+    // Garante que a tela computou a recomendação com a seleção atual.
+    final gerar = tester.widget<AppButton>(
+      find.byKey(const Key('btn_gerar_recomendacao')),
+    );
+    expect(gerar.onPressed, isNotNull);
+    gerar.onPressed!.call();
+    await tester.pumpAndSettle();
+
     final container = ProviderScope.containerOf(
       tester.element(find.byType(RecomendacaoScreen)),
     );
@@ -321,13 +330,19 @@ void main() {
     expect(result.diagnostico.valido, isTrue);
 
     await tester.scrollUntilVisible(
-      find.byKey(const Key('btn_compartilhar_recomendacao')),
+      find.byKey(const Key('btn_exportar_pdf')),
       500,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('recomendacao_body_scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Compartilhar'), findsOneWidget);
+    expect(find.byKey(const Key('btn_exportar_pdf')), findsOneWidget);
+    expect(find.text('Exportar relatorio'), findsOneWidget);
     expect(find.text('Exportar HTML'), findsNothing);
     expect(find.text('Exportar PDF'), findsNothing);
   });

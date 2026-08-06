@@ -51,7 +51,8 @@ void main() {
 
   group('HierarquiaSelecaoNotifier', () {
     test('carregarClientes popula lista e limpa loading', () async {
-      final notifier = buildNotifier(_FakeClienteRepository(clientes: clientes));
+      final notifier =
+          buildNotifier(_FakeClienteRepository(clientes: clientes));
 
       await notifier.carregarClientes();
 
@@ -61,7 +62,8 @@ void main() {
     });
 
     test('inicializar aplica sugestão compatível', () async {
-      final notifier = buildNotifier(_FakeClienteRepository(clientes: clientes));
+      final notifier =
+          buildNotifier(_FakeClienteRepository(clientes: clientes));
 
       await notifier.inicializar(
         const HierarquiaSelecaoSugestao(
@@ -78,7 +80,8 @@ void main() {
     });
 
     test('selecionarCliente limpa fazenda e talhão', () async {
-      final notifier = buildNotifier(_FakeClienteRepository(clientes: clientes));
+      final notifier =
+          buildNotifier(_FakeClienteRepository(clientes: clientes));
       await notifier.carregarClientes();
       notifier.selecionarCliente('cliente-1');
       notifier.selecionarFazenda('fazenda-1');
@@ -92,7 +95,8 @@ void main() {
     });
 
     test('buildResult retorna null até seleção completa', () async {
-      final notifier = buildNotifier(_FakeClienteRepository(clientes: clientes));
+      final notifier =
+          buildNotifier(_FakeClienteRepository(clientes: clientes));
       await notifier.carregarClientes();
 
       expect(notifier.buildResult(), isNull);
@@ -109,7 +113,8 @@ void main() {
     });
 
     test('criarCliente rejeita nome vazio', () async {
-      final notifier = buildNotifier(_FakeClienteRepository(clientes: clientes));
+      final notifier =
+          buildNotifier(_FakeClienteRepository(clientes: clientes));
 
       final ok = await notifier.criarCliente('   ');
 

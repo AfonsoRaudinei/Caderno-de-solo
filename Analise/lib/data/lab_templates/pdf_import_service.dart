@@ -99,8 +99,9 @@ class ImportacaoQualidadeBaixaException implements Exception {
     if (preview.isEmpty) {
       return 'A importação foi bloqueada por baixa qualidade dos campos essenciais.';
     }
-    final suffix =
-        sampleIssues.length > maxSamples ? ' | +${sampleIssues.length - maxSamples} amostra(s)' : '';
+    final suffix = sampleIssues.length > maxSamples
+        ? ' | +${sampleIssues.length - maxSamples} amostra(s)'
+        : '';
     return 'Campos essenciais ausentes: $preview$suffix';
   }
 

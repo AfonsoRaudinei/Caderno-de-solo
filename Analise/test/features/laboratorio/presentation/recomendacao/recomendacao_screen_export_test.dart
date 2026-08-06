@@ -303,7 +303,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('btn_exportar_pdf')),
       500,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('recomendacao_body_scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await _pumpAndDrain(tester);
 

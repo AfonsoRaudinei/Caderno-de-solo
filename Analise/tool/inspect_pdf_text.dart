@@ -5,7 +5,8 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 void main(List<String> args) {
   if (args.isEmpty) {
-    stderr.writeln('Uso: dart run tool/inspect_pdf_text.dart <arquivo.pdf> [max_chars]');
+    stderr.writeln(
+        'Uso: dart run tool/inspect_pdf_text.dart <arquivo.pdf> [max_chars]');
     exit(64);
   }
 
@@ -34,7 +35,8 @@ void main(List<String> args) {
 
   final all = buf.toString();
   stdout.writeln('Chars: ${all.length}');
-  stdout.writeln(all.substring(0, all.length < maxChars ? all.length : maxChars));
+  stdout
+      .writeln(all.substring(0, all.length < maxChars ? all.length : maxChars));
 
   final outPath = '/tmp/pdf_text_${DateTime.now().millisecondsSinceEpoch}.txt';
   File(outPath).writeAsStringSync(const JsonEncoder.withIndent('  ').convert({

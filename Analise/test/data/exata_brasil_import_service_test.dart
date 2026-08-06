@@ -58,8 +58,7 @@ void main() {
     });
 
     test('SBA24.99405 tem pRem preenchido (33.95)', () {
-      final ra03 =
-          amostras.firstWhere((a) => a.numeroAmostra == 'SBA24.99405');
+      final ra03 = amostras.firstWhere((a) => a.numeroAmostra == 'SBA24.99405');
       expect(ra03.pRem!, closeTo(33.95, 0.001));
     });
   });

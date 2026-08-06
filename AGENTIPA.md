@@ -9,6 +9,10 @@ Este agente orienta o fluxo de release iOS do app `Analise/`, com foco em discip
 - Nunca reduza o número de IPA em relação ao último build confirmado.
 - Nunca gere IPA com número igual ao último build confirmado.
 - Sempre confirmar o build number antes de executar `build_ios.sh`.
+- Antes de gerar IPA, o `release_gate` / `product_modules_guard` deve confirmar que o módulo
+  **Clientes** (e demais features core) ainda existe no working tree.
+- Use sempre `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false`
+  para não saltar o build number na exportação.
 - Após cada IPA concluída com sucesso, atualizar este arquivo com:
   - data do build;
   - build number gerado;
@@ -23,8 +27,8 @@ Este agente orienta o fluxo de release iOS do app `Analise/`, com foco em discip
 
 1. Ler o estado atual do `Analise/pubspec.yaml`.
 2. Confirmar o próximo build number.
-3. Executar a validação relevante do app.
-4. Gerar a IPA.
+3. Executar `./tool/product_modules_guard.sh` e a validação relevante do app.
+4. Gerar a IPA via `./build_ios.sh <N>`.
 5. Registrar o resultado neste arquivo.
 
 ## Histórico de IPA
@@ -88,3 +92,23 @@ Este agente orienta o fluxo de release iOS do app `Analise/`, com foco em discip
   - Build: `1.0.1+175`
   - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
   - Observação: build gerado via `./build_ios.sh 175`; correção do salvamento de cliente/produtor (token sem query global incompatível com rules, telefone/e-mail opcionais, UX de erro sem pop em falha) validada com analyzer e testes direcionados do módulo Clientes; `Info.plist` embutido confirmou `CFBundleVersion=175`, `CFBundleShortVersionString=1.0.1` e bundle `com.soloforte.soloforte`; `release_gate` reportou a violação arquitetural pré-existente em `lib/features/laboratorio/domain/services/absorcao_nutrientes_resolver.dart`, mas a exportação da IPA concluiu com sucesso
+
+- 2026-08-06: IPA 176 concluída com sucesso.
+  - Build: `1.0.1+176`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 176`; correção mínima em `AbsorcaoNutrientesCores` restaurou os helpers visuais esperados pela tela de referências e o analyzer direcionado de `lib/features/laboratorio/presentation/referencias` ficou limpo; o fluxo de exportação iOS passou a usar `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false` para impedir salto automático do IPA para `177`; `Info.plist` embutido confirmou `CFBundleVersion=176`, `CFBundleShortVersionString=1.0.1`, bundle `com.soloforte.soloforte` e nome `Caderno de Solo`; `release_gate` ainda reporta a violação arquitetural pré-existente em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart`
+
+- 2026-08-06: IPA 177 concluída com sucesso.
+  - Build: `1.0.1+177`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 177`; `Info.plist` embutido confirmou `CFBundleVersion=177`, `CFBundleShortVersionString=1.0.1`, bundle `com.soloforte.soloforte` e nome `Caderno de Solo`; o fluxo de exportação continua usando `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false` para impedir incremento automático durante a exportação; `release_gate` ainda reporta a violação arquitetural pré-existente em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart`
+
+- 2026-08-06: IPA 178 concluída com sucesso.
+  - Build: `1.0.1+178`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 178`; inclui commits `feat(fosforo)` (motor P₂O₅ + módulo Cálculos base) e `feat(potassio)` (motor K₂O completo com calibração); Etapas 2–4 (AppIconBadge, migração palette, rota Cálculos, E2E calibração→recomendação); regressão obrigatória K: `130,2 × 15% = 149,73 kg K₂O/ha`; `Info.plist` embutido confirmou `CFBundleVersion=178`, `CFBundleShortVersionString=1.0.1`, bundle `com.soloforte.soloforte` e nome `Caderno de Solo`; exportação via `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false`; `release_gate` ainda reporta a violação arquitetural pré-existente em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart`
+
+- 2026-08-06: IPA 179 concluída com sucesso.
+  - Build: `1.0.1+179`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa`
+  - Observação: build gerado via `./build_ios.sh 179` na branch `cursor/unificar-clientes-analises-9607` (restauração do módulo Clientes + hierarquia Cliente→Fazenda→Talhão); `build_ios.sh` passou a usar `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false`; `Info.plist` embutido confirmou `CFBundleVersion=179`, `CFBundleShortVersionString=1.0.1`, bundle `com.soloforte.soloforte` e nome `Caderno de Solo`; `release_gate` passou completo nesta branch

@@ -55,7 +55,8 @@ class HistoricoNotifier extends AsyncNotifier<List<RecomendacaoModel>> {
 
 /// Recomendações das análises vinculadas a um cliente.
 final recomendacoesPorClienteProvider =
-    FutureProvider.family<List<RecomendacaoModel>, String>((ref, clienteId) async {
+    FutureProvider.family<List<RecomendacaoModel>, String>(
+        (ref, clienteId) async {
   final normalizedId = clienteId.trim();
   if (normalizedId.isEmpty) return const [];
 

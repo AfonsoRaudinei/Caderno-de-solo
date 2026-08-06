@@ -14,10 +14,8 @@ class ClienteAnalisesFilter {
     final normalizedId = clienteId.trim();
     if (normalizedId.isEmpty) return const [];
 
-    final index = analiseIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet();
+    final index =
+        analiseIds.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
     final nome = clienteNome.trim();
 
     final filtradas = analises.where((analise) {

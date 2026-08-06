@@ -24,12 +24,14 @@ class CulturasState {
     List<String>? selectedNutrients,
     DataMode? dataMode,
     bool clearSource = false,
-  }) => CulturasState(
-    sourceType:         sourceType ?? this.sourceType,
-    selectedSource:     clearSource ? null : (selectedSource ?? this.selectedSource),
-    selectedNutrients:  selectedNutrients ?? this.selectedNutrients,
-    dataMode:           dataMode ?? this.dataMode,
-  );
+  }) =>
+      CulturasState(
+        sourceType: sourceType ?? this.sourceType,
+        selectedSource:
+            clearSource ? null : (selectedSource ?? this.selectedSource),
+        selectedNutrients: selectedNutrients ?? this.selectedNutrients,
+        dataMode: dataMode ?? this.dataMode,
+      );
 }
 
 // ── Notifier ──────────────────────────────────────────────────
@@ -62,8 +64,7 @@ class CulturasNotifier extends StateNotifier<CulturasState> {
 }
 
 // ── Providers ─────────────────────────────────────────────────
-final culturasProvider =
-    StateNotifierProvider<CulturasNotifier, CulturasState>(
+final culturasProvider = StateNotifierProvider<CulturasNotifier, CulturasState>(
   (ref) => CulturasNotifier(),
 );
 
@@ -71,10 +72,10 @@ final culturasProvider =
 final sourcesListProvider = Provider<List<String>>((ref) {
   final type = ref.watch(culturasProvider).sourceType;
   return switch (type) {
-    SourceType.autor      => kAutores.keys.toList(),
+    SourceType.autor => kAutores.keys.toList(),
     SourceType.tecnologia => kTecnologias.keys.toList(),
-    SourceType.cultivar   => kCultivares.keys.toList(),
-    null                  => [],
+    SourceType.cultivar => kCultivares.keys.toList(),
+    null => [],
   };
 });
 
@@ -83,8 +84,8 @@ final currentEntryProvider = Provider<SourceEntry?>((ref) {
   final state = ref.watch(culturasProvider);
   if (state.sourceType == null || state.selectedSource == null) return null;
   return switch (state.sourceType!) {
-    SourceType.autor      => kAutores[state.selectedSource],
+    SourceType.autor => kAutores[state.selectedSource],
     SourceType.tecnologia => kTecnologias[state.selectedSource],
-    SourceType.cultivar   => kCultivares[state.selectedSource],
+    SourceType.cultivar => kCultivares[state.selectedSource],
   };
 });

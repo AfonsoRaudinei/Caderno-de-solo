@@ -40,8 +40,11 @@ class ClassificacaoNivel {
       case 'p':
         double nc = 8.0;
         if (argila != null) {
-          if (argila > 60) { nc = 4.0; }
-          else if (argila < 15) { nc = 15.0; }
+          if (argila > 60) {
+            nc = 4.0;
+          } else if (argila < 15) {
+            nc = 15.0;
+          }
         }
         if (valor < 0.5 * nc) return 'Muito Baixo';
         if (valor <= 0.8 * nc) return 'Baixo';
@@ -68,15 +71,24 @@ class ClassificacaoNivel {
 class NivelEscala {
   static (double, double) escala(String nutriente, {double? argila}) {
     switch (nutriente.toLowerCase()) {
-      case 'ph': return (4.0, 7.5);
-      case 'vpercent': return (0.0, 100.0);
-      case 'ca': return (0.0, 8.0);
-      case 'mg': return (0.0, 4.0);
-      case 'k': return (0.0, 0.80);
-      case 'p': return (0.0, 30.0);
-      case 'mo': return (0.0, 50.0);
-      case 's': return (0.0, 30.0);
-      default: return (0.0, 10.0);
+      case 'ph':
+        return (4.0, 7.5);
+      case 'vpercent':
+        return (0.0, 100.0);
+      case 'ca':
+        return (0.0, 8.0);
+      case 'mg':
+        return (0.0, 4.0);
+      case 'k':
+        return (0.0, 0.80);
+      case 'p':
+        return (0.0, 30.0);
+      case 'mo':
+        return (0.0, 50.0);
+      case 's':
+        return (0.0, 30.0);
+      default:
+        return (0.0, 10.0);
     }
   }
 }

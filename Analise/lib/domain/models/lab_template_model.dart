@@ -202,8 +202,7 @@ class LabTemplateModel {
         orElse: () => UnidadeTextura.gKg,
       );
 
-  factory LabTemplateModel.fromJson(Map<String, dynamic> j) =>
-      LabTemplateModel(
+  factory LabTemplateModel.fromJson(Map<String, dynamic> j) => LabTemplateModel(
         id: j['id'] as String,
         nome: j['nome'] as String,
         keywords: List<String>.from(j['keywords'] as List? ?? []),
@@ -234,11 +233,14 @@ class LabTemplateModel {
         entregaMo: j['entregaMo'] as bool? ?? false,
         entregaCo: j['entregaCo'] as bool? ?? false,
         entregaPTotal: j['entregaPTotal'] as bool? ?? false,
-        entregaClassificacaoTextura: j['entregaClassificacaoTextura'] as bool? ?? false,
+        entregaClassificacaoTextura:
+            j['entregaClassificacaoTextura'] as bool? ?? false,
         entregaTipoSoloMapa: j['entregaTipoSoloMapa'] as bool? ?? false,
-        separaSolicitanteProprietario: j['separaSolicitanteProprietario'] as bool? ?? false,
+        separaSolicitanteProprietario:
+            j['separaSolicitanteProprietario'] as bool? ?? false,
         entregaTextura: j['entregaTextura'] as bool? ?? true,
-        micronutrientesPorAmostra: j['micronutrientesPorAmostra'] as bool? ?? false,
+        micronutrientesPorAmostra:
+            j['micronutrientesPorAmostra'] as bool? ?? false,
         identificacaoComposta: j['identificacaoComposta'] as bool? ?? false,
         umAmostraPorLaudo: j['umAmostraPorLaudo'] as bool? ?? false,
         entregaAreiasDetalhadas: j['entregaAreiasDetalhadas'] as bool? ?? false,

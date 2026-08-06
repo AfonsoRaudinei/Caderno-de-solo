@@ -254,6 +254,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       grupos[grupoIndex] as Map<String, dynamic>,
     );
     grupo['referenciaNome'] = referenciaNome;
+    grupo['referenciaTecnica'] = referenciaNome;
 
     final elementos = Map<String, dynamic>.from(
       (micros['elementos'] as Map<String, dynamic>?) ?? {},
@@ -268,6 +269,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       final el = Map<String, dynamic>.from(
         elementos[simbolo] as Map<String, dynamic>,
       );
+      el['referenciaNc'] = referenciaNome;
       el['referencia'] = referenciaNome;
 
       if (referenciaNome != 'Personalizada') {
@@ -277,7 +279,6 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
         }
       }
 
-      el['propagadoDoGrupo'] = true;
       elementos[simbolo] = el;
     }
 

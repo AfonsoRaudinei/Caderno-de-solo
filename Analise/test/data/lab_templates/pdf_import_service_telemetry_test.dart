@@ -165,7 +165,8 @@ void main() {
       expect(names, isNot(contains(AnaliseTelemetryEvents.importFailed)));
     });
 
-    test('emite bloqueio de qualidade quando campos essenciais faltam', () async {
+    test('emite bloqueio de qualidade quando campos essenciais faltam',
+        () async {
       final sink = _MemorySink();
       final telemetry = AnaliseTelemetry(
         sink: sink,

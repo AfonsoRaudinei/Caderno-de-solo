@@ -1,100 +1,33 @@
-// lib/presentation/lab/calibracao/widgets/potassio_card_widget.dart
-//
 // Potássio — card de calibração
 //
-// ══════════════════════════════════════════════════════════════════════════════
-// DIFERENCIAL DO K vs P: dois critérios de NC simultâneos
+// Correção do solo (exclusiva):
+//   • Nível crítico (mg/dm³)
+//   • % K na CTC
 //
-//   • NC teor    → disponibilidade absoluta (mg/dm³)
-//   • NC % CTC   → equilíbrio iônico na CTC
-//   • Critério "Ambos — usar o maior" → calcula os dois, adota maior dose
-//
-// ══════════════════════════════════════════════════════════════════════════════
-// REFERÊNCIAS E NC:
-//
-//  ┌──────────────────┬──────────────────┬──────────────┬──────────────┐
-//  │ Referência       │ Extrator         │ NC teor      │ NC % CTC     │
-//  ├──────────────────┼──────────────────┼──────────────┼──────────────┤
-//  │ IAC Bol.100      │ Resina IAC       │ 80 mg/dm³    │ 4%           │
-//  │ Embrapa Cerrado  │ Mehlich-1        │ 46 mg/dm³    │ 3%           │
-//  │ Embrapa RS/SC    │ Resina/Mehlich-1 │ 80 mg/dm³    │ 4%           │
-//  │ UFLA / CFSEMG    │ Mehlich-1        │ placeholder  │ placeholder  │
-//  └──────────────────┴──────────────────┴──────────────┴──────────────┘
-//
-//  Fontes: Raij et al. (1996), Sousa & Lobato (2004), CQFS RS/SC (2004)
-//
-// ══════════════════════════════════════════════════════════════════════════════
-// FEK (%) — Fator de Eficiência do fertilizante potassado
-//
-//  Origem: Vitti (2011) — f da fórmula ADUBAÇÃO = (PLANTA - SOLO) × f
-//  Não é constante de nenhuma referência; é parâmetro de manejo editável.
-//  Defaults por modo de aplicação baseados em literatura geral (Vitti, 2011):
-//    • Lanço incorporado → 65%
-//    • Lanço plantio direto → 50%
-//    • Sulco de plantio → 80%
-//    • Cobertura → 55%
-//
-// ══════════════════════════════════════════════════════════════════════════════
-// REGRA ABSOLUTA: NC teor e NC %CTC são sempre read-only badges.
-// FEK é o único campo editável — é parâmetro de manejo, não de referência.
+// Reposição da planta (exclusiva):
+//   • Sem reposição / Exportação / Extração
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/data/culturas_data.dart';
-
-// ══════════════════════════════════════════════════════════════════════════════
-// DOMÍNIO
-// ══════════════════════════════════════════════════════════════════════════════
+import 'package:soloforte/domain/formulas/potassio_formula.dart';
 
 enum ExtratorK { resinaIAC, mehlich1, resinaOuMehlich }
 
 enum ReferenciaK { iacBol100, embrapasCerrado, embrapaRsSc, ufla }
 
-enum CriterioNC { teor, ctc, ambosUsarMaior }
+enum CamadaK { c0a20, c20a40 }
 
-enum ModoCalculo { correcaoSolo, manutencao, exportacao }
-
-enum ModoAplicacao { lancoIncorporado, lancoPD, sulco, cobertura }
-
-extension ModoAplicacaoX on ModoAplicacao {
-  String get label {
-    switch (this) {
-      case ModoAplicacao.lancoIncorporado:
-        return 'Lanço incorporado';
-      case ModoAplicacao.lancoPD:
-        return 'Lanço plantio direto';
-      case ModoAplicacao.sulco:
-        return 'Sulco de plantio';
-      case ModoAplicacao.cobertura:
-        return 'Cobertura';
-    }
-  }
-
-  // Defaults Vitti (2011) — f da fórmula ADUBAÇÃO = (PLANTA - SOLO) × f
-  double get fekDefault {
-    switch (this) {
-      case ModoAplicacao.lancoIncorporado:
-        return 65;
-      case ModoAplicacao.lancoPD:
-        return 50;
-      case ModoAplicacao.sulco:
-        return 80;
-      case ModoAplicacao.cobertura:
-        return 55;
-    }
-  }
-}
-
-// ─── Descriptor NC por referência ────────────────────────────────────────────
+enum MetodoCorrecaoK { nivelCritico, percentualKCtc }
 
 class _NcK {
-  final double? ncTeor; // mg/dm³
-  final double? ncCtcPct; // %
+  final double? ncTeor;
+  final double? ncCtcPct;
   final bool placeholder;
 
   const _NcK({this.ncTeor, this.ncCtcPct, this.placeholder = false});
@@ -121,8 +54,7 @@ class _RefK {
     return 'Referência: $fonte\n'
         'NC teor: ${nc.ncTeor?.toInt() ?? "—"} mg/dm³  ·  '
         'NC % CTC: ${nc.ncCtcPct?.toInt() ?? "—"}%\n\n'
-        '"Ambos — usar o maior": calcula a dose pelos dois critérios\n'
-        'e adota a maior dose resultante (Raij et al., 1996).';
+        'Selecione apenas um método de correção por vez.';
   }
 }
 
@@ -153,12 +85,6 @@ const _refsK = <ReferenciaK, _RefK>{
   ),
 };
 
-// ─── Descriptor NC por referência ────────────────────────────────────────────
-
-// ══════════════════════════════════════════════════════════════════════════════
-// WIDGET
-// ══════════════════════════════════════════════════════════════════════════════
-
 class PotassioCard extends StatefulWidget {
   const PotassioCard({
     super.key,
@@ -187,32 +113,45 @@ class _PotassioCardState extends State<PotassioCard> {
 
   final GlobalKey _cardKey = GlobalKey();
   ReferenciaK _ref = ReferenciaK.iacBol100;
-  CriterioNC _criterio = CriterioNC.ambosUsarMaior;
-  ModoCalculo _modo = ModoCalculo.correcaoSolo;
-  ModoAplicacao _aplicacao = ModoAplicacao.lancoIncorporado;
+  CamadaK _camada = CamadaK.c0a20;
+  bool _corrigirSolo = true;
+  MetodoCorrecaoK _metodoCorrecao = MetodoCorrecaoK.nivelCritico;
+  String _reposicaoPotassio = 'nenhuma';
 
-  // Referência de Absorção bibliográfica (T3B)
   String _potassioTipoFonte = 'Autores';
   String? _potassioFonteNome;
-  String _potassioModoAbsorcao = 'extracao';
   bool _ncTeorManual = false;
   bool _ncCtcManual = false;
 
-  late TextEditingController _fekCtrl;
   late TextEditingController _ncTeorCtrl;
   late TextEditingController _ncCtcCtrl;
+  late TextEditingController _kSoloCtrl;
+  late TextEditingController _eficienciaSoloCtrl;
+  late TextEditingController _indiceExportacaoCtrl;
+  late TextEditingController _indiceExtracaoCtrl;
+
   Map<String, dynamic> _baseData = const {};
+  double? _persistedNcTeor;
+  double? _persistedNcCtc;
   final _ncBadgeKey = GlobalKey();
   OverlayEntry? _tip;
+
+  String? _ncTeorError;
+  String? _ncCtcError;
+  String? _eficienciaError;
+  String? _indiceExportacaoError;
+  String? _indiceExtracaoError;
+  String? _kSoloError;
 
   @override
   void initState() {
     super.initState();
-    _fekCtrl = TextEditingController(
-      text: _aplicacao.fekDefault.toInt().toString(),
-    );
     _ncTeorCtrl = TextEditingController();
     _ncCtcCtrl = TextEditingController();
+    _kSoloCtrl = TextEditingController(text: '100');
+    _eficienciaSoloCtrl = TextEditingController(text: '15');
+    _indiceExportacaoCtrl = TextEditingController();
+    _indiceExtracaoCtrl = TextEditingController();
     _syncFromExternalData(widget.initialData);
   }
 
@@ -240,9 +179,12 @@ class _PotassioCardState extends State<PotassioCard> {
 
   @override
   void dispose() {
-    _fekCtrl.dispose();
     _ncTeorCtrl.dispose();
     _ncCtcCtrl.dispose();
+    _kSoloCtrl.dispose();
+    _eficienciaSoloCtrl.dispose();
+    _indiceExportacaoCtrl.dispose();
+    _indiceExtracaoCtrl.dispose();
     _removeTip();
     super.dispose();
   }
@@ -260,16 +202,43 @@ class _PotassioCardState extends State<PotassioCard> {
     }
   }
 
-  bool get _showTeor =>
-      _criterio == CriterioNC.teor || _criterio == CriterioNC.ambosUsarMaior;
-  bool get _showCtc =>
-      _criterio == CriterioNC.ctc || _criterio == CriterioNC.ambosUsarMaior;
-  bool get _isAmbos => _criterio == CriterioNC.ambosUsarMaior;
+  String get _camadaLabel => _camada == CamadaK.c0a20 ? '0–20 cm' : '20–40 cm';
+
   double? get _ncTeorAtual => _ncTeorManual
       ? _parseDoubleOrNull(_ncTeorCtrl.text)
       : _ncTeorAutomatico();
-  double? get _ncCtcAtual =>
+
+  double? get _percentualKObjetivo =>
       _ncCtcManual ? _parseDoubleOrNull(_ncCtcCtrl.text) : _ncCtcAutomatico();
+
+  double? _kAtualMgDm3() {
+    return _numOrNull(_baseData['kMgDm3']) ??
+        _numOrNull(_baseData['k_mgdm3']) ??
+        (_numOrNull(_baseData['k']) != null
+            ? _numOrNull(_baseData['k'])! * 391.0
+            : null);
+  }
+
+  double? _kAtualCmolc() {
+    return _numOrNull(_baseData['k']) ??
+        (_kAtualMgDm3() != null ? _kAtualMgDm3()! / 391.0 : null);
+  }
+
+  double? _ctcAtual() => _numOrNull(_baseData['ctc']);
+
+  double? _participacaoKAtual() {
+    final k = _kAtualCmolc();
+    final ctc = _ctcAtual();
+    if (k == null || ctc == null || ctc <= 0) return null;
+    return PotassioFormula.participacaoAtual(kAtual: k, ctc: ctc);
+  }
+
+  double? _argilaPercentual() {
+    return _numOrNull(_baseData['argila']) ??
+        _numOrNull(_baseData['argilaPercent']) ??
+        _numOrNull(_baseData['argilaPercentual']) ??
+        _numOrNull(_baseData['teorArgila']);
+  }
 
   double? _ncTeorAutomatico() {
     if (_ref == ReferenciaK.iacBol100) {
@@ -284,18 +253,12 @@ class _PotassioCardState extends State<PotassioCard> {
 
   double? _ncCtcAutomatico() => _d.nc.ncCtcPct;
 
-  double? _argilaPercentual() {
-    return _numOrNull(_baseData['argila']) ??
-        _numOrNull(_baseData['argilaPercent']) ??
-        _numOrNull(_baseData['argilaPercentual']) ??
-        _numOrNull(_baseData['teorArgila']);
-  }
-
-  void _syncNcControllersFromMode() {
+  void _syncNcControllersFromMode(Map<String, dynamic> source) {
     final ncTeor =
-        _ncTeorManual ? _numOrNull(_baseData['ncTeor']) : _ncTeorAutomatico();
-    final ncCtc =
-        _ncCtcManual ? _numOrNull(_baseData['ncPctCtc']) : _ncCtcAutomatico();
+        _ncTeorManual ? _numOrNull(source['ncTeor']) : _ncTeorAutomatico();
+    final ncCtc = _ncCtcManual
+        ? _numOrNull(source['percentualKObjetivoCtc'] ?? source['ncPctCtc'])
+        : _ncCtcAutomatico();
     _ncTeorCtrl.text = ncTeor == null ? '' : _fmtNumber(ncTeor);
     _ncCtcCtrl.text = ncCtc == null ? '' : _fmtNumber(ncCtc);
   }
@@ -317,51 +280,141 @@ class _PotassioCardState extends State<PotassioCard> {
     _baseData = Map<String, dynamic>.from(source);
 
     _ref = _referenciaFromString(source['referencia']?.toString());
-    _criterio = _criterioFromString(source['criterioNc']?.toString());
-    _modo = _modoFromString(source['modoCalculo']?.toString());
-    _aplicacao = _aplicacaoFromString(source['modoAplicacao']?.toString());
+    _camada = _camadaFromString(source['camada']?.toString());
+    _corrigirSolo = _corrigirSoloFromData(source);
+    _metodoCorrecao = _metodoCorrecaoFromData(source);
+    _reposicaoPotassio = _reposicaoFromData(source);
     _ncTeorManual = source['ncTeorManual'] as bool? ?? false;
     _ncCtcManual = source['ncCtcManual'] as bool? ?? false;
     _potassioTipoFonte = source['potassioTipoFonte']?.toString() ?? 'Autores';
     _potassioFonteNome = source['potassioFonteNome']?.toString();
-    _potassioModoAbsorcao =
-        source['potassioModoAbsorcao']?.toString() ?? 'extracao';
 
-    final fek = source['fekBase'];
-    final fekTexto =
-        fek == null ? _aplicacao.fekDefault.toString() : fek.toString();
-    _fekCtrl.text = fekTexto.replaceAll('.', ',');
-    _syncNcControllersFromMode();
+    final usoKSolo =
+        source['percentualKSoloConsiderado'] ?? source['percentualUsoKSolo'];
+    _kSoloCtrl.text = _fmtNumber(
+      _numOrNull(usoKSolo) ?? (_reposicaoPotassio == 'extracao' ? 100.0 : 0.0),
+    );
+    _eficienciaSoloCtrl.text = _fmtNumber(_eficienciaSoloFromSource(source));
+    _indiceExportacaoCtrl.text = _fmtNumber(
+      _numOrNull(source['indiceExportacaoK2O']),
+      emptyWhenNull: true,
+    );
+    _indiceExtracaoCtrl.text = _fmtNumber(
+      _numOrNull(source['indiceExtracaoK2O']),
+      emptyWhenNull: true,
+    );
+    _syncNcControllersFromMode(source);
+    _persistedNcTeor = _numOrNull(source['ncTeor']) ?? _ncTeorAutomatico();
+    _persistedNcCtc = _numOrNull(
+          source['percentualKObjetivoCtc'] ?? source['ncPctCtc'],
+        ) ??
+        _ncCtcAutomatico();
+    _validateFields();
+  }
+
+  double _eficienciaSoloFromSource(Map<String, dynamic> source) {
+    final eficiencia = _numOrNull(source['ajusteEficienciaSolo']) ??
+        _numOrNull(source['eficienciaSolo']) ??
+        _numOrNull(source['fekBase']) ??
+        15.0;
+    return eficiencia.clamp(0.0, 100.0);
+  }
+
+  double _eficienciaSoloEfetiva() {
+    final parsed = _parseDoubleOrNull(_eficienciaSoloCtrl.text);
+    final raw = parsed ?? _eficienciaSoloFromSource(_baseData);
+    return raw.clamp(0.0, 100.0);
+  }
+
+  void _validateFields() {
+    _ncTeorError = _validateNcTeor(_ncTeorAtual);
+    _ncCtcError = _validatePercentual(_percentualKObjetivo, 'objetivo');
+    _eficienciaError =
+        _validatePercentual(_eficienciaSoloEfetiva(), 'eficiência');
+    _indiceExportacaoError =
+        _validateIndice(_parseDoubleOrNull(_indiceExportacaoCtrl.text));
+    _indiceExtracaoError =
+        _validateIndice(_parseDoubleOrNull(_indiceExtracaoCtrl.text));
+    _kSoloError = _validatePercentual(
+      _parseDoubleOrNull(_kSoloCtrl.text),
+      'solo considerado',
+    );
+  }
+
+  String? _validateNcTeor(double? value) {
+    if (!_corrigirSolo || _metodoCorrecao != MetodoCorrecaoK.nivelCritico) {
+      return null;
+    }
+    if (value == null) return 'Informe o NC de K';
+    if (value < 0) return 'NC não pode ser negativo';
+    return null;
+  }
+
+  String? _validatePercentual(double? value, String label) {
+    if (value == null) return null;
+    if (value < 0 || value > 100) {
+      return '$label deve estar entre 0 e 100%';
+    }
+    return null;
+  }
+
+  String? _validateIndice(double? value) {
+    if (value == null) return null;
+    if (value < 0) return 'Índice não pode ser negativo';
+    return null;
   }
 
   void _emitChange() {
     if (widget.onChanged == null) return;
+    _validateFields();
 
-    final fekBase = double.tryParse(_fekCtrl.text.replaceAll(',', '.')) ?? 0.0;
     final cultura =
         widget.cultura ?? _baseData['cultivar']?.toString() ?? 'Soja';
+    final percentualKSolo = _reposicaoPotassio == 'extracao'
+        ? (_parseDoubleOrNull(_kSoloCtrl.text) ?? 100.0)
+        : 0.0;
+    final ajusteEficiencia = _eficienciaSoloEfetiva();
+    final indiceExportacao = _parseDoubleOrNull(_indiceExportacaoCtrl.text);
+    final indiceExtracao = _parseDoubleOrNull(_indiceExtracaoCtrl.text);
+
+    final ncTeorSalvo =
+        _parseDoubleOrNull(_ncTeorCtrl.text) ?? _persistedNcTeor;
+    final ncCtcSalvo = _parseDoubleOrNull(_ncCtcCtrl.text) ?? _persistedNcCtc;
+    final ncTeorFinal = ncTeorSalvo ?? _ncTeorAutomatico() ?? 46.0;
+    final ncCtcFinal = ncCtcSalvo ?? _ncCtcAutomatico() ?? 3.0;
+    _persistedNcTeor = ncTeorFinal;
+    _persistedNcCtc = ncCtcFinal;
 
     final payload = <String, dynamic>{
       ..._baseData,
       'extrator': _extratorLabel,
       'referencia': _d.label,
-      'criterioNc': _criterioLabelForPayload(_criterio),
-      'ncTeor': _ncTeorAtual ?? _ncTeorAutomatico() ?? 46.0,
-      'ncPctCtc': _ncCtcAtual ?? _ncCtcAutomatico() ?? 3.0,
+      'camada': _camadaLabel,
+      'corrigirSolo': _corrigirSolo,
+      'metodoCorrecao': _metodoCorrecaoPayload(_metodoCorrecao),
+      'criterioNc': _criterioNcPayload(_metodoCorrecao),
+      'ncTeor': ncTeorFinal,
+      'ncPctCtc': ncCtcFinal,
+      'percentualKObjetivoCtc': ncCtcFinal,
       'ncTeorManual': _ncTeorManual,
       'ncCtcManual': _ncCtcManual,
-      'camada': '0-20',
-      'modoCalculo': _modoLabelForPayload(_modo),
-      'modoAplicacao': _aplicacao.label,
-      'fekBase': fekBase,
+      'reposicaoPotassio': _reposicaoPotassio,
+      'modoCalculo': _modoLabelForPayload(),
       'cultivar': cultura,
-      'tipoDadoCultivar': _tipoFromModo(_modo),
+      'tipoDadoCultivar': _tipoFromReposicao(_reposicaoPotassio),
+      'percentualUsoKSolo': percentualKSolo,
+      'percentualKSoloConsiderado': percentualKSolo,
+      'indiceExportacaoK2O': indiceExportacao,
+      'indiceExtracaoK2O': indiceExtracao,
+      'ajusteEficienciaSolo': ajusteEficiencia,
+      'fekBase': ajusteEficiencia,
       'potassioTipoFonte': _potassioTipoFonte,
       'potassioFonteNome': _potassioFonteNome ??
           (_fontesParaTipoK(_potassioTipoFonte).isNotEmpty
               ? _fontesParaTipoK(_potassioTipoFonte).first
               : ''),
-      'potassioModoAbsorcao': _potassioModoAbsorcao,
+      'potassioModoAbsorcao':
+          _reposicaoPotassio == 'exportacao' ? 'exportacao' : 'extracao',
     };
 
     widget.onChanged!(payload);
@@ -381,196 +434,83 @@ class _PotassioCardState extends State<PotassioCard> {
     }
   }
 
-  CriterioNC _criterioFromString(String? value) {
-    switch (value) {
-      case 'Teor absoluto':
-        return CriterioNC.teor;
-      case '% K na CTC':
-        return CriterioNC.ctc;
-      case 'Ambos — usar o maior':
-      default:
-        return CriterioNC.ambosUsarMaior;
+  CamadaK _camadaFromString(String? value) {
+    if (value == '20–40 cm' || value == '20-40') return CamadaK.c20a40;
+    return CamadaK.c0a20;
+  }
+
+  bool _corrigirSoloFromData(Map<String, dynamic> source) {
+    final explicit = source['corrigirSolo'];
+    if (explicit is bool) return explicit;
+    final modo = source['modoCalculo']?.toString() ?? 'Correção do solo';
+    if (modo.contains('Manutenção') ||
+        modo.contains('Exportação') ||
+        modo.contains('Extração')) {
+      return false;
     }
+    return modo.contains('Correção') || modo.startsWith('①');
   }
 
-  ModoCalculo _modoFromString(String? value) {
-    if (value == null) return ModoCalculo.correcaoSolo;
-    if (value.contains('Extração')) return ModoCalculo.exportacao;
-    if (value.contains('Manutenção')) return ModoCalculo.manutencao;
-    return ModoCalculo.correcaoSolo;
-  }
-
-  ModoAplicacao _aplicacaoFromString(String? value) {
-    switch (value) {
-      case 'Lanço plantio direto':
-      case 'Lanço sem incorporação':
-        return ModoAplicacao.lancoPD;
-      case 'Sulco de plantio':
-      case 'Sulco':
-        return ModoAplicacao.sulco;
-      case 'Cobertura':
-        return ModoAplicacao.cobertura;
-      case 'Lanço incorporado':
-      default:
-        return ModoAplicacao.lancoIncorporado;
+  MetodoCorrecaoK _metodoCorrecaoFromData(Map<String, dynamic> source) {
+    final explicit = source['metodoCorrecao']?.toString();
+    if (explicit == 'percentual_k_ctc') {
+      return MetodoCorrecaoK.percentualKCtc;
     }
-  }
-
-  String _criterioLabelForPayload(CriterioNC criterio) {
-    switch (criterio) {
-      case CriterioNC.teor:
-        return 'Teor absoluto';
-      case CriterioNC.ctc:
-        return '% K na CTC';
-      case CriterioNC.ambosUsarMaior:
-        return 'Ambos — usar o maior';
+    if (explicit == 'nivel_critico') {
+      return MetodoCorrecaoK.nivelCritico;
     }
+    final criterio = source['criterioNc']?.toString() ?? 'Teor absoluto';
+    if (criterio == '% K na CTC') return MetodoCorrecaoK.percentualKCtc;
+    return MetodoCorrecaoK.nivelCritico;
   }
 
-  String _modoLabelForPayload(ModoCalculo modo) {
-    switch (modo) {
-      case ModoCalculo.correcaoSolo:
-        return '① Correção do solo';
-      case ModoCalculo.manutencao:
-        return '② Manutenção';
-      case ModoCalculo.exportacao:
-        return '② Extração';
+  String _reposicaoFromData(Map<String, dynamic> source) {
+    final explicit = source['reposicaoPotassio']?.toString();
+    if (explicit == 'nenhuma' ||
+        explicit == 'exportacao' ||
+        explicit == 'extracao') {
+      return explicit!;
     }
+    final modo = source['modoCalculo']?.toString() ?? '';
+    if (modo.contains('Manutenção') || modo.contains('Exportação')) {
+      return 'exportacao';
+    }
+    if (modo.contains('Extração')) return 'extracao';
+    return 'nenhuma';
   }
 
-  String _tipoFromModo(ModoCalculo modo) {
-    return modo == ModoCalculo.manutencao ? 'Extração total' : 'Exportação';
+  String _metodoCorrecaoPayload(MetodoCorrecaoK metodo) {
+    return metodo == MetodoCorrecaoK.percentualKCtc
+        ? 'percentual_k_ctc'
+        : 'nivel_critico';
   }
-  // ── T3B: Helpers de Referência de Absorção ───────────────────────────────────────
+
+  String _criterioNcPayload(MetodoCorrecaoK metodo) {
+    return metodo == MetodoCorrecaoK.percentualKCtc
+        ? '% K na CTC'
+        : 'Teor absoluto';
+  }
+
+  String _modoLabelForPayload() {
+    final parts = <String>[
+      if (_corrigirSolo) 'Correção do solo',
+      if (_reposicaoPotassio == 'exportacao') 'Exportação',
+      if (_reposicaoPotassio == 'extracao') 'Extração',
+    ];
+    return parts.isEmpty ? 'Sem potássio' : parts.join(' + ');
+  }
+
+  String _tipoFromReposicao(String reposicao) {
+    if (reposicao == 'exportacao') return 'Exportação';
+    if (reposicao == 'extracao') return 'Extração';
+    return 'Nenhum';
+  }
 
   List<String> _fontesParaTipoK(String tipo) {
     if (tipo == 'Guidorizzi') return kTecnologias.keys.toList();
     if (tipo == 'Cultivar') return kCultivares.keys.toList();
     return kAutores.keys.toList();
   }
-
-  Widget _buildAbsorcaoSecaoK() {
-    const tiposDisponiveis = ['Autores', 'Guidorizzi', 'Cultivar'];
-    final fontes = _fontesParaTipoK(_potassioTipoFonte);
-    final fonteAtual = fontes.contains(_potassioFonteNome)
-        ? _potassioFonteNome!
-        : (fontes.isNotEmpty ? fontes.first : '');
-    final labelFonte = _potassioTipoFonte == 'Guidorizzi'
-        ? 'Tecnologia'
-        : _potassioTipoFonte == 'Cultivar'
-            ? 'Cultivar'
-            : 'Autor';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'REFERÊNCIA DE ABSORÇÃO',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecond,
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 6),
-        _lbl('Tipo de Fonte'),
-        const SizedBox(height: AppDimens.xs),
-        _drop<String>(
-          value: _potassioTipoFonte,
-          items: tiposDisponiveis,
-          labelOf: (t) => t,
-          onChanged: (v) {
-            if (v == null) return;
-            final novasFontes = _fontesParaTipoK(v);
-            setState(() {
-              _potassioTipoFonte = v;
-              _potassioFonteNome =
-                  novasFontes.isNotEmpty ? novasFontes.first : null;
-            });
-            _emitChange();
-          },
-        ),
-        const SizedBox(height: AppDimens.sm),
-        _lbl(labelFonte),
-        const SizedBox(height: AppDimens.xs),
-        _drop<String>(
-          value: fonteAtual.isNotEmpty
-              ? fonteAtual
-              : (fontes.isNotEmpty ? fontes.first : ''),
-          items: fontes.isNotEmpty ? fontes : const [''],
-          labelOf: (t) => t,
-          onChanged: (v) {
-            if (v == null || v.isEmpty) return;
-            setState(() => _potassioFonteNome = v);
-            _emitChange();
-          },
-        ),
-        const SizedBox(height: AppDimens.sm),
-        _lbl('Extração / Exportação'),
-        const SizedBox(height: AppDimens.xs),
-        _modoAbsorcaoToggleK(),
-      ],
-    );
-  }
-
-  Widget _modoAbsorcaoToggleK() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _toggleBtnK(
-          label: 'Extração',
-          selected: _potassioModoAbsorcao == 'extracao',
-          onTap: () {
-            setState(() => _potassioModoAbsorcao = 'extracao');
-            _emitChange();
-          },
-          isLeft: true,
-        ),
-        _toggleBtnK(
-          label: 'Exportação',
-          selected: _potassioModoAbsorcao == 'exportacao',
-          onTap: () {
-            setState(() => _potassioModoAbsorcao = 'exportacao');
-            _emitChange();
-          },
-          isLeft: false,
-        ),
-      ],
-    );
-  }
-
-  Widget _toggleBtnK({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-    required bool isLeft,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.borderSoft,
-          borderRadius: BorderRadius.horizontal(
-            left: isLeft ? const Radius.circular(8) : Radius.zero,
-            right: isLeft ? Radius.zero : const Radius.circular(8),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecond,
-          ),
-        ),
-      ),
-    );
-  }
-  // ══════════════════════════════════════════════════════════════════════════
-  // BUILD
-  // ══════════════════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -706,22 +646,25 @@ class _PotassioCardState extends State<PotassioCard> {
   }
 
   List<String> _collapsedSummaryLines() {
-    final modoCalculo = _labelModoCalculo(_modo);
-    final aplicacao = _aplicacao.label == 'Lanço plantio direto'
-        ? 'Lanço PD'
-        : _aplicacao.label;
+    final metodo =
+        _metodoCorrecao == MetodoCorrecaoK.percentualKCtc ? '% CTC' : 'NC teor';
     final ncTeor = _ncTeorAtual;
-    final ncCtc = _ncCtcAtual;
+    final ncCtc = _percentualKObjetivo;
     final teorSuffix = _ncTeorManual ? '*' : '';
     final ctcSuffix = _ncCtcManual ? '*' : '';
 
     return [
-      _joinSegments([_extratorLabel, _d.label]),
-      _joinSegments([
-        if (ncTeor != null) 'NC ${_fmtNumber(ncTeor)} mg/dm³$teorSuffix',
-        if (ncCtc != null) 'NC ${_fmtNumber(ncCtc)}% CTC$ctcSuffix',
-      ]),
-      _joinSegments([modoCalculo, aplicacao]),
+      _joinSegments([_extratorLabel, _d.label, _camadaLabel]),
+      if (_corrigirSolo)
+        _joinSegments([
+          metodo,
+          if (_metodoCorrecao == MetodoCorrecaoK.nivelCritico && ncTeor != null)
+            'NC ${_fmtNumber(ncTeor)} mg/dm³$teorSuffix',
+          if (_metodoCorrecao == MetodoCorrecaoK.percentualKCtc &&
+              ncCtc != null)
+            'Alvo ${_fmtNumber(ncCtc)}% CTC$ctcSuffix',
+        ]),
+      _joinSegments([_modoLabelForPayload()]),
     ].where((line) => line.isNotEmpty).toList();
   }
 
@@ -767,75 +710,220 @@ class _PotassioCardState extends State<PotassioCard> {
           ],
         ),
         const SizedBox(height: AppDimens.sm),
-        _lbl('Critério NC'),
+        _lbl('Camada'),
         const SizedBox(height: AppDimens.xs),
-        _drop<CriterioNC>(
-          value: _criterio,
-          items: CriterioNC.values,
-          labelOf: (c) {
-            switch (c) {
-              case CriterioNC.teor:
-                return 'NC teor';
-              case CriterioNC.ctc:
-                return 'NC % CTC';
-              case CriterioNC.ambosUsarMaior:
-                return 'Ambos — usar o maior';
-            }
-          },
+        _drop<CamadaK>(
+          value: _camada,
+          items: CamadaK.values,
+          labelOf: (c) => c == CamadaK.c0a20 ? '0–20 cm' : '20–40 cm',
           onChanged: (v) => setState(() {
-            _criterio = v!;
+            _camada = v!;
             _emitChange();
           }),
         ),
         const SizedBox(height: AppDimens.sm),
-        _buildNcSection(),
+        _buildComposicaoCalculo(),
+        if (_corrigirSolo) ...[
+          const SizedBox(height: AppDimens.sm),
+          _lbl('Método de correção'),
+          const SizedBox(height: AppDimens.xs),
+          _metodoCorrecaoToggle(),
+          const SizedBox(height: AppDimens.sm),
+          _buildMetodoCorrecaoCampos(),
+        ],
         const SizedBox(height: AppDimens.sm),
-        _lbl('Modo de cálculo'),
-        const SizedBox(height: AppDimens.xs),
-        _drop<ModoCalculo>(
-          value: _modo,
-          items: ModoCalculo.values,
-          labelOf: (m) {
-            switch (m) {
-              case ModoCalculo.correcaoSolo:
-                return '⓪  Correção do solo';
-              case ModoCalculo.manutencao:
-                return 'Manutenção';
-              case ModoCalculo.exportacao:
-                return 'Exportação';
-            }
-          },
-          onChanged: (v) => setState(() {
-            _modo = v!;
-            _emitChange();
-          }),
-        ),
-        const SizedBox(height: AppDimens.sm),
-        _lbl('Modo de aplicação'),
-        const SizedBox(height: AppDimens.xs),
-        _drop<ModoAplicacao>(
-          value: _aplicacao,
-          items: ModoAplicacao.values,
-          labelOf: (a) => a.label,
-          onChanged: (v) => setState(() {
-            _aplicacao = v!;
-            _fekCtrl.text = v.fekDefault.toInt().toString();
-            _emitChange();
-          }),
-        ),
-        const SizedBox(height: AppDimens.sm),
-        _buildFekSection(),
-        const SizedBox(height: AppDimens.sm),
-        _buildAbsorcaoSecaoK(),
+        _cultivarRow(),
+        _buildCampoPercentualKSolo(),
+        if (_reposicaoPotassio != 'nenhuma') ...[
+          const SizedBox(height: AppDimens.sm),
+          _buildAbsorcaoSecaoK(),
+          const SizedBox(height: AppDimens.sm),
+          _buildIndicesReposicao(),
+          const SizedBox(height: AppDimens.sm),
+          _buildEficienciaSolo(),
+        ],
       ],
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // SEÇÃO NC — badges dinâmicos + chip "ambos"
-  // ══════════════════════════════════════════════════════════════════════════
+  Widget _buildComposicaoCalculo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.bgPrimary,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Correção do solo',
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Switch.adaptive(
+                value: _corrigirSolo,
+                activeThumbColor: AppColors.primary,
+                onChanged: (value) {
+                  setState(() => _corrigirSolo = value);
+                  _emitChange();
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        _lbl('Reposição da planta'),
+        const SizedBox(height: AppDimens.xs),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _reposicaoChip('nenhuma', 'Sem reposição'),
+            _reposicaoChip('exportacao', 'Exportação'),
+            _reposicaoChip('extracao', 'Extração'),
+          ],
+        ),
+      ],
+    );
+  }
 
-  Widget _buildNcSection() {
+  Widget _reposicaoChip(String value, String label) {
+    final selected = _reposicaoPotassio == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _reposicaoPotassio = value;
+          if (value == 'extracao' &&
+              (_kSoloCtrl.text.trim().isEmpty ||
+                  _parseDoubleOrNull(_kSoloCtrl.text) == 0)) {
+            _kSoloCtrl.text = '100';
+          }
+        });
+        _emitChange();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.borderSoft,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecond,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _metodoCorrecaoToggle() {
+    return Row(
+      children: [
+        Expanded(
+          child: _toggleBtnK(
+            label: 'Nível crítico',
+            selected: _metodoCorrecao == MetodoCorrecaoK.nivelCritico,
+            onTap: () {
+              setState(() => _metodoCorrecao = MetodoCorrecaoK.nivelCritico);
+              _emitChange();
+            },
+            isLeft: true,
+          ),
+        ),
+        Expanded(
+          child: _toggleBtnK(
+            label: '% K na CTC',
+            selected: _metodoCorrecao == MetodoCorrecaoK.percentualKCtc,
+            onTap: () {
+              setState(() => _metodoCorrecao = MetodoCorrecaoK.percentualKCtc);
+              _emitChange();
+            },
+            isLeft: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _toggleBtnK({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    required bool isLeft,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.borderSoft,
+          borderRadius: BorderRadius.horizontal(
+            left: isLeft ? const Radius.circular(8) : Radius.zero,
+            right: isLeft ? Radius.zero : const Radius.circular(8),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecond,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetodoCorrecaoCampos() {
+    final kAtual = _kAtualMgDm3();
+    final participacao = _participacaoKAtual();
+    final ctc = _ctcAtual();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (kAtual != null) ...[
+          _lbl('K atual da análise'),
+          const SizedBox(height: AppDimens.xs),
+          _readOnly('${_fmtNumber(kAtual)} mg/dm³'),
+          const SizedBox(height: AppDimens.sm),
+        ],
+        if (_metodoCorrecao == MetodoCorrecaoK.percentualKCtc &&
+            participacao != null) ...[
+          _lbl('% K atual na CTC'),
+          const SizedBox(height: AppDimens.xs),
+          _readOnly('${_fmtNumber(participacao)}%'),
+          const SizedBox(height: AppDimens.sm),
+        ],
+        if (_metodoCorrecao == MetodoCorrecaoK.nivelCritico)
+          _buildNcTeorSection()
+        else
+          _buildNcCtcSection(),
+        if (_metodoCorrecao == MetodoCorrecaoK.percentualKCtc &&
+            ctc != null) ...[
+          const SizedBox(height: AppDimens.sm),
+          _lbl('CTC utilizada no cálculo'),
+          const SizedBox(height: AppDimens.xs),
+          _readOnly('${_fmtNumber(ctc)} cmolc/dm³'),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNcTeorSection() {
     final isPlaceholder = _d.nc.placeholder;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,133 +931,234 @@ class _PotassioCardState extends State<PotassioCard> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // NC teor
-            if (_showTeor)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _lbl('NC teor (mg/dm³)'),
-                    const SizedBox(height: AppDimens.xs),
-                    _ncBadge(
-                      key: _ncBadgeKey,
-                      controller: _ncTeorCtrl,
-                      value: _ncTeorAtual,
-                      placeholder: '46',
-                      unit: isPlaceholder ? '*' : 'mg/dm³',
-                      manual: _ncTeorManual,
-                      isPlaceholder: isPlaceholder,
-                      onToggleManual: () {
-                        setState(() {
-                          _ncTeorManual = !_ncTeorManual;
-                          if (_ncTeorManual) {
-                            _ncTeorCtrl.text =
-                                _fmtNumber(_ncTeorAutomatico() ?? 46);
-                          } else {
-                            _resetNcTeorParaAutomatico();
-                          }
-                        });
-                        _emitChange();
-                      },
-                      onRestore: () {
-                        setState(_resetNcTeorParaAutomatico);
-                        _emitChange();
-                      },
-                    ),
-                  ],
-                ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _lbl('NC de K (mg/dm³)'),
+                  const SizedBox(height: AppDimens.xs),
+                  _ncBadge(
+                    key: _ncBadgeKey,
+                    controller: _ncTeorCtrl,
+                    value: _ncTeorAtual,
+                    placeholder: '46',
+                    unit: isPlaceholder ? 'mg/dm³ *' : 'mg/dm³',
+                    manual: _ncTeorManual,
+                    isPlaceholder: isPlaceholder,
+                    onToggleManual: () {
+                      setState(() {
+                        _ncTeorManual = !_ncTeorManual;
+                        if (_ncTeorManual) {
+                          _ncTeorCtrl.text =
+                              _fmtNumber(_ncTeorAutomatico() ?? 46);
+                        } else {
+                          _resetNcTeorParaAutomatico();
+                        }
+                      });
+                      _emitChange();
+                    },
+                    onRestore: () {
+                      setState(_resetNcTeorParaAutomatico);
+                      _emitChange();
+                    },
+                  ),
+                ],
               ),
-            if (_showTeor && _showCtc) const SizedBox(width: 12),
-            // NC % CTC
-            if (_showCtc)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _lbl('NC % CTC'),
-                    const SizedBox(height: AppDimens.xs),
-                    _ncBadge(
-                      controller: _ncCtcCtrl,
-                      value: _ncCtcAtual,
-                      placeholder: '3',
-                      unit: isPlaceholder ? '*' : '%',
-                      manual: _ncCtcManual,
-                      isPlaceholder: isPlaceholder,
-                      onToggleManual: () {
-                        setState(() {
-                          _ncCtcManual = !_ncCtcManual;
-                          if (_ncCtcManual) {
-                            _ncCtcCtrl.text =
-                                _fmtNumber(_ncCtcAutomatico() ?? 3);
-                          } else {
-                            _resetNcCtcParaAutomatico();
-                          }
-                        });
-                        _emitChange();
-                      },
-                      onRestore: () {
-                        setState(_resetNcCtcParaAutomatico);
-                        _emitChange();
-                      },
-                    ),
-                  ],
-                ),
-              ),
+            ),
             const SizedBox(width: 8),
             _infoBtn(_d.tooltipText),
           ],
         ),
-
-        // Chip verde "usar o maior"
-        if (_isAmbos) ...[
-          const SizedBox(height: AppDimens.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.bgSuccess,
-              borderRadius: BorderRadius.circular(7),
-              border: Border.all(
-                  color: AppColors.success.withValues(alpha: 0.5), width: 1),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle_outline_rounded,
-                    size: 13, color: AppColors.success),
-                SizedBox(width: 5),
-                Flexible(
-                  child: Text(
-                    'O app calcula pelos dois critérios e usa a maior dose',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-
-        // Nota placeholder UFLA
-        if (isPlaceholder)
-          const Padding(
-            padding: EdgeInsets.only(top: 6),
-            child: Text(
-              '* Valores NC provisórios — tabela CFSEMG/UFLA pendente.',
-              style: TextStyle(
-                fontSize: 10.5,
-                color: AppColors.warning,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
+        if (_ncTeorError != null) _inlineError(_ncTeorError!),
       ],
     );
   }
 
-  // ─── Badge NC ─────────────────────────────────────────────────────────────
+  Widget _buildNcCtcSection() {
+    final isPlaceholder = _d.nc.placeholder;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _lbl('% K objetivo na CTC'),
+                  const SizedBox(height: AppDimens.xs),
+                  _ncBadge(
+                    controller: _ncCtcCtrl,
+                    value: _percentualKObjetivo,
+                    placeholder: '3',
+                    unit: isPlaceholder ? '% *' : '%',
+                    manual: _ncCtcManual,
+                    isPlaceholder: isPlaceholder,
+                    onToggleManual: () {
+                      setState(() {
+                        _ncCtcManual = !_ncCtcManual;
+                        if (_ncCtcManual) {
+                          _ncCtcCtrl.text = _fmtNumber(_ncCtcAutomatico() ?? 3);
+                        } else {
+                          _resetNcCtcParaAutomatico();
+                        }
+                      });
+                      _emitChange();
+                    },
+                    onRestore: () {
+                      setState(_resetNcCtcParaAutomatico);
+                      _emitChange();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _infoBtn(_d.tooltipText),
+          ],
+        ),
+        if (_ncCtcError != null) _inlineError(_ncCtcError!),
+      ],
+    );
+  }
+
+  Widget _buildCampoPercentualKSolo() {
+    final mostrarCampo = _reposicaoPotassio == 'extracao';
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: mostrarCampo
+          ? Column(
+              key: const ValueKey('campo_k_solo'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Text(
+                  '% K DO SOLO CONSIDERADO',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _numField(_kSoloCtrl, hint: '100,0', onChanged: _emitChange),
+                if (_kSoloError != null) _inlineError(_kSoloError!),
+                const SizedBox(height: 4),
+                Text(
+                  '100% = usa tudo do solo · 0% = ignora o solo',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecond,
+                  ),
+                ),
+              ],
+            )
+          : const SizedBox.shrink(key: ValueKey('campo_k_solo_hidden')),
+    );
+  }
+
+  Widget _buildIndicesReposicao() {
+    final isExportacao = _reposicaoPotassio == 'exportacao';
+    final ctrl = isExportacao ? _indiceExportacaoCtrl : _indiceExtracaoCtrl;
+    final error = isExportacao ? _indiceExportacaoError : _indiceExtracaoError;
+    final label = isExportacao
+        ? 'Índice de exportação (kg K₂O/t)'
+        : 'Índice de extração (kg K₂O/t)';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _lbl(label),
+        const SizedBox(height: AppDimens.xs),
+        _numField(ctrl, hint: '0,0', onChanged: _emitChange),
+        if (error != null) _inlineError(error),
+        const SizedBox(height: 4),
+        Text(
+          'Opcional quando a referência de absorção estiver configurada.',
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecond),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEficienciaSolo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _lbl('Ajuste de eficiência no solo (%)'),
+        const SizedBox(height: AppDimens.xs),
+        _numField(_eficienciaSoloCtrl, hint: '15', onChanged: _emitChange),
+        if (_eficienciaError != null) _inlineError(_eficienciaError!),
+        const SizedBox(height: 4),
+        Text(
+          '0–100% · acréscimo percentual sobre a necessidade base',
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecond),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAbsorcaoSecaoK() {
+    const tiposDisponiveis = ['Autores', 'Guidorizzi', 'Cultivar'];
+    final fontes = _fontesParaTipoK(_potassioTipoFonte);
+    final fonteAtual = fontes.contains(_potassioFonteNome)
+        ? _potassioFonteNome!
+        : (fontes.isNotEmpty ? fontes.first : '');
+    final labelFonte = _potassioTipoFonte == 'Guidorizzi'
+        ? 'Tecnologia'
+        : _potassioTipoFonte == 'Cultivar'
+            ? 'Cultivar'
+            : 'Autor';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'REFERÊNCIA DE ABSORÇÃO',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecond,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 6),
+        _lbl('Tipo de Fonte'),
+        const SizedBox(height: AppDimens.xs),
+        _drop<String>(
+          value: _potassioTipoFonte,
+          items: tiposDisponiveis,
+          labelOf: (t) => t,
+          onChanged: (v) {
+            if (v == null) return;
+            final novasFontes = _fontesParaTipoK(v);
+            setState(() {
+              _potassioTipoFonte = v;
+              _potassioFonteNome =
+                  novasFontes.isNotEmpty ? novasFontes.first : null;
+            });
+            _emitChange();
+          },
+        ),
+        const SizedBox(height: AppDimens.sm),
+        _lbl(labelFonte),
+        const SizedBox(height: AppDimens.xs),
+        _drop<String>(
+          value: fonteAtual.isNotEmpty
+              ? fonteAtual
+              : (fontes.isNotEmpty ? fontes.first : ''),
+          items: fontes.isNotEmpty ? fontes : const [''],
+          labelOf: (t) => t,
+          onChanged: (v) {
+            if (v == null || v.isEmpty) return;
+            setState(() => _potassioFonteNome = v);
+            _emitChange();
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _ncBadge({
     Key? key,
@@ -1073,9 +1262,7 @@ class _PotassioCardState extends State<PotassioCard> {
             onTap: onRestore,
             child: Text(
               'Restaurar valor automático',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.primary,
-              ),
+              style: AppTextStyles.caption.copyWith(color: AppColors.primary),
             ),
           ),
         ],
@@ -1083,115 +1270,38 @@ class _PotassioCardState extends State<PotassioCard> {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // SEÇÃO FEK
-  // ══════════════════════════════════════════════════════════════════════════
-  //
-  // FEK = fator f da fórmula ADUBAÇÃO = (PLANTA - SOLO) × f (Vitti, 2011)
-  // É o único campo editável do card: depende do fertilizante e do manejo,
-  // não de uma referência científica fixa.
-  // O valor padrão é preenchido automaticamente ao trocar o modo de aplicação.
-
-  Widget _buildFekSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  Widget _cultivarRow() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.bgSecondary,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
           children: [
-            _lbl('FEK (%)'),
-            const SizedBox(width: 6),
-            _infoBtn(
-              'Fator de Eficiência do fertilizante potassado.\n'
-              'Representa o "f" da fórmula de Vitti (2011):\n'
-              'ADUBAÇÃO = (PLANTA − SOLO) × f\n\n'
-              'Defaults por modo de aplicação:\n'
-              '· Lanço incorporado → 65%\n'
-              '· Lanço plantio direto → 50%\n'
-              '· Sulco de plantio → 80%\n'
-              '· Cobertura → 55%\n\n'
-              'Edite se o fertilizante ou as condições forem diferentes.',
+            Text(
+              'Cultura: ${widget.cultura ?? 'Soja'}',
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecond),
+            ),
+            const Spacer(),
+            const Text(
+              'Culturas',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: AppDimens.xs),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: AppColors.bgPrimary,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border, width: 1),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _fekCtrl,
-                  onChanged: (_) => _emitChange(),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(7),
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                  ],
-                  style: const TextStyle(
-                      fontSize: 15, color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    isDense: true,
-                    isCollapsed: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              // Botão reset para o padrão do modo atual
-              GestureDetector(
-                onTap: () => setState(() {
-                  _fekCtrl.text = _aplicacao.fekDefault.toInt().toString();
-                  _emitChange();
-                }),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgSecondary,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.borderSoft),
-                  ),
-                  child: Text(
-                    'Padrão: ${_aplicacao.fekDefault.toInt()}%',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: AppColors.textSecond,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Preenchido automaticamente pelo modo de aplicação. Edite se necessário.',
-          style: TextStyle(
-            fontSize: 10.5,
-            color: AppColors.textSecond,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-      ],
-    );
-  }
+      );
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // TOOLTIP ⓘ (overlay iOS)
-  // ══════════════════════════════════════════════════════════════════════════
+  Widget _inlineError(String message) => Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          message,
+          style: AppTextStyles.caption.copyWith(color: AppColors.error),
+        ),
+      );
 
   Widget _infoBtn(String msg) => GestureDetector(
         onTap: () => _toggleTip(msg),
@@ -1268,7 +1378,10 @@ class _PotassioCardState extends State<PotassioCard> {
                     child: Text(
                       msg,
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.white, height: 1.5),
+                        fontSize: 12,
+                        color: Colors.white,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                   Center(
@@ -1292,15 +1405,14 @@ class _PotassioCardState extends State<PotassioCard> {
     _tip = null;
   }
 
-  // ─── Helpers UI ───────────────────────────────────────────────────────────
-
   Widget _lbl(String t) => Text(
         t,
         style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecond,
-            letterSpacing: 0.3),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textSecond,
+          letterSpacing: 0.3,
+        ),
       );
 
   Widget _readOnly(String v) => Container(
@@ -1312,8 +1424,10 @@ class _PotassioCardState extends State<PotassioCard> {
           border: Border.all(color: AppColors.borderSoft, width: 1),
         ),
         alignment: Alignment.centerLeft,
-        child: Text(v,
-            style: const TextStyle(fontSize: 15, color: AppColors.textSecond)),
+        child: Text(
+          v,
+          style: const TextStyle(fontSize: 15, color: AppColors.textSecond),
+        ),
       );
 
   Widget _drop<T>({
@@ -1334,14 +1448,58 @@ class _PotassioCardState extends State<PotassioCard> {
           child: DropdownButton<T>(
             value: value,
             isExpanded: true,
-            icon: const Icon(Icons.keyboard_arrow_down,
-                color: AppColors.textSecond, size: 20),
+            icon: const Icon(
+              Icons.keyboard_arrow_down,
+              color: AppColors.textSecond,
+              size: 20,
+            ),
             style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
             onChanged: onChanged,
             items: items
-                .map((e) =>
-                    DropdownMenuItem<T>(value: e, child: Text(labelOf(e))))
+                .map(
+                  (e) => DropdownMenuItem<T>(
+                    value: e,
+                    child: Text(labelOf(e)),
+                  ),
+                )
                 .toList(),
+          ),
+        ),
+      );
+
+  Widget _numField(
+    TextEditingController ctrl, {
+    String? hint,
+    VoidCallback? onChanged,
+  }) =>
+      Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.bgPrimary,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border, width: 1),
+        ),
+        child: TextField(
+          controller: ctrl,
+          onChanged: (_) => onChanged?.call(),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(7),
+            FilteringTextInputFormatter.allow(RegExp(r'[\d,\.]')),
+          ],
+          style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            isDense: true,
+            isCollapsed: true,
+            contentPadding: EdgeInsets.zero,
+            hintText: hint,
           ),
         ),
       );
@@ -1354,7 +1512,8 @@ String _joinSegments(Iterable<String> values) {
       .join(' · ');
 }
 
-String _fmtNumber(double value) {
+String _fmtNumber(double? value, {bool emptyWhenNull = false}) {
+  if (value == null) return emptyWhenNull ? '' : '';
   final fixed =
       value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
   return fixed.replaceAll('.', ',');
@@ -1372,19 +1531,6 @@ double? _numOrNull(dynamic value) {
   if (value is String) return _parseDoubleOrNull(value);
   return null;
 }
-
-String _labelModoCalculo(ModoCalculo modo) {
-  switch (modo) {
-    case ModoCalculo.correcaoSolo:
-      return 'Correção';
-    case ModoCalculo.manutencao:
-      return 'Manutenção';
-    case ModoCalculo.exportacao:
-      return 'Exportação';
-  }
-}
-
-// ─── Seta tooltip ─────────────────────────────────────────────────────────────
 
 class _ArrowDown extends CustomPainter {
   @override

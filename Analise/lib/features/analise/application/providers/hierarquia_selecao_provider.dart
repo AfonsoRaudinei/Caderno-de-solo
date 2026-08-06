@@ -89,9 +89,8 @@ class HierarquiaSelecaoState {
     return HierarquiaSelecaoState(
       clientes: clientes ?? this.clientes,
       clienteId: clearCliente ? null : clienteId ?? this.clienteId,
-      fazendaId: clearFazenda || clearCliente
-          ? null
-          : fazendaId ?? this.fazendaId,
+      fazendaId:
+          clearFazenda || clearCliente ? null : fazendaId ?? this.fazendaId,
       talhaoId: clearTalhao || clearFazenda || clearCliente
           ? null
           : talhaoId ?? this.talhaoId,

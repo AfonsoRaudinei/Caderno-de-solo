@@ -42,7 +42,8 @@ void main() {
   group('ClienteDetailTab', () {
     test('resolve aba a partir de query', () {
       expect(ClienteDetailTab.fromQuery('analises'), ClienteDetailTab.analises);
-      expect(ClienteDetailTab.fromQuery('recomendacao'), ClienteDetailTab.recomendacoes);
+      expect(ClienteDetailTab.fromQuery('recomendacao'),
+          ClienteDetailTab.recomendacoes);
       expect(ClienteDetailTab.fromQuery(null), ClienteDetailTab.resumo);
     });
   });

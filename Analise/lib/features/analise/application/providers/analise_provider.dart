@@ -220,7 +220,8 @@ class AnaliseNotifier extends _$AnaliseNotifier {
     );
   }
 
-  Future<({int reparadas, int pendentes, int falhas})> _persistirMigracaoVinculos(
+  Future<({int reparadas, int pendentes, int falhas})>
+      _persistirMigracaoVinculos(
     List<AnaliseSolo> reparos,
     List<AnaliseSolo> pendentes,
   ) async {
@@ -436,13 +437,12 @@ final analisesVisiveisProvider = Provider<List<AnaliseSolo>>((ref) {
 /// Análises vinculadas a um cliente (FK, índice `analiseIds` ou nome compatível).
 final analisesPorClienteProvider =
     Provider.family<List<AnaliseSolo>, String>((ref, clienteId) {
-  final analises =
-      ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
+  final analises = ref.watch(analiseNotifierProvider).valueOrNull ?? const [];
   final cliente = ref.watch(clienteProvider).clienteSelecionado;
   final normalizedId = clienteId.trim();
-  final analiseIds = cliente?.id == normalizedId ? cliente!.analiseIds : const [];
-  final clienteNome =
-      cliente?.id == normalizedId ? cliente!.nome : '';
+  final analiseIds =
+      cliente?.id == normalizedId ? cliente!.analiseIds : const [];
+  final clienteNome = cliente?.id == normalizedId ? cliente!.nome : '';
 
   return ClienteAnalisesFilter.filtrar(
     analises: analises,

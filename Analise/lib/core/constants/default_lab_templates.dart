@@ -3,7 +3,6 @@ import 'package:soloforte/domain/entities/lab_template.dart';
 /// Templates padrao dos laboratorios principais.
 /// Carregados automaticamente na primeira inicializacao do app.
 final List<LabTemplate> defaultLabTemplates = [
-
   // IBRA -- Instituto Brasileiro de Analises
   // Unidades confirmadas nos PDFs reais (OS 237526 e 235421)
   LabTemplate(
@@ -306,5 +305,4 @@ final List<LabTemplate> defaultLabTemplates = [
     ativo: true,
     createdAt: DateTime(2025, 1, 1),
   ),
-
 ];

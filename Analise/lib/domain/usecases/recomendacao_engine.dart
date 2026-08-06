@@ -10,9 +10,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:soloforte/domain/entities/analise_entity.dart';
 import 'package:soloforte/domain/entities/resultado_gesso.dart';
 import 'package:soloforte/domain/formulas/calcario_formula.dart';
+import 'package:soloforte/domain/formulas/conversoes.dart';
 import 'package:soloforte/domain/formulas/fosforo_formula.dart';
 import 'package:soloforte/domain/formulas/gesso_engine.dart';
 import 'package:soloforte/domain/formulas/potassio_formula.dart';
+import 'package:soloforte/domain/usecases/calcular_micronutrientes_recomendacao_usecase.dart';
 import 'package:soloforte/domain/formulas/types/calcario_input.dart';
 import 'package:soloforte/domain/formulas/types/fosforo_input.dart';
 import 'package:soloforte/domain/formulas/types/gesso_input.dart';
@@ -48,6 +50,30 @@ class MicroResultado with _$MicroResultado {
     /// Nível crítico de referência
     required double nc,
 
+    /// Déficit (NC − teor atual), limitado a zero
+    @Default(0) double deficit,
+
+    /// Correção do solo (g/ha elemento), após eficiência solo
+    @Default(0) double correcaoSolo,
+
+    /// Produção esperada (t/ha)
+    @Default(0) double producaoTha,
+
+    /// Extração calculada (g/ha)
+    @Default(0) double extracao,
+
+    /// Exportação calculada (g/ha)
+    @Default(0) double exportacao,
+
+    /// Regra Planta ou Grão
+    @Default('') String regraUtilizada,
+
+    /// Eficiência da via aplicada (%)
+    @Default(0) double eficienciaAplicada,
+
+    /// Necessidade do nutriente (g/ha elemento)
+    @Default(0) double necessidadeNutriente,
+
     /// Dose recomendada do nutriente puro
     required double dose,
 
@@ -66,6 +92,12 @@ class MicroResultado with _$MicroResultado {
     /// Citação científica da referência usada
     String? referencia,
     @Default([]) List<String> avisosNutriente,
+    @Default([]) List<String> memoriaCalculo,
+    @Default('') String grupoNome,
+    String? grupoId,
+    @Default('%') String concentracaoUnidade,
+    @Default(0) double doseMinima,
+    @Default(0) double doseMaxima,
   }) = _MicroResultado;
 }
 
@@ -248,10 +280,14 @@ class RecomendacaoEngine {
       limiteKCa: configAntagonismos.limiteKCa,
     );
 
-    final microsResultado = calcularMicros(micros: micros, analise: analise);
-    final gruposMicros = _asListMap(micros['grupos']);
-    final gruposResultado =
-        calcularGrupos(grupos: gruposMicros, micros: microsResultado);
+    final microsCalculados =
+        const CalcularMicronutrientesRecomendacaoUsecase().execute(
+      microsConfig: micros,
+      analise: analise,
+      producaoEsperadaTha: calibracao.produtividadeEsperadaTha,
+    );
+    final microsResultado = microsCalculados.micros;
+    final gruposResultado = microsCalculados.grupos;
 
     final relacaoCaMg = analise.mg > 0 ? analise.ca / analise.mg : 0.0;
     // Fórmula: CaO% × dose(t/ha) × 0.714(CaO→Ca) × (10/2) = cmolc/dm³ aportado
@@ -329,27 +365,10 @@ class RecomendacaoEngine {
         }
       }
 
-      // Micronutrientes por grupo (informativo; não soma na dose solo)
-      for (final grupo in gruposMicros) {
-        final gMap = _asMap(grupo);
-        final tipoFonte = _string(gMap['microGrupoTipoFonte'], '');
-        final fonteNome = _string(gMap['microGrupoFonteNome'], '');
-        final elementosGrupo = (gMap['elementos'] as List?)
-                ?.map((e) => e.toString())
-                .toList(growable: false) ??
-            const <String>[];
-        if (tipoFonte.isEmpty || fonteNome.isEmpty) continue;
-        for (final simbolo in elementosGrupo) {
-          final absValor = _getAbsorcaoKgT(
-            tipoFonte: tipoFonte,
-            fonteNome: fonteNome,
-            modoAbsorcao: 'extracao',
-            nutriente: simbolo,
-          );
-          if (absValor == null) continue;
-          final doseGrupoKgHa = (absValor / 1000) * prodTha;
-          doseAbsorcaoMicros[simbolo] =
-              (doseAbsorcaoMicros[simbolo] ?? 0) + doseGrupoKgHa;
+      // Micronutrientes — extração cadastrada (informativo)
+      for (final m in microsResultado) {
+        if (m.extracao > 0) {
+          doseAbsorcaoMicros[m.elemento] = m.extracao / 1000.0;
         }
       }
     }
@@ -753,13 +772,15 @@ class RecomendacaoEngine {
             ) ??
             _extracaoK2O(cultura));
 
+    final profundidadeCm = _profundidadePotassioCm(potassio);
+
     final resultado = PotassioFormula.recomendacaoComponentes(
       corrigirSolo: corrigirSolo,
       metodoCorrecao: metodoCorrecao,
       reposicao: reposicao,
       ctc: analise.ctc,
       kAtualCmolc: analise.k,
-      kAtualMgDm3: analise.k * 391.0,
+      kAtualMgDm3: analise.k * Conversoes.kMgDm3Factor,
       argilaPercent: analise.argila,
       ncTeorMgDm3: ncTeor,
       percentualKObjetivoCtc: percentualKObjetivo,
@@ -772,6 +793,8 @@ class RecomendacaoEngine {
       exportacaoK2O: exportacaoK2O,
       extracaoK2O: extracaoK2O,
       ajusteEficienciaSolo: ajusteEficiencia,
+      profundidadeCm: profundidadeCm,
+      producaoEsperadaTha: produtividadeEsperadaTha ?? 0,
     );
 
     final criterioResumo =
@@ -836,6 +859,16 @@ class RecomendacaoEngine {
     return MetodoCorrecaoPotassio.nivelCritico;
   }
 
+  int _profundidadePotassioCm(Map<String, dynamic> potassio) {
+    final camada = _string(potassio['camada'], '0-20');
+    final match = RegExp(r'(\d+)\s*-\s*(\d+)').firstMatch(camada);
+    if (match != null) {
+      final fim = int.tryParse(match.group(2) ?? '');
+      if (fim != null && fim > 0) return fim;
+    }
+    return 20;
+  }
+
   double _eficienciaSoloPotassio(Map<String, dynamic> potassio) {
     if (potassio.containsKey('ajusteEficienciaSolo') &&
         potassio['ajusteEficienciaSolo'] != null) {
@@ -891,102 +924,38 @@ class RecomendacaoEngine {
     return pKgT * prodTha * 2.29;
   }
 
-  /// Calcula doses de micronutrientes elemento a elemento.
-  /// Migração de _calcularMicros (RE3).
+  /// Calcula doses de micronutrientes a partir da calibração cadastrada.
   List<MicroResultado> calcularMicros({
     required Map<String, dynamic> micros,
     required AnaliseEntity analise,
+    double? producaoEsperadaTha,
+    List<String>? gruposIdsSelecionados,
   }) {
-    final elementos = _asMap(micros['elementos']);
-    final resultados = <MicroResultado>[];
-    for (final entry in elementos.entries) {
-      final simbolo = entry.key;
-      final config = _asMap(entry.value);
-      final via = _string(config['viaAplicacao'], 'Solo (correção)');
-
-      final teor = via.contains('Solo')
-          ? _num(config['teorFonteSolo'], 0)
-          : _num(config['teorFonteFoliar'], 0);
-
-      final eficiencia = via.contains('Solo')
-          ? _num(config['eficienciaSolo'], 0)
-          : _num(config['eficienciaFoliar'], 0);
-
-      final nc = _num(config['ncSolo']);
-      final valorAtual = _valorMicroAnalise(simbolo, analise);
-
-      final doseElemento = via.contains('Solo')
-          ? ((nc - valorAtual).clamp(0, double.infinity) *
-              200 *
-              (_num(config['percentualCorrecaoSolo'], 100) / 100))
-          : _num(config['doseElementoFoliar'], 0);
-
-      if (doseElemento <= 0) continue;
-
-      final doseProdutoCalc = (teor > 0 && eficiencia > 0)
-          ? doseElemento / (teor / 100) / (eficiencia / 100)
-          : 0.0;
-
-      final doseProdutoLabelText = doseProdutoCalc >= 1000
-          ? '${_fmt(doseProdutoCalc / 1000, 2)} kg/ha produto'
-          : '${_fmt(doseProdutoCalc, 1)} g/ha produto';
-
-      resultados.add(
-        MicroResultado(
-          elemento: simbolo,
-          valorAtual: valorAtual,
-          nc: nc,
-          dose: doseElemento,
-          unidade: 'g/ha',
-          deficiente: valorAtual < nc,
-          via: via,
-          fonte: via.contains('Solo')
-              ? _string(config['fonteSolo'], 'Fonte solo')
-              : _string(config['fonteFoliar'], 'Fonte foliar'),
-          doseProduto: doseProdutoCalc,
-          doseProdutoLabel: doseProdutoLabelText,
-        ),
-      );
-    }
-    return resultados;
+    return const CalcularMicronutrientesRecomendacaoUsecase()
+        .execute(
+          microsConfig: micros,
+          analise: analise,
+          producaoEsperadaTha: producaoEsperadaTha,
+          gruposIdsSelecionados: gruposIdsSelecionados,
+        )
+        .micros;
   }
 
   /// Agrupa micronutrientes em grupos de aplicação.
-  /// Migração de _calcularGrupos (RE3).
   List<GrupoResultado> calcularGrupos({
     required List<Map<String, dynamic>> grupos,
     required List<MicroResultado> micros,
+    required Map<String, dynamic> microsConfig,
+    required AnaliseEntity analise,
+    double? producaoEsperadaTha,
   }) {
-    final resultados = <GrupoResultado>[];
-    for (final grupo in grupos) {
-      final elementosGrupo = List<String>.from(
-          (grupo['elementos'] as List?)?.map((e) => e.toString()) ?? const []);
-
-      final microsGrupo = micros
-          .where((item) => elementosGrupo.contains(item.elemento))
-          .toList();
-      if (microsGrupo.isEmpty) continue;
-
-      final doseProdutoKg =
-          microsGrupo.fold<double>(0, (sum, item) => sum + item.doseProduto) /
-              1000;
-
-      final fornecimento = microsGrupo
-          .map((item) => '${item.elemento} ${_fmt(item.dose, 1)}g/ha')
-          .join(' · ');
-
-      resultados.add(
-        GrupoResultado(
-          nomeGrupo: _string(grupo['nome'], 'Grupo'),
-          micros: microsGrupo,
-          via: _string(grupo['via'], 'Foliar'),
-          produto: _string(grupo['produto'], 'Mistura manual'),
-          doseProdutoKgLabel: '${_fmt(doseProdutoKg, 2)} kg/ha',
-          fornecimento: fornecimento,
-        ),
-      );
-    }
-    return resultados;
+    return const CalcularMicronutrientesRecomendacaoUsecase()
+        .execute(
+          microsConfig: microsConfig,
+          analise: analise,
+          producaoEsperadaTha: producaoEsperadaTha,
+        )
+        .grupos;
   }
 }
 
@@ -996,23 +965,6 @@ Map<String, dynamic> _asMap(dynamic value) {
     return value.map((key, val) => MapEntry(key.toString(), val));
   }
   return <String, dynamic>{};
-}
-
-double _valorMicroAnalise(String simbolo, AnaliseEntity analise) {
-  switch (simbolo) {
-    case 'B':
-      return analise.b;
-    case 'Cu':
-      return analise.cu;
-    case 'Fe':
-      return analise.fe;
-    case 'Mn':
-      return analise.mn;
-    case 'Zn':
-      return analise.zn;
-    default:
-      return 0;
-  }
 }
 
 String _fmt(double value, [int decimals = 2]) {
@@ -1089,15 +1041,6 @@ String _mesSeguinte(String mes) {
   return meses[(index + 1) % 12];
 }
 
-List<Map<String, dynamic>> _asListMap(dynamic value) {
-  if (value is List) {
-    return value
-        .whereType<Map>()
-        .map((entry) => entry.map((key, val) => MapEntry(key.toString(), val)))
-        .toList();
-  }
-  return <Map<String, dynamic>>[];
-}
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers privados do arquivo (não exportados)
 // ─────────────────────────────────────────────────────────────────────────────

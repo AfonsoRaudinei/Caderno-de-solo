@@ -29,11 +29,11 @@ class CropPhenologyTracker extends StatefulWidget {
 
 class _CropPhenologyTrackerState extends State<CropPhenologyTracker> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controladores para os campos numéricos
   final _nBalanceController = TextEditingController();
   final _soilPHController = TextEditingController();
-  
+
   // Estado para o estágio da soja
   SojaStage? _selectedStage;
 
@@ -49,7 +49,7 @@ class _CropPhenologyTrackerState extends State<CropPhenologyTracker> {
       // Lógica de cálculo (exemplo simplificado)
       final nBalance = double.tryParse(_nBalanceController.text) ?? 0.0;
       final ph = double.tryParse(_soilPHController.text) ?? 0.0;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -84,7 +84,7 @@ class _CropPhenologyTrackerState extends State<CropPhenologyTracker> {
                     ),
               ),
               const SizedBox(height: 24),
-              
+
               // Dropdown para Estágio da Soja
               DropdownButtonFormField<SojaStage>(
                 initialValue: _selectedStage,
@@ -108,11 +108,12 @@ class _CropPhenologyTrackerState extends State<CropPhenologyTracker> {
                     value == null ? 'Selecione um estágio' : null,
               ),
               const SizedBox(height: 16),
-              
+
               // Campo para Balanço de Nitrogênio (N)
               TextFormField(
                 controller: _nBalanceController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Balanço de Nitrogênio (N_balance)',
                   prefixIcon: Icon(Icons.science),
@@ -130,11 +131,12 @@ class _CropPhenologyTrackerState extends State<CropPhenologyTracker> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               // Campo para pH do Solo
               TextFormField(
                 controller: _soilPHController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'pH do Solo (soilPH)',
                   prefixIcon: Icon(Icons.water_drop),
@@ -155,7 +157,7 @@ class _CropPhenologyTrackerState extends State<CropPhenologyTracker> {
                 },
               ),
               const SizedBox(height: 32),
-              
+
               // Botão Calcular Adubo
               FilledButton.icon(
                 onPressed: _calcularAdubo,

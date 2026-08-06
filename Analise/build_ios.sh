@@ -9,6 +9,9 @@ flutter clean
 echo "📦 Atualizando dependências..."
 flutter pub get
 
+echo "🧱 Product modules guard (anti-regressão Clientes)..."
+./tool/product_modules_guard.sh
+
 echo "🛡️ Executando Release Gate..."
 ./tool/release_gate.sh
 
@@ -49,7 +52,7 @@ fi
 
 BUILD_ARGS=(
   --release
-  --export-method app-store
+  --export-options-plist tool/export_options_app_store.plist
   --dart-define=ANALISE_MOCK_MODE=false
   --build-name "$VERSION_NAME"
   --build-number "$NEW_BUILD_NUMBER"

@@ -28,36 +28,37 @@ class LabTemplate {
   final bool entregaVPercent;
   final bool entregaMPercent;
   final bool entregaHidrogenioPuro; // H separado de H+Al
-  final bool entregaH;              // H puro entregue (alias/flag)
-  final bool entregaCtcEfetiva;     // Sellar extrai CTCt -- outros calculam
+  final bool entregaH; // H puro entregue (alias/flag)
+  final bool entregaCtcEfetiva; // Sellar extrai CTCt -- outros calculam
 
   // Micronutrientes -- qual metodo o lab usa
   final bool entregaMicroMehlich;
   final bool entregaMicroDtpa;
 
   // Campos opcionais que o lab pode ou nao entregar
-  final bool entregaPhAgua;       // pH em agua
-  final bool entregaPhSMP;        // pH SMP
-  final bool entregaCaMaisMg;     // Ca+Mg somado (Exata)
-  final bool entregaKNH4Cl;       // K em NH4Cl / mg/dm3 (Exata, MB)
-  final bool entregaMo;           // Molibdenio no layout
-  final bool entregaCo;           // Cobalto no layout
+  final bool entregaPhAgua; // pH em agua
+  final bool entregaPhSMP; // pH SMP
+  final bool entregaCaMaisMg; // Ca+Mg somado (Exata)
+  final bool entregaKNH4Cl; // K em NH4Cl / mg/dm3 (Exata, MB)
+  final bool entregaMo; // Molibdenio no layout
+  final bool entregaCo; // Cobalto no layout
 
   // Campos exclusivos Sellar
-  final bool entregaPTotal;              // P Total em % -- Sellar
-  final bool entregaClassificacaoTextura;// Classificacao textural -- Sellar
-  final bool entregaTipoSoloMapa;        // Tipo Solo MAPA IN02/2008 -- Sellar
+  final bool entregaPTotal; // P Total em % -- Sellar
+  final bool entregaClassificacaoTextura; // Classificacao textural -- Sellar
+  final bool entregaTipoSoloMapa; // Tipo Solo MAPA IN02/2008 -- Sellar
   final bool separaSolicitanteProprietario; // Solicitante != Proprietario
 
   // Campos exclusivos Solum
-  final bool entregaTextura;              // Entrega textura -- Solum (false = sem textura)
-  final bool micronutrientesPorAmostra;   // Micros por amostra -- Solum
-  final bool identificacaoComposta;       // ID composta (codigo interno + externo) -- Solum
+  final bool entregaTextura; // Entrega textura -- Solum (false = sem textura)
+  final bool micronutrientesPorAmostra; // Micros por amostra -- Solum
+  final bool
+      identificacaoComposta; // ID composta (codigo interno + externo) -- Solum
 
   // Layout do laudo
-  final bool umAmostraPorLaudo;       // MB = true, outros = false
+  final bool umAmostraPorLaudo; // MB = true, outros = false
   final bool entregaAreiasDetalhadas; // Areia grossa + fina separadas
-  final bool entregaCascalho;         // Campo cascalho no layout
+  final bool entregaCascalho; // Campo cascalho no layout
 
   // Metadados
   final bool ativo;
@@ -181,7 +182,8 @@ class LabTemplate {
       entregaSB: entregaSB ?? this.entregaSB,
       entregaVPercent: entregaVPercent ?? this.entregaVPercent,
       entregaMPercent: entregaMPercent ?? this.entregaMPercent,
-      entregaHidrogenioPuro: entregaHidrogenioPuro ?? this.entregaHidrogenioPuro,
+      entregaHidrogenioPuro:
+          entregaHidrogenioPuro ?? this.entregaHidrogenioPuro,
       entregaH: entregaH ?? this.entregaH,
       entregaCtcEfetiva: entregaCtcEfetiva ?? this.entregaCtcEfetiva,
       entregaMicroMehlich: entregaMicroMehlich ?? this.entregaMicroMehlich,
@@ -193,14 +195,19 @@ class LabTemplate {
       entregaMo: entregaMo ?? this.entregaMo,
       entregaCo: entregaCo ?? this.entregaCo,
       entregaPTotal: entregaPTotal ?? this.entregaPTotal,
-      entregaClassificacaoTextura: entregaClassificacaoTextura ?? this.entregaClassificacaoTextura,
+      entregaClassificacaoTextura:
+          entregaClassificacaoTextura ?? this.entregaClassificacaoTextura,
       entregaTipoSoloMapa: entregaTipoSoloMapa ?? this.entregaTipoSoloMapa,
-      separaSolicitanteProprietario: separaSolicitanteProprietario ?? this.separaSolicitanteProprietario,
+      separaSolicitanteProprietario:
+          separaSolicitanteProprietario ?? this.separaSolicitanteProprietario,
       entregaTextura: entregaTextura ?? this.entregaTextura,
-      micronutrientesPorAmostra: micronutrientesPorAmostra ?? this.micronutrientesPorAmostra,
-      identificacaoComposta: identificacaoComposta ?? this.identificacaoComposta,
+      micronutrientesPorAmostra:
+          micronutrientesPorAmostra ?? this.micronutrientesPorAmostra,
+      identificacaoComposta:
+          identificacaoComposta ?? this.identificacaoComposta,
       umAmostraPorLaudo: umAmostraPorLaudo ?? this.umAmostraPorLaudo,
-      entregaAreiasDetalhadas: entregaAreiasDetalhadas ?? this.entregaAreiasDetalhadas,
+      entregaAreiasDetalhadas:
+          entregaAreiasDetalhadas ?? this.entregaAreiasDetalhadas,
       entregaCascalho: entregaCascalho ?? this.entregaCascalho,
       ativo: ativo ?? this.ativo,
       isDefault: isDefault ?? this.isDefault,

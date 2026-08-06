@@ -16,8 +16,7 @@ class AppRoutes {
   static const String fazendaNova = '/clientes/:id/fazenda/nova';
   static const String talhaoNovo =
       '/clientes/:id/fazenda/:fazendaId/talhao/novo';
-  static const String fazendaEditar =
-      '/clientes/:id/fazenda/:fazendaId/editar';
+  static const String fazendaEditar = '/clientes/:id/fazenda/:fazendaId/editar';
   static const String talhaoEditar =
       '/clientes/:id/fazenda/:fazendaId/talhao/:talhaoId/editar';
   static const String clienteAnalises = '/clientes/:id/analises';

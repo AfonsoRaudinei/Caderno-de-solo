@@ -23,7 +23,7 @@ class LocationService {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      
+
       return (
         latitude: double.parse(position.latitude.toStringAsFixed(8)),
         longitude: double.parse(position.longitude.toStringAsFixed(8)),

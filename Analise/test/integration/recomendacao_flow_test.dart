@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
@@ -304,10 +305,22 @@ void main() {
       expect(result.recomendacao, isNotNull);
       expect(result.diagnostico.valido, isTrue);
 
+      final gerar = tester.widget<AppButton>(
+        find.byKey(const Key('btn_gerar_recomendacao')),
+      );
+      expect(gerar.onPressed, isNotNull);
+      gerar.onPressed!.call();
+      await tester.pumpAndSettle();
+
       await tester.scrollUntilVisible(
         find.byKey(const Key('btn_exportar_pdf')),
         500,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const Key('recomendacao_body_scroll')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       await tester.pumpAndSettle();
 

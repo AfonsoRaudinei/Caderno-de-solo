@@ -303,14 +303,15 @@ class CalcarioFormula {
     ).doseFinal;
   }
 
-
   /// Método saturação por bases (V%)
   /// NC = (CTC * (V2 - V1)) / PRNT
   static CalcarioResult metodoV(CalcarioInput input) {
     if (input.prnt <= 0) {
-      throw ArgumentError('PRNT deve ser maior que zero para compor a fração calcário.');
+      throw ArgumentError(
+          'PRNT deve ser maior que zero para compor a fração calcário.');
     }
-    if (input.va >= input.vd) return const CalcarioResult(ncToneladas: 0.0, formula: 'V%');
+    if (input.va >= input.vd)
+      return const CalcarioResult(ncToneladas: 0.0, formula: 'V%');
     final ncBase = ((input.vd - input.va) * input.ctcPh7) / 100.0;
     final doseFinal = aplicarCorrecoes(
       ncBase: ncBase,
