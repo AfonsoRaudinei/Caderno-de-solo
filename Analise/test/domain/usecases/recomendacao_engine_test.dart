@@ -425,14 +425,14 @@ void main() {
           'corrigirSolo': false,
           'reposicaoFosforo': 'exportacao',
           'referencia': 'IAC Bol.100',
-          'fepBase': 20.0,
+          'eficienciaSolo': 0.0,
         },
         analise: _fancelli.copyWith(argila: 25.0, p: 30.0),
         cultura: 'Soja',
         tabelas: [],
       );
 
-      expect(res.doseExportacao, closeTo(350.0, 0.01));
+      expect(res.doseExportacao, closeTo(70.0, 0.01));
       expect(res.doseExtracao, equals(0.0));
       expect(res.pSoloCreditadoP2O5, equals(0.0));
       expect(res.legacyP, isFalse);
@@ -444,7 +444,7 @@ void main() {
           'corrigirSolo': false,
           'reposicaoFosforo': 'extracao',
           'referencia': 'IAC Bol.100',
-          'fepBase': 20.0,
+          'eficienciaSolo': 0.0,
           'percentualUsoPSolo': 100.0,
         },
         analise: _fancelli.copyWith(argila: 25.0, p: 10.0),
@@ -454,8 +454,24 @@ void main() {
 
       expect(res.doseExportacao, equals(0.0));
       expect(res.pSoloCreditadoP2O5, closeTo(45.82, 0.01));
-      expect(res.doseExtracao, closeTo(270.9, 0.1));
+      expect(res.doseExtracao, closeTo(54.18, 0.01));
       expect(res.doseP, closeTo(res.doseExtracao, 0.01));
+    });
+
+    test('eficienciaSolo aplica incremento aditivo na exportação', () {
+      final res = engine.calcularFosforo(
+        fosforo: {
+          'corrigirSolo': false,
+          'reposicaoFosforo': 'exportacao',
+          'referencia': 'IAC Bol.100',
+          'eficienciaSolo': 50.0,
+        },
+        analise: _fancelli.copyWith(argila: 25.0, p: 30.0),
+        cultura: 'Soja',
+        tabelas: [],
+      );
+
+      expect(res.doseExportacao, closeTo(105.0, 0.01));
     });
   });
 

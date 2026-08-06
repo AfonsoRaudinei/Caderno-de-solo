@@ -648,6 +648,7 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       'doseMinimaLegacyP': 30.0,
       'modoAplicacao': 'Sulco',
       'fepBase': 15.0,
+      'eficienciaSolo': 15.0,
     };
   }
 
@@ -655,22 +656,31 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     final isAlgodao = cultura.toLowerCase() == 'algodão' ||
         cultura.toLowerCase() == 'algodao';
     return {
-      'extrator': 'Resina (IAC)',
-      'referencia': '04 — Potássio (K): Motor de Cálculo',
-      'criterioNc': 'Ambos — usar o maior',
+      'extrator': 'Resina IAC',
+      'referencia': 'IAC Bol.100',
+      'camada': '0–20 cm',
+      'corrigirSolo': true,
+      'metodoCorrecao': 'nivel_critico',
+      'criterioNc': 'Teor absoluto',
       'ncTeor': 80.0,
       'ncPctCtc': isAlgodao ? 5.0 : 4.0,
+      'percentualKObjetivoCtc': isAlgodao ? 5.0 : 4.0,
       'ncTeorManual': false,
       'ncCtcManual': false,
-      'camada': '0-20',
+      'reposicaoPotassio': 'nenhuma',
       'modoCalculo': 'Correção do solo',
       'percentualCorrecao': 100.0,
-      'cultivar': '',
-      'tipoDadoCultivar': 'Exportação',
+      'cultivar': cultura,
+      'tipoDadoCultivar': 'Nenhum',
       'percentualUsoKSolo': 0.0,
-      'modoAplicacao': 'A lanço incorporado',
-      'fekBase': isAlgodao ? 60.0 : 65.0,
-      'doseSulco': 0.0,
+      'percentualKSoloConsiderado': 0.0,
+      'indiceExportacaoK2O': null,
+      'indiceExtracaoK2O': null,
+      'ajusteEficienciaSolo': 15.0,
+      'fekBase': 15.0,
+      'potassioTipoFonte': 'Autores',
+      'potassioFonteNome': '',
+      'potassioModoAbsorcao': 'extracao',
     };
   }
 

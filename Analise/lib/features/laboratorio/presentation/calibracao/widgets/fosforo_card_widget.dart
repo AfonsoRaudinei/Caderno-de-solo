@@ -68,6 +68,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   bool _ncModoManual = false;
 
   final _pSoloCtrl = TextEditingController(text: '0');
+  final _eficienciaSoloCtrl = TextEditingController(text: '15');
   final _ncCtrl = TextEditingController();
   Map<String, dynamic> _baseData = const {};
   final _ncBadgeKey = GlobalKey();
@@ -104,6 +105,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
   @override
   void dispose() {
     _pSoloCtrl.dispose();
+    _eficienciaSoloCtrl.dispose();
     _ncCtrl.dispose();
     _removeTip();
     super.dispose();
@@ -131,6 +133,7 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
         ? _defaultPercentualUsoPSolo(_reposicaoFosforo).toString()
         : usoPSolo.toString();
     _pSoloCtrl.text = usoPSoloTexto.replaceAll('.', ',');
+    _eficienciaSoloCtrl.text = _fmtNumber(_eficienciaSoloFromSource(source));
     _syncNcControllerFromMode(source['nc']);
   }
 
@@ -169,9 +172,23 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
               : ''),
       'fosforoModoAbsorcao':
           _reposicaoFosforo == 'exportacao' ? 'exportacao' : 'extracao',
+      'eficienciaSolo': _eficienciaSoloEfetiva(),
     };
 
     widget.onChanged!(payload);
+  }
+
+  double _eficienciaSoloFromSource(Map<String, dynamic> source) {
+    final eficiencia = _numOrNull(source['eficienciaSolo']) ??
+        _numOrNull(source['fepBase']) ??
+        15.0;
+    return eficiencia.clamp(0.0, 100.0);
+  }
+
+  double _eficienciaSoloEfetiva() {
+    final parsed = _parseDoubleOrNull(_eficienciaSoloCtrl.text);
+    final raw = parsed ?? _eficienciaSoloFromSource(_baseData);
+    return raw.clamp(0.0, 100.0);
   }
 
   ReferenciaP _referenciaFromString(String? value) {
@@ -562,6 +579,21 @@ class _FosforoCardState extends ConsumerState<FosforoCard> {
           const SizedBox(height: AppDimens.sm),
           _argilaSegmented(),
         ],
+        const SizedBox(height: AppDimens.sm),
+        _lbl('Eficiência no solo (%)'),
+        const SizedBox(height: AppDimens.xs),
+        _numField(
+          _eficienciaSoloCtrl,
+          hint: '15',
+          onChanged: _emitChange,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '0–100% · aplicação de fósforo via solo',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecond,
+          ),
+        ),
         const SizedBox(height: AppDimens.sm),
         _lbl('Composição do cálculo'),
         const SizedBox(height: AppDimens.xs),

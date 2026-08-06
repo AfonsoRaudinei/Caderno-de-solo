@@ -226,34 +226,16 @@ class RecomendacaoEngine {
     final legacyP = fosforoResult.legacyP;
     final modoP = fosforoResult.modoResumo;
 
-    final modoK = _string(potassio['modoCalculo'], '① Correção do solo');
-    final criterioK = _string(potassio['criterioNc'], 'Ambos — usar o maior');
-    final ncK = criterioK == '% K na CTC'
-        ? _num(potassio['ncPctCtc'], 4)
-        : _num(
-            potassio['ncTeor'],
-            ncPotassioTeorTabela(
-                argilaPercent: analise.argila, tabelas: tabelas));
-
-    final doseK = modoK.startsWith('①')
-        ? PotassioFormula.recomendacao(
-            ctc: analise.ctc,
-            kAtual: analise.k,
-            participacaoDesejada: _num(potassio['ncPctCtc'],
-                calibracao.cultura.toLowerCase().contains('algod') ? 5 : 4),
-            cultura: calibracao.cultura,
-            usarCriterioTeorAbsoluto: criterioK != '% K na CTC',
-            kAtualMgDm3: analise.k * 391.0,
-            argilaPercent: analise.argila,
-            percentualCorrecaoTeor: _num(potassio['percentualCorrecao'], 100),
-          )
-        : PotassioFormula.recomendacaoExtracao(
-            kSolo: analise.k,
-            percentualUsoSolo: _num(potassio['percentualUsoKSolo'], 0),
-            extracaoK2O: _extracaoK2O(calibracao.cultura),
-            fek: _num(potassio['fekBase'],
-                fekBaseTabela(argilaPercent: analise.argila, tabelas: tabelas)),
-          );
+    final potassioResult = calcularPotassio(
+      potassio: potassio,
+      analise: analise,
+      cultura: calibracao.cultura,
+      produtividadeEsperadaTha: calibracao.produtividadeEsperadaTha,
+      tabelas: tabelas,
+    );
+    final criterioK = potassioResult.criterioResumo;
+    final ncK = potassioResult.ncK;
+    final doseK = potassioResult.doseK;
 
     final configAntagonismos = antagonismosTabela(tabelas);
     final antagonismos = PotassioFormula.calcularAntagonismos(
@@ -641,9 +623,12 @@ class RecomendacaoEngine {
       ),
     );
 
-    // FEP e Fator Solo (Dinâmicos)
-    final fepBaseLocal = _num(fosforo['fepBase'],
-        fepBaseTabela(argilaPercent: analise.argila, tabelas: tabelas));
+    final fepCorrecao = _fepCorrecaoFosforo(
+      fosforo,
+      argilaPercent: analise.argila,
+      tabelas: tabelas,
+    );
+    final eficienciaSolo = _eficienciaSoloReposicao(fosforo);
 
     final exportacaoP2O5 = _p2O5PorAbsorcao(
           fosforo: fosforo,
@@ -672,7 +657,8 @@ class RecomendacaoEngine {
       profundidadeCm: 20,
       exportacaoP2O5: exportacaoP2O5,
       extracaoP2O5: extracaoP2O5,
-      fepFinal: fepBaseLocal,
+      eficienciaSoloPercent: eficienciaSolo,
+      fepCorrecao: fepCorrecao,
     );
     var doseP = resultado.doseTotal;
     final legacyInfo = FosforoFormula.avaliarLegacyP(
@@ -717,6 +703,172 @@ class RecomendacaoEngine {
     }
     if (modo.contains('Extração')) return ReposicaoFosforo.extracao;
     return ReposicaoFosforo.nenhuma;
+  }
+
+  ({
+    double ncK,
+    double doseK,
+    String modoResumo,
+    String criterioResumo,
+    double doseCorrecao,
+    double doseReposicao,
+  }) calcularPotassio({
+    required Map<String, dynamic> potassio,
+    required AnaliseEntity analise,
+    required String cultura,
+    double? produtividadeEsperadaTha,
+    required List<Map<String, dynamic>> tabelas,
+  }) {
+    final corrigirSolo = _corrigirSoloPotassio(potassio);
+    final reposicao = _reposicaoPotassio(potassio);
+    final metodoCorrecao = _metodoCorrecaoPotassio(potassio);
+    final isAlgodao = cultura.toLowerCase().contains('algod');
+    final ncTeor = _num(
+      potassio['ncTeor'],
+      ncPotassioTeorTabela(argilaPercent: analise.argila, tabelas: tabelas),
+    );
+    final percentualKObjetivo = _num(
+      potassio['percentualKObjetivoCtc'] ?? potassio['ncPctCtc'],
+      isAlgodao ? 5.0 : 4.0,
+    );
+    final ajusteEficiencia = _eficienciaSoloPotassio(potassio);
+
+    final exportacaoK2O = _num(potassio['indiceExportacaoK2O'], 0) > 0
+        ? _num(potassio['indiceExportacaoK2O'], 0) *
+            (produtividadeEsperadaTha ?? 0)
+        : (_k2OPorAbsorcao(
+              potassio: potassio,
+              modoAbsorcao: 'exportacao',
+              produtividadeEsperadaTha: produtividadeEsperadaTha,
+            ) ??
+            _exportacaoK2O(cultura));
+
+    final extracaoK2O = _num(potassio['indiceExtracaoK2O'], 0) > 0
+        ? _num(potassio['indiceExtracaoK2O'], 0) *
+            (produtividadeEsperadaTha ?? 0)
+        : (_k2OPorAbsorcao(
+              potassio: potassio,
+              modoAbsorcao: 'extracao',
+              produtividadeEsperadaTha: produtividadeEsperadaTha,
+            ) ??
+            _extracaoK2O(cultura));
+
+    final resultado = PotassioFormula.recomendacaoComponentes(
+      corrigirSolo: corrigirSolo,
+      metodoCorrecao: metodoCorrecao,
+      reposicao: reposicao,
+      ctc: analise.ctc,
+      kAtualCmolc: analise.k,
+      kAtualMgDm3: analise.k * 391.0,
+      argilaPercent: analise.argila,
+      ncTeorMgDm3: ncTeor,
+      percentualKObjetivoCtc: percentualKObjetivo,
+      cultura: cultura,
+      percentualUsoKSolo: _num(
+        potassio['percentualKSoloConsiderado'] ??
+            potassio['percentualUsoKSolo'],
+        100,
+      ),
+      exportacaoK2O: exportacaoK2O,
+      extracaoK2O: extracaoK2O,
+      ajusteEficienciaSolo: ajusteEficiencia,
+    );
+
+    final criterioResumo =
+        metodoCorrecao == MetodoCorrecaoPotassio.percentualKCtc
+            ? '% K na CTC'
+            : 'Teor absoluto';
+
+    return (
+      ncK: resultado.ncResumo,
+      doseK: resultado.doseTotal,
+      modoResumo: resultado.modoResumo,
+      criterioResumo: criterioResumo,
+      doseCorrecao: resultado.doseCorrecao,
+      doseReposicao: resultado.doseReposicaoAjustada,
+    );
+  }
+
+  bool _corrigirSoloPotassio(Map<String, dynamic> potassio) {
+    final explicit = potassio['corrigirSolo'];
+    if (explicit is bool) return explicit;
+    final modo = _string(potassio['modoCalculo'], 'Correção do solo');
+    if (modo.contains('Manutenção') ||
+        modo.contains('Exportação') ||
+        modo.contains('Extração')) {
+      return false;
+    }
+    return modo.contains('Correção') || modo.startsWith('①');
+  }
+
+  ReposicaoPotassio _reposicaoPotassio(Map<String, dynamic> potassio) {
+    final explicit = _string(
+      potassio['reposicaoPotassio'] ?? potassio['reposicaoKalium'],
+      '',
+    );
+    if (explicit == 'exportacao') return ReposicaoPotassio.exportacao;
+    if (explicit == 'extracao') return ReposicaoPotassio.extracao;
+    if (explicit == 'nenhuma') return ReposicaoPotassio.nenhuma;
+
+    final modo = _string(potassio['modoCalculo'], '');
+    if (modo.contains('Manutenção') || modo.contains('Exportação')) {
+      return ReposicaoPotassio.exportacao;
+    }
+    if (modo.contains('Extração')) return ReposicaoPotassio.extracao;
+    return ReposicaoPotassio.nenhuma;
+  }
+
+  MetodoCorrecaoPotassio _metodoCorrecaoPotassio(
+    Map<String, dynamic> potassio,
+  ) {
+    final explicit = _string(potassio['metodoCorrecao'], '');
+    if (explicit == 'percentual_k_ctc') {
+      return MetodoCorrecaoPotassio.percentualKCtc;
+    }
+    if (explicit == 'nivel_critico') {
+      return MetodoCorrecaoPotassio.nivelCritico;
+    }
+
+    final criterio = _string(potassio['criterioNc'], 'Teor absoluto');
+    if (criterio == '% K na CTC') {
+      return MetodoCorrecaoPotassio.percentualKCtc;
+    }
+    return MetodoCorrecaoPotassio.nivelCritico;
+  }
+
+  double _eficienciaSoloPotassio(Map<String, dynamic> potassio) {
+    if (potassio.containsKey('ajusteEficienciaSolo') &&
+        potassio['ajusteEficienciaSolo'] != null) {
+      return _num(potassio['ajusteEficienciaSolo'], 15.0).clamp(0.0, 100.0);
+    }
+    if (potassio.containsKey('eficienciaSolo') &&
+        potassio['eficienciaSolo'] != null) {
+      return _num(potassio['eficienciaSolo'], 15.0).clamp(0.0, 100.0);
+    }
+    if (potassio.containsKey('fekBase') && potassio['fekBase'] != null) {
+      return _num(potassio['fekBase'], 15.0).clamp(0.0, 100.0);
+    }
+    return 15.0;
+  }
+
+  double? _k2OPorAbsorcao({
+    required Map<String, dynamic> potassio,
+    required String modoAbsorcao,
+    required double? produtividadeEsperadaTha,
+  }) {
+    final prodTha = produtividadeEsperadaTha;
+    if (prodTha == null || prodTha <= 0) return null;
+    final tipoFonte = _string(potassio['potassioTipoFonte'], 'Autores');
+    final fonteNome = _string(potassio['potassioFonteNome'], '');
+    if (fonteNome.isEmpty) return null;
+    final kKgT = _getAbsorcaoKgT(
+      tipoFonte: tipoFonte,
+      fonteNome: fonteNome,
+      modoAbsorcao: modoAbsorcao,
+      nutriente: 'K',
+    );
+    if (kKgT == null) return null;
+    return kKgT * prodTha * 1.205;
   }
 
   double? _p2O5PorAbsorcao({
@@ -899,6 +1051,14 @@ double _mSubEstimado(AnaliseEntity analise) {
   final t = analise.ca + analise.mg + analise.k + analise.al;
   if (t <= 0) return 0;
   return (analise.al / t) * 100;
+}
+
+double _exportacaoK2O(String cultura) {
+  final c = cultura.toLowerCase();
+  if (c.contains('milho')) return 50;
+  if (c.contains('algod')) return 80;
+  if (c.contains('feij')) return 45;
+  return 90;
 }
 
 double _extracaoK2O(String cultura) {
@@ -1151,6 +1311,28 @@ double fepBaseTabela({
     argilaPercent: argilaPercent,
     fallback: 15.0,
   );
+}
+
+double _fepCorrecaoFosforo(
+  Map<String, dynamic> fosforo, {
+  required double argilaPercent,
+  required List<Map<String, dynamic>> tabelas,
+}) {
+  if (fosforo.containsKey('fepBase') && fosforo['fepBase'] != null) {
+    return _num(fosforo['fepBase'], 15.0).clamp(0.0, 100.0);
+  }
+  return fepBaseTabela(
+    argilaPercent: argilaPercent,
+    tabelas: tabelas,
+  ).clamp(0.0, 100.0);
+}
+
+double _eficienciaSoloReposicao(Map<String, dynamic> fosforo) {
+  if (fosforo.containsKey('eficienciaSolo') &&
+      fosforo['eficienciaSolo'] != null) {
+    return _num(fosforo['eficienciaSolo'], 0.0).clamp(0.0, 100.0);
+  }
+  return 0.0;
 }
 
 double ncPotassioTeorTabela({

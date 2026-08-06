@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/features/laboratorio/presentation/calibracao/widgets/fosforo_card_widget.dart';
 
 import 'helpers/fake_calibracao_notifier.dart';
 
@@ -104,6 +105,53 @@ void main() {
       await pumpCard(tester, fosforoCard());
 
       verificarSemSeparadorOrfao(tester);
+    });
+  });
+
+  group('FosforoCard — Eficiência no solo', () {
+    testWidgets('campo visível quando expandido', (tester) async {
+      await pumpCard(tester, fosforoCard(initialExpanded: true));
+
+      expect(find.text('Eficiência no solo (%)'), findsOneWidget);
+    });
+
+    testWidgets('carrega eficienciaSolo salva', (tester) async {
+      final data = mergeCard(fosforoBase(), {'eficienciaSolo': 45.0});
+      await pumpCard(tester, fosforoCard(fosforo: data, initialExpanded: true));
+
+      expect(find.text('45'), findsOneWidget);
+    });
+
+    testWidgets('faz fallback para fepBase legado', (tester) async {
+      final data = mergeCard(fosforoBase(), {'fepBase': 25.0});
+      await pumpCard(tester, fosforoCard(fosforo: data, initialExpanded: true));
+
+      expect(find.text('25'), findsOneWidget);
+    });
+
+    testWidgets('emite eficienciaSolo no payload', (tester) async {
+      Map<String, dynamic>? emitted;
+      await tester.pumpWidget(
+        makeTestable(
+          ExpandableCardHost(
+            initialExpanded: true,
+            builder: (expanded, toggle) => FosforoCard(
+              initialData: mergeCard(fosforoBase(), {'eficienciaSolo': 60.0}),
+              cultura: 'Soja',
+              isExpanded: expanded,
+              onToggle: toggle,
+              onChanged: (map) => emitted = map,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, '75');
+      await tester.pumpAndSettle();
+
+      expect(emitted, isNotNull);
+      expect(emitted!['eficienciaSolo'], 75.0);
     });
   });
 }

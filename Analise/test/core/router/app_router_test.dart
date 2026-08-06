@@ -262,20 +262,20 @@ void main() {
   });
 
   group('resolveCalculosRedirect', () {
-    test('bloqueia quando senha não está configurada', () {
+    test('libera acesso em builds de teste sem senha', () {
       expect(
         resolveCalculosRedirect(
-          calculosAccessPassword: '',
-          navigationExtra: true,
+          requiresCalculosAccessPassword: false,
+          navigationExtra: null,
         ),
-        AppRoutes.config,
+        isNull,
       );
     });
 
-    test('bloqueia navegação direta sem desbloqueio', () {
+    test('bloqueia navegação direta quando gate ativo', () {
       expect(
         resolveCalculosRedirect(
-          calculosAccessPassword: 'secret',
+          requiresCalculosAccessPassword: true,
           navigationExtra: null,
         ),
         AppRoutes.config,
@@ -285,7 +285,7 @@ void main() {
     test('permite acesso após desbloqueio via extra', () {
       expect(
         resolveCalculosRedirect(
-          calculosAccessPassword: 'secret',
+          requiresCalculosAccessPassword: true,
           navigationExtra: true,
         ),
         isNull,

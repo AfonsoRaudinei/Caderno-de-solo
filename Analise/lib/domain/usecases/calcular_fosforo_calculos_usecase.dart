@@ -10,13 +10,17 @@ class CalculoFosforoResultado {
     required this.referencia,
     required this.nc,
     required this.pAtual,
-    required this.fep,
+    required this.fepCorrecao,
+    required this.eficienciaSolo,
     required this.percentualUsoSolo,
     required this.doseTotalP2O5KgHa,
     required this.doseCorrecaoP2O5KgHa,
     required this.doseExportacaoP2O5KgHa,
     required this.doseExtracaoP2O5KgHa,
     required this.pSoloCreditadoP2O5KgHa,
+    required this.reposicaoBaseP2O5KgHa,
+    required this.incrementoEficienciaP2O5KgHa,
+    required this.reposicaoAjustadaP2O5KgHa,
     required this.resumoCalculo,
     required this.tipoFonteAbsorcao,
     required this.fonteAbsorcao,
@@ -30,13 +34,17 @@ class CalculoFosforoResultado {
   final String referencia;
   final double nc;
   final double pAtual;
-  final double fep;
+  final double fepCorrecao;
+  final double eficienciaSolo;
   final double percentualUsoSolo;
   final double doseTotalP2O5KgHa;
   final double doseCorrecaoP2O5KgHa;
   final double doseExportacaoP2O5KgHa;
   final double doseExtracaoP2O5KgHa;
   final double pSoloCreditadoP2O5KgHa;
+  final double reposicaoBaseP2O5KgHa;
+  final double incrementoEficienciaP2O5KgHa;
+  final double reposicaoAjustadaP2O5KgHa;
   final String resumoCalculo;
   final String tipoFonteAbsorcao;
   final String fonteAbsorcao;
@@ -63,7 +71,8 @@ class CalcularFosforoCalculosUsecase {
           ? FosforoFormula.nivelCriticoResina(argila)
           : FosforoFormula.nivelCriticoMehlich1(argila),
     );
-    final fep = _asNum(fosforo['fepBase'], FosforoFormula.fepBase(argila));
+    final fepCorrecao = _fepCorrecaoFosforo(fosforo, argila);
+    final eficienciaSolo = _eficienciaSoloReposicao(fosforo);
     final corrigirSolo = _corrigirSolo(fosforo);
     final reposicao = _reposicao(fosforo);
     final percentualUsoSolo = reposicao == ReposicaoFosforo.extracao
@@ -112,7 +121,8 @@ class CalcularFosforoCalculosUsecase {
       profundidadeCm: 20,
       exportacaoP2O5: exportacaoP2O5,
       extracaoP2O5: extracaoP2O5,
-      fepFinal: fep,
+      eficienciaSoloPercent: eficienciaSolo,
+      fepCorrecao: fepCorrecao,
     );
 
     return CalculoFosforoResultado(
@@ -120,18 +130,26 @@ class CalcularFosforoCalculosUsecase {
       referencia: referencia,
       nc: nc,
       pAtual: pAtual,
-      fep: fep,
+      fepCorrecao: fepCorrecao,
+      eficienciaSolo: eficienciaSolo,
       percentualUsoSolo: percentualUsoSolo,
       doseTotalP2O5KgHa: resultado.doseTotal,
       doseCorrecaoP2O5KgHa: resultado.doseCorrecao,
       doseExportacaoP2O5KgHa: resultado.doseExportacao,
       doseExtracaoP2O5KgHa: resultado.doseExtracao,
       pSoloCreditadoP2O5KgHa: resultado.pSoloCreditadoP2O5,
+      reposicaoBaseP2O5KgHa: resultado.reposicaoBaseP2O5KgHa,
+      incrementoEficienciaP2O5KgHa: resultado.incrementoEficienciaP2O5KgHa,
+      reposicaoAjustadaP2O5KgHa: resultado.reposicaoAjustadaP2O5KgHa,
       resumoCalculo: _resumo(
         modo: resultado.modoResumo,
         pAtual: pAtual,
         nc: nc,
-        fep: fep,
+        fepCorrecao: fepCorrecao,
+        eficienciaSolo: eficienciaSolo,
+        reposicaoBase: resultado.reposicaoBaseP2O5KgHa,
+        incremento: resultado.incrementoEficienciaP2O5KgHa,
+        reposicaoAjustada: resultado.reposicaoAjustadaP2O5KgHa,
         percentualUsoSolo: percentualUsoSolo,
       ),
       tipoFonteAbsorcao: tipoFonteAbsorcao,
@@ -163,6 +181,21 @@ double _asNum(dynamic value, double fallback) {
     return double.tryParse(value.replaceAll(',', '.')) ?? fallback;
   }
   return fallback;
+}
+
+double _fepCorrecaoFosforo(Map<String, dynamic> fosforo, double argila) {
+  if (fosforo.containsKey('fepBase') && fosforo['fepBase'] != null) {
+    return _asNum(fosforo['fepBase'], 15.0).clamp(0.0, 100.0);
+  }
+  return FosforoFormula.fepBase(argila).clamp(0.0, 100.0);
+}
+
+double _eficienciaSoloReposicao(Map<String, dynamic> fosforo) {
+  if (fosforo.containsKey('eficienciaSolo') &&
+      fosforo['eficienciaSolo'] != null) {
+    return _asNum(fosforo['eficienciaSolo'], 0.0).clamp(0.0, 100.0);
+  }
+  return 0.0;
 }
 
 double _required(double? value, String label) {
@@ -251,12 +284,23 @@ String _resumo({
   required String modo,
   required double pAtual,
   required double nc,
-  required double fep,
+  required double fepCorrecao,
+  required double eficienciaSolo,
+  required double reposicaoBase,
+  required double incremento,
+  required double reposicaoAjustada,
   required double percentualUsoSolo,
 }) {
   final solo = percentualUsoSolo > 0
       ? ' Extração abate ${percentualUsoSolo.toStringAsFixed(0)}% do P do solo.'
       : '';
+  final reposicao = reposicaoBase > 0
+      ? ' Reposição base ${reposicaoBase.toStringAsFixed(2)} kg P₂O₅/ha; '
+          'incremento ${incremento.toStringAsFixed(2)} kg P₂O₅/ha '
+          '(eficiência ${eficienciaSolo.toStringAsFixed(0)}%); '
+          'ajustada ${reposicaoAjustada.toStringAsFixed(2)} kg P₂O₅/ha.'
+      : '';
   return 'Modo: $modo. P atual ${pAtual.toStringAsFixed(1)} mg/dm³; '
-      'NC ${nc.toStringAsFixed(1)} mg/dm³; FEP ${fep.toStringAsFixed(1)}%.$solo';
+      'NC ${nc.toStringAsFixed(1)} mg/dm³; FEP correção '
+      '${fepCorrecao.toStringAsFixed(1)}%.$solo$reposicao';
 }

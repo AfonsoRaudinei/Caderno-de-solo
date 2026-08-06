@@ -1048,6 +1048,10 @@ class _CalculosAccessVersion extends StatefulWidget {
 
 class _CalculosAccessVersionState extends State<_CalculosAccessVersion> {
   void _abrirCalculos() {
+    if (!AppConfig.requiresCalculosAccessPassword) {
+      context.go(AppRoutes.calculos);
+      return;
+    }
     _mostrarDialogSenha(context);
   }
 

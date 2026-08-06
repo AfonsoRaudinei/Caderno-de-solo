@@ -134,11 +134,11 @@ String? resolveRouterRedirectWithLog({
 
 @visibleForTesting
 String? resolveCalculosRedirect({
-  required String calculosAccessPassword,
+  required bool requiresCalculosAccessPassword,
   required Object? navigationExtra,
 }) {
-  if (calculosAccessPassword.isEmpty) {
-    return AppRoutes.config;
+  if (!requiresCalculosAccessPassword) {
+    return null;
   }
   if (navigationExtra != true) {
     return AppRoutes.config;
@@ -501,7 +501,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'calculos',
                     redirect: (context, state) => resolveCalculosRedirect(
-                      calculosAccessPassword: AppConfig.calculosAccessPassword,
+                      requiresCalculosAccessPassword:
+                          AppConfig.requiresCalculosAccessPassword,
                       navigationExtra: state.extra,
                     ),
                     builder: (context, state) => const CalculosPage(),

@@ -314,10 +314,15 @@ class _FosforoCalibracaoResumo extends StatelessWidget {
           _InfoLine(label: 'Modo', value: resultado.modo),
           _InfoLine(label: 'Referência P', value: resultado.referencia),
           _InfoLine(
-            label: 'NC / FEP',
+            label: 'NC / FEP correção',
             value:
-                '${resultado.nc.toStringAsFixed(1)} mg/dm³ · ${resultado.fep.toStringAsFixed(1)}%',
+                '${resultado.nc.toStringAsFixed(1)} mg/dm³ · ${resultado.fepCorrecao.toStringAsFixed(1)}%',
           ),
+          if (resultado.tipoDadoAbsorcao != 'Nenhum')
+            _InfoLine(
+              label: 'Eficiência solo',
+              value: '${resultado.eficienciaSolo.toStringAsFixed(0)}%',
+            ),
           if (usaAbsorcao) ...[
             _InfoLine(
               label: 'Absorção',
@@ -595,9 +600,30 @@ class _FosforoSection extends StatelessWidget {
               value: '${resultado!.nc.toStringAsFixed(1)} mg/dm³',
             ),
             _InfoLine(
-              label: 'FEP',
-              value: '${resultado!.fep.toStringAsFixed(1)}%',
+              label: 'FEP correção',
+              value: '${resultado!.fepCorrecao.toStringAsFixed(1)}%',
             ),
+            if (resultado!.tipoDadoAbsorcao != 'Nenhum') ...[
+              _InfoLine(
+                label: 'Eficiência solo',
+                value: '${resultado!.eficienciaSolo.toStringAsFixed(0)}%',
+              ),
+              _InfoLine(
+                label: 'Reposição base',
+                value:
+                    '${resultado!.reposicaoBaseP2O5KgHa.toStringAsFixed(2)} kg/ha P₂O₅',
+              ),
+              _InfoLine(
+                label: 'Incremento eficiência',
+                value:
+                    '${resultado!.incrementoEficienciaP2O5KgHa.toStringAsFixed(2)} kg/ha P₂O₅',
+              ),
+              _InfoLine(
+                label: 'Reposição ajustada',
+                value:
+                    '${resultado!.reposicaoAjustadaP2O5KgHa.toStringAsFixed(2)} kg/ha P₂O₅',
+              ),
+            ],
             _InfoLine(
               label: 'Correção',
               value:

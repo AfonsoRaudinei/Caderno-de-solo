@@ -25,6 +25,10 @@ class FosforoComponentesResultado {
     required this.doseExtracao,
     required this.pSoloCreditadoP2O5,
     required this.modoResumo,
+    required this.reposicaoBaseP2O5KgHa,
+    required this.incrementoEficienciaP2O5KgHa,
+    required this.reposicaoAjustadaP2O5KgHa,
+    required this.eficienciaSoloPercent,
   });
 
   final double doseTotal;
@@ -33,6 +37,10 @@ class FosforoComponentesResultado {
   final double doseExtracao;
   final double pSoloCreditadoP2O5;
   final String modoResumo;
+  final double reposicaoBaseP2O5KgHa;
+  final double incrementoEficienciaP2O5KgHa;
+  final double reposicaoAjustadaP2O5KgHa;
+  final double eficienciaSoloPercent;
 }
 
 class FosforoFormula {
@@ -104,7 +112,7 @@ class FosforoFormula {
     }
   }
 
-  /// FEP base: arenoso=30, médio=20, argiloso=15, muito argiloso=10.
+  /// FEP base para correção do solo: arenoso=30, médio=20, argiloso=15, muito argiloso=10.
   static double fepBase(double argilaPercent, {double? overrideValue}) {
     if (overrideValue != null) return overrideValue;
     final classe = classeTextural(argilaPercent);
@@ -118,6 +126,38 @@ class FosforoFormula {
       default:
         return 10.0;
     }
+  }
+
+  /// Reposição base (kg P₂O₅/ha) = produtividade (t/ha) × taxa (kg P₂O₅/t).
+  static double reposicaoBaseKgHa({
+    required double produtividadeTha,
+    required double taxaP2O5PorT,
+  }) {
+    if (produtividadeTha <= 0 || taxaP2O5PorT < 0) return 0.0;
+    return produtividadeTha * taxaP2O5PorT;
+  }
+
+  /// Incremento por eficiência no solo sobre a reposição base.
+  static double incrementoEficienciaSolo({
+    required double reposicaoBase,
+    required double eficienciaSoloPercent,
+  }) {
+    if (reposicaoBase <= 0) return 0.0;
+    final pct = eficienciaSoloPercent.clamp(0.0, 100.0);
+    if (pct <= 0) return 0.0;
+    return reposicaoBase * (pct / 100.0);
+  }
+
+  /// Reposição ajustada = base + incremento por eficiência.
+  static double reposicaoAjustada({
+    required double reposicaoBase,
+    required double eficienciaSoloPercent,
+  }) {
+    final incremento = incrementoEficienciaSolo(
+      reposicaoBase: reposicaoBase,
+      eficienciaSoloPercent: eficienciaSoloPercent,
+    );
+    return reposicaoBase + incremento;
   }
 
   /// Ajuste do FEP conforme modo de aplicação.
@@ -136,39 +176,27 @@ class FosforoFormula {
 
   /// Modo 1 (correção):
   /// deficit = max(0, NC - Psolo)
-  /// dose_base = deficit × fator_solo × (pct_correcao/100)
+  /// dose_base = deficit × fator_solo
   /// dose_final = dose_base / (FEP/100)
-  static FosforoResult recomendacaoCorrecao(FosforoInput input) {
+  static FosforoResult recomendacaoCorrecao(
+    FosforoInput input, {
+    double? fepCorrecao,
+  }) {
     final deficit = (input.nc - input.pAtual).clamp(0.0, double.infinity);
     if (deficit <= 0) {
       return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
     }
 
     final fator = fatorSolo(input.argila);
-    final doseBase = deficit * fator * (100.0 / 100.0);
-    final fepUsado = fepBase(input.argila);
+    final doseBase = deficit * fator;
+    final fepUsado = fepCorrecao ?? fepBase(input.argila);
     if (fepUsado <= 0) {
       return FosforoResult(doseRecomendada: 0.0, formula: input.referencia);
     }
     return FosforoResult(
-        doseRecomendada: doseBase / (fepUsado / 100.0),
-        formula: input.referencia);
-  }
-
-  /// Modo 2 (extração).
-  static double recomendacaoExtracao({
-    required double pSolo,
-    required double percentualUsoSolo,
-    required double profundidadeCm,
-    required double extracaoP2O5,
-    required double fepFinal,
-  }) {
-    final pSoloUsado = pSolo * (percentualUsoSolo / 100.0);
-    final pSoloKg =
-        pSoloUsado * 2.0 * (profundidadeCm / 20.0) * 2.291; // P -> P2O5
-    final doseBase = (extracaoP2O5 - pSoloKg).clamp(0.0, double.infinity);
-    if (fepFinal <= 0) return 0.0;
-    return doseBase / (fepFinal / 100.0);
+      doseRecomendada: doseBase / (fepUsado / 100.0),
+      formula: input.referencia,
+    );
   }
 
   static double pSoloDisponivelP2O5({
@@ -181,12 +209,57 @@ class FosforoFormula {
     return pSoloUsado * 2.0 * (profundidadeCm / 20.0) * 2.291;
   }
 
-  static double recomendacaoExportacao({
-    required double exportacaoP2O5,
-    required double fepFinal,
+  /// Exportação: reposição base (kg P₂O₅/ha) + incremento por eficiência.
+  static ({
+    double reposicaoBase,
+    double incremento,
+    double reposicaoAjustada,
+  }) componentesExportacao({
+    required double exportacaoP2O5KgHa,
+    required double eficienciaSoloPercent,
   }) {
-    if (fepFinal <= 0) return 0.0;
-    return exportacaoP2O5 / (fepFinal / 100.0);
+    final base = exportacaoP2O5KgHa.clamp(0.0, double.infinity);
+    final incremento = incrementoEficienciaSolo(
+      reposicaoBase: base,
+      eficienciaSoloPercent: eficienciaSoloPercent,
+    );
+    return (
+      reposicaoBase: base,
+      incremento: incremento,
+      reposicaoAjustada: base + incremento,
+    );
+  }
+
+  /// Extração: abate P do solo, depois aplica eficiência sobre a base líquida.
+  static ({
+    double reposicaoBase,
+    double incremento,
+    double reposicaoAjustada,
+    double pSoloCreditadoP2O5,
+  }) componentesExtracao({
+    required double extracaoP2O5KgHa,
+    required double pSolo,
+    required double percentualUsoSolo,
+    required double profundidadeCm,
+    required double eficienciaSoloPercent,
+  }) {
+    final pSoloCreditado = pSoloDisponivelP2O5(
+      pSolo: pSolo,
+      percentualUsoSolo: percentualUsoSolo,
+      profundidadeCm: profundidadeCm,
+    );
+    final base =
+        (extracaoP2O5KgHa - pSoloCreditado).clamp(0.0, double.infinity);
+    final incremento = incrementoEficienciaSolo(
+      reposicaoBase: base,
+      eficienciaSoloPercent: eficienciaSoloPercent,
+    );
+    return (
+      reposicaoBase: base,
+      incremento: incremento,
+      reposicaoAjustada: base + incremento,
+      pSoloCreditadoP2O5: pSoloCreditado,
+    );
   }
 
   static FosforoComponentesResultado recomendacaoComponentes({
@@ -198,33 +271,50 @@ class FosforoFormula {
     required double profundidadeCm,
     required double exportacaoP2O5,
     required double extracaoP2O5,
-    required double fepFinal,
+    required double eficienciaSoloPercent,
+    double? fepCorrecao,
   }) {
+    final eficiencia = eficienciaSoloPercent.clamp(0.0, 100.0);
     final doseCorrecao = corrigirSolo
-        ? recomendacaoCorrecao(correcaoInput).doseRecomendada
+        ? recomendacaoCorrecao(
+            correcaoInput,
+            fepCorrecao: fepCorrecao,
+          ).doseRecomendada
         : 0.0;
-    final doseExportacao = reposicao == ReposicaoFosforo.exportacao
-        ? recomendacaoExportacao(
-            exportacaoP2O5: exportacaoP2O5,
-            fepFinal: fepFinal,
-          )
-        : 0.0;
-    final pSoloCreditado = reposicao == ReposicaoFosforo.extracao
-        ? pSoloDisponivelP2O5(
-            pSolo: pSolo,
-            percentualUsoSolo: percentualUsoSoloExtracao,
-            profundidadeCm: profundidadeCm,
-          )
-        : 0.0;
-    final doseExtracao = reposicao == ReposicaoFosforo.extracao
-        ? recomendacaoExtracao(
-            pSolo: pSolo,
-            percentualUsoSolo: percentualUsoSoloExtracao,
-            profundidadeCm: profundidadeCm,
-            extracaoP2O5: extracaoP2O5,
-            fepFinal: fepFinal,
-          )
-        : 0.0;
+
+    var reposicaoBase = 0.0;
+    var incremento = 0.0;
+    var reposicaoAjustada = 0.0;
+    var doseExportacao = 0.0;
+    var doseExtracao = 0.0;
+    var pSoloCreditado = 0.0;
+
+    switch (reposicao) {
+      case ReposicaoFosforo.exportacao:
+        final comp = componentesExportacao(
+          exportacaoP2O5KgHa: exportacaoP2O5,
+          eficienciaSoloPercent: eficiencia,
+        );
+        reposicaoBase = comp.reposicaoBase;
+        incremento = comp.incremento;
+        reposicaoAjustada = comp.reposicaoAjustada;
+        doseExportacao = comp.reposicaoAjustada;
+      case ReposicaoFosforo.extracao:
+        final comp = componentesExtracao(
+          extracaoP2O5KgHa: extracaoP2O5,
+          pSolo: pSolo,
+          percentualUsoSolo: percentualUsoSoloExtracao,
+          profundidadeCm: profundidadeCm,
+          eficienciaSoloPercent: eficiencia,
+        );
+        reposicaoBase = comp.reposicaoBase;
+        incremento = comp.incremento;
+        reposicaoAjustada = comp.reposicaoAjustada;
+        pSoloCreditado = comp.pSoloCreditadoP2O5;
+        doseExtracao = comp.reposicaoAjustada;
+      case ReposicaoFosforo.nenhuma:
+        break;
+    }
 
     return FosforoComponentesResultado(
       doseTotal: doseCorrecao + doseExportacao + doseExtracao,
@@ -233,6 +323,10 @@ class FosforoFormula {
       doseExtracao: doseExtracao,
       pSoloCreditadoP2O5: pSoloCreditado,
       modoResumo: _modoResumo(corrigirSolo, reposicao),
+      reposicaoBaseP2O5KgHa: reposicaoBase,
+      incrementoEficienciaP2O5KgHa: incremento,
+      reposicaoAjustadaP2O5KgHa: reposicaoAjustada,
+      eficienciaSoloPercent: eficiencia,
     );
   }
 
@@ -275,11 +369,14 @@ class FosforoFormula {
     double? fep,
   }) {
     final pAtual = fosforo.valorParaCalculo;
-    return recomendacaoCorrecao(FosforoInput(
-      argila: argilaPercent,
-      pAtual: pAtual,
-      nc: pCritico,
-      referencia: 'Metodo Correcao',
-    ));
+    return recomendacaoCorrecao(
+      FosforoInput(
+        argila: argilaPercent,
+        pAtual: pAtual,
+        nc: pCritico,
+        referencia: 'Metodo Correcao',
+      ),
+      fepCorrecao: fep,
+    );
   }
 }
