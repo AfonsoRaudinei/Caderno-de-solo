@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart' show LatLng;
+import 'package:latlong2/latlong.dart' show Distance, LatLng;
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
@@ -12,6 +12,7 @@ import 'package:soloforte/features/analise/application/providers/analise_provide
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
 import 'package:soloforte/features/mapa/domain/map_engine.dart';
+import 'package:soloforte/features/mapa/presentation/widgets/ferramentas_desenho_bottom_sheet.dart';
 import 'package:soloforte/features/mapa/providers/map_engine_provider.dart';
 import 'package:soloforte/features/mapa/providers/mapa_analise_provider.dart';
 
@@ -43,9 +44,15 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   String? _focusAnaliseId;
   bool _focusRequestHandled = false;
   bool _isEditingPolygon = false;
+  MapDrawingMode _drawingMode = MapDrawingMode.none;
   LatLng? _selectedLocation;
   final List<LatLng> _polygonDraft = <LatLng>[];
+  final List<LatLng> _freehandDraft = <LatLng>[];
+  final List<MapPolyline> _confirmedPolylines = <MapPolyline>[];
   final List<LatLng> _redoStack = <LatLng>[];
+  bool _isDrawingFreehand = false;
+  static final _distance = Distance();
+  static const _freehandMinStepMeters = 2.0;
 
   @override
   void initState() {
@@ -83,6 +90,17 @@ class _MapaPageState extends ConsumerState<MapaPage> {
     _tryFocusRequestedPin(pins);
     _clearSelectionWhenPinIsRemoved(pins);
 
+    final isDrawing = _isEditingPolygon || _drawingMode != MapDrawingMode.none;
+    final draftPolylines = _freehandDraft.length >= 2
+        ? [
+            MapPolyline(
+              id: 'freehand-draft',
+              points: List<LatLng>.unmodifiable(_freehandDraft),
+              editable: true,
+            ),
+          ]
+        : const <MapPolyline>[];
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -99,13 +117,30 @@ class _MapaPageState extends ConsumerState<MapaPage> {
                       MapPolygon(
                         id: 'draft',
                         points: List<LatLng>.unmodifiable(_polygonDraft),
-                        editable: _isEditingPolygon,
+                        editable: _isEditingPolygon &&
+                            _drawingMode == MapDrawingMode.polygon,
                       ),
                     ],
+              polylines: [
+                ..._confirmedPolylines,
+                ...draftPolylines,
+              ],
+              drawingMode: _drawingMode,
               onCameraChanged: _onCameraChanged,
               onMapTap: widget.selectionMode
                   ? (point) => _onMapTapSelection(point, targetAnalise)
-                  : (_isEditingPolygon ? _onMapTapEditing : null),
+                  : (_isEditingPolygon && _drawingMode == MapDrawingMode.polygon
+                      ? _onMapTapEditing
+                      : null),
+              onDrawPointerDown: _drawingMode == MapDrawingMode.freehand
+                  ? _onFreehandPointerDown
+                  : null,
+              onDrawPointerMove: _drawingMode == MapDrawingMode.freehand
+                  ? _onFreehandPointerMove
+                  : null,
+              onDrawPointerUp: _drawingMode == MapDrawingMode.freehand
+                  ? _onFreehandPointerUp
+                  : null,
               onPinTap: _onPinTap,
               selectedPinId: _selectedPin?.id,
             ),
@@ -133,34 +168,44 @@ class _MapaPageState extends ConsumerState<MapaPage> {
               ),
             ),
           ],
-          if (_isEditingPolygon && !widget.selectionMode) ...[
+          if (isDrawing && !widget.selectionMode) ...[
             Positioned(
               top: MediaQuery.paddingOf(context).top + 14,
               left: 0,
               right: 0,
               child: Center(
                 child: _EditingBadge(
-                  text: 'Editando vertices',
-                  vertexCount: _polygonDraft.length,
+                  text: _drawingMode == MapDrawingMode.freehand
+                      ? 'Desenhando livre'
+                      : 'Editando vertices',
+                  vertexCount: _drawingMode == MapDrawingMode.freehand
+                      ? _freehandDraft.length
+                      : _polygonDraft.length,
                 ),
               ),
             ),
-            Positioned(
-              left: 18,
-              top: MediaQuery.paddingOf(context).top + 82,
-              child: _AreaBadge(areaHa: _polygonAreaHa(_polygonDraft)),
-            ),
+            if (_drawingMode == MapDrawingMode.polygon)
+              Positioned(
+                left: 18,
+                top: MediaQuery.paddingOf(context).top + 82,
+                child: _AreaBadge(areaHa: _polygonAreaHa(_polygonDraft)),
+              ),
             Positioned(
               right: 18,
               bottom: MediaQuery.paddingOf(context).bottom + 96,
               child: _EditingActions(
-                canConfirm: _polygonDraft.length >= 3,
-                canUndo: _polygonDraft.isNotEmpty,
-                canRedo: _redoStack.isNotEmpty,
-                onConfirm: _confirmarEdicaoPoligono,
-                onUndo: _desfazerVertice,
+                canConfirm: _drawingMode == MapDrawingMode.freehand
+                    ? _freehandDraft.length >= 2
+                    : _polygonDraft.length >= 3,
+                canUndo: _drawingMode == MapDrawingMode.freehand
+                    ? _freehandDraft.isNotEmpty
+                    : _polygonDraft.isNotEmpty,
+                canRedo: _drawingMode == MapDrawingMode.polygon &&
+                    _redoStack.isNotEmpty,
+                onConfirm: _confirmarDesenho,
+                onUndo: _desfazerDesenho,
                 onRedo: _refazerVertice,
-                onCancel: _cancelarEdicaoPoligono,
+                onCancel: _cancelarDesenho,
               ),
             ),
           ],
@@ -177,7 +222,7 @@ class _MapaPageState extends ConsumerState<MapaPage> {
                 _MapLocationButton(onPressed: _centralizarUsuario),
                 if (!widget.selectionMode) ...[
                   const SizedBox(height: 10),
-                  _MapEditButton(onPressed: _iniciarEdicaoPoligono),
+                  _MapEditButton(onPressed: _abrirFerramentasDesenho),
                 ],
               ],
             ),
@@ -201,9 +246,7 @@ class _MapaPageState extends ConsumerState<MapaPage> {
                 isError: true,
               ),
             ),
-          if (_selectedPin != null &&
-              !_isEditingPolygon &&
-              !widget.selectionMode)
+          if (_selectedPin != null && !isDrawing && !widget.selectionMode)
             Positioned(
               left: 0,
               right: 0,
@@ -251,7 +294,9 @@ class _MapaPageState extends ConsumerState<MapaPage> {
   }
 
   void _onPinTap(MapPin pin) {
-    if (_isEditingPolygon || widget.selectionMode) {
+    if (_drawingMode != MapDrawingMode.none ||
+        _isEditingPolygon ||
+        widget.selectionMode) {
       return;
     }
     const focusZoom = 11.5;
@@ -275,13 +320,54 @@ class _MapaPageState extends ConsumerState<MapaPage> {
     });
   }
 
-  void _iniciarEdicaoPoligono() {
+  Future<void> _abrirFerramentasDesenho() async {
+    final mode = await FerramentasDesenhoBottomSheet.show(context);
+    if (!mounted || mode == null) {
+      return;
+    }
     setState(() {
+      _drawingMode = mode;
       _isEditingPolygon = true;
       _selectedPin = null;
       _polygonDraft.clear();
+      _freehandDraft.clear();
+      _redoStack.clear();
+      _isDrawingFreehand = false;
+    });
+  }
+
+  void _onFreehandPointerDown(LatLng point) {
+    setState(() {
+      _isDrawingFreehand = true;
+      _freehandDraft
+        ..clear()
+        ..add(point);
       _redoStack.clear();
     });
+  }
+
+  void _onFreehandPointerMove(LatLng point) {
+    if (!_isDrawingFreehand) {
+      return;
+    }
+    if (_freehandDraft.isNotEmpty) {
+      final last = _freehandDraft.last;
+      if (_distance(last, point) < _freehandMinStepMeters) {
+        return;
+      }
+    }
+    setState(() => _freehandDraft.add(point));
+  }
+
+  void _onFreehandPointerUp(LatLng point) {
+    if (!_isDrawingFreehand) {
+      return;
+    }
+    if (_freehandDraft.isEmpty ||
+        _distance(_freehandDraft.last, point) >= _freehandMinStepMeters) {
+      setState(() => _freehandDraft.add(point));
+    }
+    setState(() => _isDrawingFreehand = false);
   }
 
   void _onMapTapSelection(LatLng point, AnaliseSolo? targetAnalise) {
@@ -304,6 +390,17 @@ class _MapaPageState extends ConsumerState<MapaPage> {
     Navigator.of(context).pop(selected);
   }
 
+  void _desfazerDesenho() {
+    if (_drawingMode == MapDrawingMode.freehand) {
+      if (_freehandDraft.isEmpty) {
+        return;
+      }
+      setState(() => _freehandDraft.removeLast());
+      return;
+    }
+    _desfazerVertice();
+  }
+
   void _desfazerVertice() {
     if (_polygonDraft.isEmpty) {
       return;
@@ -318,12 +415,37 @@ class _MapaPageState extends ConsumerState<MapaPage> {
     setState(() => _polygonDraft.add(_redoStack.removeLast()));
   }
 
-  void _cancelarEdicaoPoligono() {
+  void _cancelarDesenho() {
     setState(() {
       _isEditingPolygon = false;
+      _drawingMode = MapDrawingMode.none;
       _polygonDraft.clear();
+      _freehandDraft.clear();
       _redoStack.clear();
+      _isDrawingFreehand = false;
     });
+  }
+
+  void _confirmarDesenho() {
+    if (_drawingMode == MapDrawingMode.freehand) {
+      if (_freehandDraft.length < 2) {
+        return;
+      }
+      setState(() {
+        _confirmedPolylines.add(
+          MapPolyline(
+            id: 'freehand-${DateTime.now().millisecondsSinceEpoch}',
+            points: List<LatLng>.unmodifiable(_freehandDraft),
+          ),
+        );
+        _isEditingPolygon = false;
+        _drawingMode = MapDrawingMode.none;
+        _freehandDraft.clear();
+        _isDrawingFreehand = false;
+      });
+      return;
+    }
+    _confirmarEdicaoPoligono();
   }
 
   void _confirmarEdicaoPoligono() {
@@ -332,6 +454,7 @@ class _MapaPageState extends ConsumerState<MapaPage> {
     }
     setState(() {
       _isEditingPolygon = false;
+      _drawingMode = MapDrawingMode.none;
       _redoStack.clear();
     });
   }
@@ -1429,8 +1552,8 @@ class _MapEditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _RoundMapButton(
-      tooltip: 'Editar vertices',
-      icon: Icons.edit_location_alt_rounded,
+      tooltip: 'Ferramentas de desenho',
+      icon: Icons.draw_rounded,
       onPressed: onPressed,
     );
   }

@@ -25,9 +25,14 @@ class _FakeMapEngine implements MapEngine {
     required List<MapPin> pins,
     required AbstractMapController controller,
     List<MapPolygon> polygons = const <MapPolygon>[],
+    List<MapPolyline> polylines = const <MapPolyline>[],
+    MapDrawingMode drawingMode = MapDrawingMode.none,
     void Function(LatLng center, double zoom)? onCameraChanged,
     void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
+    void Function(LatLng point)? onDrawPointerDown,
+    void Function(LatLng point)? onDrawPointerMove,
+    void Function(LatLng point)? onDrawPointerUp,
     String? selectedPinId,
   }) {
     return Material(
@@ -36,12 +41,32 @@ class _FakeMapEngine implements MapEngine {
           Text('selected:${selectedPinId ?? 'none'}'),
           Text('pins:${pins.map((pin) => pin.id).join(',')}'),
           Text('polygons:${polygons.length}'),
+          Text('polylines:${polylines.length}'),
+          Text('drawing:${drawingMode.name}'),
           Text(
               'vertices:${polygons.isEmpty ? 0 : polygons.first.points.length}'),
           TextButton(
             key: const Key('fake-map-tap'),
             onPressed: () => onMapTap?.call(const LatLng(-10.1, -48.1)),
             child: const Text('Tap map'),
+          ),
+          TextButton(
+            key: const Key('fake-draw-down'),
+            onPressed: () =>
+                onDrawPointerDown?.call(const LatLng(-10.11, -48.11)),
+            child: const Text('Draw down'),
+          ),
+          TextButton(
+            key: const Key('fake-draw-move'),
+            onPressed: () =>
+                onDrawPointerMove?.call(const LatLng(-10.12, -48.12)),
+            child: const Text('Draw move'),
+          ),
+          TextButton(
+            key: const Key('fake-draw-up'),
+            onPressed: () =>
+                onDrawPointerUp?.call(const LatLng(-10.13, -48.13)),
+            child: const Text('Draw up'),
           ),
           for (final pin in pins)
             TextButton(
@@ -190,7 +215,9 @@ void main() {
     );
 
     await tester.pump();
-    await tester.tap(find.byTooltip('Editar vertices'));
+    await tester.tap(find.byTooltip('Ferramentas de desenho'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Polígono'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Editando vertices'), findsOneWidget);
@@ -216,6 +243,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Editando vertices'), findsNothing);
     expect(find.text('polygons:1'), findsOneWidget);
+  });
+
+  testWidgets('desenho livre captura traco e confirma polyline',
+      (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        analiseNotifierProvider.overrideWith(
+          () => _FakeAnaliseNotifier(
+            [
+              _analise(
+                id: 'a1',
+                talhao: 'T-01',
+                latitude: -10.1234,
+                longitude: -48.9876,
+              ),
+            ],
+          ),
+        ),
+        mapEngineProvider.overrideWithValue(_FakeMapEngine()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: MapaPage()),
+      ),
+    );
+
+    await tester.pump();
+    await tester.tap(find.byTooltip('Ferramentas de desenho'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Livre'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Desenhando livre'), findsOneWidget);
+    expect(find.text('drawing:freehand'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('fake-draw-down')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('fake-draw-move')));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Confirmar desenho'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Desenhando livre'), findsNothing);
+    expect(find.text('polylines:1'), findsOneWidget);
   });
 
   testWidgets('modo selecao mostra pin unico e retorna ponto tocado',
