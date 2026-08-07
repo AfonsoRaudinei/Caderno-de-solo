@@ -66,7 +66,7 @@ class LoginPage extends HookConsumerWidget {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          const _DarkBackground(),
+          const _LoginBackground(),
           SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -119,7 +119,7 @@ class LoginPage extends HookConsumerWidget {
                           child: AnimatedOpacity(
                             duration: const Duration(milliseconds: 520),
                             opacity: reveal.value ? 1 : 0,
-                            child: _DarkLoginCard(
+                            child: _LoginCard(
                               emailController: emailController,
                               senhaController: senhaController,
                               isLoading: loginState.isLoading,
@@ -141,26 +141,16 @@ class LoginPage extends HookConsumerWidget {
   }
 }
 
-class _DarkBackground extends StatelessWidget {
-  const _DarkBackground();
+class _LoginBackground extends StatelessWidget {
+  const _LoginBackground();
 
   @override
   Widget build(BuildContext context) {
-    return const Stack(
+    return Stack(
       children: [
-        DecoratedBox(
+        const DecoratedBox(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF7FAFF),
-                Color(0xFFEFF6FF),
-                Color(0xFFF8FBFF),
-                Color(0xFFFFFFFF),
-              ],
-              stops: [0.0, 0.35, 0.7, 1.0],
-            ),
+            gradient: AppColors.backgroundGradient,
           ),
           child: SizedBox.expand(),
         ),
@@ -169,15 +159,7 @@ class _DarkBackground extends StatelessWidget {
           right: -70,
           child: _AmbientGlow(
             size: 300,
-            color: Color(0x263B82F6),
-          ),
-        ),
-        Positioned(
-          top: 180,
-          left: -80,
-          child: _AmbientGlow(
-            size: 250,
-            color: Color(0x167ACC49),
+            color: AppColors.primary.withValues(alpha: 0.12),
           ),
         ),
         Positioned(
@@ -185,10 +167,10 @@ class _DarkBackground extends StatelessWidget {
           right: -30,
           child: _AmbientGlow(
             size: 260,
-            color: Color(0x183B82F6),
+            color: AppColors.primary.withValues(alpha: 0.08),
           ),
         ),
-        Positioned.fill(child: _LeafDetailLayer()),
+        const Positioned.fill(child: _LeafDetailLayer()),
       ],
     );
   }
@@ -289,18 +271,14 @@ class _LoginHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _LogoIcon(assetPath: 'assets/soloforte.png', size: 58 * scale),
-            SizedBox(width: 12 * scale),
-            _LogoDivider(height: 44 * scale),
-            SizedBox(width: 12 * scale),
-            _LogoIcon(assetPath: 'assets/icons/icon.png', size: 72 * scale),
-          ],
+        Center(
+          child: _LogoIcon(
+            assetPath: 'assets/soloforte.png',
+            size: 72 * scale,
+          ),
         ),
-        SizedBox(height: 12 * scale),
-        _BrandHeroBlock(scale: scale),
+        SizedBox(height: 16 * scale),
+        _BrandCopy(scale: scale),
       ],
     );
   }
@@ -321,49 +299,6 @@ class _LogoIcon extends StatelessWidget {
       width: size,
       height: size,
       child: Image.asset(assetPath, fit: BoxFit.contain),
-    );
-  }
-}
-
-class _LogoDivider extends StatelessWidget {
-  final double height;
-  const _LogoDivider({required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: height,
-      color: const Color(0x40698173),
-    );
-  }
-}
-
-class _BrandHeroBlock extends StatelessWidget {
-  final double scale;
-  const _BrandHeroBlock({required this.scale});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final showHero = constraints.maxWidth > 320;
-        return Stack(
-          children: [
-            if (showHero)
-              Positioned(
-                right: 0,
-                top: 4 * scale,
-                bottom: 2,
-                child: _HeroIllustrationSlot(scale: scale),
-              ),
-            Padding(
-              padding: EdgeInsets.only(right: showHero ? 126 * scale : 0),
-              child: _BrandCopy(scale: scale),
-            ),
-          ],
-        );
-      },
     );
   }
 }
@@ -408,41 +343,6 @@ class _BrandCopy extends StatelessWidget {
         SizedBox(height: 10 * scale),
         _BrandMessageCarousel(scale: scale),
       ],
-    );
-  }
-}
-
-class _HeroIllustrationSlot extends StatelessWidget {
-  final double scale;
-  const _HeroIllustrationSlot({required this.scale});
-
-  static const String _heroAssetPath = 'assets/images/IMG_2664.jpeg';
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 148 * scale,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          _AmbientGlow(size: 140 * scale, color: const Color(0x2D72C94A)),
-          ColorFiltered(
-            colorFilter: const ColorFilter.mode(
-              Color(0xFF47745D),
-              BlendMode.multiply,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                _heroAssetPath,
-                fit: BoxFit.cover,
-                alignment: Alignment.centerRight,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -625,14 +525,14 @@ class _AuthSegmentedControl extends StatelessWidget {
   }
 }
 
-class _DarkLoginCard extends StatelessWidget {
+class _LoginCard extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController senhaController;
   final bool isLoading;
   final VoidCallback onSubmit;
   final double scale;
 
-  const _DarkLoginCard({
+  const _LoginCard({
     required this.emailController,
     required this.senhaController,
     required this.isLoading,
@@ -701,7 +601,7 @@ class _DarkLoginCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 14 * scale),
-              _DarkInputField(
+              _LoginInputField(
                 controller: emailController,
                 hint: 'seu@email.com',
                 keyboardType: TextInputType.emailAddress,
@@ -721,7 +621,7 @@ class _DarkLoginCard extends StatelessWidget {
                 },
               ),
               SizedBox(height: 10 * scale),
-              _DarkInputField(
+              _LoginInputField(
                 controller: senhaController,
                 hint: '••••••••',
                 obscureText: true,
@@ -768,9 +668,7 @@ class _DarkLoginCard extends StatelessWidget {
                 onPressed: onSubmit,
                 scale: scale,
               ),
-              SizedBox(height: 12 * scale),
-              _DividerWithText(text: 'ou', scale: scale),
-              SizedBox(height: 12 * scale),
+              SizedBox(height: 16 * scale),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -803,7 +701,7 @@ class _DarkLoginCard extends StatelessWidget {
   }
 }
 
-class _DarkInputField extends StatefulWidget {
+class _LoginInputField extends StatefulWidget {
   final TextEditingController controller;
   final String hint;
   final TextInputType? keyboardType;
@@ -816,7 +714,7 @@ class _DarkInputField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final double fontScale;
 
-  const _DarkInputField({
+  const _LoginInputField({
     required this.controller,
     required this.hint,
     required this.prefixIcon,
@@ -831,10 +729,10 @@ class _DarkInputField extends StatefulWidget {
   });
 
   @override
-  State<_DarkInputField> createState() => _DarkInputFieldState();
+  State<_LoginInputField> createState() => _LoginInputFieldState();
 }
 
-class _DarkInputFieldState extends State<_DarkInputField> {
+class _LoginInputFieldState extends State<_LoginInputField> {
   late final FocusNode _focusNode;
   bool _focused = false;
   bool _obscured = false;
@@ -882,7 +780,7 @@ class _DarkInputFieldState extends State<_DarkInputField> {
           fontSize: 16 * widget.fontScale,
         ),
         filled: true,
-        fillColor: const Color(0xFFF5F7FA),
+        fillColor: AppColors.bgSecondary,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         prefixIcon: Icon(
@@ -912,11 +810,11 @@ class _DarkInputFieldState extends State<_DarkInputField> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE75A63), width: 1.2),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE75A63), width: 1.4),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.4),
         ),
         errorStyle: AppTextStyles.error.copyWith(color: AppColors.error),
       ),
@@ -1019,37 +917,6 @@ class _PremiumLoginButtonState extends State<_PremiumLoginButton> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DividerWithText extends StatelessWidget {
-  final String text;
-  final double scale;
-
-  const _DividerWithText({required this.text, this.scale = 1});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(
-          child: Divider(color: Color(0x3B70807A), thickness: 1),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10 * scale),
-          child: Text(
-            text,
-            style: AppTextStyles.body.copyWith(
-              color: const Color(0xFF84918C),
-              fontSize: 14 * scale,
-            ),
-          ),
-        ),
-        const Expanded(
-          child: Divider(color: Color(0x3B70807A), thickness: 1),
-        ),
-      ],
     );
   }
 }

@@ -115,13 +115,31 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
         clearErro: true,
       );
     } on ClienteSessionException {
-      await _markRequiresLogin(signOut: true);
+      await _handleSessionException();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         erro: 'Erro ao carregar clientes: $e',
       );
     }
+  }
+
+  /// Permission-denied no Firestore não significa sessão Firebase encerrada.
+  /// Se o usuário ainda estiver autenticado, mantém a tela e mostra erro
+  /// recuperável em vez de fazer signOut e jogar para /login.
+  Future<void> _handleSessionException() async {
+    final usuarioId = await _waitForCurrentUserId(
+      timeout: const Duration(seconds: 1),
+    );
+    if (usuarioId != null && usuarioId.isNotEmpty) {
+      state = state.copyWith(
+        isLoading: false,
+        erro: 'Não foi possível sincronizar os clientes. Puxe para atualizar.',
+        requiresLogin: false,
+      );
+      return;
+    }
+    await _markRequiresLogin(signOut: true);
   }
 
   Future<String?> criarCliente(ClienteEntity cliente) async {
@@ -172,7 +190,7 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
       }
       return id;
     } on ClienteSessionException {
-      await _markRequiresLogin(signOut: true);
+      await _handleSessionException();
       return null;
     } catch (e) {
       state = state.copyWith(
@@ -186,23 +204,56 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
   Future<bool> atualizarCliente(ClienteEntity cliente) async {
     state = state.copyWith(isLoading: true, clearErro: true);
     try {
-      await _repository.atualizarCliente(
-        cliente.copyWith(atualizadoEm: DateTime.now()),
+      final updated = cliente.copyWith(atualizadoEm: DateTime.now());
+      await _repository.atualizarCliente(updated);
+
+      // Persistência ok: atualiza estado local antes do reload remoto.
+      state = state.copyWith(
+        clientes: _upsertCliente(state.clientes, updated),
+        clienteSelecionado: updated,
+        isLoading: false,
+        requiresLogin: false,
+        clearErro: true,
       );
 
-      // Reload não pode inverter o sucesso do update.
+      // Reload não pode inverter o sucesso do update nem forçar login.
       try {
-        await carregarClientes();
-        await carregarClienteDetalhe(cliente.id);
+        final usuarioId = await _waitForCurrentUserId(
+          timeout: const Duration(seconds: 2),
+        );
+        if (usuarioId != null && usuarioId.isNotEmpty) {
+          final clientes = await _repository.listarClientes(usuarioId);
+          final saved =
+              await _repository.buscarClientePorId(cliente.id) ?? updated;
+          state = state.copyWith(
+            clientes: _upsertCliente(clientes, saved),
+            clienteSelecionado: saved,
+            isLoading: false,
+            requiresLogin: false,
+            clearErro: true,
+          );
+        }
+      } on ClienteSessionException {
+        state = state.copyWith(
+          isLoading: false,
+          clientes: _upsertCliente(state.clientes, updated),
+          clienteSelecionado: updated,
+          erro:
+              'Cliente atualizado. Não foi possível sincronizar a lista agora.',
+          requiresLogin: false,
+        );
       } catch (e) {
         state = state.copyWith(
           isLoading: false,
+          clientes: _upsertCliente(state.clientes, updated),
+          clienteSelecionado: updated,
           erro: 'Cliente atualizado, mas a tela não recarregou: $e',
+          requiresLogin: false,
         );
       }
       return true;
     } on ClienteSessionException {
-      await _markRequiresLogin(signOut: true);
+      await _handleSessionException();
       return false;
     } catch (e) {
       state = state.copyWith(

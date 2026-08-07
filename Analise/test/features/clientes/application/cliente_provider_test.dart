@@ -41,7 +41,9 @@ void main() {
       expect(notifier.state.isLoading, isFalse);
     });
 
-    test('marca requiresLogin quando Firestore nega permissao', () async {
+    test(
+        'nao força login quando Firestore nega permissão mas Auth ainda tem usuário',
+        () async {
       var signedOut = false;
       final notifier = ClienteNotifier(
         repository: _SessionDeniedRepository(),
@@ -69,10 +71,44 @@ void main() {
       );
 
       expect(id, isNull);
-      expect(signedOut, isTrue);
+      expect(signedOut, isFalse);
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.requiresLogin, isFalse);
+      expect(notifier.state.erro, isNotNull);
+    });
+
+    test('marca requiresLogin quando Auth não tem usuário', () async {
+      var signedOut = false;
+      final notifier = ClienteNotifier(
+        repository: _SessionDeniedRepository(),
+        waitForCurrentUserId: ({timeout = const Duration(seconds: 5)}) async {
+          return null;
+        },
+        signOut: () async {
+          signedOut = true;
+        },
+      );
+
+      final id = await notifier.criarCliente(
+        ClienteEntity(
+          id: '',
+          token: '',
+          nome: 'Cliente Teste',
+          telefone: '',
+          email: '',
+          cidade: 'Palmas',
+          estado: 'TO',
+          usuarioId: '',
+          criadoEm: DateTime(2026, 7, 31),
+          atualizadoEm: DateTime(2026, 7, 31),
+        ),
+      );
+
+      expect(id, isNull);
+      // UID nulo no início do create chama _markRequiresLogin sem signOut.
+      expect(signedOut, isFalse);
       expect(notifier.state.isLoading, isFalse);
       expect(notifier.state.requiresLogin, isTrue);
-      expect(notifier.state.erro, isNull);
     });
   });
 }

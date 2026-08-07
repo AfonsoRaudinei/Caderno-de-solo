@@ -123,7 +123,8 @@ void main() {
       expect(find.text('novo cliente'), findsOneWidget);
     });
 
-    testWidgets('recarrega lista quando cadastro retorna sucesso',
+    testWidgets(
+        'não recarrega lista ao voltar do cadastro (evita redirect falso)',
         (tester) async {
       final notifier = _FakeClienteNotifier(const ClienteState());
       final router = GoRouter(
@@ -159,7 +160,20 @@ void main() {
       await tester.tap(find.text('salvar fake'));
       await tester.pumpAndSettle();
 
-      expect(notifier.carregarClientesCount, 1);
+      expect(notifier.carregarClientesCount, 0);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('empty state não duplica botão de adicionar (só FAB)',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          notifier: _FakeClienteNotifier(const ClienteState()),
+        ),
+      );
+
+      expect(find.text('Adicionar cliente'), findsNothing);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
     testWidgets('campo de busca filtra por nome', (tester) async {
