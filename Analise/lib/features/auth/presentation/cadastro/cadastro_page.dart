@@ -115,7 +115,7 @@ class CadastroPage extends HookConsumerWidget {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          const _CadastroDarkBackground(),
+          const _CadastroBackground(),
           SafeArea(
             child: Column(
               children: [
@@ -148,7 +148,7 @@ class CadastroPage extends HookConsumerWidget {
                                   scale: scale,
                                 ),
                                 SizedBox(height: 16 * scale),
-                                _DarkTextField(
+                                _CadastroTextField(
                                   controller: nomeController,
                                   label: AppStrings.nomeCompleto,
                                   hint: 'Seu nome completo',
@@ -163,7 +163,7 @@ class CadastroPage extends HookConsumerWidget {
                                 ValueListenableBuilder<String?>(
                                   valueListenable: perfilNotifier,
                                   builder: (context, val, _) {
-                                    return _DarkDropdownField<String>(
+                                    return _CadastroDropdownField<String>(
                                       label: 'Perfil principal',
                                       hint: 'Selecione seu perfil',
                                       value: val,
@@ -206,7 +206,7 @@ class CadastroPage extends HookConsumerWidget {
                                 ValueListenableBuilder<String?>(
                                   valueListenable: estadoNotifier,
                                   builder: (context, val, _) {
-                                    return _DarkDropdownField<String>(
+                                    return _CadastroDropdownField<String>(
                                       label: 'Estado (UF)',
                                       hint: 'Selecione o estado',
                                       value: val,
@@ -219,7 +219,7 @@ class CadastroPage extends HookConsumerWidget {
                                   },
                                 ),
                                 SizedBox(height: 12 * scale),
-                                _DarkTextField(
+                                _CadastroTextField(
                                   controller: cidadeController,
                                   label: 'Cidade base ou região',
                                   hint: 'Ex: Rio Verde',
@@ -259,7 +259,7 @@ class CadastroPage extends HookConsumerWidget {
                                   scale: scale,
                                 ),
                                 SizedBox(height: 16 * scale),
-                                _DarkTextField(
+                                _CadastroTextField(
                                   controller: emailController,
                                   label: AppStrings.email,
                                   hint: 'seu@email.com',
@@ -278,7 +278,7 @@ class CadastroPage extends HookConsumerWidget {
                                   },
                                 ),
                                 SizedBox(height: 12 * scale),
-                                _DarkTextField(
+                                _CadastroTextField(
                                   controller: senhaController,
                                   label: AppStrings.senha,
                                   hint: '••••••••',
@@ -291,7 +291,7 @@ class CadastroPage extends HookConsumerWidget {
                                       : null,
                                 ),
                                 SizedBox(height: 12 * scale),
-                                _DarkTextField(
+                                _CadastroTextField(
                                   controller: confirmarSenhaController,
                                   label: AppStrings.confirmarSenha,
                                   hint: '••••••••',
@@ -337,8 +337,8 @@ class CadastroPage extends HookConsumerWidget {
   }
 }
 
-class _CadastroDarkBackground extends StatelessWidget {
-  const _CadastroDarkBackground();
+class _CadastroBackground extends StatelessWidget {
+  const _CadastroBackground();
 
   @override
   Widget build(BuildContext context) {
@@ -346,29 +346,25 @@ class _CadastroDarkBackground extends StatelessWidget {
       children: [
         const DecoratedBox(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF7FAFF),
-                Color(0xFFEFF6FF),
-                Color(0xFFF8FBFF),
-                Color(0xFFFFFFFF),
-              ],
-              stops: [0.0, 0.35, 0.7, 1.0],
-            ),
+            gradient: AppColors.backgroundGradient,
           ),
           child: SizedBox.expand(),
         ),
-        const Positioned(
+        Positioned(
           top: -120,
           right: -80,
-          child: _AmbientGlow(size: 290, color: Color(0x263B82F6)),
+          child: _AmbientGlow(
+            size: 290,
+            color: AppColors.primary.withValues(alpha: 0.12),
+          ),
         ),
-        const Positioned(
+        Positioned(
           bottom: -100,
           left: -70,
-          child: _AmbientGlow(size: 260, color: Color(0x167ACC49)),
+          child: _AmbientGlow(
+            size: 260,
+            color: AppColors.primary.withValues(alpha: 0.08),
+          ),
         ),
         Positioned.fill(
           child: IgnorePointer(
@@ -599,7 +595,7 @@ class _StepTitle extends StatelessWidget {
   }
 }
 
-class _DarkTextField extends StatefulWidget {
+class _CadastroTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final String hint;
@@ -611,7 +607,7 @@ class _DarkTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final double scale;
 
-  const _DarkTextField({
+  const _CadastroTextField({
     required this.controller,
     required this.label,
     required this.hint,
@@ -625,10 +621,10 @@ class _DarkTextField extends StatefulWidget {
   });
 
   @override
-  State<_DarkTextField> createState() => _DarkTextFieldState();
+  State<_CadastroTextField> createState() => _CadastroTextFieldState();
 }
 
-class _DarkTextFieldState extends State<_DarkTextField> {
+class _CadastroTextFieldState extends State<_CadastroTextField> {
   late final FocusNode _focusNode;
   bool _focused = false;
   bool _obscured = false;
@@ -734,7 +730,7 @@ class _DarkTextFieldState extends State<_DarkTextField> {
   }
 }
 
-class _DarkDropdownField<T> extends StatelessWidget {
+class _CadastroDropdownField<T> extends StatelessWidget {
   final String label;
   final String hint;
   final T? value;
@@ -743,7 +739,7 @@ class _DarkDropdownField<T> extends StatelessWidget {
   final ValueChanged<T?> onChanged;
   final double scale;
 
-  const _DarkDropdownField({
+  const _CadastroDropdownField({
     required this.label,
     required this.hint,
     required this.value,

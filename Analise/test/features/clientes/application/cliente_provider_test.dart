@@ -41,7 +41,9 @@ void main() {
       expect(notifier.state.isLoading, isFalse);
     });
 
-    test('marca requiresLogin quando Firestore nega permissao', () async {
+    test(
+        'nao força login quando Firestore nega permissão mas Auth ainda tem usuário',
+        () async {
       var signedOut = false;
       final notifier = ClienteNotifier(
         repository: _SessionDeniedRepository(),
@@ -69,6 +71,84 @@ void main() {
       );
 
       expect(id, isNull);
+      expect(signedOut, isFalse);
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.requiresLogin, isFalse);
+      expect(
+        notifier.state.erro,
+        'Sem permissão para salvar o cliente. Verifique a sessão e tente novamente.',
+      );
+    });
+
+    test('marca requiresLogin quando Auth não tem usuário no início', () async {
+      var signedOut = false;
+      final notifier = ClienteNotifier(
+        repository: _SessionDeniedRepository(),
+        waitForCurrentUserId: ({timeout = const Duration(seconds: 5)}) async {
+          return null;
+        },
+        signOut: () async {
+          signedOut = true;
+        },
+      );
+
+      final id = await notifier.criarCliente(
+        ClienteEntity(
+          id: '',
+          token: '',
+          nome: 'Cliente Teste',
+          telefone: '',
+          email: '',
+          cidade: 'Palmas',
+          estado: 'TO',
+          usuarioId: '',
+          criadoEm: DateTime(2026, 7, 31),
+          atualizadoEm: DateTime(2026, 7, 31),
+        ),
+      );
+
+      expect(id, isNull);
+      // UID nulo no início do create chama _markRequiresLogin sem signOut.
+      expect(signedOut, isFalse);
+      expect(notifier.state.isLoading, isFalse);
+      expect(notifier.state.requiresLogin, isTrue);
+    });
+
+    test(
+        'faz signOut e requiresLogin quando sessão cai após ClienteSessionException',
+        () async {
+      var signedOut = false;
+      var waitCalls = 0;
+      final notifier = ClienteNotifier(
+        repository: _SessionDeniedRepository(),
+        waitForCurrentUserId: ({timeout = const Duration(seconds: 5)}) async {
+          waitCalls++;
+          // 1ª chamada: create inicia com Auth válido.
+          // 2ª chamada: _handleSessionException confirma que a sessão acabou.
+          return waitCalls == 1 ? 'user-1' : null;
+        },
+        signOut: () async {
+          signedOut = true;
+        },
+      );
+
+      final id = await notifier.criarCliente(
+        ClienteEntity(
+          id: '',
+          token: '',
+          nome: 'Cliente Teste',
+          telefone: '',
+          email: '',
+          cidade: 'Palmas',
+          estado: 'TO',
+          usuarioId: '',
+          criadoEm: DateTime(2026, 7, 31),
+          atualizadoEm: DateTime(2026, 7, 31),
+        ),
+      );
+
+      expect(id, isNull);
+      expect(waitCalls, greaterThanOrEqualTo(2));
       expect(signedOut, isTrue);
       expect(notifier.state.isLoading, isFalse);
       expect(notifier.state.requiresLogin, isTrue);

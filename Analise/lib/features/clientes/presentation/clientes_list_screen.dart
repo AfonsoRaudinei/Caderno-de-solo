@@ -113,15 +113,10 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
                   }
 
                   if (clientes.isEmpty) {
-                    return AppEmptyState(
+                    return const AppEmptyState(
                       title: 'Nenhum cliente cadastrado',
                       message: 'Toque em + para adicionar',
                       icon: Icons.person_add_alt_1_outlined,
-                      action: FilledButton.icon(
-                        onPressed: _abrirNovoCliente,
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('Adicionar cliente'),
-                      ),
                     );
                   }
 
@@ -157,8 +152,9 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
   }
 
   Future<void> _abrirNovoCliente() async {
-    final result = await context.push<bool>(AppRoutes.clienteNovo);
-    if (!mounted || result != true) return;
-    await ref.read(clienteProvider.notifier).carregarClientes();
+    // O formulário já atualiza o clienteProvider ao salvar.
+    // Evita um reload extra que pode marcar requiresLogin por falha
+    // transitória de permissão/rede e redirecionar para /login.
+    await context.push<bool>(AppRoutes.clienteNovo);
   }
 }
