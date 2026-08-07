@@ -127,14 +127,15 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
   /// Permission-denied no Firestore não significa sessão Firebase encerrada.
   /// Se o usuário ainda estiver autenticado, mantém a tela e mostra erro
   /// recuperável em vez de fazer signOut e jogar para /login.
-  Future<void> _handleSessionException() async {
+  Future<void> _handleSessionException({String? softError}) async {
     final usuarioId = await _waitForCurrentUserId(
       timeout: const Duration(seconds: 1),
     );
     if (usuarioId != null && usuarioId.isNotEmpty) {
       state = state.copyWith(
         isLoading: false,
-        erro: 'Não foi possível sincronizar os clientes. Puxe para atualizar.',
+        erro: softError ??
+            'Não foi possível sincronizar os clientes. Puxe para atualizar.',
         requiresLogin: false,
       );
       return;
@@ -190,7 +191,10 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
       }
       return id;
     } on ClienteSessionException {
-      await _handleSessionException();
+      await _handleSessionException(
+        softError:
+            'Sem permissão para salvar o cliente. Verifique a sessão e tente novamente.',
+      );
       return null;
     } catch (e) {
       state = state.copyWith(
@@ -253,7 +257,10 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
       }
       return true;
     } on ClienteSessionException {
-      await _handleSessionException();
+      await _handleSessionException(
+        softError:
+            'Sem permissão para atualizar o cliente. Verifique a sessão e tente novamente.',
+      );
       return false;
     } catch (e) {
       state = state.copyWith(
