@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,9 +16,14 @@ class FlutterMapEngine implements MapEngine {
     required List<MapPin> pins,
     required AbstractMapController controller,
     List<MapPolygon> polygons = const <MapPolygon>[],
+    List<MapPolyline> polylines = const <MapPolyline>[],
+    MapDrawingMode drawingMode = MapDrawingMode.none,
     void Function(LatLng center, double zoom)? onCameraChanged,
     void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
+    void Function(LatLng point)? onDrawPointerDown,
+    void Function(LatLng point)? onDrawPointerMove,
+    void Function(LatLng point)? onDrawPointerUp,
     String? selectedPinId,
   }) {
     if (controller is MapControllerAdapter) {
@@ -25,17 +32,31 @@ class FlutterMapEngine implements MapEngine {
       });
     }
 
-    return FlutterMap(
+    final captureDrawGestures = drawingMode == MapDrawingMode.freehand;
+    final draftPolylines = _buildDraftPolylines(polygons, polylines);
+    final renderedPolylines = [
+      ...polylines
+          .where(
+            (polyline) => polyline.points.length >= 2 && !polyline.editable,
+          )
+          .map(_toPolyline),
+      ...draftPolylines,
+    ];
+
+    final map = FlutterMap(
       mapController: _mapController,
       options: MapOptions(
         initialCenter: center,
         initialZoom: zoom,
         minZoom: 3.5,
         maxZoom: 18.0,
+        interactionOptions: InteractionOptions(
+          flags: captureDrawGestures
+              ? InteractiveFlag.all & ~InteractiveFlag.drag
+              : InteractiveFlag.all,
+        ),
         onPositionChanged: (position, _) {
-          final center = position.center;
-          final currentZoom = position.zoom;
-          onCameraChanged?.call(center, currentZoom);
+          onCameraChanged?.call(position.center, position.zoom);
         },
         onTap: (_, point) => onMapTap?.call(point),
       ),
@@ -44,6 +65,10 @@ class FlutterMapEngine implements MapEngine {
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'br.com.cadernodesolo',
         ),
+        if (renderedPolylines.isNotEmpty)
+          PolylineLayer(
+            polylines: renderedPolylines,
+          ),
         if (polygons.isNotEmpty)
           PolygonLayer(
             polygons: polygons
@@ -94,6 +119,95 @@ class FlutterMapEngine implements MapEngine {
           ],
         ),
       ],
+    );
+
+    if (!captureDrawGestures) {
+      return map;
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        map,
+        Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (event) {
+            final point = _pointToLatLng(event.localPosition);
+            if (point != null) {
+              onDrawPointerDown?.call(point);
+            }
+          },
+          onPointerMove: (event) {
+            final point = _pointToLatLng(event.localPosition);
+            if (point != null) {
+              onDrawPointerMove?.call(point);
+            }
+          },
+          onPointerUp: (event) {
+            final point = _pointToLatLng(event.localPosition);
+            if (point != null) {
+              onDrawPointerUp?.call(point);
+            }
+          },
+          child: const SizedBox.expand(),
+        ),
+      ],
+    );
+  }
+
+  LatLng? _pointToLatLng(Offset localPosition) {
+    try {
+      return _mapController.camera.pointToLatLng(
+        math.Point<double>(localPosition.dx, localPosition.dy),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Polyline> _buildDraftPolylines(
+    List<MapPolygon> polygons,
+    List<MapPolyline> polylines,
+  ) {
+    final rendered = <Polyline>[];
+
+    for (final polygon in polygons) {
+      if (polygon.points.length < 2) {
+        continue;
+      }
+      rendered.add(
+        Polyline(
+          points: polygon.points,
+          color: AppColors.primary,
+          strokeWidth: 3,
+        ),
+      );
+      if (polygon.editable && polygon.points.length >= 3) {
+        rendered.add(
+          Polyline(
+            points: [polygon.points.last, polygon.points.first],
+            color: AppColors.primary.withValues(alpha: 0.55),
+            strokeWidth: 2,
+            pattern: StrokePattern.dashed(segments: const [8, 8]),
+          ),
+        );
+      }
+    }
+
+    for (final polyline in polylines) {
+      if (polyline.editable && polyline.points.length >= 2) {
+        rendered.add(_toPolyline(polyline));
+      }
+    }
+
+    return rendered;
+  }
+
+  Polyline _toPolyline(MapPolyline polyline) {
+    return Polyline(
+      points: polyline.points,
+      color: AppColors.primary,
+      strokeWidth: 3,
     );
   }
 }

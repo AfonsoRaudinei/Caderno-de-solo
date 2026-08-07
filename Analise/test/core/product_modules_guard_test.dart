@@ -25,9 +25,10 @@ void main() {
     test('MainPage mantém aba Clientes como primeira tab', () {
       expect(MainPage.tabs, isNotEmpty);
       expect(MainPage.tabs.first.label, 'Clientes');
+      expect(MainPage.tabs.length, 4);
       final labels = MainPage.tabs.map((t) => t.label).toList();
-      expect(labels,
-          containsAll(['Clientes', 'Análise', 'Lab', 'Mapa', 'Config']));
+      expect(labels, containsAll(['Clientes', 'Lab', 'Mapa', 'Config']));
+      expect(labels, isNot(contains('Análise')));
     });
   });
 }

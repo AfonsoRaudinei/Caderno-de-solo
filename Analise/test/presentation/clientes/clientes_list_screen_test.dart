@@ -37,6 +37,60 @@ void main() {
       expect(find.textContaining('token SF-2026-ABCD'), findsOneWidget);
     });
 
+    testWidgets('tap no card navega para /clientes/:id/analises',
+        (tester) async {
+      final cliente = _cliente(nome: 'Cliente Teste');
+      final router = GoRouter(
+        initialLocation: AppRoutes.clientes,
+        routes: [
+          GoRoute(
+            path: AppRoutes.clientes,
+            builder: (_, __) => const ClientesListScreen(),
+          ),
+          GoRoute(
+            path: '/clientes/:id/analises',
+            builder: (_, state) => Scaffold(
+              body: Text('analises ${state.pathParameters['id']}'),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clienteProvider.overrideWith(
+              (ref) => _FakeClienteNotifier(
+                ClienteState(clientes: [cliente]),
+              ),
+            ),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      await tester.tap(find.text('Cliente Teste'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('analises 1'), findsOneWidget);
+    });
+
+    testWidgets('exibe badge com contagem de análises no card', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          notifier: _FakeClienteNotifier(
+            ClienteState(
+              clientes: [
+                _cliente(nome: 'Com Análises', analiseIds: ['a1', 'a2']),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('2'), findsOneWidget);
+    });
+
     testWidgets('FAB navega para /clientes/novo', (tester) async {
       final router = GoRouter(
         initialLocation: AppRoutes.clientes,
@@ -227,6 +281,7 @@ class _NoopDatasource extends ClienteFirestoreDatasource {
 ClienteEntity _cliente({
   String nome = 'Cliente',
   String token = 'SF-2026-ABCD',
+  List<String> analiseIds = const [],
 }) {
   return ClienteEntity(
     id: '1',
@@ -247,5 +302,6 @@ ClienteEntity _cliente({
     usuarioId: 'user-1',
     criadoEm: DateTime(2026, 7, 14),
     atualizadoEm: DateTime(2026, 7, 14),
+    analiseIds: analiseIds,
   );
 }

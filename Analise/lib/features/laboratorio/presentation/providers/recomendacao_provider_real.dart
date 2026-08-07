@@ -95,15 +95,12 @@ final recomendacaoProvider =
 
     final laboratorios =
         analiseMatches.map((a) => a.laboratorio.trim()).toSet();
-    final profundidades = analiseMatches
-        .map((a) => _normalizarProfundidade(a.profundidade))
-        .toSet();
-    if (laboratorios.length > 1 || profundidades.length > 1) {
+    if (laboratorios.length > 1) {
       return const RecomendacaoResult(
         recomendacao: null,
         diagnostico: DiagnosticoRecomendacao(
           erros: [
-            'Selecione apenas amostras do mesmo laboratório e profundidade.',
+            'Selecione apenas amostras do mesmo laboratório.',
           ],
         ),
       );
@@ -127,11 +124,6 @@ final recomendacaoProvider =
 final recomendacaoSearchQueryProvider = StateProvider.autoDispose<String>(
   (ref) => '',
 );
-
-String _normalizarProfundidade(String raw) {
-  final value = raw.trim();
-  return value.isEmpty ? '0-20' : value;
-}
 
 AnaliseCompleta _buildAnaliseParaRecomendacao(List<AnaliseSolo> analises) {
   if (analises.length == 1) {

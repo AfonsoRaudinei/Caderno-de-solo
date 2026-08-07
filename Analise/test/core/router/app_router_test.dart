@@ -176,13 +176,13 @@ void main() {
     expect(redirect, isNull);
   });
 
-  test('redireciona rota auth para análise quando sessão ativa', () {
+  test('redireciona rota auth para clientes quando sessão ativa', () {
     final redirect = resolveAppRedirect(
       path: AppRoutes.login,
       currentUser: user,
     );
 
-    expect(redirect, AppRoutes.analise);
+    expect(redirect, AppRoutes.clientes);
   });
 
   test('redireciona usuário sem e-mail verificado para verificação', () {
@@ -213,7 +213,7 @@ void main() {
       currentUser: user,
     );
 
-    expect(redirect, AppRoutes.analise);
+    expect(redirect, AppRoutes.clientes);
   });
 
   test('guard não entra em loop na rota /login sem autenticação', () {
@@ -225,13 +225,13 @@ void main() {
     expect(redirect, isNull);
   });
 
-  test('redireciona raiz para análise quando autenticado', () {
+  test('redireciona raiz para clientes quando autenticado', () {
     final redirect = resolveAppRedirect(
       path: AppRoutes.home,
       currentUser: user,
     );
 
-    expect(redirect, AppRoutes.analise);
+    expect(redirect, AppRoutes.clientes);
   });
 
   test('redireciona raiz para login quando não autenticado', () {
@@ -328,14 +328,14 @@ void main() {
       );
     });
 
-    test('auth-bootstrap com sessão verificada vai para análise', () {
+    test('auth-bootstrap com sessão verificada vai para clientes', () {
       expect(
         resolveRouterRedirect(
           isBootstrapping: false,
           path: AppRoutes.authBootstrap,
           currentUser: user,
         ),
-        AppRoutes.analise,
+        AppRoutes.clientes,
       );
     });
 
@@ -370,7 +370,7 @@ void main() {
           path: AppRoutes.authBootstrap,
           currentUser: user,
         ),
-        AppRoutes.analise,
+        AppRoutes.clientes,
       );
     });
   });

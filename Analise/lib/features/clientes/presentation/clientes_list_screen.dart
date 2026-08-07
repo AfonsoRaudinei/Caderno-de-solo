@@ -140,7 +140,7 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
                                 .read(clienteProvider.notifier)
                                 .selecionarCliente(cliente);
                             context.push(
-                              AppRoutes.clienteDetalhePath(cliente.id),
+                              AppRoutes.clienteAnalisesPath(cliente.id),
                             );
                           },
                         );

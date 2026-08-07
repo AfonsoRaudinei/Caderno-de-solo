@@ -76,12 +76,12 @@ String? resolveAppRedirect({
   }
 
   if (isAuthenticated && (isAuthRoute || path == AppRoutes.verificarEmail)) {
-    return AppRoutes.analise;
+    return AppRoutes.clientes;
   }
 
   if (path == AppRoutes.home) {
     return isAuthenticated && hasVerifiedEmail
-        ? AppRoutes.analise
+        ? AppRoutes.clientes
         : AppRoutes.login;
   }
 
@@ -103,7 +103,7 @@ String? resolveRouterRedirect({
       return AppRoutes.login;
     }
     return currentUser.emailVerified
-        ? AppRoutes.analise
+        ? AppRoutes.clientes
         : AppRoutes.verificarEmail;
   }
 
@@ -301,6 +301,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.tabelaMetricas,
         redirect: (_, __) => AppRoutes.labRefMetricas,
       ),
+      GoRoute(
+        path: AppRoutes.analise,
+        builder: (context, state) => const AnalisePage(),
+        routes: [
+          GoRoute(
+            path: 'nova',
+            redirect: (_, __) => AppRoutes.analise,
+          ),
+          GoRoute(
+            path: 'detalhe/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return AnaliseDetailScreen(analiseId: id);
+            },
+            routes: [
+              GoRoute(
+                path: 'editar',
+                redirect: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return '${AppRoutes.analise}/detalhe/$id';
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainPage(navigationShell: navigationShell),
@@ -372,36 +398,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                           fazendaId: state.pathParameters['fazendaId']!,
                           talhaoId: state.pathParameters['talhaoId'],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.analise,
-                builder: (context, state) => const AnalisePage(),
-                routes: [
-                  GoRoute(
-                    path: 'nova',
-                    redirect: (_, __) => AppRoutes.analise,
-                  ),
-                  GoRoute(
-                    path: 'detalhe/:id',
-                    builder: (context, state) {
-                      final id = state.pathParameters['id']!;
-                      return AnaliseDetailScreen(analiseId: id);
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'editar',
-                        redirect: (context, state) {
-                          final id = state.pathParameters['id'] ?? '';
-                          return '${AppRoutes.analise}/detalhe/$id';
-                        },
                       ),
                     ],
                   ),
@@ -588,7 +584,7 @@ class _EmailVerificationPage extends ConsumerWidget {
         final refreshedUser = auth.currentUser;
         if (!context.mounted) return;
         if (refreshedUser?.emailVerified == true) {
-          context.go(AppRoutes.analise);
+          context.go(AppRoutes.clientes);
           return;
         }
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,6 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:latlong2/latlong.dart';
 
+enum MapDrawingMode {
+  none,
+  polygon,
+  freehand,
+}
+
 abstract class MapEngine {
   Widget buildMap({
     required LatLng center,
@@ -8,9 +14,14 @@ abstract class MapEngine {
     required List<MapPin> pins,
     required AbstractMapController controller,
     List<MapPolygon> polygons = const <MapPolygon>[],
+    List<MapPolyline> polylines = const <MapPolyline>[],
+    MapDrawingMode drawingMode = MapDrawingMode.none,
     void Function(LatLng center, double zoom)? onCameraChanged,
     void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
+    void Function(LatLng point)? onDrawPointerDown,
+    void Function(LatLng point)? onDrawPointerMove,
+    void Function(LatLng point)? onDrawPointerUp,
     String? selectedPinId,
   });
 }
@@ -49,6 +60,18 @@ class MapPolygon {
   final bool editable;
 
   const MapPolygon({
+    required this.id,
+    required this.points,
+    this.editable = false,
+  });
+}
+
+class MapPolyline {
+  final String id;
+  final List<LatLng> points;
+  final bool editable;
+
+  const MapPolyline({
     required this.id,
     required this.points,
     this.editable = false,

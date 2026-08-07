@@ -11,9 +11,14 @@ class GoogleMapEngine implements MapEngine {
     required List<MapPin> pins,
     required AbstractMapController controller,
     List<MapPolygon> polygons = const <MapPolygon>[],
+    List<MapPolyline> polylines = const <MapPolyline>[],
+    MapDrawingMode drawingMode = MapDrawingMode.none,
     void Function(LatLng center, double zoom)? onCameraChanged,
     void Function(LatLng point)? onMapTap,
     void Function(MapPin pin)? onPinTap,
+    void Function(LatLng point)? onDrawPointerDown,
+    void Function(LatLng point)? onDrawPointerMove,
+    void Function(LatLng point)? onDrawPointerUp,
     String? selectedPinId,
   }) {
     return const Center(
