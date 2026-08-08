@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// Célula esquerda (sticky) da tabela de análise.
 /// Exibe nome do parâmetro + unidade.
@@ -17,13 +17,14 @@ class AnaliseLabelCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Container(
       width: width,
-      decoration: const BoxDecoration(
-        color: AppColors.bgSecondary,
+      decoration: BoxDecoration(
+        color: palette.surfaceAlt,
         border: Border(
-          right: BorderSide(color: AppColors.border, width: 0.5),
-          bottom: BorderSide(color: AppColors.border, width: 0.5),
+          right: BorderSide(color: palette.border, width: 0.5),
+          bottom: BorderSide(color: palette.border, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -35,10 +36,10 @@ class AnaliseLabelCell extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1D1D1F),
+              color: palette.textPrimary,
               height: 1.2,
             ),
           ),
@@ -49,7 +50,7 @@ class AnaliseLabelCell extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF86868B).withValues(alpha: 0.8),
+                color: palette.textSecondary.withValues(alpha: 0.8),
                 letterSpacing: 0.3,
               ),
             ),

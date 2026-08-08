@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
@@ -19,9 +20,6 @@ import 'package:soloforte/features/analise/presentation/widgets/importacao_confi
 const _brandGreen = AppColors.success;
 const _darkGreen = AppColors.success;
 const _mint = AppColors.bgSuccess;
-const _ink = AppColors.textPrimary;
-const _muted = AppColors.textSecond;
-const _surfaceAlt = AppColors.bgSecondary;
 
 /// Formulário planilha reutilizado em nova análise e edição inline no detalhe.
 class AnaliseFormContent extends ConsumerStatefulWidget {
@@ -66,6 +64,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     final analisesForTable = state.analises
         .map((draft) => draft.toFormMap())
         .toList(growable: false);
+    final palette = context.appPalette;
 
     final content = SingleChildScrollView(
       padding: EdgeInsets.only(
@@ -75,9 +74,9 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeaderGlobal(state, ctrl),
+          _buildHeaderGlobal(state, ctrl, palette),
           const SizedBox(height: 12),
-          _buildValidationOverview(context, state, ctrl),
+          _buildValidationOverview(context, state, ctrl, palette),
           const SizedBox(height: 12),
           AnaliseTableWidget(
             analises: analisesForTable,
@@ -124,36 +123,43 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     );
 
     if (!widget.showFab) {
-      return ColoredBox(color: _surfaceAlt, child: content);
+      return ColoredBox(color: palette.surfaceAlt, child: content);
     }
 
     return ColoredBox(
-      color: _surfaceAlt,
+      color: palette.surfaceAlt,
       child: Stack(
         children: [
           content,
           Positioned(
             right: 16,
             bottom: 24 + MediaQuery.of(context).viewPadding.bottom,
-            child: _buildSaveFab(state, ctrl),
+            child: _buildSaveFab(context, state, ctrl, palette),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSaveFab(NovaAnaliseState state, NovaAnaliseController ctrl) {
+  Widget _buildSaveFab(
+    BuildContext context,
+    NovaAnaliseState state,
+    NovaAnaliseController ctrl,
+    AppThemePalette palette,
+  ) {
+    final onAccent = Theme.of(context).colorScheme.onPrimary;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
+        gradient: LinearGradient(
+          colors: [palette.accent, palette.accentVariant],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.30),
+            color: palette.accent.withValues(alpha: 0.30),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -172,18 +178,18 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (state.isSaving)
-                  const SizedBox(
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: onAccent,
                       strokeWidth: 2,
                     ),
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.check_rounded,
-                    color: Colors.white,
+                    color: onAccent,
                     size: 18,
                   ),
                 const SizedBox(width: 8),
@@ -192,7 +198,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                       ? 'Salvar Análise'
                       : 'Salvar ${state.analises.length} Análises',
                   style: AppTextStyles.label.copyWith(
-                    color: Colors.white,
+                    color: onAccent,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -207,6 +213,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
   Widget _buildHeaderGlobal(
     NovaAnaliseState state,
     NovaAnaliseController ctrl,
+    AppThemePalette palette,
   ) {
     return AppSurface(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -218,7 +225,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'IDENTIFICAÇÃO DO LAUDO',
                   maxLines: 1,
@@ -227,7 +234,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
-                    color: _muted,
+                    color: palette.textSecondary,
                   ),
                 ),
               ),
@@ -310,6 +317,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
     BuildContext context,
     NovaAnaliseState state,
     NovaAnaliseController ctrl,
+    AppThemePalette palette,
   ) {
     return AppSurface(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -345,7 +353,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                     fontWeight: FontWeight.w700,
                     color: state.validation.hasBlockingErrors
                         ? AppColors.error
-                        : _ink,
+                        : palette.textPrimary,
                   ),
                 ),
               ),
@@ -371,7 +379,7 @@ class AnaliseFormContentState extends ConsumerState<AnaliseFormContent> {
                 icon: const Icon(Icons.skip_next_rounded, size: 16),
                 label: const Text('Próxima'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
+                  foregroundColor: palette.accent,
                   textStyle: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

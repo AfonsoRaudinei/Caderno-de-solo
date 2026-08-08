@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 enum ImportacaoBottomSheetTipo {
   labNaoReconhecido,
@@ -26,10 +26,13 @@ class ImportacaoBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final onAccent = Theme.of(context).colorScheme.onPrimary;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgPrimary,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: SafeArea(
@@ -44,7 +47,7 @@ class ImportacaoBottomSheet extends StatelessWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: palette.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -53,10 +56,10 @@ class ImportacaoBottomSheet extends StatelessWidget {
             // ── Título ───────────────────────────────────────────────────
             Text(
               _titulo,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -64,9 +67,9 @@ class ImportacaoBottomSheet extends StatelessWidget {
             // ── Descrição ────────────────────────────────────────────────
             Text(
               _descricao,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF86868B),
+                color: palette.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -78,8 +81,8 @@ class ImportacaoBottomSheet extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onDigitarManualmente,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: palette.accent,
+                  foregroundColor: onAccent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -99,8 +102,8 @@ class ImportacaoBottomSheet extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.bgSecondary,
-                  foregroundColor: const Color(0xFF1D1D1F),
+                  backgroundColor: palette.surfaceAlt,
+                  foregroundColor: palette.textPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 /// Header de cada coluna de análise (amostra N).
 /// Exibe título e botão de remover.
@@ -19,13 +19,14 @@ class AnaliseColumnHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Container(
       width: width,
-      decoration: const BoxDecoration(
-        color: AppColors.bgSecondary,
+      decoration: BoxDecoration(
+        color: palette.surfaceAlt,
         border: Border(
-          left: BorderSide(color: AppColors.border, width: 0.5),
-          bottom: BorderSide(color: AppColors.border, width: 0.5),
+          left: BorderSide(color: palette.border, width: 0.5),
+          bottom: BorderSide(color: palette.border, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
@@ -35,10 +36,10 @@ class AnaliseColumnHeader extends StatelessWidget {
           Expanded(
             child: Text(
               'A${index + 1}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -46,10 +47,10 @@ class AnaliseColumnHeader extends StatelessWidget {
           if (canRemove && onRemove != null)
             GestureDetector(
               onTap: onRemove,
-              child: const Icon(
+              child: Icon(
                 Icons.close,
                 size: 14,
-                color: Color(0xFF86868B),
+                color: palette.textSecondary,
               ),
             ),
         ],

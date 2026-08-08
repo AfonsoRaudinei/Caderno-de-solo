@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 enum AnaliseCellType { numeric, text }
 
@@ -71,25 +72,26 @@ class _AnaliseInputCellState extends State<AnaliseInputCell> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final text = _ctrl.text.trim();
     final isVazio = text.isEmpty || text == 'N/A' || text == 'null';
     final statusColor = widget.hasError
         ? AppColors.error
-        : (widget.hasWarning ? const Color(0xFFD97706) : AppColors.border);
+        : (widget.hasWarning ? AppColors.warning : palette.border);
     final bgColor = widget.hasError
         ? const Color(0xFFFEF2F2)
         : (widget.hasWarning
             ? const Color(0xFFFFFBEB)
             : (_focused
-                ? AppColors.primary.withValues(alpha: 0.08)
+                ? palette.accent.withValues(alpha: 0.08)
                 : (isVazio
-                    ? Colors.orange.withValues(alpha: 0.04)
-                    : AppColors.bgPrimary)));
+                    ? AppColors.warning.withValues(alpha: 0.04)
+                    : palette.card)));
     final hintColor = widget.hasError
         ? AppColors.error
         : (widget.hasWarning
-            ? const Color(0xFFD97706)
-            : Colors.orange.withValues(alpha: 0.7));
+            ? AppColors.warning
+            : AppColors.warning.withValues(alpha: 0.7));
 
     return Tooltip(
       message: widget.validationMessage ?? '',
@@ -103,10 +105,10 @@ class _AnaliseInputCellState extends State<AnaliseInputCell> {
           decoration: BoxDecoration(
             color: bgColor,
             border: Border(
-              left: const BorderSide(color: AppColors.border, width: 0.5),
+              left: BorderSide(color: palette.border, width: 0.5),
               bottom: BorderSide(
                 color: widget.highlightedByNavigator
-                    ? AppColors.primary
+                    ? palette.accent
                     : statusColor,
                 width: (widget.hasError ||
                         widget.hasWarning ||
@@ -135,7 +137,7 @@ class _AnaliseInputCellState extends State<AnaliseInputCell> {
                     : TextAlign.left,
                 style: TextStyle(
                   fontSize: 13,
-                  color: isVazio ? Colors.orange[900] : const Color(0xFF1D1D1F),
+                  color: isVazio ? AppColors.warning : palette.textPrimary,
                   fontWeight: _focused
                       ? FontWeight.w600
                       : (isVazio ? FontWeight.w500 : FontWeight.w400),
@@ -162,9 +164,8 @@ class _AnaliseInputCellState extends State<AnaliseInputCell> {
                         ? Icons.error_outline
                         : Icons.warning_amber_outlined,
                     size: 12,
-                    color: widget.hasError
-                        ? AppColors.error
-                        : const Color(0xFFD97706),
+                    color:
+                        widget.hasError ? AppColors.error : AppColors.warning,
                   ),
                 ),
             ],

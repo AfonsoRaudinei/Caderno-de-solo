@@ -17,19 +17,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-// ── Paleta inline (espelha AppColors) ────────────────────────────────────────
-abstract class _C {
-  static const primary = Color(0xFF007AFF);
-  static const primaryBg = Color(0x14007AFF); // 8 % opacidade
-  static const bg = Color(0xFFF5F5F7);
-  static const card = Color(0xFFFFFFFF);
-  static const textMain = Color(0xFF1D1D1F);
-  static const textSub = Color(0xFF86868B);
-  static const textLight = Color(0xFFC7C7CC);
-  static const borderSoft = Color(0xFFE5E5E7);
-  static const groupBg = Color(0x0A007AFF); // grupo header
-}
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 
 // ── Modelos de dados ─────────────────────────────────────────────────────────
 
@@ -334,18 +322,23 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final sampleAreaWidth = widget.headers.length * _sampleColWidth;
+    final groupBg = palette.accent.withValues(alpha: 0.04);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: _C.card,
-          border: Border.all(color: _C.borderSoft, width: _divider),
+          color: palette.card,
+          border: Border.all(color: palette.border, width: _divider),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-                color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
+              color: palette.shadow,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -354,11 +347,12 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
             SizedBox(
               width: _paramColWidth,
               child: DecoratedBox(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                      right: BorderSide(color: _C.borderSoft, width: _divider)),
+                    right: BorderSide(color: palette.border, width: _divider),
+                  ),
                 ),
-                child: _buildLeftColumn(),
+                child: _buildLeftColumn(palette, groupBg),
               ),
             ),
             Expanded(
@@ -367,7 +361,7 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
                 physics: const BouncingScrollPhysics(),
                 child: SizedBox(
                   width: sampleAreaWidth,
-                  child: _buildRightColumn(),
+                  child: _buildRightColumn(palette, groupBg),
                 ),
               ),
             ),
@@ -377,21 +371,21 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
     );
   }
 
-  Widget _hDivider() => const SizedBox(
+  Widget _hDivider(AppThemePalette palette) => SizedBox(
         height: _divider,
-        child: ColoredBox(color: _C.borderSoft),
+        child: ColoredBox(color: palette.border),
       );
 
   // ── Left (sticky) column ────────────────────────────────────────────────
-  Widget _buildLeftColumn() {
+  Widget _buildLeftColumn(AppThemePalette palette, Color groupBg) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _leftCell(
           height: _headerHeight,
-          color: _C.bg,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          color: palette.sectionHeader,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -399,45 +393,47 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: _C.textSub,
+                  color: palette.textSecondary,
                   letterSpacing: 0.6,
                 ),
               ),
             ),
           ),
         ),
-        _hDivider(),
+        _hDivider(palette),
         for (final group in _groups) ...[
           _leftCell(
             height: _groupHeight,
-            color: _C.groupBg,
-            border: const Border(
-                bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+            color: groupBg,
+            border: Border(
+              bottom: BorderSide(color: palette.border, width: _divider),
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               child: Text(
                 group.label.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: _C.primary,
+                  color: palette.accent,
                   letterSpacing: 0.7,
                 ),
               ),
             ),
           ),
-          for (final row in group.rows) _buildParamRowCell(row),
+          for (final row in group.rows) _buildParamRowCell(row, palette),
         ],
       ],
     );
   }
 
-  Widget _buildParamRowCell(ParamRow row) {
+  Widget _buildParamRowCell(ParamRow row, AppThemePalette palette) {
     return _leftCell(
       height: _rowHeight,
-      color: _C.card,
-      border: const Border(
-          bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+      color: palette.card,
+      border: Border(
+        bottom: BorderSide(color: palette.border, width: _divider),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Column(
@@ -447,10 +443,10 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
           children: [
             Text(
               row.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: _C.textMain,
+                color: palette.textPrimary,
                 letterSpacing: -0.2,
               ),
               maxLines: 1,
@@ -460,10 +456,10 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
               const SizedBox(height: 2),
               Text(
                 row.baseUnit,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w400,
-                  color: _C.textLight,
+                  color: palette.textTertiary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -490,13 +486,13 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
   }
 
   // ── Right (scrollable) columns ───────────────────────────────────────────
-  Widget _buildRightColumn() {
+  Widget _buildRightColumn(AppThemePalette palette, Color groupBg) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           height: _headerHeight,
-          color: _C.bg,
+          color: palette.sectionHeader,
           child: Row(
             children: [
               for (final h in widget.headers)
@@ -504,34 +500,37 @@ class _AnaliseResultadoTableState extends State<AnaliseResultadoTable> {
             ],
           ),
         ),
-        _hDivider(),
+        _hDivider(palette),
         for (int gi = 0; gi < _groups.length; gi++) ...[
           Container(
             height: _groupHeight,
-            decoration: const BoxDecoration(
-              color: _C.groupBg,
+            decoration: BoxDecoration(
+              color: groupBg,
               border: Border(
-                  bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+                bottom: BorderSide(color: palette.border, width: _divider),
+              ),
             ),
           ),
           for (int ri = 0; ri < _groups[gi].rows.length; ri++)
-            _buildValuesRow(gi, ri),
+            _buildValuesRow(gi, ri, palette),
         ],
       ],
     );
   }
 
-  Widget _buildValuesRow(int groupIndex, int rowIndex) {
+  Widget _buildValuesRow(
+      int groupIndex, int rowIndex, AppThemePalette palette) {
     final row = _groups[groupIndex].rows[rowIndex];
     final steps = _stepsFor(row.convType);
     final hasTap = steps.isNotEmpty;
 
     return Container(
       height: _rowHeight,
-      decoration: const BoxDecoration(
-        color: _C.card,
-        border:
-            Border(bottom: BorderSide(color: _C.borderSoft, width: _divider)),
+      decoration: BoxDecoration(
+        color: palette.card,
+        border: Border(
+          bottom: BorderSide(color: palette.border, width: _divider),
+        ),
       ),
       child: Row(
         children: [
@@ -560,6 +559,7 @@ class _SampleHeaderCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return SizedBox(
       width: width,
       child: Padding(
@@ -570,10 +570,10 @@ class _SampleHeaderCell extends StatelessWidget {
           children: [
             Text(
               header.nome,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: _C.textMain,
+                color: palette.textPrimary,
                 letterSpacing: -0.2,
               ),
               textAlign: TextAlign.center,
@@ -583,10 +583,10 @@ class _SampleHeaderCell extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               header.codigo,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w400,
-                color: _C.textLight,
+                color: palette.textTertiary,
               ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -627,16 +627,12 @@ class _ValueCell extends StatefulWidget {
 class _ValueCellState extends State<_ValueCell>
     with SingleTickerProviderStateMixin {
   late AnimationController _ac;
-  late Animation<Color?> _numColor;
-  late Animation<Color?> _unitColor;
 
   @override
   void initState() {
     super.initState();
     _ac = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 350));
-    _numColor = ColorTween(begin: _C.primary, end: _C.textMain).animate(_ac);
-    _unitColor = ColorTween(begin: _C.primary, end: _C.textSub).animate(_ac);
   }
 
   @override
@@ -671,6 +667,8 @@ class _ValueCellState extends State<_ValueCell>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return GestureDetector(
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
@@ -684,11 +682,21 @@ class _ValueCellState extends State<_ValueCell>
               animation: _ac,
               builder: (_, __) {
                 final numColor = _ac.isAnimating
-                    ? _numColor.value ?? _C.textMain
-                    : (_isConverted ? _C.primary : _C.textMain);
+                    ? Color.lerp(
+                          palette.accent,
+                          palette.textPrimary,
+                          _ac.value,
+                        ) ??
+                        palette.textPrimary
+                    : (_isConverted ? palette.accent : palette.textPrimary);
                 final unitColor = _ac.isAnimating
-                    ? _unitColor.value ?? _C.textSub
-                    : (_isConverted ? _C.primary : _C.textSub);
+                    ? Color.lerp(
+                          palette.accent,
+                          palette.textSecondary,
+                          _ac.value,
+                        ) ??
+                        palette.textSecondary
+                    : (_isConverted ? palette.accent : palette.textSecondary);
 
                 return Padding(
                   padding:
@@ -734,7 +742,7 @@ class _ValueCellState extends State<_ValueCell>
                   width: 20,
                   height: 1.5,
                   decoration: BoxDecoration(
-                    color: _C.primary.withAlpha(64),
+                    color: palette.accent.withAlpha(64),
                     borderRadius: BorderRadius.circular(1),
                   ),
                 ),
@@ -759,30 +767,32 @@ class AnaliseResultadoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Scaffold(
-      backgroundColor: _C.bg,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: Colors.white.withAlpha(235),
+        backgroundColor: palette.cardStrong,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: _C.primary, size: 28),
+          icon: Icon(Icons.chevron_left, color: palette.accent, size: 28),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Nova Análise',
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: _C.textMain,
+            color: palette.textPrimary,
             letterSpacing: -0.3,
           ),
         ),
         centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: _C.borderSoft),
+          child: Container(height: 0.5, color: palette.border),
         ),
       ),
       body: ListView(
@@ -798,16 +808,16 @@ class AnaliseResultadoScreen extends StatelessWidget {
                   width: 18,
                   height: 18,
                   decoration: BoxDecoration(
-                    color: _C.primaryBg,
+                    color: palette.accent.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child:
-                      const Icon(Icons.swap_horiz, size: 12, color: _C.primary),
+                      Icon(Icons.swap_horiz, size: 12, color: palette.accent),
                 ),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   'Toque em um valor para converter a unidade',
-                  style: TextStyle(fontSize: 11, color: _C.textSub),
+                  style: TextStyle(fontSize: 11, color: palette.textSecondary),
                 ),
               ],
             ),
@@ -829,36 +839,41 @@ class _LaudoInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: palette.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _C.borderSoft, width: 0.5),
-        boxShadow: const [
+        border: Border.all(color: palette.border, width: 0.5),
+        boxShadow: [
           BoxShadow(
-              color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 2)),
+            color: palette.shadow,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
         children: [
           const _InfoRow('Laboratório', 'Exata Brasil — BA'),
-          const _Divider(),
+          _Divider(palette: palette),
           const _InfoRow('Propriedade', 'Serrote — Nova Rosalandia/TO'),
           const _InfoRow('Certificado', '20573.2024'),
           const _InfoRow('Emissão', '25/09/2024'),
-          const _Divider(),
+          _Divider(palette: palette),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Talhões importados',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: _C.textSub,
+                    color: palette.textSecondary,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -866,20 +881,20 @@ class _LaudoInfoCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _C.primaryBg,
+                    color: palette.accent.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.circle, size: 6, color: _C.primary),
-                      SizedBox(width: 4),
+                      Icon(Icons.circle, size: 6, color: palette.accent),
+                      const SizedBox(width: 4),
                       Text(
                         '4 selecionados',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: _C.primary,
+                          color: palette.accent,
                           letterSpacing: 0.2,
                         ),
                       ),
@@ -902,6 +917,8 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
       child: Row(
@@ -909,20 +926,20 @@ class _InfoRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: _C.textSub,
+              color: palette.textSecondary,
               letterSpacing: 0.4,
             ),
           ),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: _C.textMain,
+                color: palette.textPrimary,
               ),
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
@@ -935,8 +952,11 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _Divider extends StatelessWidget {
-  const _Divider();
+  const _Divider({required this.palette});
+
+  final AppThemePalette palette;
+
   @override
   Widget build(BuildContext context) =>
-      const SizedBox(height: 0.5, child: ColoredBox(color: _C.borderSoft));
+      SizedBox(height: 0.5, child: ColoredBox(color: palette.border));
 }
