@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart' show Distance, LatLng;
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/features/analise/application/providers/analise_provider.dart';
 import 'package:soloforte/features/analise/domain/entities/analise_solo.dart';
 import 'package:soloforte/features/analise/domain/usecases/calcular_derivados_analise.dart';
@@ -612,8 +613,11 @@ class _EditingBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final onAccent = palette.isDark ? palette.textPrimary : palette.cardStrong;
+
     return Material(
-      color: const Color(0xFFAF52DE),
+      color: palette.accent,
       elevation: 4,
       borderRadius: BorderRadius.circular(28),
       child: Padding(
@@ -621,13 +625,12 @@ class _EditingBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.location_on_rounded,
-                color: Colors.white, size: 20),
+            Icon(Icons.location_on_rounded, color: onAccent, size: 20),
             const SizedBox(width: 10),
             Text(
               '$text · $vertexCount',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: onAccent,
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
               ),
@@ -646,8 +649,15 @@ class _AreaBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final overlayColor = palette.isDark
+        ? palette.cardStrong.withValues(alpha: 0.95)
+        : palette.textPrimary.withValues(alpha: 0.88);
+    final overlayText =
+        palette.isDark ? palette.textPrimary : palette.cardStrong;
+
     return Material(
-      color: const Color(0xCC000000),
+      color: overlayColor,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -656,16 +666,16 @@ class _AreaBadge extends StatelessWidget {
           children: [
             Text(
               '${areaHa.toStringAsFixed(areaHa >= 100 ? 0 : 2)} ha',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: overlayText,
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 8),
-            const Row(
+            Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
+              children: const [
                 _UnitChip(label: 'ha', active: true),
                 SizedBox(width: 6),
                 _UnitChip(label: 'm2'),
@@ -689,17 +699,20 @@ class _UnitChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final onAccent = palette.isDark ? palette.textPrimary : palette.cardStrong;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: active ? AppColors.success : const Color(0x33FFFFFF),
+        color: active ? AppColors.success : palette.surfaceAlt,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         child: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: active ? onAccent : palette.textSecondary,
             fontSize: 12,
             fontWeight: FontWeight.w800,
           ),
@@ -730,8 +743,13 @@ class _EditingActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final panelColor = palette.isDark
+        ? palette.cardStrong.withValues(alpha: 0.95)
+        : palette.textPrimary.withValues(alpha: 0.9);
+
     return Material(
-      color: const Color(0xE61D1D1F),
+      color: panelColor,
       borderRadius: BorderRadius.circular(34),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -747,14 +765,14 @@ class _EditingActions extends StatelessWidget {
             const SizedBox(height: 10),
             _RoundActionButton(
               icon: Icons.undo_rounded,
-              color: const Color(0xFF8E8E93),
+              color: palette.textSecondary,
               onPressed: canUndo ? onUndo : null,
               tooltip: 'Desfazer vertice',
             ),
             const SizedBox(height: 10),
             _RoundActionButton(
               icon: Icons.redo_rounded,
-              color: const Color(0xFF8E8E93),
+              color: palette.textSecondary,
               onPressed: canRedo ? onRedo : null,
               tooltip: 'Refazer vertice',
             ),
@@ -787,6 +805,9 @@ class _RoundActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final iconColor = palette.isDark ? palette.textPrimary : palette.cardStrong;
+
     return Opacity(
       opacity: onPressed == null ? 0.45 : 1,
       child: Tooltip(
@@ -801,7 +822,7 @@ class _RoundActionButton extends StatelessWidget {
             child: SizedBox(
               width: 58,
               height: 58,
-              child: Icon(icon, color: Colors.white, size: 34),
+              child: Icon(icon, color: iconColor, size: 34),
             ),
           ),
         ),
@@ -1137,15 +1158,17 @@ class _AnaliseMapHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Container(
       padding: const EdgeInsets.all(AppDimens.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(AppDimens.radiusXl),
-        border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.7)),
+        border: Border.all(color: palette.border.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: palette.accent.withValues(alpha: 0.08),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1212,14 +1235,15 @@ class _HeaderLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final text = _displayText(value);
 
     return Padding(
       padding: const EdgeInsets.only(top: 3),
       child: RichText(
         text: TextSpan(
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: palette.textPrimary,
             fontSize: 14,
             height: 1.25,
           ),
@@ -1247,13 +1271,15 @@ class _AnaliseDataSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Container(
       margin: const EdgeInsets.only(top: AppDimens.md),
       padding: const EdgeInsets.all(AppDimens.md),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(AppDimens.radiusLg),
-        border: Border.all(color: AppColors.borderSoft.withValues(alpha: 0.65)),
+        border: Border.all(color: palette.border.withValues(alpha: 0.65)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1261,7 +1287,7 @@ class _AnaliseDataSection extends StatelessWidget {
           Text(
             title,
             style: AppTextStyles.label.copyWith(
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1280,6 +1306,7 @@ class _AnaliseDataRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final isMissing = _isMissing(row.value);
 
     return Padding(
@@ -1290,8 +1317,8 @@ class _AnaliseDataRow extends StatelessWidget {
           Expanded(
             child: Text(
               row.label,
-              style: const TextStyle(
-                color: AppColors.textSecond,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 15,
                 height: 1.2,
               ),
@@ -1303,7 +1330,7 @@ class _AnaliseDataRow extends StatelessWidget {
               isMissing ? 'Não informado' : row.value,
               textAlign: TextAlign.end,
               style: TextStyle(
-                color: isMissing ? AppColors.warning : AppColors.textPrimary,
+                color: isMissing ? AppColors.warning : palette.textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
                 height: 1.2,

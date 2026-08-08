@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_card.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
@@ -77,6 +78,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final calibracaoState = ref.watch(calibracaoControllerProvider);
     final analisesAsync = ref.watch(analiseNotifierProvider);
     final perfis = calibracaoState.profiles;
@@ -92,15 +94,15 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
     final resultado = result.recomendacao;
 
     return Scaffold(
-      backgroundColor: AppColors.bgSecondary,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: AppColors.bgSecondary,
+        backgroundColor: palette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: AppColors.textPrimary,
+            color: palette.textPrimary,
             size: 20,
           ),
           onPressed: () {
@@ -113,7 +115,7 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
         ),
         title: Text(
           'Recomendação',
-          style: AppTextStyles.headline.copyWith(color: AppColors.primary),
+          style: AppTextStyles.headline.copyWith(color: palette.accent),
         ),
         centerTitle: false,
       ),
@@ -212,11 +214,11 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
 
             // BLOCO 1 — Identificação
             RecomendacaoIdentificacaoSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 2 — Qualidade do Solo
             RecomendacaoQualidadeSoloSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 3 — Correções
             RecomendacaoCalcarioGessoSection(resultado: resultado),
@@ -224,17 +226,17 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
             RecomendacaoBasesDashboard(resultado: resultado),
             const SizedBox(height: 12),
             RecomendacaoGraficosSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 4 — Nutrientes
             RecomendacaoFosforoSection(resultado: resultado),
             RecomendacaoPotassioSection(resultado: resultado),
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // BLOCO 5 — Micronutrientes por Aplicação
             RecomendacaoMicrosUnificadosSection(resultado: resultado),
 
-            const Divider(height: 32, thickness: 0.5, color: Color(0xFFE5E5E7)),
+            Divider(height: 32, thickness: 0.5, color: palette.border),
 
             // Avisos e Argumentos (mantidos no final)
             RecomendacaoAvisosSection(resultado: resultado),
@@ -262,8 +264,9 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                         ),
                       ),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: palette.accent,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -282,8 +285,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                       icon: const Icon(Icons.share_outlined, size: 18),
                       label: const Text('Exportar relatorio'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF666666),
-                        side: const BorderSide(color: Color(0xFFD1D1D6)),
+                        foregroundColor: palette.textSecondary,
+                        side: BorderSide(color: palette.border),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/data/culturas_data.dart';
 import 'package:soloforte/features/culturas/providers/culturas_provider.dart';
@@ -10,6 +10,7 @@ class SourceTypePills extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.appPalette;
     final current = ref.watch(culturasProvider).sourceType;
 
     return Row(
@@ -29,12 +30,11 @@ class SourceTypePills extends ConsumerWidget {
                 height: 46,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.09)
-                      : Colors.white,
+                      ? palette.accent.withValues(alpha: 0.09)
+                      : palette.card,
                   borderRadius: BorderRadius.circular(AppDimens.radiusLg),
                   border: Border.all(
-                    color:
-                        isSelected ? AppColors.primary : AppColors.borderSoft,
+                    color: isSelected ? palette.accent : palette.border,
                     width: isSelected ? 1.2 : 0.8,
                   ),
                 ),
@@ -45,7 +45,7 @@ class SourceTypePills extends ConsumerWidget {
                       _iconFor(type),
                       size: 17,
                       color:
-                          isSelected ? AppColors.primary : AppColors.textSecond,
+                          isSelected ? palette.accent : palette.textSecondary,
                     ),
                     const SizedBox(width: AppDimens.xs),
                     Text(
@@ -54,9 +54,8 @@ class SourceTypePills extends ConsumerWidget {
                         fontSize: 13,
                         fontWeight:
                             isSelected ? FontWeight.w700 : FontWeight.w600,
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textSecond,
+                        color:
+                            isSelected ? palette.accent : palette.textSecondary,
                       ),
                     ),
                   ],

@@ -137,6 +137,7 @@ class _AbsorcaoNutrientesReferenciaPageState
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final stageData = computeStageData();
     final resolved = resolveDataValue();
     final unit = displayUnit;
@@ -149,6 +150,7 @@ class _AbsorcaoNutrientesReferenciaPageState
         _viewMode == ViewMode.accumulated ? 'Acumulado' : 'Por Estádio';
 
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Absorção de Nutrientes'),
       ),

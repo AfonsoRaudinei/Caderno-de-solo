@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
 
@@ -95,7 +94,7 @@ class _AppBottomTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.appPalette;
-    final color = selected ? AppColors.primary : palette.textSecondary;
+    final color = selected ? palette.accent : palette.textSecondary;
 
     return Semantics(
       button: true,
@@ -118,7 +117,7 @@ class _AppBottomTabButton extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: selected
-                      ? AppColors.primary.withValues(
+                      ? palette.accent.withValues(
                           alpha: palette.isDark ? 0.18 : 0.10,
                         )
                       : Colors.transparent,

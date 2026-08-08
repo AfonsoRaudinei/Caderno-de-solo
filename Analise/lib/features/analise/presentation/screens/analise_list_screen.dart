@@ -1851,8 +1851,8 @@ class _AnaliseEmptyState extends StatelessWidget {
                 icon: const Icon(Icons.upload_file_outlined, size: 20),
                 label: const Text('Importar PDF'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: palette.accent,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

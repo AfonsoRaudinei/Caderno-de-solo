@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
@@ -153,14 +152,15 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
 
   @override
   Widget build(BuildContext context) {
-    final shadowColor = context.appPalette.shadow;
+    final palette = context.appPalette;
+    final shadowColor = palette.shadow;
 
     return Container(
       key: _cardKey,
       decoration: BoxDecoration(
-        color: AppColors.bgPrimary,
+        color: palette.card,
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(color: palette.border, width: 0.5),
         boxShadow: [
           BoxShadow(
             color: shadowColor,
@@ -223,9 +223,10 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
   }
 
   Widget _buildCollapsedContent() {
+    final palette = context.appPalette;
     final draft = _draft;
     final captionStyle = AppTextStyles.caption.copyWith(
-      color: AppColors.textSecond,
+      color: palette.textSecondary,
     );
 
     final culturaSafraParts = <String>[
@@ -269,6 +270,7 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
   }
 
   Widget _buildChevron({required VoidCallback onTap}) {
+    final palette = context.appPalette;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -276,9 +278,9 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
         turns: widget.isExpanded ? 0.5 : 0.0,
         duration: _animDuration,
         curve: Curves.easeInOut,
-        child: const Icon(
+        child: Icon(
           Icons.keyboard_arrow_down,
-          color: AppColors.textSecond,
+          color: palette.textSecondary,
           size: 20,
         ),
       ),
@@ -324,6 +326,7 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
   }
 
   Widget _buildProdutividadeSection() {
+    final palette = context.appPalette;
     final equiv = _equivalenciaLabel;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +366,7 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
           Text(
             equiv,
             style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecond,
+              color: palette.textSecondary,
             ),
           ),
         ],
@@ -377,12 +380,13 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
     required VoidCallback onTap,
     required bool isLeft,
   }) {
+    final palette = context.appPalette;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.borderSoft,
+          color: selected ? palette.accent : palette.surfaceAlt,
           borderRadius: BorderRadius.horizontal(
             left: isLeft ? const Radius.circular(8) : Radius.zero,
             right: isLeft ? Radius.zero : const Radius.circular(8),
@@ -393,7 +397,7 @@ class _CalibracaoHeaderCardState extends State<CalibracaoHeaderCard> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecond,
+            color: selected ? Colors.white : palette.textSecondary,
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/mapa/domain/map_engine.dart';
 
@@ -29,14 +30,16 @@ class _FerramentasDesenhoBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Container(
       height: 520,
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: palette.cardStrong,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimens.radius2xl),
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,7 +49,7 @@ class _FerramentasDesenhoBottomSheetState
             height: 5,
             margin: const EdgeInsets.only(top: 12, bottom: 14),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
+              color: palette.textSecondary.withValues(alpha: 0.45),
               borderRadius: BorderRadius.circular(AppDimens.radiusPill),
             ),
           ),
@@ -76,7 +79,7 @@ class _FerramentasDesenhoBottomSheetState
             child: Text(
               'Ferramentas de Desenho',
               style: AppTextStyles.headline.copyWith(
-                color: Colors.white,
+                color: palette.textPrimary,
                 fontWeight: FontWeight.w800,
                 fontSize: 22,
               ),
@@ -134,7 +137,7 @@ class _FerramentasDesenhoBottomSheetState
                     child: Text(
                       'Camadas de visualização em breve',
                       style: AppTextStyles.body.copyWith(
-                        color: Colors.white.withValues(alpha: 0.72),
+                        color: palette.textSecondary,
                       ),
                     ),
                   ),
@@ -160,9 +163,12 @@ class _TabChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final onAccent = palette.isDark ? palette.textPrimary : palette.cardStrong;
+
     return Expanded(
       child: Material(
-        color: selected ? AppColors.success : const Color(0xFF2C2C2E),
+        color: selected ? AppColors.success : palette.surfaceAlt,
         borderRadius: BorderRadius.circular(AppDimens.radiusLg),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -175,13 +181,13 @@ class _TabChip extends StatelessWidget {
                 Icon(
                   icon,
                   size: 18,
-                  color: selected ? Colors.white : Colors.white70,
+                  color: selected ? onAccent : palette.textSecondary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? Colors.white : Colors.white70,
+                    color: selected ? onAccent : palette.textSecondary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -209,6 +215,8 @@ class _ToolRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: AppSurface(
@@ -219,9 +227,9 @@ class _ToolRow extends StatelessWidget {
         child: AppActionListRow(
           title: title,
           icon: icon,
-          trailing: const Icon(
+          trailing: Icon(
             CupertinoIcons.chevron_right,
-            color: AppColors.textTertiary,
+            color: palette.textTertiary,
             size: 18,
           ),
           onTap: enabled ? onTap! : () {},

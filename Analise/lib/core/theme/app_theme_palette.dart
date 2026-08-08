@@ -4,7 +4,7 @@ import 'package:soloforte/core/theme/app_colors.dart';
 /// Fonte de verdade para tokens de superfície/texto sensíveis ao tema.
 ///
 /// Light e dark/black compartilham a mesma API. Cores semânticas fixas
-/// (primary, success, error, nutrientes) continuam em [AppColors].
+/// (success, error, nutrientes) continuam em [AppColors].
 ///
 /// Uso: `final palette = context.appPalette;`
 class AppThemePalette {
@@ -13,14 +13,18 @@ class AppThemePalette {
     required this.background,
     required this.card,
     required this.cardStrong,
+    required this.surfaceAlt,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
+    required this.textDisabled,
     required this.border,
     required this.borderStrong,
     required this.inputFill,
     required this.sectionHeader,
     required this.shadow,
+    required this.accent,
+    required this.accentVariant,
   });
 
   final bool isDark;
@@ -34,6 +38,9 @@ class AppThemePalette {
   /// Superfície elevada (menus, dropdown, header forte).
   final Color cardStrong;
 
+  /// Superfície secundária (linhas alternadas, chips).
+  final Color surfaceAlt;
+
   /// Texto principal — contraste ≥ 4.5:1 sobre [background]/[card].
   final Color textPrimary;
 
@@ -42,6 +49,9 @@ class AppThemePalette {
 
   /// Hints / placeholders (ainda legível em dark).
   final Color textTertiary;
+
+  /// Texto desabilitado.
+  final Color textDisabled;
 
   /// Bordas suaves / divisores.
   final Color border;
@@ -58,24 +68,32 @@ class AppThemePalette {
   /// Sombra de elevação.
   final Color shadow;
 
+  /// Cor de acento do tema ativo (Azul Samsung no Black, iOS blue no light).
+  final Color accent;
+
+  /// Variante pressed/hover do acento.
+  final Color accentVariant;
+
   static AppThemePalette of(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
-      // Black theme: fundo #000000, cards iOS system gray.
-      // textTertiary #8E8E93 ≈ 5.5:1 sobre preto (WCAG AA).
       return const AppThemePalette._(
         isDark: true,
-        background: Color(0xFF000000),
-        card: Color(0xFF1C1C1E),
-        cardStrong: Color(0xFF2C2C2E),
-        textPrimary: Color(0xFFF2F2F7),
-        textSecondary: Color(0xFFAEAEB2),
-        textTertiary: Color(0xFF8E8E93),
-        border: Color(0xFF2C2C2E),
-        borderStrong: Color(0xFF3A3A3C),
-        inputFill: Color(0xFF1C1C1E),
-        sectionHeader: Color(0xFF2C2C2E),
+        background: AppColors.blackBackground,
+        card: AppColors.blackSurface,
+        cardStrong: AppColors.blackSurface,
+        surfaceAlt: AppColors.blackSurfaceAlt,
+        textPrimary: AppColors.blackTextPrimary,
+        textSecondary: AppColors.blackTextSecondary,
+        textTertiary: AppColors.blackTextSecondary,
+        textDisabled: AppColors.blackTextDisabled,
+        border: AppColors.blackBorder,
+        borderStrong: AppColors.blackBorder,
+        inputFill: AppColors.blackSurface,
+        sectionHeader: AppColors.blackSurfaceAlt,
         shadow: Color(0x73000000),
+        accent: AppColors.accentSecondary,
+        accentVariant: AppColors.accentSecondaryVariant,
       );
     }
 
@@ -84,14 +102,18 @@ class AppThemePalette {
       background: AppColors.bgSecondary,
       card: Colors.white.withValues(alpha: 0.95),
       cardStrong: Colors.white,
+      surfaceAlt: AppColors.bgSecondary,
       textPrimary: AppColors.textPrimary,
       textSecondary: AppColors.textSecond,
       textTertiary: AppColors.textTertiary,
+      textDisabled: AppColors.textTertiary,
       border: AppColors.borderSoft,
       borderStrong: AppColors.border,
       inputFill: AppColors.bgPrimary,
       sectionHeader: const Color(0xFFF9FAFB),
       shadow: Colors.black.withValues(alpha: 0.06),
+      accent: AppColors.primary,
+      accentVariant: AppColors.primaryDark,
     );
   }
 }

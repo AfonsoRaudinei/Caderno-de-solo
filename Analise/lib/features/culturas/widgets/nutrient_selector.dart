@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/data/culturas_data.dart';
@@ -11,6 +11,7 @@ class NutrientSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.appPalette;
     final selected = ref.watch(culturasProvider).selectedNutrients;
 
     return GridView.count(
@@ -30,13 +31,13 @@ class NutrientSelector extends ConsumerWidget {
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
               color: isSel
-                  ? AppColors.primary
+                  ? palette.accent
                   : Color(n.color).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppDimens.radiusMd),
               border: Border.all(
                 color: isSel
-                    ? AppColors.primary
-                    : AppColors.borderSoft.withValues(alpha: 0.9),
+                    ? palette.accent
+                    : palette.border.withValues(alpha: 0.9),
                 width: isSel ? 1.2 : 0.8,
               ),
             ),
@@ -46,7 +47,9 @@ class NutrientSelector extends ConsumerWidget {
               style: AppTextStyles.caption.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSel ? Colors.white : AppColors.textSecond,
+                color: isSel
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : palette.textSecondary,
               ),
             ),
           ),

@@ -72,10 +72,10 @@ class RecomendacaoPotassioSection extends StatelessWidget {
                   children: [
                     Text(
                       kMg.toStringAsFixed(0),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D1D1F),
+                        color: palette.textPrimary,
                       ),
                     ),
                     Text(

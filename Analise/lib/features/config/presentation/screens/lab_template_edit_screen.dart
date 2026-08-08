@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
@@ -115,6 +116,7 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final titulo = _isEditing
         ? (_isDefault ? widget.template!.nome : 'Editar Template')
         : 'Novo Template';
@@ -505,10 +507,10 @@ class _LabTemplateEditScreenState extends ConsumerState<LabTemplateEditScreen> {
           : Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: palette.card,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: palette.shadow,
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:soloforte/core/theme/app_colors.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/data/lab_templates/lab_detector.dart';
 
 class ImportacaoConfiancaSheet extends StatefulWidget {
@@ -34,13 +34,15 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final onAccent = Theme.of(context).colorScheme.onPrimary;
     final confidencePct =
         (widget.confidence * 100).clamp(0, 100).toStringAsFixed(0);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgPrimary,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       child: SafeArea(
@@ -55,26 +57,26 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 18),
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: palette.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const Text(
+            Text(
               'Confirmar laboratório',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Detecção automática com baixa confiança ($confidencePct%). '
               'Selecione o laboratório e confirme para continuar.',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF6B7280),
+                color: palette.textSecondary,
                 height: 1.35,
               ),
             ),
@@ -84,7 +86,7 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
               decoration: InputDecoration(
                 labelText: 'Laboratório',
                 filled: true,
-                fillColor: AppColors.bgSecondary,
+                fillColor: palette.surfaceAlt,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -103,12 +105,12 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
             ),
             if (widget.sampleHints.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Pré-visualização de amostras identificadas',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
+                  color: palette.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -124,15 +126,17 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: palette.accent.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                          border: Border.all(
+                            color: palette.accent.withValues(alpha: 0.25),
+                          ),
                         ),
                         child: Text(
                           hint,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
-                            color: Color(0xFF1E3A8A),
+                            color: palette.accent,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -147,8 +151,8 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
               child: ElevatedButton(
                 onPressed: () => widget.onConfirm(_selectedLabId),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: palette.accent,
+                  foregroundColor: onAccent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -166,8 +170,8 @@ class _ImportacaoConfiancaSheetState extends State<ImportacaoConfiancaSheet> {
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.bgSecondary,
-                  foregroundColor: const Color(0xFF1D1D1F),
+                  backgroundColor: palette.surfaceAlt,
+                  foregroundColor: palette.textPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
