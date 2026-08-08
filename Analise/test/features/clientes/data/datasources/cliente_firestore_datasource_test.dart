@@ -54,6 +54,24 @@ void main() {
       expect(clientes.single.fazendas.single.nome, 'Fazenda 1');
       expect(clientes.single.fazendas.single.talhoes, isEmpty);
     });
+
+    test('listarClientes ordena por nome sem orderBy no Firestore', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('clientes').doc('c-z').set(
+            _clienteData(nome: 'Zeca', usuarioId: 'user-1'),
+          );
+      await firestore.collection('clientes').doc('c-a').set(
+            _clienteData(nome: 'Ana', usuarioId: 'user-1'),
+          );
+      await firestore.collection('clientes').doc('c-o').set(
+            _clienteData(nome: 'Bruno', usuarioId: 'user-1'),
+          );
+
+      final datasource = ClienteFirestoreDatasource(firestore: firestore);
+      final clientes = await datasource.listarClientes('user-1');
+
+      expect(clientes.map((c) => c.nome).toList(), ['Ana', 'Bruno', 'Zeca']);
+    });
   });
 }
 

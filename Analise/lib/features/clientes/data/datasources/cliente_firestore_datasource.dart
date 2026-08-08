@@ -104,11 +104,15 @@ class ClienteFirestoreDatasource {
 
   Future<List<ClienteEntity>> listarClientes(String usuarioId) async {
     try {
-      final query = await _collection
-          .where('usuarioId', isEqualTo: usuarioId)
-          .orderBy('nome')
-          .get();
-      return Future.wait(query.docs.map(_hydrateCliente));
+      // Sem orderBy no Firestore: where+orderBy exige índice composto que não
+      // estava provisionado em produção (failed-precondition). Ordena em Dart.
+      final query =
+          await _collection.where('usuarioId', isEqualTo: usuarioId).get();
+      final clientes = await Future.wait(query.docs.map(_hydrateCliente));
+      clientes.sort(
+        (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()),
+      );
+      return clientes;
     } on FirebaseException catch (e) {
       if (_isPermissionDenied(e)) {
         throw const ClienteSessionException();
