@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_button.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
 
@@ -19,6 +20,11 @@ class QrTokenWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
+    final qrBackground = palette.isDark ? palette.card : Colors.white;
+    final qrModuleColor =
+        palette.isDark ? palette.textPrimary : AppColors.textPrimary;
+
     return AppSurface(
       showBorder: true,
       child: Column(
@@ -39,16 +45,15 @@ class QrTokenWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: qrBackground,
               borderRadius: BorderRadius.circular(16),
             ),
             child: QrImageView(
               data: token,
               size: 160,
-              backgroundColor: Colors.white,
-              eyeStyle: const QrEyeStyle(color: AppColors.textPrimary),
-              dataModuleStyle:
-                  const QrDataModuleStyle(color: AppColors.textPrimary),
+              backgroundColor: qrBackground,
+              eyeStyle: QrEyeStyle(color: qrModuleColor),
+              dataModuleStyle: QrDataModuleStyle(color: qrModuleColor),
             ),
           ),
           const SizedBox(height: 12),

@@ -73,8 +73,9 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
         title: const Text('Clientes'),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: palette.accent,
+        foregroundColor:
+            palette.isDark ? palette.textPrimary : palette.cardStrong,
         onPressed: _abrirNovoCliente,
         child: const Icon(Icons.add),
       ),

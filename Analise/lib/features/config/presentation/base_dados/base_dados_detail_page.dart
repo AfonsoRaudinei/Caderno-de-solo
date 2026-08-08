@@ -114,55 +114,61 @@ class BaseDadosDetailPage extends StatelessWidget {
                   data: conteudo,
                   selectable: true,
                   styleSheet: MarkdownStyleSheet(
-                    h1: const TextStyle(
+                    h1: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1D1D1F),
+                      color: palette.textPrimary,
                       letterSpacing: -0.3,
                     ),
-                    h2: const TextStyle(
+                    h2: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D1D1F),
+                      color: palette.textPrimary,
                       letterSpacing: -0.2,
                     ),
-                    p: const TextStyle(
+                    p: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFF1D1D1F),
+                      color: palette.textPrimary,
                       height: 1.6,
                     ),
-                    strong: const TextStyle(
+                    strong: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1D1D1F),
+                      color: palette.textPrimary,
                     ),
-                    code: const TextStyle(
+                    code: TextStyle(
                       fontSize: 12,
                       fontFamily: 'Courier',
-                      backgroundColor: Color(0xFFF5F5F7),
-                      color: Color(0xFF007AFF),
+                      backgroundColor: palette.surfaceAlt,
+                      color: palette.accent,
                     ),
                     codeblockDecoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F7),
+                      color: palette.surfaceAlt,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0xFFE5E5E7),
+                        color: palette.border,
                         width: 0.5,
                       ),
                     ),
-                    blockquoteDecoration: const BoxDecoration(
+                    blockquoteDecoration: BoxDecoration(
                       border: Border(
-                        left: BorderSide(color: Color(0xFF007AFF), width: 3),
+                        left: BorderSide(color: palette.accent, width: 3),
                       ),
                     ),
                     blockquotePadding: const EdgeInsets.only(left: 12),
-                    tableHead: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13),
-                    tableBody: const TextStyle(fontSize: 13),
-                    horizontalRuleDecoration: const BoxDecoration(
+                    tableHead: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: palette.textPrimary,
+                    ),
+                    tableBody: TextStyle(
+                      fontSize: 13,
+                      color: palette.textPrimary,
+                    ),
+                    horizontalRuleDecoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
-                          color: Color(0xFFE5E5E7),
+                          color: palette.border,
                           width: 0.5,
                         ),
                       ),
