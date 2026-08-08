@@ -51,6 +51,10 @@ class _AppButtonState extends State<AppButton>
   Widget build(BuildContext context) {
     final palette = context.appPalette;
     final bool isDisabled = widget.onPressed == null || widget.isLoading;
+    final accentGradient = palette.isDark
+        ? AppColors.blackAccentGradient
+        : AppColors.primaryGradient;
+    final accentColor = palette.accent;
 
     return ScaleTransition(
       scale: _scaleAnimation,
@@ -63,7 +67,7 @@ class _AppButtonState extends State<AppButton>
           height: 50,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: isDisabled ? null : AppColors.primaryGradient,
+              gradient: isDisabled ? null : accentGradient,
               color: isDisabled ? palette.cardStrong : null,
               borderRadius: BorderRadius.circular(12),
               border:
@@ -72,7 +76,7 @@ class _AppButtonState extends State<AppButton>
                   ? null
                   : [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
+                        color: accentColor.withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -202,15 +206,16 @@ class AppButtonText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        foregroundColor: palette.accent,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       ),
       child: Text(
         label,
-        style: AppTextStyles.label.copyWith(color: AppColors.primary),
+        style: AppTextStyles.label.copyWith(color: palette.accent),
       ),
     );
   }

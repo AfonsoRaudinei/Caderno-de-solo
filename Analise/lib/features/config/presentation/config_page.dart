@@ -866,7 +866,7 @@ class _ThemeModeRow extends ConsumerWidget {
           Icon(
             CupertinoIcons.moon_fill,
             size: 20,
-            color: isBlack ? AppColors.primary : palette.textSecondary,
+            color: isBlack ? palette.accent : palette.textSecondary,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -880,7 +880,7 @@ class _ThemeModeRow extends ConsumerWidget {
           ),
           CupertinoSwitch(
             value: isBlack,
-            activeTrackColor: AppColors.primary,
+            activeTrackColor: palette.accent,
             onChanged: (value) {
               ref.read(appThemeModeProvider.notifier).setBlackMode(value);
             },

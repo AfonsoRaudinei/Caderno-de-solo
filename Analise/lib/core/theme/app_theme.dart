@@ -7,28 +7,31 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get black {
-    const onSurface = Color(0xFFF2F2F7);
-    const surface = Color(0xFF1C1C1E);
-    const border = Color(0xFF2C2C2E);
-    const secondaryText = Color(0xFFAEAEB2);
+    const onSurface = AppColors.blackTextPrimary;
+    const surface = AppColors.blackSurface;
+    const surfaceAlt = AppColors.blackSurfaceAlt;
+    const border = AppColors.blackBorder;
+    const secondaryText = AppColors.blackTextSecondary;
+    const accent = AppColors.accentSecondary;
 
     return light.copyWith(
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        onPrimary: Colors.white,
-        secondary: AppColors.primary,
-        onSecondary: Colors.white,
+        primary: accent,
+        onPrimary: AppColors.blackTextPrimary,
+        secondary: accent,
+        onSecondary: AppColors.blackTextPrimary,
         surface: surface,
         onSurface: onSurface,
         error: AppColors.error,
-        onError: Colors.white,
+        onError: AppColors.blackTextPrimary,
       ),
-      scaffoldBackgroundColor: Colors.black,
+      scaffoldBackgroundColor: AppColors.blackBackground,
       appBarTheme: light.appBarTheme.copyWith(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.blackBackground,
         foregroundColor: onSurface,
         shadowColor: border,
+        iconTheme: const IconThemeData(color: accent, size: 22),
         titleTextStyle: AppTextStyles.value.copyWith(
           fontSize: 17,
           fontWeight: FontWeight.w600,
@@ -38,7 +41,36 @@ class AppTheme {
       navigationBarTheme: light.navigationBarTheme.copyWith(
         backgroundColor: surface,
         shadowColor: border,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.18),
+        indicatorColor: accent.withValues(alpha: 0.18),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppTextStyles.caption.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w600,
+            );
+          }
+          return AppTextStyles.caption.copyWith(color: secondaryText);
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: accent, size: 24);
+          }
+          return IconThemeData(color: secondaryText, size: 24);
+        }),
+      ),
+      tabBarTheme: light.tabBarTheme.copyWith(
+        labelColor: accent,
+        unselectedLabelColor: secondaryText,
+        indicatorColor: accent,
+        labelStyle: AppTextStyles.label.copyWith(
+          color: accent,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: AppTextStyles.label.copyWith(
+          color: secondaryText,
+          fontWeight: FontWeight.w400,
+        ),
+        dividerColor: border,
       ),
       cardTheme: light.cardTheme.copyWith(
         color: surface,
@@ -54,22 +86,25 @@ class AppTheme {
       ),
       inputDecorationTheme: light.inputDecorationTheme.copyWith(
         fillColor: surface,
-        hintStyle: AppTextStyles.body.copyWith(
-          color: const Color(0xFF8E8E93),
-        ),
+        hintStyle:
+            AppTextStyles.body.copyWith(color: AppColors.blackTextDisabled),
         labelStyle: AppTextStyles.label.copyWith(color: secondaryText),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: accent, width: 1.5),
+        ),
       ),
       listTileTheme: light.listTileTheme.copyWith(
         titleTextStyle: AppTextStyles.body.copyWith(color: onSurface),
         subtitleTextStyle: AppTextStyles.caption.copyWith(color: secondaryText),
-        iconColor: AppColors.primary,
+        iconColor: accent,
       ),
       chipTheme: light.chipTheme.copyWith(
-        backgroundColor: const Color(0xFF2C2C2E),
+        backgroundColor: surfaceAlt,
         labelStyle: AppTextStyles.caption.copyWith(color: onSurface),
       ),
       snackBarTheme: light.snackBarTheme.copyWith(
-        backgroundColor: const Color(0xFF2C2C2E),
+        backgroundColor: surfaceAlt,
         contentTextStyle: AppTextStyles.body.copyWith(color: onSurface),
       ),
       dialogTheme: light.dialogTheme.copyWith(
@@ -84,6 +119,42 @@ class AppTheme {
         bodyColor: onSurface,
         displayColor: onSurface,
       ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: onSurface,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: accent),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accent,
+          side: const BorderSide(color: accent),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return onSurface;
+          }
+          return AppColors.blackTextDisabled;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accent;
+          }
+          return border;
+        }),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: accent,
+        foregroundColor: onSurface,
+        elevation: 4,
+        shape: CircleBorder(),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: accent),
     );
   }
 

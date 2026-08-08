@@ -86,10 +86,10 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${valor.toStringAsFixed(1)} mg/dm³',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1D1D1F),
+                    color: palette.textPrimary,
                   ),
                 ),
               ],
@@ -103,10 +103,10 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
             child: Text(
               rotuloCamada,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
             ),
           ),
@@ -245,10 +245,10 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
               const Spacer(),
               Text(
                 '${argilaPct.toStringAsFixed(1)} %  ·  ${argila.toStringAsFixed(0)} g/kg',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1D1D1F),
+                  color: palette.textPrimary,
                 ),
               ),
             ],
@@ -262,10 +262,10 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Text(
             classeTextural,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1D1D1F),
+              color: palette.textPrimary,
             ),
           ),
         ),
@@ -339,10 +339,10 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
               const Spacer(),
               Text(
                 '${mo.toStringAsFixed(1)} g/dm³',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1D1D1F),
+                  color: palette.textPrimary,
                 ),
               ),
             ],
@@ -378,17 +378,18 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Carbono (C)',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF1D1D1F)),
+                      style:
+                          TextStyle(fontSize: 13, color: palette.textPrimary),
                     ),
                     const Spacer(),
                     Text(
                       '${carbono.toStringAsFixed(2)} %',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D1D1F),
+                        color: palette.textPrimary,
                       ),
                     ),
                   ],
@@ -398,17 +399,18 @@ class RecomendacaoQualidadeSoloSection extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'N estimado (Fancelli)',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF1D1D1F)),
+                      style:
+                          TextStyle(fontSize: 13, color: palette.textPrimary),
                     ),
                     const Spacer(),
                     Text(
                       '${nitrogenio.toStringAsFixed(2)} t/ha',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1D1D1F),
+                        color: palette.textPrimary,
                       ),
                     ),
                   ],

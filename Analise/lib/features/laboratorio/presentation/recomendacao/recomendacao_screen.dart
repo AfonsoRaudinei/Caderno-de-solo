@@ -265,7 +265,8 @@ class _RecomendacaoScreenState extends ConsumerState<RecomendacaoScreen> {
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: palette.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

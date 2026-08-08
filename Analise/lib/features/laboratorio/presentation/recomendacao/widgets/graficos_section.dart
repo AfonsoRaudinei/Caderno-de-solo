@@ -140,10 +140,10 @@ class RecomendacaoBasesDashboard extends StatelessWidget {
             width: 52,
             child: Text(
               valor.toStringAsFixed(2),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1D1D1F),
+                color: palette.textPrimary,
               ),
               textAlign: TextAlign.right,
             ),
@@ -396,7 +396,7 @@ class RecomendacaoGraficosSection extends StatelessWidget {
           children: [
             Text(
               _fmtBar(valor, unidade, label),
-              style: const TextStyle(fontSize: 9, color: Color(0xFF1D1D1F)),
+              style: TextStyle(fontSize: 9, color: palette.textPrimary),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

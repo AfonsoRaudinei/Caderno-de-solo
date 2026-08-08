@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/data/culturas_data.dart';
 import 'package:soloforte/features/culturas/providers/culturas_provider.dart';
@@ -104,11 +105,12 @@ class _DataModeToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.appPalette;
     final mode = ref.watch(culturasProvider).dataMode;
     return Container(
       height: 38,
       decoration: BoxDecoration(
-        color: AppColors.bgSecondary,
+        color: palette.surfaceAlt,
         borderRadius: BorderRadius.circular(AppDimens.radiusLg),
       ),
       padding: const EdgeInsets.all(2),
@@ -127,12 +129,12 @@ class _DataModeToggle extends ConsumerWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.white : Colors.transparent,
+                  color: isActive ? palette.card : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.08),
+                            color: palette.accent.withValues(alpha: 0.08),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
@@ -145,7 +147,7 @@ class _DataModeToggle extends ConsumerWidget {
                   style: AppTextStyles.caption.copyWith(
                     fontSize: 12,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? AppColors.primary : AppColors.textSecond,
+                    color: isActive ? palette.accent : palette.textSecondary,
                   ),
                 ),
               ),

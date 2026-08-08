@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
 import 'package:soloforte/core/theme/app_theme.dart';
@@ -10,15 +11,16 @@ class SourceDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.appPalette;
     final sources = ref.watch(sourcesListProvider);
     final selected = ref.watch(culturasProvider).selectedSource;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(AppDimens.radiusLg),
         border: Border.all(
-          color: selected != null ? AppColors.primary : AppColors.borderSoft,
+          color: selected != null ? palette.accent : palette.border,
           width: selected != null ? 1.2 : 0.8,
         ),
       ),
