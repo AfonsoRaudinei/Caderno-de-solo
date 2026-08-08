@@ -1,0 +1,137 @@
+---
+description: Contrato ativo do modo Black (tema escuro) + Azul Samsung — paleta, regras absolutas e critério de conformidade. Referência obrigatória para auditoria/fix de aparência; não autoriza correção sozinha.
+globs: Analise/lib/**/*.dart
+alwaysApply: false
+---
+
+---
+skill: soloforte-blackmode
+status: CONTRATO ATIVO
+versão: 1.0
+data: 08/2026
+autoridade: subordinado a ARCH_BASELINE_v1.1_SCORE_90.md (não pode contradizer)
+destino_no_projeto: .cursor/rules/soloforte-blackmode.mdc
+---
+
+# SKILL — MÓDULO BLACK (TEMA ESCURO) + AZUL SAMSUNG
+
+## 0. PROBLEMA QUE ESTA SKILL RESOLVE
+
+O app tem 3 opções de aparência em Configurações → Aparência: **Verde**, **Azul**, **Black**.
+Quando **Black** é selecionado, várias telas não obedecem o tema:
+telas inteiras aparecem brancas, controles segmentados (ex.: abas da Carteira) ficam
+brancos sobre fundo preto, cards de feedback aparecem claros, a tela de Clima
+ignora o tema por completo.
+
+Causa raiz provável: não existe um contrato único de cores para o modo Black —
+cada tela decide sua própria cor de fundo/superfície em vez de ler de um
+`ColorScheme`/`ThemeData` central. Esta skill define esse contrato.
+
+Esta skill **não corrige código**. Ela é a referência que qualquer prompt de
+correção deve citar e obedecer.
+
+---
+
+## 1. PALETA OFICIAL — MODO BLACK
+
+| Token semântico | Uso | Valor |
+|---|---|---|
+| `background.primary` | Fundo de tela (Scaffold) | `#0D0D0D` |
+| `background.surface` | Cards, sheets, containers elevados | `#1C1C1E` |
+| `background.surfaceAlt` | Superfície secundária (linhas alternadas, chips) | `#242426` |
+| `border.divider` | Divisores, bordas de card | `#2C2C2E` |
+| `text.primary` | Texto principal sobre fundo escuro | `#FFFFFF` |
+| `text.secondary` | Texto de apoio, labels, subtítulos | `#A0A0A5` |
+| `text.disabled` | Texto desabilitado | `#5C5C5E` |
+| `accent.secondary` (**Azul Samsung**) | Cor de destaque do modo Black | `#1428A0` |
+| `accent.secondaryVariant` | Estados pressed/hover do azul | `#0F1E7A` |
+| `brand.primary` | Verde da marca — mantido como cor primária global | (cor verde já em uso, não substituir) |
+| `status.error` | Erros, ações destrutivas | `#FF3B30` |
+| `status.success` | Sucesso (mantém verde) | verde já em uso |
+
+**Regra de aplicação do Azul Samsung:** é a **segunda cor** do modo Black —
+ou seja, tudo que hoje usa o verde da marca como acento *dentro do modo Black*
+(ícones ativos, FAB, bordas de foco, indicador de aba selecionada, botões
+outline, seleção de item de lista, checkmark de seleção) passa a usar
+`accent.secondary` (#1428A0) quando `AppTheme == black`. Fora do modo Black,
+nada muda — Verde e Azul continuam com suas paletas próprias.
+
+---
+
+## 2. ONDE O AZUL SAMSUNG DEVE APARECER (modo Black)
+
+- FAB único do sistema (`smart_button.dart`) — ícone e/ou anel de destaque
+- Ícones ativos/selecionados no SideMenu e em listas
+- Indicador de aba selecionada (ex.: segmented control da Carteira, abas da Agenda)
+- Bordas de foco de campos de formulário
+- Checkmarks de seleção (ex.: cartão "Aparência" em Configurações)
+- Botões outline / links de ação (ex.: "Editar perfil")
+- Badges e contadores não-críticos
+
+**Não usar o Azul Samsung em:** estados de erro, alertas destrutivos, ou como
+cor de fundo de tela — ele é acento, não cor de superfície.
+
+---
+
+## 3. REGRAS ABSOLUTAS
+
+✅ Toda tela deve ler cor de `Theme.of(context).colorScheme` / `ThemeData`
+   central — nunca `Colors.white`, `Colors.black` ou hex hardcoded.
+✅ Todo widget de superfície (Scaffold, Card, BottomSheet, Container de tela)
+   deve herdar `background.primary` ou `background.surface` do tema ativo.
+✅ Contraste mínimo AA (texto sobre fundo) deve ser respeitado nas 3 aparências.
+✅ Trocar de aparência (Verde/Azul/Black) deve refletir instantaneamente em
+   **100% das telas**, sem necessidade de reabrir o app.
+
+❌ Não criar uma 4ª cor de acento fora da paleta acima.
+❌ Não hardcodar cor em widgets de tela (`Container(color: Colors.white)`).
+❌ Não misturar o Azul Samsung como cor de fundo — ele é só acento.
+❌ Não alterar o Design System global (fora do escopo desta skill) — ver
+   regra `Não alterar tema ou Design System` em `Soloforte_agente.md`; esta
+   skill é a **exceção declarada e aprovada** apenas para o contrato do modo Black.
+❌ Não tocar em `MarketingCase` ou nas rotas — esta skill é puramente visual.
+
+---
+
+## 4. TELAS/CONTEXTOS CONHECIDOS QUE PRECISAM SER VALIDADOS
+
+(lista levantada a partir de evidência visual — a auditoria oficial deve
+confirmar contra `lib/` via `find`, esta lista é ponto de partida, não fonte
+da verdade)
+
+- Configurações → Perfil / Dados cadastrais / Aparência / Histórico
+- Configurações → Dados Offline (Modo offline, cache, mapas)
+- Configurações → Preferências (Meu Plano, Notificações, Relatórios &
+  Exportação, Termos de Serviço, Política de Privacidade)
+- Configurações → Sessão (Sair, Excluir conta)
+- Menu Principal (SideMenu): Agenda, Clientes, Relatórios, Feedback, Clima,
+  Carteira, Configurações
+- Conta: Meu Plano, Sincronizar agora
+- Agenda: abas Calendário / Planejamento / Indicadores
+- Carteira: abas Clientes / (segmentado atual) / Metas / Oportunidades +
+  categorias (Químico, Fertilizante)
+- Clima (detalhe: card principal, Detalhes — vento, umidade, chuva, pressão,
+  visibilidade, nuvens, índice UV)
+- Feedback (cards Bug/Sugestão/Elogios, "Sugestões por módulo")
+
+---
+
+## 5. CRITÉRIO DE "CORRIGIDO"
+
+Uma tela só é considerada conforme quando, com **Black** selecionado em
+Aparência:
+1. Nenhuma área de fundo aparece branca/clara.
+2. Todo texto tem contraste legível sobre o fundo escuro.
+3. Todo acento visual (ícone ativo, aba selecionada, FAB, borda de foco)
+   usa `accent.secondary` (#1428A0).
+4. Nenhum widget usa cor hardcoded fora da paleta desta skill.
+
+---
+
+## 6. PRÓXIMO PASSO OBRIGATÓRIO
+
+Esta skill **não autoriza execução de correção**. O próximo artefato é um
+prompt de **leitura/auditoria** (read-only) que mapeia todas as páginas reais
+do projeto e localiza, arquivo por arquivo, onde o contrato acima está sendo
+violado. Só depois de aprovado o relatório da auditoria é que um prompt de
+correção cirúrgica (por tela, com gates) deve ser gerado.
