@@ -221,6 +221,9 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
     );
 
     var salvou = false;
+    String? mensagemErro;
+    var requiresLogin = false;
+
     if (_isEdicao) {
       final atual = ref.read(clienteProvider).clienteSelecionado;
       if (atual == null) return;
@@ -238,10 +241,14 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
       salvou = id != null && id.isNotEmpty;
     }
 
+    // Preferência: buffer do notifier (sobrevive a limparErro da lista).
+    final stateAposSalvar = ref.read(clienteProvider);
+    mensagemErro = notifier.takeLastSaveError() ?? stateAposSalvar.erro;
+    requiresLogin = stateAposSalvar.requiresLogin;
+
     if (!mounted) return;
     if (!salvou) {
-      final state = ref.read(clienteProvider);
-      if (state.requiresLogin) {
+      if (requiresLogin) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         context.go(AppRoutes.login);
         return;
@@ -251,9 +258,12 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
         ..showSnackBar(
           SnackBar(
             backgroundColor: AppColors.error,
-            content: Text(state.erro ?? 'Não foi possível salvar o cliente.'),
+            content: Text(
+              mensagemErro ?? 'Não foi possível salvar o cliente.',
+            ),
           ),
         );
+      notifier.limparErro();
       return;
     }
     context.pop(true);
@@ -294,7 +304,13 @@ class _ClienteFormScreenState extends ConsumerState<ClienteFormScreen> {
 class ClienteFormValidators {
   ClienteFormValidators._();
 
-  static String? nome(String? value) => null;
+  static String? nome(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.length < 3) {
+      return 'Informe pelo menos 3 caracteres.';
+    }
+    return null;
+  }
 
   static String? cidade(String? value) => null;
 

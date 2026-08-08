@@ -78,6 +78,16 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
   final Future<String?> Function({Duration timeout}) _waitForCurrentUserId;
   final Future<void> Function() _signOut;
 
+  /// Erro da última operação de save, independente de [limparErro] na UI.
+  String? _lastSaveError;
+
+  /// Consome a mensagem da última falha de create/update (uso do formulário).
+  String? takeLastSaveError() {
+    final value = _lastSaveError;
+    _lastSaveError = null;
+    return value;
+  }
+
   Future<void> _markRequiresLogin({bool signOut = false}) async {
     if (signOut) {
       try {
@@ -144,6 +154,7 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
   }
 
   Future<String?> criarCliente(ClienteEntity cliente) async {
+    _lastSaveError = null;
     final usuarioId = await _waitForCurrentUserId();
     if (usuarioId == null || usuarioId.isEmpty) {
       await _markRequiresLogin();
@@ -191,21 +202,24 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
       }
       return id;
     } on ClienteSessionException {
-      await _handleSessionException(
-        softError:
-            'Sem permissão para salvar o cliente. Verifique a sessão e tente novamente.',
-      );
+      const softError =
+          'Sem permissão para salvar o cliente. Verifique a sessão e tente novamente.';
+      _lastSaveError = softError;
+      await _handleSessionException(softError: softError);
       return null;
     } catch (e) {
+      final msg = 'Erro ao criar cliente: $e';
+      _lastSaveError = msg;
       state = state.copyWith(
         isLoading: false,
-        erro: 'Erro ao criar cliente: $e',
+        erro: msg,
       );
       return null;
     }
   }
 
   Future<bool> atualizarCliente(ClienteEntity cliente) async {
+    _lastSaveError = null;
     state = state.copyWith(isLoading: true, clearErro: true);
     try {
       final updated = cliente.copyWith(atualizadoEm: DateTime.now());
@@ -257,15 +271,17 @@ class ClienteNotifier extends StateNotifier<ClienteState> {
       }
       return true;
     } on ClienteSessionException {
-      await _handleSessionException(
-        softError:
-            'Sem permissão para atualizar o cliente. Verifique a sessão e tente novamente.',
-      );
+      const softError =
+          'Sem permissão para atualizar o cliente. Verifique a sessão e tente novamente.';
+      _lastSaveError = softError;
+      await _handleSessionException(softError: softError);
       return false;
     } catch (e) {
+      final msg = 'Erro ao atualizar cliente: $e';
+      _lastSaveError = msg;
       state = state.copyWith(
         isLoading: false,
-        erro: 'Erro ao atualizar cliente: $e',
+        erro: msg,
       );
       return false;
     }
