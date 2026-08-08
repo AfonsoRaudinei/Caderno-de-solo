@@ -127,3 +127,8 @@ Este agente orienta o fluxo de release iOS do app `Analise/`, com foco em discip
   - Build: `1.0.1+182`
   - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa` (73,9 MB)
   - Observação: build gerado via `./build_ios.sh 182` na branch `cursor/unificar-clientes-analises-9607` (commit `747e8b6` — fusão nav 4 abas Clientes+Análise e seleção de análises na Recomendação por cliente com profundidade livre e chips inline); `product_modules_guard` aprovado; `Info.plist` embutido confirmou `CFBundleVersion=182`, `CFBundleShortVersionString=1.0.1`, bundle `com.soloforte.soloforte` e nome `Caderno de Solo`; exportação via `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false`
+
+- 2026-08-08: IPA 184 concluída com sucesso.
+  - Build: `1.0.1+184`
+  - IPA: `Analise/build/ios/ipa/Caderno de Solo.ipa` (71,2 MB)
+  - Observação: build gerado via `./build_ios.sh 184` na branch `cursor/fix-analise-blackmode-colors-a4f6` (contrato Black + Azul Samsung e correções de cores hardcoded); pulou o 183 a pedido; `product_modules_guard` aprovado; Flutter validou `Build Number: 184`, `Version Number: 1.0.1`, bundle `com.soloforte.soloforte` e nome `Caderno de Solo`; `release_gate` reportou violação pré-existente de import cruzado em `lib/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart` (`config_controller.dart`), mas a exportação concluiu; exportação via `tool/export_options_app_store.plist` com `manageAppVersionAndBuildNumber=false`
