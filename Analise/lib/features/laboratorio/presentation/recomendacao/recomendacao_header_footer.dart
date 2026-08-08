@@ -20,7 +20,7 @@ class RecomendacaoHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         border: Border(
           bottom: BorderSide(color: palette.border, width: 0.5),
         ),
@@ -48,12 +48,12 @@ class RecomendacaoHeader extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Recomendação de Adubação',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1D1D1F),
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -123,7 +123,7 @@ class AssinaturaWidget extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: palette.border, width: 0.5),
       ),
@@ -148,17 +148,17 @@ class AssinaturaWidget extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Divider(
-              color: const Color(0xFF1D1D1F).withValues(alpha: 0.3),
+              color: palette.textPrimary.withValues(alpha: 0.3),
               thickness: 1,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             nomeConsultor.isEmpty ? 'Eng. Responsável' : nomeConsultor,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1D1D1F),
+              color: palette.textPrimary,
             ),
           ),
           if (creaNumero != null && creaNumero!.isNotEmpty) ...[
@@ -175,11 +175,11 @@ class AssinaturaWidget extends ConsumerWidget {
             const SizedBox(height: 8),
             GestureDetector(
               onTap: () => context.push(AppRoutes.config),
-              child: const Text(
+              child: Text(
                 'Adicionar assinatura em Configurações →',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF007AFF),
+                  color: palette.accent,
                 ),
               ),
             ),

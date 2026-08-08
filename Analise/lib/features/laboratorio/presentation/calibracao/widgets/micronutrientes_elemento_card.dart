@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:soloforte/core/theme/app_colors.dart';
 import 'package:soloforte/core/theme/app_text_styles.dart';
+import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
 import 'package:soloforte/domain/entities/micronutrientes_calibracao.dart';
@@ -22,6 +23,7 @@ class MicronutrientesElementoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     final nc = _num(elemento[legacyNcKey]);
     final ncUnidade = _string(elemento['ncUnidade'], fallback: 'mg/dm³');
     final extracao = _num(elemento['extracaoPlanta']);
@@ -35,8 +37,8 @@ class MicronutrientesElementoCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        border: Border.all(color: AppColors.borderSoft),
+        color: palette.card,
+        border: Border.all(color: palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +81,7 @@ class MicronutrientesElementoCard extends StatelessWidget {
             valor: '${_fmt(exportacao)} g/t',
           ),
           const SizedBox(height: 12),
-          _buildSecaoTitulo('NÍVEL CRÍTICO'),
+          _buildSecaoTitulo('NÍVEL CRÍTICO', palette),
           const SizedBox(height: 6),
           _buildNumericInput(
             keyValue: '$draftKey-$simbolo-nc',
@@ -114,7 +116,7 @@ class MicronutrientesElementoCard extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 14),
-          _buildSecaoTitulo('EXTRAÇÃO / EXPORTAÇÃO'),
+          _buildSecaoTitulo('EXTRAÇÃO / EXPORTAÇÃO', palette),
           const SizedBox(height: 6),
           _buildNumericPair(
             left: _buildNumericInput(
@@ -153,7 +155,7 @@ class MicronutrientesElementoCard extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 14),
-          _buildSecaoTitulo('FONTE E LIMITES'),
+          _buildSecaoTitulo('FONTE E LIMITES', palette),
           const SizedBox(height: 6),
           _buildNumericPair(
             left: _buildNumericInput(
@@ -202,7 +204,7 @@ class MicronutrientesElementoCard extends StatelessWidget {
             onChanged: (value) => _patch({'limiteToxicidade': value}),
           ),
           const SizedBox(height: 14),
-          _buildSecaoTitulo('VIAS PERMITIDAS'),
+          _buildSecaoTitulo('VIAS PERMITIDAS', palette),
           const SizedBox(height: 6),
           _ViaToggleGroup(
             selecionadas: vias,
@@ -225,11 +227,11 @@ class MicronutrientesElementoCard extends StatelessWidget {
     onChanged(atualizado);
   }
 
-  Widget _buildSecaoTitulo(String titulo) {
+  Widget _buildSecaoTitulo(String titulo, AppThemePalette palette) {
     return Text(
       titulo,
       style: AppTextStyles.caption.copyWith(
-        color: AppColors.textSecond,
+        color: palette.textSecondary,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
       ),
@@ -346,17 +348,18 @@ class _ResumoParametro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.appPalette;
     return Row(
       children: [
         Text(
           '$label: ',
-          style: AppTextStyles.caption.copyWith(color: AppColors.textSecond),
+          style: AppTextStyles.caption.copyWith(color: palette.textSecondary),
         ),
         Expanded(
           child: Text(
             valor,
             style: AppTextStyles.caption.copyWith(
-              color: AppColors.textPrimary,
+              color: palette.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -382,14 +385,15 @@ class _ViaToggleGroup extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i < opcoes.length; i++) ...[
-          Expanded(child: _buildToggle(opcoes[i])),
+          Expanded(child: _buildToggle(context, opcoes[i])),
           if (i < opcoes.length - 1) const SizedBox(width: 6),
         ],
       ],
     );
   }
 
-  Widget _buildToggle(String opcao) {
+  Widget _buildToggle(BuildContext context, String opcao) {
+    final palette = context.appPalette;
     final selected = selecionadas.contains(opcao);
 
     return GestureDetector(
@@ -409,9 +413,9 @@ class _ViaToggleGroup extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? const Color(0xFFAF52DE).withValues(alpha: 0.10)
-              : const Color(0xFFE5E5E7),
+              : palette.surfaceAlt,
           border: Border.all(
-            color: selected ? const Color(0xFFAF52DE) : const Color(0xFFD1D1D6),
+            color: selected ? const Color(0xFFAF52DE) : palette.borderStrong,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -421,7 +425,7 @@ class _ViaToggleGroup extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? const Color(0xFFAF52DE) : const Color(0xFF86868B),
+            color: selected ? const Color(0xFFAF52DE) : palette.textSecondary,
           ),
         ),
       ),

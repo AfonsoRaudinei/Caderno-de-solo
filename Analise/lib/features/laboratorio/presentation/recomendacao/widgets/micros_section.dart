@@ -39,11 +39,11 @@ class RecomendacaoMicrosUnificadosSection extends StatelessWidget {
         if (resultado.grupos.isEmpty)
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: palette.card,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: palette.shadow,
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -74,11 +74,11 @@ class _GrupoMicroCard extends StatelessWidget {
     final palette = context.appPalette;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: palette.card,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: palette.shadow,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -94,10 +94,10 @@ class _GrupoMicroCard extends StatelessWidget {
               children: [
                 Text(
                   grupo.nomeGrupo,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1D1D1F),
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
