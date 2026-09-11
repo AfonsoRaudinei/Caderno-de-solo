@@ -559,6 +559,21 @@ class RecomendacaoEngine {
         sc: sc,
       ).doseFinal;
     }
+    // ⑧ CA+CD — NC = CA + CD (fórmula única em CalcarioFormula).
+    if (metodo.startsWith('⑧') || metodo.contains('CA+CD')) {
+      return CalcarioFormula.metodoCaCd(
+        al3: analise.al,
+        ca2: analise.ca,
+        mg2: analise.mg,
+        ncCa: _num(corretivos['ncCa'], _num(albrecht['ncCa'], 2.0)),
+        ncMg: _num(corretivos['ncMg'], _num(albrecht['ncMg'], 0.8)),
+        argilaPercent: analise.argila,
+        prem: analise.pRem,
+        prnt: prnt,
+        profundidadeCm: profundidade,
+        sc: sc,
+      );
+    }
     // Fallback: SMP
     final ncBaseSmp = ncSmpTabela(phSmp: analise.ph, tabelas: tabelas);
     return CalcarioFormula.metodoSMP(

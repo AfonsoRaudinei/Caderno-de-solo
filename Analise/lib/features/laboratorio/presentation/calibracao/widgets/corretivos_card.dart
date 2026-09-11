@@ -197,8 +197,9 @@ class _CorretivosCardState extends State<CorretivosCard> {
     final metaCaMgK =
         _metaCaMgKConfig(_string(widget.corretivos['metodoCalagem']));
     final tipoCalcario = _string(widget.corretivos['tipoCalcario']);
-    final usarNivelCritico = metaCaMgK.permiteNivelCritico &&
-        _bool(widget.corretivos['usarNivelCritico']);
+    final usarNivelCritico = metaCaMgK.forcaNivelCritico ||
+        (metaCaMgK.permiteNivelCritico &&
+            _bool(widget.corretivos['usarNivelCritico']));
 
     final caDesejadoPct = _numOrNull(widget.corretivos['caDesejadoPct']) ??
         _numOrNull(albrecht['caAlvo']);
@@ -280,8 +281,9 @@ class _CorretivosCardState extends State<CorretivosCard> {
     final gesso = _asMap(widget.corretivos['gesso']);
     final usarGesso = _bool(gesso['usarGesso']);
     final metaCaMgK = _metaCaMgKConfig(metodoCalagem);
-    final usarNivelCritico = metaCaMgK.permiteNivelCritico &&
-        _bool(widget.corretivos['usarNivelCritico']);
+    final usarNivelCritico = metaCaMgK.forcaNivelCritico ||
+        (metaCaMgK.permiteNivelCritico &&
+            _bool(widget.corretivos['usarNivelCritico']));
 
     final qualidade = _qualidadeCalcario(prnt1);
     final scoreBars = (qualidade / 20).clamp(0, 5).toInt();
@@ -537,25 +539,44 @@ class _CorretivosCardState extends State<CorretivosCard> {
           label: 'Método de calagem',
           value: _safeValue(metodos, metodoCalagem),
           items: metodos
-              .map((metodo) => AppDropdownItem(value: metodo, label: metodo))
+              .map((metodo) => AppDropdownItem(
+                    value: metodo,
+                    label: CalagemCatalogo.isCaCd(metodo) ? 'CA+CD' : metodo,
+                  ))
               .toList(),
           onChanged: (value) {
+            final metodo = value ?? metodos.first;
             final atualizado = {
               ...widget.corretivos,
-              'metodoCalagem': value ?? metodos.first,
+              'metodoCalagem': metodo,
             };
-            if (!_metaCaMgKConfig(atualizado['metodoCalagem'] as String)
-                .permiteNivelCritico) {
+            final meta = _metaCaMgKConfig(metodo);
+            if (meta.forcaNivelCritico) {
+              atualizado['usarNivelCritico'] = true;
+            } else if (!meta.permiteNivelCritico) {
               atualizado['usarNivelCritico'] = false;
             }
-            if (!_permiteSegundoCalcario(
-              atualizado['metodoCalagem'] as String,
-            )) {
+            if (!_permiteSegundoCalcario(metodo)) {
               atualizado['usarSegundoCalcario'] = false;
             }
             widget.onChanged(atualizado);
           },
         ),
+        if (CalagemCatalogo.isCaCd(metodoCalagem)) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.bgSecondary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              CalagemCatalogo.legendaCaCd,
+              style: AppTextStyles.caption,
+            ),
+          ),
+        ],
         const SizedBox(height: 10),
         if (metodoCalagem.startsWith('①'))
           _buildNumericInput(
@@ -933,14 +954,16 @@ class _CorretivosCardState extends State<CorretivosCard> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _ToggleBtn(
-                label: '% da CTC',
-                selected: !usarNivelCritico,
-                onTap: () => _updateCorretivoValue('usarNivelCritico', false),
+            if (!config.forcaNivelCritico) ...[
+              Expanded(
+                child: _ToggleBtn(
+                  label: '% da CTC',
+                  selected: !usarNivelCritico,
+                  onTap: () => _updateCorretivoValue('usarNivelCritico', false),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
             Expanded(
               child: _ToggleBtn(
                 label: 'Nível Crítico',
@@ -1242,13 +1265,22 @@ class _MetaCaMgKConfig {
   const _MetaCaMgKConfig({
     required this.visivel,
     required this.permiteNivelCritico,
+    this.forcaNivelCritico = false,
   });
 
   final bool visivel;
   final bool permiteNivelCritico;
+  final bool forcaNivelCritico;
 }
 
 _MetaCaMgKConfig _metaCaMgKConfig(String metodoCalagem) {
+  if (CalagemCatalogo.isCaCd(metodoCalagem)) {
+    return const _MetaCaMgKConfig(
+      visivel: true,
+      permiteNivelCritico: true,
+      forcaNivelCritico: true,
+    );
+  }
   if (metodoCalagem.startsWith('⑤') || metodoCalagem.startsWith('⑥')) {
     return const _MetaCaMgKConfig(
       visivel: true,
@@ -1396,6 +1428,7 @@ String? _labelMetodo(dynamic raw) {
       if (normalized.startsWith('Saturação')) return 'Sat. V%';
       if (normalized.startsWith('Albrecht')) return 'Albrecht';
       if (normalized.startsWith('EMBRAPA')) return 'EMBRAPA';
+      if (normalized.startsWith('CA+CD')) return 'CA+CD';
       return normalized.isEmpty ? value : normalized;
   }
 }
