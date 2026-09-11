@@ -1,5 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:soloforte/data/base_dados/nc_por_referencia.dart';
+import 'package:soloforte/domain/formulas/calagem_catalogo.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/laboratorio/application/providers/calibracao_state.dart';
 import 'package:soloforte/features/laboratorio/data/repositories/calibracao_repository_impl.dart';
@@ -65,8 +66,19 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       successMessage: null,
     );
     try {
-      final sorted = await _carregarCalibracoes();
+      final loaded = await _carregarCalibracoes();
+      final sorted = loaded.map(_sanitizarPerfil).toList();
       final selectedId = sorted.isNotEmpty ? sorted.first.id : null;
+      if (_houveMigracaoCalagem(loaded, sorted) && sorted.isNotEmpty) {
+        try {
+          await _salvarCalibracao(
+            perfis: sorted,
+            perfilSincronizar: sorted.first,
+          );
+        } catch (_) {
+          // Mantém a migração em memória mesmo se a persistência falhar.
+        }
+      }
       state = state.copyWith(
         loading: false,
         profiles: sorted,
@@ -87,9 +99,10 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
     if (profileId == null) return;
     final profile = state.profiles.where((p) => p.id == profileId).firstOrNull;
     if (profile == null) return;
+    final sanitizado = _sanitizarPerfil(profile);
     state = state.copyWith(
       selectedProfileId: profileId,
-      draft: profile.copyWith(),
+      draft: sanitizado.copyWith(),
       errorMessage: null,
       successMessage: null,
     );
@@ -114,9 +127,10 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
   }
 
   void carregarPerfil(CalibracaoProfile profile) {
+    final sanitizado = _sanitizarPerfil(profile);
     state = state.copyWith(
-      selectedProfileId: profile.id,
-      draft: profile.copyWith(),
+      selectedProfileId: sanitizado.id,
+      draft: sanitizado.copyWith(),
       errorMessage: null,
       successMessage: null,
     );
@@ -365,13 +379,13 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       final shouldCreate = salvarComoNovo || state.selectedProfileId == null;
       final profileId = shouldCreate ? _uuid.v4() : state.draft.id;
 
-      final profile = state.draft.copyWith(
+      final profile = _sanitizarPerfil(state.draft.copyWith(
         id: profileId,
         nome: nome,
         cultura: cultura,
         createdAt: shouldCreate ? now : state.draft.createdAt,
         updatedAt: now,
-      );
+      ));
 
       final updated = [...state.profiles];
       final idx = updated.indexWhere((p) => p.id == profile.id);
@@ -491,6 +505,31 @@ class CalibracaoController extends StateNotifier<CalibracaoState> {
       errorMessage: null,
       successMessage: null,
     );
+  }
+
+  static CalibracaoProfile _sanitizarPerfil(CalibracaoProfile profile) {
+    final parametros = Map<String, dynamic>.from(profile.parametrosCards);
+    final corretivosRaw = parametros['corretivos'];
+    if (corretivosRaw is! Map) return profile;
+    final original = Map<String, dynamic>.from(corretivosRaw);
+    final sanitizado = CalagemCatalogo.sanitizarCorretivos(original);
+    if (identical(sanitizado, original)) return profile;
+    parametros['corretivos'] = sanitizado;
+    return profile.copyWith(parametrosCards: parametros);
+  }
+
+  static bool _houveMigracaoCalagem(
+    List<CalibracaoProfile> original,
+    List<CalibracaoProfile> sanitizado,
+  ) {
+    if (original.length != sanitizado.length) return true;
+    for (var i = 0; i < original.length; i++) {
+      if (!identical(original[i], sanitizado[i]) &&
+          original[i].parametrosCards != sanitizado[i].parametrosCards) {
+        return true;
+      }
+    }
+    return false;
   }
 
   List<CalibracaoProfile> _sortByUpdatedDesc(List<CalibracaoProfile> list) {

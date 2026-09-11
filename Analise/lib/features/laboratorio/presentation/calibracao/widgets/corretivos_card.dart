@@ -6,6 +6,7 @@ import 'package:soloforte/core/theme/app_theme.dart';
 import 'package:soloforte/core/theme/app_theme_palette.dart';
 import 'package:soloforte/core/widgets/app_dropdown.dart';
 import 'package:soloforte/core/widgets/app_input.dart';
+import 'package:soloforte/domain/formulas/calagem_catalogo.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/features/laboratorio/presentation/calibracao/widgets/calibracao_status_badge.dart';
 
@@ -1272,35 +1273,16 @@ bool _permiteSegundoCalcario(String metodoCalagem) {
 
 // ── Constantes ──────────────────────────────────────────────────────────────
 
-const _tiposCalcario = [
-  'Dolomítico',
-  'Calcítico',
-  'Magnesiano',
-  'Calcinado',
-  'Filler',
-  'Personalizado',
-];
+const _tiposCalcario = CalagemCatalogo.tiposCalcarioVisiveis;
 
 const _tiposCalagem = [
   'Corretiva',
   'Manutenção PD',
 ];
 
-const _metodosCalagemCorretiva = [
-  '① Saturação por Bases (V%)',
-  '② EMBRAPA (fator H+Al)',
-  '③ Ca+Mg',
-  '④ Supercalagem',
-  '⑤ Albrecht',
-  '⑥ Albrecht + Y',
-  '⑦ Correção Mg',
-];
+const _metodosCalagemCorretiva = CalagemCatalogo.metodosCorretiva;
 
-const _metodosCalagemPd = [
-  '① Saturação por Bases (V%)',
-  '⑤ Albrecht',
-  '⑥ Albrecht + Y',
-];
+const _metodosCalagemPd = CalagemCatalogo.metodosManutencaoPd;
 
 const _metodosIncorporacao = [
   'Sem incorporação',
