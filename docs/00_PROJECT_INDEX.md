@@ -15,5 +15,6 @@
 | `08_AGRO_FORMULAS.md` | ✅ | Referência das fórmulas agronômicas (calcário, gesso, fósforo, potássio, conversões). |
 | `09_ERRORS_AND_RISKS.md` | 🔄 | Listing de duplicações, conflitos de requisitos, código parcial e riscos pendentes. |
 | `10_ROADMAP.md` | 🔄 | Atualização das 14 prompts faseadas com status e próximo passo. |
+| `11_AUDITORIA_AGENTES.md` | 🔄 | Plano de auditoria por camada (blocos 1–6) e 6 agentes permanentes em `.cursor/rules/agente-*.mdc`. |
 
 Cada documento abaixo pode ser acessado diretamente e serve como ponto único de referência para o tema descrito.

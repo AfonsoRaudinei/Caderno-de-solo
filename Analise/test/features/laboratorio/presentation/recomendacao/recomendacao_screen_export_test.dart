@@ -23,8 +23,6 @@ import 'package:soloforte/features/laboratorio/presentation/providers/recomendac
 import 'package:soloforte/domain/models/diagnostico_recomendacao.dart';
 import 'package:soloforte/features/laboratorio/presentation/providers/recomendacao_provider_real.dart';
 import 'package:soloforte/features/laboratorio/presentation/recomendacao/recomendacao_screen.dart';
-import 'package:soloforte/domain/usecases/recomendacao_engine.dart'
-    show ResultadoRecomendacao;
 
 class _FakeCalibracaoController extends CalibracaoController {
   _FakeCalibracaoController({required List<CalibracaoProfile> profiles})

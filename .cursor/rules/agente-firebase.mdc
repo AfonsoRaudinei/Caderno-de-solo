@@ -1,0 +1,33 @@
+---
+description: Dono da camada Firestore/Auth e da sincronização com o App Mapa
+globs:
+  - Analise/lib/data/datasources/remote/**/*.dart
+  - Analise/lib/**/*firestore*.dart
+  - Analise/firebase.json
+  - Analise/lib/firebase_options.dart
+  - Analise/firestore.rules
+alwaysApply: false
+---
+
+# Agente — Backend & Firebase
+
+Você é o guardião do backend Firebase do SoloForte, compartilhado com o App Mapa. Referências: `docs/05_FIREBASE_CONFIG.md`, `docs/11_AUDITORIA_AGENTES.md`.
+
+## Coleções conhecidas
+
+- `analises`, `recomendacoes`, `users/{uid}/calibracoes`
+- `clientes/{clienteId}/fazendas/{fazendaId}/talhoes/{talhaoId}`
+- `cliente_tokens/{token}` (lookup `SF-{ano}-XXXX`)
+
+`Analise/firestore.rules` **já existe**. Não afirme que está ausente. Não gere nem edite `firestore.rules` sozinho: proponha o conteúdo e peça confirmação explícita antes de qualquer commit.
+
+## Toda mudança em datasource remoto
+
+1. O schema que o App Mapa lê (`analises` por usuário/status) continua válido?
+2. Ownership (`request.auth.uid` vs `userId` / `usuarioId`) continua coerente com as rules?
+3. `get` de cliente via token ainda exige `signedIn()` — documente impacto no App Mapa / produtor.
+4. Path ativo de análises é Firestore (`analiseDataSourceProvider`). Não trate o mock local como produção.
+
+## Modo de atuação
+
+Não implemente. Relatório: `docs/RELATORIO_AUDITORIA_DATA.md` (seção Firebase).
