@@ -3,10 +3,24 @@ import 'package:soloforte/features/clientes/presentation/cliente_form_screen.dar
 
 void main() {
   group('ClienteFormValidators.nome', () {
-    test('aceita vazio para permitir cadastro parcial', () {
-      expect(ClienteFormValidators.nome(null), isNull);
-      expect(ClienteFormValidators.nome(''), isNull);
-      expect(ClienteFormValidators.nome('Ab'), isNull);
+    test('rejeita vazio ou curto demais', () {
+      expect(
+        ClienteFormValidators.nome(null),
+        'Informe pelo menos 3 caracteres.',
+      );
+      expect(
+        ClienteFormValidators.nome(''),
+        'Informe pelo menos 3 caracteres.',
+      );
+      expect(
+        ClienteFormValidators.nome('Ab'),
+        'Informe pelo menos 3 caracteres.',
+      );
+    });
+
+    test('aceita nome com ao menos 3 caracteres', () {
+      expect(ClienteFormValidators.nome('Ana'), isNull);
+      expect(ClienteFormValidators.nome('  João  '), isNull);
     });
   });
 

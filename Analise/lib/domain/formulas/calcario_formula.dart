@@ -310,8 +310,9 @@ class CalcarioFormula {
       throw ArgumentError(
           'PRNT deve ser maior que zero para compor a fração calcário.');
     }
-    if (input.va >= input.vd)
+    if (input.va >= input.vd) {
       return const CalcarioResult(ncToneladas: 0.0, formula: 'V%');
+    }
     final ncBase = ((input.vd - input.va) * input.ctcPh7) / 100.0;
     final doseFinal = aplicarCorrecoes(
       ncBase: ncBase,
@@ -386,6 +387,61 @@ class CalcarioFormula {
     final ncBase = hAl * fator;
     return aplicarCorrecoes(
       ncBase: ncBase,
+      profundidadeCm: profundidadeCm,
+      prnt: prnt,
+      sc: sc,
+    ).doseFinal;
+  }
+
+  /// NC bruto do método ⑧ CA+CD (antes de PRNT / profundidade / SC).
+  ///
+  /// CA = Y · Al³⁺. mt fica fixo em 0 nesta versão, então o termo
+  /// (mt · t / 100) não entra. Evolução futura: tabela de mt por cultura
+  /// (Quadro 8.1 do manual).
+  /// CD = X − (Ca²⁺ + Mg²⁺), com X = ncCa + ncMg (cmolc/dm³).
+  /// NC = CA + CD. Valores negativos são clampados a 0.
+  static ({double y, double ca, double cd, double nc}) calcularNcCaCd({
+    required double al3,
+    required double ca2,
+    required double mg2,
+    required double ncCa,
+    required double ncMg,
+    double? argilaPercent,
+    double? prem,
+  }) {
+    // mt = 0 (hardcoded). Quadro 8.1 por cultura fica para versão futura.
+    const mt = 0.0;
+    final y = calcularYCriterio(argilaPercent: argilaPercent, prem: prem);
+    final ca = (y * al3 + (mt * 0.0 / 100.0)).clamp(0.0, double.infinity);
+    final x = ncCa + ncMg;
+    final cd = (x - (ca2 + mg2)).clamp(0.0, double.infinity);
+    return (y: y, ca: ca, cd: cd, nc: ca + cd);
+  }
+
+  /// Método ⑧ CA+CD: NC = CA + CD, depois PRNT / profundidade / SC.
+  static double metodoCaCd({
+    required double al3,
+    required double ca2,
+    required double mg2,
+    required double ncCa,
+    required double ncMg,
+    required double prnt,
+    double? argilaPercent,
+    double? prem,
+    double profundidadeCm = 20.0,
+    double sc = 1.0,
+  }) {
+    final bruto = calcularNcCaCd(
+      al3: al3,
+      ca2: ca2,
+      mg2: mg2,
+      ncCa: ncCa,
+      ncMg: ncMg,
+      argilaPercent: argilaPercent,
+      prem: prem,
+    );
+    return aplicarCorrecoes(
+      ncBase: bruto.nc,
       profundidadeCm: profundidadeCm,
       prnt: prnt,
       sc: sc,

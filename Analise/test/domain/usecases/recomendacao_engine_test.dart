@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soloforte/domain/entities/analise_entity.dart';
+import 'package:soloforte/domain/formulas/calcario_formula.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/usecases/recomendacao_engine.dart';
 import 'package:soloforte/domain/entities/resultado_gesso.dart';
@@ -258,6 +259,38 @@ void main() {
       );
 
       expect(dose, greaterThanOrEqualTo(0));
+    });
+  });
+
+  group('calcularDoseCalcario — ⑧ CA+CD', () {
+    test('usa a fórmula de CalcarioFormula.metodoCaCd', () {
+      final esperado = CalcarioFormula.metodoCaCd(
+        al3: _fancelli.al,
+        ca2: _fancelli.ca,
+        mg2: _fancelli.mg,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: _fancelli.argila,
+        prem: _fancelli.pRem,
+        prnt: 90,
+        profundidadeCm: 20,
+        sc: 1.0,
+      );
+      final dose = engine.calcularDoseCalcario(
+        metodo: '⑧ CA+CD',
+        analise: _fancelli,
+        prnt: 90,
+        profundidade: 20,
+        sc: 1.0,
+        corretivos: {'ncCa': 2.0, 'ncMg': 0.8},
+        albrecht: {},
+        caO: 30,
+        mgO: 16,
+        tabelas: const [],
+      );
+
+      expect(dose, closeTo(esperado, 0.0001));
+      expect(dose, greaterThan(0));
     });
   });
 

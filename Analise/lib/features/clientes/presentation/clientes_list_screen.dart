@@ -10,6 +10,12 @@ import 'package:soloforte/core/widgets/app_visual_components.dart';
 import 'package:soloforte/features/clientes/application/providers/cliente_provider.dart';
 import 'package:soloforte/features/clientes/presentation/widgets/cliente_card_widget.dart';
 
+/// Rotas de formulário montadas sobre a lista no shell IndexedStack.
+@visibleForTesting
+bool isClienteFormRoute(String path) {
+  return path.endsWith('/novo') || path.endsWith('/editar');
+}
+
 class ClientesListScreen extends ConsumerStatefulWidget {
   const ClientesListScreen({super.key});
 
@@ -41,6 +47,12 @@ class _ClientesListScreenState extends ConsumerState<ClientesListScreen> {
       if (next.requiresLogin && next.requiresLogin != previous?.requiresLogin) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         context.go(AppRoutes.login);
+        return;
+      }
+
+      // Formulários filhos (/novo, /editar) exibem o erro; limpar aqui
+      // apaga a mensagem antes do form ler state.erro (race no IndexedStack).
+      if (isClienteFormRoute(GoRouterState.of(context).uri.path)) {
         return;
       }
 

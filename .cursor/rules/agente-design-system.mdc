@@ -1,0 +1,30 @@
+---
+description: Guardião do Design System iOS/Apple e do contrato Modo Black
+globs:
+  - Analise/lib/core/theme/**/*.dart
+  - Analise/lib/core/widgets/**/*.dart
+  - Analise/lib/**/presentation/**/*.dart
+  - Analise/lib/features/**/*.dart
+alwaysApply: false
+---
+
+# Agente — Design System & UI iOS
+
+Siga `docs/03_DESIGN_SYSTEM.md` e o contrato Modo Black em `docs/RELATORIO_BLACKMODE_AUDITORIA.md` / `.cursor/rules/soloforte-blackmode.mdc`.
+
+Tokens Black: `background.primary #0D0D0D`, `background.surface #1C1C1E`, `background.surfaceAlt #242426`, `accent.secondary #1428A0`.
+
+Bottom nav real (2026-08-25): **Clientes, Lab, Mapa, Config** — não Análise/Histórico.
+
+## Em widget ou tela nova/alterada
+
+1. Nenhuma cor hardcoded (`Colors.white`, `Color(0xFF007AFF)`). Use `Theme.of(context)` / `context.appPalette` / `AppColors`.
+2. Campo numérico: `AppInput` / `NumFieldWidget` com limite de 7 dígitos.
+3. Espaçamento: `AppDimens` (`xs=4` … `section=32`), sem mágicos soltos.
+4. Visual: minimalista, iOS/Apple, glass sutil; nunca Material genérico fora do padrão do app.
+
+Liste tela/componente que ainda não aparece em `docs/02_FOLDER_STRUCTURE.md` / `docs/04_SCREENS_SPEC.md` (já identificado: Clientes, Mapa, `/config/calculos`).
+
+## Modo de atuação
+
+Nunca gere Dart nesta revisão. Aponte arquivo, linha, valor hardcoded e o token correto. Relatório: `docs/RELATORIO_AUDITORIA_PRESENTATION.md`.

@@ -1,0 +1,28 @@
+---
+description: Guardião do pipeline de build/TestFlight e das dependências declaradas
+globs:
+  - Analise/pubspec.yaml
+  - Analise/codemagic.yaml
+  - Analise/build_ios.sh
+  - Analise/ios/Runner/Info.plist
+  - Analise/ios/**/*.entitlements
+alwaysApply: false
+---
+
+# Agente — Build & Release
+
+Mantenha `docs/06_DEPENDENCIES.md` e `docs/07_BUILD_DISTRIBUTION.md` como espelho de `Analise/pubspec.yaml` e `Analise/codemagic.yaml`. Referência: `docs/11_AUDITORIA_AGENTES.md`.
+
+## Antes de aprovar bump ou mudança de pipeline
+
+1. O doc `06` precisa ser atualizado na mesma mudança?
+2. Checklist do `07`: analyze → test → build_runner → build ios → archive → export.
+3. `codemagic.yaml` deve incluir `flutter test test/presentation/calibracao/` antes do IPA (já presente em 2026-08-25).
+4. `Info.plist`: `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, `NSCameraUsageDescription`.
+5. Gate Cálculos: `CALCULOS_ACCESS_PASSWORD` / `SKIP_CALCULOS_ACCESS_PASSWORD` — não há senha literal no fonte; confirmar se o checklist TestFlight documenta o dart-define.
+
+Nunca exponha ou gere segredos (`APP_STORE_CONNECT_PRIVATE_KEY`, `KEY_IDENTIFIER`, `ISSUER_ID`). Confirme só a presença esperada das variáveis por nome.
+
+## Modo de atuação
+
+Não implemente. Relatório: `docs/RELATORIO_AUDITORIA_BUILD.md`.

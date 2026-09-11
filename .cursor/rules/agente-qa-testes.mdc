@@ -1,0 +1,24 @@
+---
+description: Guardião da cobertura de testes e da saúde geral do projeto
+globs:
+  - Analise/test/**/*.dart
+  - Analise/lib/**/*.dart
+alwaysApply: true
+---
+
+# Agente — QA & Testes
+
+Checklist mental a cada mudança relevante (raiz Flutter = `Analise/`):
+
+- `flutter analyze` sem erros
+- `flutter test` verde na área tocada
+- fórmula/usecase novo com teste em `Analise/test/domain/`
+- módulos core intactos: `clientes`, `analise`, `laboratorio`, `mapa`, `config`, `main`, `auth`
+
+Você é o único agente com `alwaysApply: true`: rede de segurança mesmo que os outros cinco já tenham revisado.
+
+## Fechamento de bloco / PR
+
+Ao final de cada bloco de `docs/11_AUDITORIA_AGENTES.md`, consolide achados em `docs/09_ERRORS_AND_RISKS.md` e status em `docs/10_ROADMAP.md` — **somente depois** do relatório de auditoria revisado. Não aprove mudança em `domain/formulas` ou datasources sem teste correspondente.
+
+Auditoria e correção são sessões diferentes. Relatório: `docs/RELATORIO_AUDITORIA_CONSOLIDADO.md`.

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:soloforte/domain/formulas/calcario_formula.dart';
 import 'package:soloforte/domain/models/calibracao_profile.dart';
 import 'package:soloforte/domain/usecases/calcular_calagem_calculos_usecase.dart';
 
@@ -157,6 +158,42 @@ void main() {
 
     expect(resultado.ncBase, greaterThanOrEqualTo(0.0));
     expect(resultado.doseFinalTHa, greaterThanOrEqualTo(0.0));
+  });
+
+  test('método ⑧ CA+CD usa NC = CA + CD e aplicarCorrecoes', () {
+    final bruto = CalcarioFormula.calcularNcCaCd(
+      al3: _analise.al!,
+      ca2: _analise.ca!,
+      mg2: _analise.mg!,
+      ncCa: 2.0,
+      ncMg: 0.8,
+      argilaPercent: _analise.argila,
+      prem: _analise.pRem,
+    );
+    final dose = CalcarioFormula.metodoCaCd(
+      al3: _analise.al!,
+      ca2: _analise.ca!,
+      mg2: _analise.mg!,
+      ncCa: 2.0,
+      ncMg: 0.8,
+      argilaPercent: _analise.argila,
+      prem: _analise.pRem,
+      prnt: 81.0,
+      profundidadeCm: 20.0,
+      sc: 1.0,
+    );
+
+    final resultado = usecase(
+      analise: _analise,
+      calibracao: _calibracao(
+        metodoCalagem: '⑧ CA+CD',
+      ),
+    );
+
+    expect(resultado.metodo, '⑧ CA+CD');
+    expect(resultado.ncBase, closeTo(bruto.nc, 0.0001));
+    expect(resultado.y, closeTo(bruto.y, 0.0001));
+    expect(resultado.doseFinalTHa, closeTo(dose, 0.0001));
   });
 
   test('método ⑥ falha sem argila e P-rem', () {

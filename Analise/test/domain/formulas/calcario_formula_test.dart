@@ -96,4 +96,130 @@ void main() {
       );
     });
   });
+
+  group('CalcarioFormula — ⑧ CA+CD', () {
+    test('CA positivo e CD positivo (caso normal, só argila)', () {
+      final y = CalcarioFormula.calcularYCriterio(argilaPercent: 35);
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: 0.3,
+        ca2: 2.0,
+        mg2: 0.5,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+      );
+
+      expect(bruto.y, closeTo(y, 0.0001));
+      expect(bruto.ca, closeTo(y * 0.3, 0.0001));
+      expect(bruto.cd, closeTo(0.3, 0.0001));
+      expect(bruto.nc, closeTo(bruto.ca + bruto.cd, 0.0001));
+      expect(bruto.ca, greaterThan(0));
+      expect(bruto.cd, greaterThan(0));
+    });
+
+    test('Y com argila + P-rem usa calcularYCriterio', () {
+      final y = CalcarioFormula.calcularYCriterio(
+        argilaPercent: 35,
+        prem: 18,
+      );
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: 0.3,
+        ca2: 2.0,
+        mg2: 0.5,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+        prem: 18,
+      );
+
+      expect(bruto.y, closeTo(y, 0.0001));
+      expect(bruto.ca, closeTo(y * 0.3, 0.0001));
+      expect(
+        bruto.y,
+        isNot(closeTo(
+          CalcarioFormula.calcularYCriterio(argilaPercent: 35),
+          0.0001,
+        )),
+      );
+    });
+
+    test('CA negativo é clampado a 0', () {
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: -1.0,
+        ca2: 2.0,
+        mg2: 0.5,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+      );
+
+      expect(bruto.ca, 0.0);
+      expect(bruto.cd, closeTo(0.3, 0.0001));
+      expect(bruto.nc, closeTo(0.3, 0.0001));
+    });
+
+    test('CD negativo é clampado a 0 quando Ca+Mg já está acima de X', () {
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: 0.3,
+        ca2: 3.0,
+        mg2: 1.0,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+      );
+
+      expect(bruto.cd, 0.0);
+      expect(bruto.ca, greaterThan(0));
+      expect(bruto.nc, closeTo(bruto.ca, 0.0001));
+    });
+
+    test('NC = 0 quando CA e CD são clampados', () {
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: -1.0,
+        ca2: 5.0,
+        mg2: 5.0,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+      );
+
+      expect(bruto.ca, 0.0);
+      expect(bruto.cd, 0.0);
+      expect(bruto.nc, 0.0);
+    });
+
+    test('metodoCaCd aplica aplicarCorrecoes sobre o NC', () {
+      const prnt = 80.0;
+      const profundidade = 20.0;
+      const sc = 1.0;
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: 0.3,
+        ca2: 2.0,
+        mg2: 0.5,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+      );
+      final esperado = CalcarioFormula.aplicarCorrecoes(
+        ncBase: bruto.nc,
+        profundidadeCm: profundidade,
+        prnt: prnt,
+        sc: sc,
+      ).doseFinal;
+      final dose = CalcarioFormula.metodoCaCd(
+        al3: 0.3,
+        ca2: 2.0,
+        mg2: 0.5,
+        ncCa: 2.0,
+        ncMg: 0.8,
+        argilaPercent: 35,
+        prnt: prnt,
+        profundidadeCm: profundidade,
+        sc: sc,
+      );
+
+      expect(dose, closeTo(esperado, 0.0001));
+      expect(dose, closeTo(bruto.nc / (prnt / 100.0), 0.0001));
+    });
+  });
 }

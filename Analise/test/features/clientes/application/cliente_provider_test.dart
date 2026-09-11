@@ -78,6 +78,12 @@ void main() {
         notifier.state.erro,
         'Sem permissão para salvar o cliente. Verifique a sessão e tente novamente.',
       );
+      expect(
+        notifier.takeLastSaveError(),
+        'Sem permissão para salvar o cliente. Verifique a sessão e tente novamente.',
+      );
+      // Buffer é consumido uma vez — limparErro da lista não apaga o já lido.
+      expect(notifier.takeLastSaveError(), isNull);
     });
 
     test('marca requiresLogin quando Auth não tem usuário no início', () async {

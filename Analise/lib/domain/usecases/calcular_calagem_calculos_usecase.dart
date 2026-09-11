@@ -283,6 +283,31 @@ class CalcularCalagemCalculosUsecase {
         profundidadeCm: profundidadeCm,
         sc: superficieContato,
       );
+    } else if (metodo.startsWith('⑧') || metodo.contains('CA+CD')) {
+      final al = _required(analise.al, 'Al');
+      final ca = _required(analise.ca, 'Ca');
+      final mg = _required(analise.mg, 'Mg');
+      final ncCa =
+          _numOrNull(corretivos['ncCa']) ?? _asNum(albrecht['ncCa'], 2.0);
+      final ncMg =
+          _numOrNull(corretivos['ncMg']) ?? _asNum(albrecht['ncMg'], 0.8);
+      final bruto = CalcarioFormula.calcularNcCaCd(
+        al3: al,
+        ca2: ca,
+        mg2: mg,
+        ncCa: ncCa,
+        ncMg: ncMg,
+        argilaPercent: analise.argila,
+        prem: analise.pRem,
+      );
+      y = bruto.y;
+      ncBase = bruto.nc;
+      doseFinalTHa = CalcarioFormula.aplicarCorrecoes(
+        ncBase: ncBase,
+        profundidadeCm: profundidadeCm,
+        prnt: prnt,
+        sc: superficieContato,
+      ).doseFinal;
     } else {
       throw StateError('Método de calagem não suportado: $metodo');
     }
