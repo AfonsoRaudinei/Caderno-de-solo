@@ -82,3 +82,36 @@ Conclusao: servico concluido.
 ```
 
 Marque com `[x]` apenas o que foi realmente cumprido. Se algo nao foi executado, mantenha `[ ]` e explique a limitacao antes da conclusao.
+
+## Cursor Cloud specific instructions
+
+Contexto duravel para agentes rodando neste ambiente de nuvem. O toolchain (Flutter
+3.44.9 stable + Android SDK) ja vem instalado no snapshot; o startup script roda
+apenas `flutter pub get` em `Analise/`. Nao reinstale dependencias aqui.
+
+- **Raiz do app**: todos os comandos Flutter rodam de `Analise/` (nao da raiz do repo).
+- **Toolchain**: `flutter`/`dart` estao no PATH (symlinks em `/usr/local/bin` -> `/opt/flutter`).
+  Android SDK em `~/android-sdk` (`ANDROID_SDK_ROOT` no `~/.bashrc`). `flutter doctor`
+  fica verde para Flutter, Android e Chrome.
+- **Lint/test/build** (de `Analise/`): `flutter analyze`, `flutter test`,
+  `flutter build apk --debug`. O gate de CI e `./tool/quality_gate.sh` (roda guard de
+  modulos + analyze + um subconjunto alvo de testes + coverage). Veja
+  `Analise/.github/workflows/quality-gate.yml`.
+- **Nao ha modo mock/offline em runtime**: `AppConfig.useFirestore` e sempre `true`.
+  O app exige o projeto Firebase real (`soloforte-106c8`) + login + verificacao de
+  e-mail para chegar as telas de produto (clientes/analise). Fluxos autenticados na
+  GUI precisam de credenciais de teste + config do App Check.
+- **Firebase por plataforma**: iOS tem chaves reais em `firebase_options.dart`.
+  Android usa placeholders (`TODO_ANDROID_API_KEY`) e nao ha `android/app/google-services.json`.
+  Web e macOS lancam `UnsupportedError` de proposito.
+- **Rodar a GUI nao e viavel neste ambiente**: iOS exige macOS; Web/Linux desktop nao
+  sao suportados pelo `firebase_options.dart`; e o emulador Android **nao inicializa**
+  aqui (kernel convidado nao executa sob a virtualizacao aninhada, mesmo com `/dev/kvm`
+  presente — a VM fica `offline`). Valide mudancas via `flutter test` (widget/integration
+  headless renderizam as telas reais) e `flutter build apk --debug`.
+- **Suite completa vs CI**: com Flutter 3.44.9, ~14 testes de regressao de UI falham por
+  uma assertion de debug do framework (`ListTile background color ... may be invisible`).
+  O `quality_gate.sh` roda um subconjunto alvo que passa; a suite completa nao e o gate.
+- **Gate pre-existente**: `./tool/quality_gate.sh` para no passo 2 por um import
+  cross-feature ja commitado (`recomendacao_screen.dart` importa `config_controller.dart`).
+  Isso e questao de codigo da branch, nao do ambiente.
